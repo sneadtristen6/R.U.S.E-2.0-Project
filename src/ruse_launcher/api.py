@@ -664,9 +664,9 @@ class LauncherApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedC
                 raise ModIndexError(f"{len(entries) - len(failed)} of {len(entries)} mods were installed. Not "
                                     f"installed: {'; '.join(failed)}.")
 
-        done = f"{entries[0]['name']} is in the library." if len(entries) == 1 else \
-            f"The {len(entries)} mods are in the library."
-        return self._install_job(work, done)
+        if len(entries) == 1:   # (each said as it is here, so rusemod.buildtext lists it: in the player's language)
+            return self._install_job(work, f"{entries[0]['name']} is in the library.")
+        return self._install_job(work, f"The {len(entries)} mods are in the library.")
 
     # --- the first run: choosing the mods to start with ---
     FIRST_RUN_KEY = "launcher_mods_chosen"  # settings.json: the player has chosen (or skipped) once
@@ -969,22 +969,22 @@ class LauncherApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedC
         self._jobs[job.id] = job
         refused = None  # Bug Watch: a Play refused before its job starts, by which refusal (rusemod.bugwatch.refused)
         if busy:  # one at a time: two would race for the same copy
-            job.state, job.message, refused = "failed", "R.U.S.E. is already being started: wait for it to finish.", \
-                "play_busy"
+            job.fail("R.U.S.E. is already being started: wait for it to finish.")
+            refused = "play_busy"
         elif self._restoring():  # a copy built now would take half-restored files
-            job.state, job.message, refused = "failed", "The game's files are being restored: wait for it to finish.", \
-                "play_restoring"
+            job.fail("The game's files are being restored: wait for it to finish.")
+            refused = "play_restoring"
         elif chosen is None:
-            job.state, job.message, refused = "failed", f"There's no mod set called {set_id!r}.", "play_no_set"
+            job.fail(f"There's no mod set called {set_id!r}.")
+            refused = "play_no_set"
         elif chosen.get("error"):
-            job.state, job.message = "failed", f"The mod set {chosen['name']} has a mistake: {chosen['error']}."
+            job.fail(f"The mod set {chosen['name']} has a mistake: {chosen['error']}.")
             refused = "play_set_mistake"
         elif fairplay.ON and self._untrusted(chosen) and not self.check_mods(chosen["mods"])["hard"]:  # (clashes first)
             # not a game rule: the player's own tick (fair play)
             names = ", ".join(self._untrusted(chosen))
-            job.state, job.message = "failed", (f"{names} run scripts inside the game. Scripts can do anything the "
-                                                f"game can, so tick “I trust this author” for each in the library "
-                                                f"first, only if you do.")
+            job.fail(f"{names} run scripts inside the game. Scripts can do anything the game can, so tick “I trust "
+                     f"this author” for each in the library first, only if you do.")
             refused = "play_untrusted"
         else:
             self._play_job = job.id

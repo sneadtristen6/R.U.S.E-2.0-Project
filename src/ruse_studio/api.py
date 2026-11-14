@@ -10265,17 +10265,23 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             self._starter.modded(game, folders, instance, name, say, words=said, cut_off_errors=True,
                                  title=title_on(self._home))  # R.U.S.E. 2.0's title, unless Settings says the game's
             say(f"Built in {instance}. To see your changes in the game:")
-            for line in look or ["Your unit changes show in every game mode."]:
+            if not look:   # (said as a whole line, so rusemod.buildtext lists it: in the player's language)
+                say("  Your unit changes show in every game mode.")
+            for line in look:
                 say(f"  {line}")
 
         job = Job()
         self._jobs[job.id] = job
         self._test_job = job.id
         self._test_folders = folders  # where a failed test's mistakes are looked for (test_problems)
-        where = "; ".join(look) if look else "your unit changes show in every game mode"
-        return job.start(self._reading_game(game, work),  # a restore, in either app, waits for the build
-                         f"R.U.S.E. is starting from {instance}. To see your changes: {where}.",
-                         plain=(BuildError, RndfError, OSError))
+        run = self._reading_game(game, work)   # a restore, in either app, waits for the build
+        # its last words, each as a whole sentence here, so rusemod.buildtext lists them: in the player's language (the
+        # units scenarios' U-16: English in every language)
+        if look:
+            return job.start(run, f"R.U.S.E. is starting from {instance}. To see your changes: {'; '.join(look)}.",
+                             plain=(BuildError, RndfError, OSError))
+        return job.start(run, f"R.U.S.E. is starting from {instance}. To see your changes: your unit changes show in "
+                              f"every game mode.", plain=(BuildError, RndfError, OSError))
 
     # --- a failed test's mistakes, each with its fix (owner, 2026-10-02: an old mistake in a mod blocked every test,
     # buried in the log, and the Studio offered no way out) ---
