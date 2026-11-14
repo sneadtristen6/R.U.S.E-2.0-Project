@@ -422,9 +422,12 @@ class ModelBlenderCalls:
         from .api import file_error
         from .squadblender import _put
         try:
-            raw = send.read_bytes()
+            model = own.read_bytes()
+            # (its bones in the record's order first, as Bring back the model reads them: Blender writes them in an
+            # order of its own, and the record is matched in its own; ba070f5f's walk found it so, the snap never made)
+            raw = gltf.joints_like(send.read_bytes(), model)
             if given and rig.bones_of(raw, baf.parse(next(iter(given.values()))).skeleton):
-                raw, _word = gltf.bones_like(raw, own.read_bytes())    # (Blender's float noise only: the mod's own)
+                raw, _word = gltf.bones_like(raw, model)    # (Blender's float noise only: the mod's own bones)
             data = own_animations_glb(raw, given, blender=True)
         except (ModelError, ValueError, KeyError, IndexError, TypeError, _struct.error):
             return send

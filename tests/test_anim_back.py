@@ -295,17 +295,21 @@ class OnTheGame(unittest.TestCase):
 
     def trip(self, change=None, noise: bool = False) -> dict:
         """Open in Blender (the riflemen with their horse, everything ticked), Blender's stand-in sending it back with
-        its animations in another order (`change`: test_animglb's Blenderish.send's; `noise`: one bone's rest moved
-        by 0.6 of what rusemod.rig counts as float noise, as Blender's floats move it), Bring my changes back."""
+        its bones and its animations in other orders, as Blender 4.5 does (`change`: test_animglb's Blenderish.send's;
+        `noise`: one bone's rest moved by 0.6 of what rusemod.rig counts as float noise, as Blender's floats move it),
+        Bring my changes back."""
         handed = {}
         with mock.patch("rusemod.blender.open_model_to_change",
                         lambda b, model, send, words: handed.update(model=Path(model), send=Path(send)) or Closed()):
             self.api.blender_open(self.address, {"model": True, "kind": "", "bones": True, "paint": True}, "us")
-        doc, binary = modelin.glb_document(Blenderish(handed["model"].read_bytes()).send(change=change))
-        doc["animations"].sort(key=lambda a: a["name"])        # (Blender 4.5 sends them so)
-        if noise:   # (a bone with no bone under it: only its own rest moves)
-            joints = doc["skins"][0]["joints"]
-            leaf = next(j for j in joints if not set(doc["nodes"][j].get("children", [])) & set(joints))
+        blender = Blenderish(handed["model"].read_bytes())
+        joints = len(blender.doc["skins"][0]["joints"])     # (Blender 4.5 writes the bones in an order of its own)
+        doc, binary = modelin.glb_document(blender.send(change=change, order=list(reversed(range(joints)))))
+        doc["animations"].sort(key=lambda a: a["name"])        # (and the animations so)
+        if noise:   # (a bone with no bone under it, the same one each trip: only its own rest moves)
+            bones = doc["skins"][0]["joints"]
+            leaf = min((j for j in bones if not set(doc["nodes"][j].get("children", [])) & set(bones)),
+                       key=lambda j: doc["nodes"][j]["name"])
             doc["nodes"][leaf]["translation"][0] += 0.6 * rig.NEAR_MOVE * gltf.SCALE
         handed["send"].write_bytes(gltf_bytes(doc, binary))
         return self.api.blender_back(self.address, "us")
