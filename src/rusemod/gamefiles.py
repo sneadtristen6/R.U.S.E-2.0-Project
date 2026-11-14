@@ -363,5 +363,8 @@ def changes(open_pack, find_pack, mods: list, say=print) -> tuple[dict, list]:
         except GameFileError as exc:
             said.append(("error", f"{where}: {exc}"))
             continue
-        say(f"game file: {g.pack}: {g.path} ({'added' if g.added else 'changed'}, from {mod_id})")
+        if g.added:   # (each line said as it is here, so rusemod.buildtext lists it: in the player's language)
+            say(f"game file: {g.pack}: {g.path} (added, from {mod_id})")
+        else:
+            say(f"game file: {g.pack}: {g.path} (changed, from {mod_id})")
     return touched, said

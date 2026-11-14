@@ -42,6 +42,12 @@ ENDS = {
     # said inside "GitHub couldn't be reached to look for updates (...)")
     "rusemod/ownedpass.py": {"OwnedPassError": 0},
     "rusemod/mod_index.py": {"_why": 0},
+    # a build's own lines said from the files of the steps it runs (a mod's sounds, its units' looks, the game files and
+    # game patches it takes, the title and videos it fits, a map's players and scenario warnings), and the Generic
+    # Horse's steps: progress lines of the kind the owner's pick of 2026-10-16 had translated, added since in files
+    # this list didn't read (the plain-words job, 2026-11-14)
+    **{f"rusemod/{name}.py": {"say": 0, "warn": 0} for name in (
+        "gamefiles", "gamepatch", "horsesquad", "players", "scenario", "signature", "sound", "unitlook")},
 }
 
 # how the build marks a finding in its lines: "warning: ..." (said at once) and "  error    ..." (the report)

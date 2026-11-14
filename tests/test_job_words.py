@@ -88,5 +88,28 @@ class Play(unittest.TestCase):
                 self.assertEqual(buildtext.worded(english, "fr"), french)
 
 
+class BuildLinesFromTheStepsFiles(unittest.TestCase):
+    """A build's lines said in the files of the steps it runs (rusemod/sound.py, unitlook.py, gamefiles.py,
+    gamepatch.py, signature.py, players.py, scenario.py) and the Generic Horse's steps (horsesquad.py): progress lines
+    of the kind already translated (the owner's pick of 2026-10-16), English in every language because buildtext
+    didn't read those files. test_buildtext checks every one has its words; these, that they come out said."""
+
+    def test_in_the_player_s_language(self):
+        for line, lang, said in (
+                ("sound volume: Sound/Fx/Tank.wav at 150%", "ru", "громкость звука: Sound/Fx/Tank.wav на 150%"),
+                ("game file: ZZ_Win.dat: mods/paint/new.tgv (added, from paint)", "jpn",
+                 "ゲームファイル: ZZ_Win.dat: mods/paint/new.tgv（追加、paint から）"),
+                ("Generic Horse: making the animations", "spa", "Caballo genérico: haciendo las animaciones"),
+                ("game patch own-squads: downloading own-squads-24670294.json", "ger",
+                 "Spiel-Patch own-squads: own-squads-24670294.json wird heruntergeladen")):
+            with self.subTest(line=line):
+                self.assertEqual(buildtext.worded(line, lang), said)
+
+    def test_control_english_and_a_line_no_entry_makes(self):
+        self.assertEqual(buildtext.worded("sound volume: Sound/Fx/Tank.wav at 150%", "us"),
+                         "sound volume: Sound/Fx/Tank.wav at 150%")
+        self.assertEqual(buildtext.worded("unpack", "fr"), "unpack")   # (a step's name for the page, not words)
+
+
 if __name__ == "__main__":
     unittest.main()
