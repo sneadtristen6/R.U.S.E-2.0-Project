@@ -506,11 +506,17 @@ class ModEdits:
         own from the start (its price, and its nation and factory when it goes in another build menu). `named`
         False: a copy that keeps its source's name in game (an ammunition); `name` is only what the Studio calls it."""
         unit = NewUnit(target, source, name, named)
+        self._made_again(target.rsplit("/", 1)[-1])   # (first: a record that can't be written leaves nothing made)
         self.new_units[target] = unit
         for prop, value in values.items():
             self.edits[(target, prop, "")] = Edit(target, prop, value)
         self.save()
         return unit
+
+    def _made_again(self, tail: str) -> None:
+        """A unit called `tail` is made: what a Delete of an earlier one of that name left for a program that had it open
+        stops waiting, and what this one writes is its own (rusemod.holding.forget)."""
+        holding.forget(self.folder, tail)
 
     def remove_unit(self, target: str, take: TakeOut | None = None) -> None:
         """Delete a new unit: its copy, every change made to it and its parts, its name, and every file of its own

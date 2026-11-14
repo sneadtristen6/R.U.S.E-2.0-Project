@@ -10093,8 +10093,10 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         "waiting" names such files, as paths in the mod ([] when none). A unit this mod no longer has but whose files
         or animations are still in it (a Delete that stopped half way in an older Studio): those leftovers are taken
         out instead, never a game unit's (_take_leftovers), and {"deleted": None, "leftovers": what went} returned."""
+        import time
         from rusemod import anim, menugroups
-        from .edits import TakeOut
+        from . import edits as edits_module   # (HOLD_WAIT read when Delete is clicked)
+        from .edits import HOLD_STEP, TakeOut
         from .era_units import CREDITS, INDEX
         edits = self._edits()
         if edits is None or address not in edits.new_units:
@@ -10103,30 +10105,38 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                 return {"deleted": None, "leftovers": left, "relinked": [], "left": []}
             raise StudioError(f"{address} isn't a unit made in this mod, so it can't be deleted here")
         folder = edits.folder
-        take = TakeOut(folder)
-        try:
-            for f in (edits.file, edits.names_file, folder / menugroups.FILE, folder / INDEX, folder / CREDITS):
-                take.keep(f)   # (as they are before anything changes: research links, groups, era lines too)
-            research = self._research_gone(address, researched)
-            if "ask" in research:
-                return {"deleted": None, "ask": research["ask"]}
-            with self._saving:
-                edits = ModEdits(folder)
-                source = edits.new_units[address].source if address in edits.new_units else None
-                files = self._groups_gone(edits, address)
-                own_class = self.class_table_of(edits, address)  # an ammunition's own weapon class goes with it
-                edits.remove_unit(address, take)
-                if own_class:
-                    self._drop_class_table(edits, own_class)
-                self._groups_save(edits, *files)
-                self._era_forget(address)     # an era unit's (or the Horse Squad's) record line and credit go with it
-                waiting = take.settle()       # (a file of the unit another program holds: it waits, said on the page)
-        except BaseException as exc:
-            take.put_back()
-            worded = self._take_error(exc, folder)
-            if worded is exc:
-                raise
-            raise worded from exc
+        # a list file another program holds for a moment (a sync program, an antivirus) is tried again as long as a file
+        # of the unit itself is: the whole take-out, put back in between (the owner: "it should through")
+        end = time.monotonic() + edits_module.HOLD_WAIT
+        while True:
+            take = TakeOut(folder)
+            try:
+                for f in (edits.file, edits.names_file, folder / menugroups.FILE, folder / INDEX, folder / CREDITS):
+                    take.keep(f)   # (as they are before anything changes: research links, groups, era lines too)
+                research = self._research_gone(address, researched)
+                if "ask" in research:
+                    return {"deleted": None, "ask": research["ask"]}
+                with self._saving:
+                    edits = ModEdits(folder)
+                    source = edits.new_units[address].source if address in edits.new_units else None
+                    files = self._groups_gone(edits, address)
+                    own_class = self.class_table_of(edits, address)  # an ammunition's own weapon class goes with it
+                    edits.remove_unit(address, take)
+                    if own_class:
+                        self._drop_class_table(edits, own_class)
+                    self._groups_save(edits, *files)
+                    self._era_forget(address)   # an era unit's (or the Horse Squad's) record line and credit go with it
+                    waiting = take.settle()     # (a file of the unit another program holds: it waits, said on the page)
+            except BaseException as exc:
+                take.put_back()
+                if isinstance(oserror_of(exc), PermissionError) and time.monotonic() < end:
+                    time.sleep(HOLD_STEP)
+                    continue
+                worded = self._take_error(exc, folder)
+                if worded is exc:
+                    raise
+                raise worded from exc
+            break
         take.done()
         return {"deleted": address, "source": source, "saved": str(edits.file), **research, "waiting": waiting}
 

@@ -5,8 +5,11 @@ unit out all the same and names each such file here, in the mod's holding record
 build (build.load_mod's readers) and Export (package.files_of) leave every file named here out, so neither stops on
 it, and the Studio takes them out by itself (clear) when the mod is opened and before Test in game and Export build it.
 
-Each file is named with its size and time as Delete left it: one written in its place since (the unit made again under
-the same name, once the program let go) is never left out or taken out, and its line goes. A folder Delete couldn't
+Each file is named with its unit and with its size and time as Delete left it. A unit made again under that name
+(ModEdits.add_unit) takes its lines out first (forget): what it writes is its own, even the very bytes and time Delete
+left (a copy of the same source's clips keeps their times), and is never left out or taken out. A file the program that
+held it wrote since (an editor saving the card it had open) is never taken out, and stays out of the build while its
+unit is gone: the build never stops on a deleted unit's file (the owner: "it should through"). A folder Delete couldn't
 move is named too, to go once nothing is left in it, and so is a finished take-out's own holding folder it couldn't
 empty ("holds"). The record and the holding folders are the Studio's own: .taking-out is a dot folder, which a build
 never reads and a package never takes."""
@@ -135,12 +138,21 @@ def _as_left(mod: Path, e: dict) -> bool:
     return stat.S_ISREG(st.st_mode) and (st.st_size, st.st_mtime_ns) == (e["size"], e["time"])
 
 
+def _there(mod: Path, e: dict) -> bool:
+    """Whether the record's file `e` is still there: as Delete left it, or written since by the program that held it."""
+    try:
+        return stat.S_ISREG(os.stat(mod / e["path"]).st_mode)
+    except OSError:
+        return False
+
+
 def waiting_files(mod) -> set[str]:
-    """The files the record names that are still as Delete left it (each os.path.normcase'd, absolute)."""
+    """The files the record names that are still there (each os.path.normcase'd, absolute), as Delete left them or
+    written since by the program that held them: their unit is gone all the same."""
     mod = Path(mod)
     if not record_path(mod).is_file():
         return set()
-    return {_key(mod / e["path"]) for e in read(mod)["files"] if _as_left(mod, e)}
+    return {_key(mod / e["path"]) for e in read(mod)["files"] if _there(mod, e)}
 
 
 def skip_of(mod):
@@ -165,11 +177,12 @@ def _drop_empty(folder: Path) -> None:
 def clear(mod) -> list[str]:
     """Take out what the record names, as far as Windows lets now (the Studio does when the mod is opened and before
     Test in game and Export build it): each file still as Delete left it is moved into a fresh holding folder in
-    .taking-out and removed with it; one still held stays named; one changed or gone leaves the record untouched (never
-    a file written there since). A folder goes once nothing is left in it: it stays named while all it holds still
-    waits (or a program has it open), and its line goes when something else is in it now. A holding folder named goes
-    once it can be emptied. Returns the files and folders taken out, as paths in the mod. Never raises: a record that
-    can't be written stays as it was, and what it names stays out of the build until the next time."""
+    .taking-out and removed with it; one still held stays named; one the program that held it wrote since stays, never
+    taken out, named (so out of the build while its unit is gone); one gone leaves the record. A folder goes once
+    nothing is left in it: it stays named while all it holds still waits (or a program has it open), and its line goes
+    when something else is in it now. A holding folder named goes once it can be emptied. Returns the files and folders
+    taken out, as paths in the mod. Never raises: a record that can't be written stays as it was, and what it names
+    stays out of the build until the next time."""
     mod = Path(mod)
     if not record_path(mod).is_file():
         return []
@@ -177,8 +190,11 @@ def clear(mod) -> list[str]:
     gone, files, folders, holds = [], [], [], list(rec["holds"])
     trash = None
     for e in rec["files"]:
+        if not _there(mod, e):
+            continue                                  # (gone: its line goes)
         if not _as_left(mod, e):
-            continue                                  # (gone, or another file in its place: not what Delete left)
+            files.append(e)                           # (written since by the program that held it: kept, never taken
+            continue                                  #  out, and out of the build while its unit is gone)
         try:
             if trash is None:
                 trash = Path(tempfile.mkdtemp(prefix="", dir=mod / FOLDER))
@@ -218,3 +234,20 @@ def clear(mod) -> list[str]:
     except OSError:
         pass
     return gone
+
+
+def forget(mod, unit: str) -> None:
+    """A unit called `unit` is made (again) in the mod (ModEdits.add_unit, before anything of it is written): what a
+    Delete of an earlier one of that name left waiting stops waiting. What of it can be taken out now goes first
+    (clear); a file a program still holds, or wrote since, is from then on the new unit's, read by the build like any of
+    its files, and what the new unit writes is never mistaken for the old one's leftover (a copy of the same source's
+    clips has the very bytes and times Delete left: anim.copy_unit). OSError when the record can't be written."""
+    mod = Path(mod)
+    if not unit or not record_path(mod).is_file():
+        return
+    clear(mod)
+    rec = read(mod)
+    left = {"files": [e for e in rec["files"] if e["unit"] != unit],
+            "folders": [e for e in rec["folders"] if e["unit"] != unit], "holds": rec["holds"]}
+    if left != rec:
+        _write(mod, left)

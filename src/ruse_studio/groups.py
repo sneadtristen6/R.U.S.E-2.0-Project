@@ -71,6 +71,9 @@ class Draft(ModEdits):
     def save(self) -> None:
         pass
 
+    def _made_again(self, tail: str) -> None:
+        pass   # (in memory only: the holding record on disk is never touched)
+
     def remove_unit(self, target: str) -> None:
         self.new_units.pop(target, None)
         for key in [k for k in self.edits if k[0] == target]:

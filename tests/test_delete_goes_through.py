@@ -9,17 +9,23 @@ units.toml, the copies.toml ticks) and the file waits, named in the mod's holdin
 and Export leave it out, and the Studio takes it out by itself when the mod is opened and before Test in game and Export
 build it. The page says so in one line (app.js waitingTold).
 
-What must keep working, checked here too: a units.toml that can't be read still stops Delete before anything changes; a
-held list file (units.toml) still stops it, everything put back and nothing named; a record that can't be written puts
-everything back; a card of no unit that the record doesn't name still stops the build with its words; a file written in
-the waiting file's place since (the unit made again under its name) is never left out or taken out; a record changed by
-hand names nothing outside the mod's own files.
+The review's cases (2026-11-13), fixed: a unit made again under its name takes the record's lines of the old one out
+first (holding.forget), so its own files are never left out or taken out, even a clip copied from the same source with
+the very size and time Delete left; a waiting file its program saved after the Delete never stops the build and is
+never taken out; a list file held for a moment (units.toml) is tried again as long as the unit's own files are.
 
-On e9a092c3's code (run with its src first on the path) every test here fails but the five controls, which pass on
+What must keep working, checked here too: a units.toml that can't be read still stops Delete before anything changes; a
+list file held past the wait still stops it, everything put back and nothing named, in words on the page; a record
+that can't be written puts everything back; a card of no unit that the record doesn't name still stops the build with
+its words; a file written in the waiting file's place since (the unit made again under its name) is never left out or
+taken out; a record changed by hand names nothing outside the mod's own files.
+
+On e9a092c3's code (run with its src first on the path) every test here fails but the six controls, which pass on
 both:
     test_a_units_toml_that_can_t_be_read_still_stops_it_before_anything_changes
     test_a_copies_toml_that_can_t_be_read_still_stops_it_before_anything_changes
     test_a_held_units_toml_still_stops_it_everything_put_back_and_nothing_named
+    test_a_units_toml_held_past_the_wait_still_stops_it_in_words_everything_put_back
     test_a_card_of_no_unit_the_record_doesnt_name_still_stops_the_build
     test_a_plain_delete_leaves_nothing_behind
 rusemod.holding is imported inside the tests, so this file runs there too."""
@@ -42,7 +48,7 @@ from test_studio import M4, WithMod
 from rusemod import Edat, anim, package
 from rusemod.build import build_pack, load_mod
 from ruse_studio import edits as edits_module
-from ruse_studio.api import StudioApi
+from ruse_studio.api import StudioApi, StudioError
 from ruse_studio.edits import ModEdits, TakeOut
 
 WINDOWS = os.name == "nt"
@@ -321,6 +327,49 @@ class HeldOnAModFolder(unittest.TestCase):
         self.assertEqual(self.card.read_bytes(), b"the new Lancer's own card, longer than the old one")
         self.assertEqual(record(self.mod), {})
 
+    def test_a_file_its_program_saved_after_the_delete_stays_out_of_the_build_and_is_never_taken_out(self):
+        """The review's case: the program that had the card open (an editor, reading and writing) saves it after the
+        Delete. Its unit is gone all the same: the build and Export leave it out, and the clear never takes it out (a
+        save made after the Delete is never removed); it stays named until the unit is made again."""
+        f = open(self.card, "r+b")
+        self.addCleanup(f.close)
+        with quick():
+            ModEdits(self.mod).remove_unit(UNIT)
+        f.seek(0)
+        f.write(b"its card, saved again by the editor after the Delete")
+        f.close()
+        self.assertNotIn(self.tail, load_mod(self.mod)[0].cards)
+        self.assertNotIn(self.card, package.files_of(self.mod))
+        from rusemod import holding
+        self.assertEqual(holding.clear(self.mod), [])
+        self.assertEqual(self.card.read_bytes()[:52], b"its card, saved again by the editor after the Delete")
+        self.assertEqual([e["path"] for e in record(self.mod)["files"]], [f"files/cards/{self.tail}.png"])
+        self.assertNotIn(self.tail, load_mod(self.mod)[0].cards)
+        ModEdits(self.mod).add_unit(UNIT, SOURCE, "Lancer", {})   # (made again: the card is the new unit's)
+        self.assertIn(self.tail, load_mod(self.mod)[0].cards)
+        self.assertEqual(record(self.mod), {})
+
+    def test_a_unit_made_again_while_its_old_card_is_still_held_takes_it_as_its_own(self):
+        """Made again while the program still holds the old card: what can't be taken out yet is the new unit's, read by
+        the build and packed (the page shows that card as its own too: api._own_card_file), never taken out later."""
+        self.held(self.card)
+        with quick():
+            ModEdits(self.mod).remove_unit(UNIT)
+        ModEdits(self.mod).add_unit(UNIT, SOURCE, "Lancer", {})
+        self.assertEqual(record(self.mod), {})
+        self.assertIn(self.tail, load_mod(self.mod)[0].cards)
+        self.assertIn(self.card, package.files_of(self.mod))
+
+    def test_a_groups_draft_never_touches_the_record(self):
+        """groups.Draft adds units in memory only (a unit's group worked out before it's made): the record on disk stays."""
+        from ruse_studio.groups import Draft
+        self.held(self.card)
+        with quick():
+            ModEdits(self.mod).remove_unit(UNIT)
+        before = record(self.mod)
+        Draft(ModEdits(self.mod)).add_unit(UNIT, SOURCE, "Lancer", {})
+        self.assertEqual(record(self.mod), before)
+
     def test_a_units_toml_that_can_t_be_read_still_stops_it_before_anything_changes(self):
         self.held(self.card)
         (self.mod / anim.UNITS).write_text("[unit.\n", encoding="utf-8")
@@ -486,6 +535,98 @@ class OnTheStudio(WithMod):
         self.assertEqual((got["deleted"], got.get("waiting", [])), (SUPER, []))
         self.assertFalse(self.card.exists())
         self.assertFalse((self.folder / ".taking-out").exists())
+
+    def made_from_the_sherman(self) -> Path:
+        """setUp's unit gone (nothing held), the game's Sherman given a clip of the mod's own, and Super Sherman made
+        from it: the copy takes the clip along with its very time (anim.copy_unit). Its clip."""
+        self.api.delete_unit(SUPER)
+        own = self.folder / anim.OWN / tail(M4)
+        own.mkdir(parents=True)
+        (own / "stand.baf").write_bytes(b"the mod's own stand for the game's Sherman")
+        rows(self.folder, [tail(M4)])
+        self.api.new_unit(M4, "Super Sherman", 50, group="new")
+        clip = self.folder / anim.OWN / self.tail / "stand.baf"
+        self.assertEqual(clip.stat().st_mtime_ns, (own / "stand.baf").stat().st_mtime_ns)
+        return clip
+
+    @unittest.skipUnless(WINDOWS, "a file another program holds: Windows")
+    def test_made_again_from_the_same_source_its_clip_is_its_own(self):
+        """The review's case: Delete with the copied clip held, the unit made again from the same source once the
+        program let go. Its new clip has the very size and time the record named for the old one, and is its own all the
+        same: packed, kept by the clear, and the mod builds (before: left out, then taken out, and the build stopped)."""
+        clip = self.made_from_the_sherman()
+        rel = clip.relative_to(self.folder).as_posix()
+        f = open(clip, "rb")
+        try:
+            with quick():
+                self.assertEqual(self.api.delete_unit(SUPER)["waiting"], [rel])
+        finally:
+            f.close()
+        self.api.new_unit(M4, "Super Sherman", 50, group="new")
+        self.assertIn(rel, [p.relative_to(self.folder).as_posix() for p in package.files_of(self.folder)])
+        self.assertEqual(self.api._clear_waiting(self.folder), [])
+        self.assertTrue(clip.is_file())
+        self.assertFalse((self.folder / ".taking-out").exists())
+        load_mod(self.folder)
+
+    @unittest.skipUnless(WINDOWS, "a file another program holds: Windows")
+    def test_made_again_with_its_old_clip_still_held_export_packs_the_clip(self):
+        """As above, the program still holding the clip when the unit is made again and when Export runs (before: Export
+        packed the unit's rows without its clip and refused its own file)."""
+        clip = self.made_from_the_sherman()
+        f = open(clip, "rb")
+        self.addCleanup(f.close)
+        with quick():
+            self.api.delete_unit(SUPER)
+        self.api.new_unit(M4, "Super Sherman", 50, group="new")
+        self.api._pick_save = lambda name: str(self.dest / name)
+        view = self.wait(self.api.export_mod("1.0.0", "a modder", "Held.")["job"])   # (built on the made-up game)
+        self.assertEqual(view["state"], "done", view)
+        with zipfile.ZipFile(view["result"]["path"]) as z:
+            self.assertIn(clip.relative_to(self.folder).as_posix(), z.namelist())
+
+    @unittest.skipUnless(WINDOWS, "a file another program holds: Windows")
+    def test_a_card_its_program_saved_after_the_delete_never_stops_the_build(self):
+        """The review's case: the editor that had the card open saves it after the Delete. No build stops on it (no
+        button needed), Test in game clears around it, and it's never taken out."""
+        f = open(self.card, "r+b")
+        self.addCleanup(f.close)
+        with quick():
+            got = self.api.delete_unit(SUPER)
+        f.seek(0)
+        f.write(b"its own card, saved again by the editor after the Delete")
+        f.close()
+        self.assertEqual(got["waiting"], [f"files/cards/{self.tail}.png"])
+        self.assertEqual(self.build_errors(), [])
+        self.assertEqual(self.api._clear_waiting(self.folder), [])
+        self.assertEqual(self.card.read_bytes(), b"its own card, saved again by the editor after the Delete")
+        self.assertEqual(self.build_errors(), [])
+
+    @unittest.skipUnless(WINDOWS, "a file another program holds: Windows")
+    def test_a_units_toml_held_for_a_moment_is_tried_again(self):
+        """The review's case: units.toml held half a second (a sync program, an antivirus). Delete waits for it as for
+        the unit's own files, and goes through (before: stopped at once)."""
+        f = open(self.folder / anim.UNITS, "rb")
+        threading.Timer(0.5, f.close).start()
+        started = time.monotonic()
+        with quick(3.0):
+            got = self.api.delete_unit(SUPER)
+        self.assertGreaterEqual(time.monotonic() - started, 0.4)
+        self.assertEqual((got["deleted"], got["waiting"]), (SUPER, []))
+        self.assertNotIn(self.tail, anim.read_units(self.folder))
+        self.assertFalse(self.card.exists())
+
+    @unittest.skipUnless(WINDOWS, "a file another program holds: Windows")
+    def test_a_units_toml_held_past_the_wait_still_stops_it_in_words_everything_put_back(self):
+        """A control: held past the wait, Delete stops as before, names the file in words, and the mod is as it was."""
+        before = tree(self.folder)
+        f = open(self.folder / anim.UNITS, "rb")
+        self.addCleanup(f.close)
+        with quick(), self.assertRaisesRegex(StudioError, "units.toml couldn't be read or written, because another "
+                                                          "program has it open"):
+            self.api.delete_unit(SUPER)
+        self.assertEqual(tree(self.folder), before)
+        self.assertIn(SUPER, ModEdits(self.folder).new_units)
 
     def test_the_board_s_take_outs_pass_it_on(self):
         said = {"deleted": "$/X", "waiting": ["files/cards/X.png"]}
