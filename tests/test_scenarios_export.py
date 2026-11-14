@@ -214,10 +214,10 @@ class Unusual(Studio):
                 self.assertEqual(view["state"], "done", view.get("message"))
                 self.assertEqual(package.check(view["result"]["path"])["name"], name)
 
-    @unittest.expectedFailure
     def test_FE3_accented_letters_stay_in_the_mod_s_id(self):
-        """FE-3: the id (and the file's name) is made by dropping every letter that isn't a to z: "Équipe de char" is
-        quipe-de-char, "Panzer Übung" panzer-bung, "Tanques ñandú" tanques-and, "Tanky č. 2" tanky-2."""
+        """FE-3: the id (and the file's name) was made by dropping every letter that isn't a to z: "Équipe de char" was
+        quipe-de-char, "Panzer Übung" panzer-bung, "Tanques ñandú" tanques-and, "Tanky č. 2" tanky-2 (release
+        adc8ecea). PROPOSED FIX: the letters without their accents first (NFKD, as safe_name does for a unit)."""
         for name, want in (("Équipe de char", "equipe-de-char"), ("Panzer Übung", "panzer-ubung"),
                            ("Tanques ñandú", "tanques-nandu"), ("Tanky č. 2", "tanky-c-2")):
             with self.subTest(name=name):
