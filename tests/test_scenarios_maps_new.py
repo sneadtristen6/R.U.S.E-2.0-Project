@@ -243,8 +243,7 @@ class Names(MapGame):
     # map.toml, which it can't read back (Illegal character '\x7f' ...), so nothing was saved. Please report this.",
     # but the new map's folder is left (with a blank start's files in it), and from then on no Test in game of the
     # map changes builds: "the map BlitzNight isn't in this game (DataMapBlitzNight_v09.dat is missing) ..." (8 errors
-    # a folder), naming a map the Maps list doesn't show.
-    @unittest.expectedFailure
+    # a folder), naming a map the Maps list doesn't show. (PROPOSED FIX: the folder the refused call made goes.)
     def test_f12_a_refused_duplicate_leaves_nothing_behind(self):
         self.api.duplicate_map(BLITZ, "Blitz at Dusk")   # the player's other work in the same map changes
         for name in ("Blitz\x7fNight", "Blitz\x01Noon"):

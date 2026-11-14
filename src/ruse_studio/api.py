@@ -2239,21 +2239,27 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                                                 + scenery.parse_own(data.get("own", []), "scenery.toml"))}
         with self._saving:
             target.mkdir(parents=True)
-            for fname, text in files.items():  # a blank start: the preset's files, each checked as the build reads it
-                _save_checked(target / fname, text, checks[fname])
-            for fname, data in pictures.items():  # its own menu pictures (map.toml picture, wide_picture)
-                (target / fname).write_bytes(data)
-            for f in sorted(src_dir.iterdir()) if src_dir.is_dir() and not files else []:  # the changes made so far
-                if f.is_file() and f.name in MAP_FILES and f.name != "map.toml":
-                    (target / f.name).write_bytes(f.read_bytes())
-            _save_checked(target / "map.toml", newmap.map_toml(spec, players.count if players else None, header),
-                          lambda data: newmap.parse(data, "map.toml", new))
-            if own_mission:  # Blank Terrain on an Operation or a chapter: its own mission from the start (Scenario side)
-                from rusemod import mission
-                (target / "mission.toml").write_text(mission.to_toml(mission.Mission(), (
-                    f"The mission of {new}, a new {kind_of.get(entry)} started on Blank Terrain: the copied mission "
-                    f"needs the map's own items, so this one is its own (MOD_FORMAT §8, mission.toml), saved by RUSE "
-                    f"Studio.")), encoding="utf-8")
+            try:
+                for fname, text in files.items():  # a blank start: the preset's files, each checked as the build reads it
+                    _save_checked(target / fname, text, checks[fname])
+                for fname, data in pictures.items():  # its own menu pictures (map.toml picture, wide_picture)
+                    (target / fname).write_bytes(data)
+                for f in sorted(src_dir.iterdir()) if src_dir.is_dir() and not files else []:  # the changes so far
+                    if f.is_file() and f.name in MAP_FILES and f.name != "map.toml":
+                        (target / f.name).write_bytes(f.read_bytes())
+                _save_checked(target / "map.toml", newmap.map_toml(spec, players.count if players else None, header),
+                              lambda data: newmap.parse(data, "map.toml", new))
+                if own_mission:  # Blank Terrain on an Operation or a chapter: its own mission from the start
+                    from rusemod import mission
+                    (target / "mission.toml").write_text(mission.to_toml(mission.Mission(), (
+                        f"The mission of {new}, a new {kind_of.get(entry)} started on Blank Terrain: the copied mission "
+                        f"needs the map's own items, so this one is its own (MOD_FORMAT §8, mission.toml), saved by "
+                        f"RUSE Studio.")), encoding="utf-8")
+            except BaseException:
+                # the folder this call made goes with what it got so far: a half-made map (no map.toml) stopped every
+                # later build of the map changes, named after a map the Maps list doesn't show (2026-11-14, F12)
+                shutil.rmtree(target, ignore_errors=True)
+                raise
         return {"pack": new, "maps": self.maps()["maps"]}
 
     # --- a map's own pictures in the game's menus (map.toml picture, wide_picture, start_dots; rusemod.menupicture,
