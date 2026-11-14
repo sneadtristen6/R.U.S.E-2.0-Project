@@ -114,6 +114,105 @@ class Sets(MapGame):
         self.assertTrue(launcher.set_check("both")["hard"])
 
 
+class DownloadedMap(MapGame):
+    """A map mod made by another player (another Studio, its own home), exported, added to this player's Launcher, and
+    opened in this player's Studio with Edit an installed mod: a copy under a name of its own, its map changed and
+    built."""
+
+    def test_a_downloaded_map_mod_edited(self):
+        from rusemod.play import Starter
+        from ruse_studio.api import StudioApi
+        other = self.home.parent / (self.home.name + "-author")
+        author = StudioApi(index_path=self.index, game_dir=self.game, home=other, instances=other / "copies",
+                           starter=Starter(open_url=lambda url: None, start_game=lambda exe: None,
+                                           steam_running=lambda: True, wait=lambda s: None))
+        author.new_mod("Dusk Maps", "map")
+        author.duplicate_map(BLITZ, "Blitz at Dusk")
+        author.scenery_add("BlitzAtDusk", [{"type": OAK, "x": 1200, "y": 1200}])
+        job = author.export_mod("1.0.0", "Author", kind="map")["job"]
+        import time
+        end = time.time() + 120
+        while author.job(job)["state"] == "running" and time.time() < end:
+            time.sleep(0.02)
+        self.assertEqual(author.job(job)["state"], "done", author.job(job))
+        file = next((other / "exports").glob("*.rusemod"))
+        launcher = LauncherApi(game_dir=self.game, home=self.home, instances=self.home / "copies",
+                               open_url=lambda url: None, start_game=self.started.append, steam_running=lambda: True,
+                               wait=lambda s: None, find=lambda: None)
+        launcher.add_mod(str(file))
+        installed = self.api.installed_mods()["mods"]
+        self.assertEqual([(m["name"], m["maps"], m["units"], m["yours"]) for m in installed],
+                         [("Dusk Maps", True, False, "")])
+        opened = self.api.edit_installed(installed[0]["id"], "My Dusk")
+        self.assertEqual((opened["copied"], opened["maps"], opened["units"]), (True, True, False))
+        self.assertEqual(opened["message"], "Your copy My Dusk is open: everything in Dusk Maps is in it, and your "
+                                            "changes go into it.")
+        self.assertIsNone(opened["mod"]["current"])   # a map mod: the Units tab's mod stays as it was
+        self.assertIn("BlitzAtDusk", self.listed())
+        self.api.scenery_add("BlitzAtDusk", [{"type": OAK, "x": 1800, "y": 1800}])
+        self.assertEqual(len(self.api.scenery("BlitzAtDusk")["objects"]), 2)
+        self.assertBuilds()
+
+    # FINDING F1, on Edit an installed mod: the copy's folder is made from the name typed for it, so a copy called
+    # "Nul" stops with "<home>\maps\nul couldn't be read or written (error 183). Please report this."
+    @unittest.expectedFailure
+    def test_f1_a_downloaded_map_mod_copied_under_the_name_nul(self):
+        from test_build import write_mod
+        mod = write_mod(self.home / "elsewhere", "their-maps", {})
+        (mod / "maps" / "BlitzAtDusk").mkdir(parents=True)
+        (mod / "maps" / "BlitzAtDusk" / "map.toml").write_text('copy_of = "SuperCrossRoads4"\nname = "Blitz at Dusk"\n',
+                                                              encoding="utf-8")
+        from rusemod.library import Library
+        Library(self.home / "library").add(mod)
+        self.assertEqual(page_said(self.api, "edit_installed", "their-maps", "Nul"), "")
+        self.assertIn("BlitzAtDusk", self.listed())
+        self.assertBuilds()
+
+
+class HandEdits(MapGame):
+    """Map changes a player (or another tool) changed by hand between two Studio sessions, and a very long name."""
+
+    def test_a_maps_file_broken_by_hand(self):
+        """map.toml with a quote left open: the map leaves the Maps list, the mod check at the top names the file (and
+        can set it aside), and Test in game stops on it, naming it."""
+        pack = self.api.duplicate_map(BLITZ, "Blitz at Dusk")["pack"]
+        (self.map_folder(pack) / "map.toml").write_text('copy_of = "SuperCrossRoads4"\nname = "Blitz at Dusk\n',
+                                                        encoding="utf-8")   # a quote left open
+        self.api = self.studio()
+        self.assertEqual(self.listed(), [BLITZ])
+        problems = {p["file"]: p for p in self.api.check_mod()["problems"]}
+        self.assertTrue(problems["maps/BlitzAtDusk/map.toml"]["set_aside"])
+        got = self.build()
+        self.assertEqual(got["state"], "failed")
+        self.assertIn("maps/BlitzAtDusk/map.toml: Illegal character", got["message"])
+
+    def test_the_map_changes_own_file_broken_by_hand(self):
+        """mod.toml with a quote left open."""
+        self.api.duplicate_map(BLITZ, "Blitz at Dusk")
+        (self.map_dir() / "mod.toml").write_text('[mod]\nid = "blitz-at-dusk\n', encoding="utf-8")
+        self.api = self.studio()
+        for call, args in (("mods", ("map",)), ("maps", ()), ("check_mod", ())):
+            self.assertEqual(page_said(self.api, call, *args), "", call)
+        got = self.build()
+        self.assertEqual(got["state"], "failed")
+        self.assertIn("mod.toml: Illegal character '\\n' (at line 2, column 20)", got["message"])   # the file, its line
+
+    def test_the_longest_names_the_page_takes(self):
+        """The page's name boxes take 60 characters (new map changes, Duplicate map): both at their longest, and a
+        ground picture of a long name, the deepest files a map project holds (Windows' 260-character paths: this PC
+        has long paths off, as Windows does by default)."""
+        self.api.new_mod("A" * 60, "map")
+        pack = self.api.duplicate_map(BLITZ, "B" * 60)["pack"]
+        import base64
+        from rusemod.dxt import png_bytes
+        png = png_bytes(bytes((120, 90, 40, 255)) * 16, 4, 4, channels=4)
+        self.api.add_ground_picture("C" * 60, "data:image/png;base64," + base64.b64encode(png).decode())
+        self.api.scenery_add(pack, [{"type": OAK, "x": 1500, "y": 1500}])
+        deepest = max(len(str(p)) for p in self.map_dir().rglob("*"))
+        self.assertLess(deepest, 260)   # (201 here, in a temporary folder; Documents\RUSE 2.0\Maps is a little longer)
+        self.assertBuilds()
+
+
 class Reopened(MapGame):
     """The Studio closed and started again on the same home: the map changes open as they were left."""
 
@@ -168,58 +267,10 @@ class Deleting(MapGame):
         self.assertEqual(self.listed(), [BLITZ])
         self.assertIsNotNone(self.map_dir())   # the map changes stay, empty
 
-    # FINDING F6: Test in game on map changes that hold nothing (made, nothing done yet; or their last map deleted),
-    # with Settings' game title the game's own (with R.U.S.E. 2.0's title the copy always changes something; this
-    # made-up game has no title to change, so it shows either way): the old copy is set aside, the build says "The
-    # mods change nothing in these packs.", no new copy is made, and the page is told "The modded copy at <folder> has
-    # no <the game's program file>."
-    @unittest.expectedFailure
-    def test_f6_new_map_changes_tested_before_anything_is_made(self):
-        self.api.set_game_title(False)
-        self.api.new_mod("Nothing Yet", "map")
-        got = self.build()
-        self.assertNotIn("The modded copy at", got["message"])
-
-    @unittest.expectedFailure
-    def test_f6_the_last_map_deleted_then_tested(self):
-        self.api.set_game_title(False)
-        pack = self.api.duplicate_map(BLITZ, "Only One")["pack"]
-        self.assertBuilds()
-        self.api.delete_map(pack)
-        got = self.build()
-        self.assertNotIn("The modded copy at", got["message"])
-
-    def test_empty_map_changes_tested_after_the_launcher_played_a_set(self):
-        """F6 after the Launcher played a set (the modded copy is the PC's one, the Launcher's too) with a downloaded
-        units mod: the Studio, with only new map changes that hold nothing yet, presses Test in game; the Launcher's
-        copy is left set aside as "Modded game.old" and nothing starts."""
-        from test_build import write_mod
-        downloaded = write_mod(self.home / "elsewhere", "tougher",
-                               {"t.rndf": "patch $/GFX/Everything/Descriptor_Unit_M4_Sherman ( SeuilMort = 15 )"})
-        (self.home / "sets").mkdir(parents=True, exist_ok=True)
-        (self.home / "sets" / "tougher.toml").write_text(f'name = "Tougher"\nmods = ["{downloaded.as_posix()}"]\n',
-                                                         encoding="utf-8")
-        launcher = LauncherApi(game_dir=self.game, home=self.home, instances=self.home / "copies",
-                               open_url=lambda url: None, start_game=self.started.append, steam_running=lambda: True,
-                               wait=lambda s: None, find=lambda: None)
-        j = self.wait_any(launcher, launcher.play("tougher")["job"])
-        self.assertEqual(j["state"], "done", j)
-        self.assertTrue((self.copy() / "Data" / "PC" / "190852" / "ZZ_GladPatchableWin.dat").is_file())
-        self.api.new_mod("Nothing Yet", "map")
-        self.assertIsNone(self.api.mods()["current"])   # no units mod in the Studio
-        got = self.build()
-        self.assertEqual(got["state"], "failed")
-        self.assertIn("The modded copy at", got["message"])
-        self.assertIn("the old copy at", " ".join(got["lines"]))
-        self.assertEqual(sorted(p.name for p in (self.home / "copies").iterdir()), ["Modded game.old"])
-        self.assertEqual(len(self.started), 1)   # the Launcher's start only
-
-    def wait_any(self, api, job_id):
-        import time
-        end = time.time() + 120
-        while api.job(job_id)["state"] == "running" and time.time() < end:
-            time.sleep(0.02)
-        return api.job(job_id)
+    # (Test in game on map changes holding nothing, made or emptied, isn't a scenario this made-up game can show: it
+    # has no IA_Common.dat, so its build changes nothing and makes no copy ("The modded copy at <folder> has no <the
+    # game's program file>."); on a real install RUSE Guard's watcher (rusemod.fairplay, ON and IN_BUILDS) always
+    # goes into IA_Common.dat, so the copy is always made. Taken out of the findings, 2026-11-14.)
 
     def test_the_map_changes_deleted_with_the_launchers_copy(self):
         self.api.duplicate_map(BLITZ, "Blitz at Dusk")

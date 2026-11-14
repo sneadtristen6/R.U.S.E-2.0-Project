@@ -186,6 +186,23 @@ class Roads(MapGame):
                       page_said(self.api, "bridge_add", self.pack, "TypeWarrior/Pont_TangeantFloor", 1000, 1000, 0, 30000))
 
 
+class CheckThisMap(MapGame):
+    """The Maps tab's Check this map (StudioApi.map_check, a job) on a copy with things placed, as a player presses it
+    before Test in game."""
+
+    def test_check_this_map(self):
+        pack = self.api.duplicate_map(BLITZ, "Checked")["pack"]
+        self.api.scenery_add(pack, [{"type": HALL, "x": 1500, "y": 1500}, {"type": OAK, "x": 1700, "y": 1500}])
+        self.api.road_add(pack, [[500, 2000], [500, 2900]])
+        got = self.wait(self.api.map_check(pack)["job"])
+        self.assertEqual(got["state"], "done", got)
+        self.assertEqual(got["result"]["pack"], pack)
+        said = {f["say"] for f in got["result"]["findings"]}
+        self.assertIn("mc_road_unjoined", said)   # the road's end at (500, 2900) joins nothing
+        from ruse_studio.api import _words
+        self.assertTrue(all(_words()[k].get("fr") for k in said))   # each finding has its words, French too
+
+
 class Ground(MapGame):
     def setUp(self):
         super().setUp()
@@ -227,6 +244,35 @@ class Ground(MapGame):
         self.assertEqual(got["state"], "failed")
         self.assertIn("the starting point moved (item 0) at (1100, 2100) in leveldesign_normal.scenario is where no "
                       "ground unit can stand", " ".join(got["errors"]))
+
+    def own_picture(self):
+        """A picture of the player's own added for Map Paint as the page adds one (a PNG as a data address)."""
+        import base64
+        from rusemod.dxt import png_bytes
+        png = png_bytes(bytes((120, 90, 40, 255)) * 64 * 64, 64, 64, channels=4)
+        got = self.api.add_ground_picture("my mud", "data:image/png;base64," + base64.b64encode(png).decode(), 20.0)
+        return got["ref"]
+
+    def test_paint_with_a_picture_of_ones_own(self):
+        ref = self.own_picture()
+        self.assertEqual(ref, "file:my mud.png")
+        self.api.terrain_add(self.pack, [{"brush": "texture", "x": 1500, "y": 1500, "radius": 900, "texture": ref,
+                                          "size": 5200}])
+        got = self.assertBuilds()
+        self.assertIn("paint: Ground, from ground: 1 stroke(s) on the ground's picture", got["lines"])
+
+    def test_the_picture_taken_out_after_its_strokes(self):
+        """The player deletes the picture's file (File Explorer) after painting with it: the mod check at the top and
+        Test in game both name it."""
+        ref = self.own_picture()
+        self.api.terrain_add(self.pack, [{"brush": "texture", "x": 1500, "y": 1500, "radius": 900, "texture": ref,
+                                          "size": 5200}])
+        (self.map_dir() / "files" / "ground" / "my mud.png").unlink()
+        said = "maps/Ground/terrain.toml paints with the picture my mud.png, which isn't in the mod's files/ground folder"
+        got = self.build()
+        self.assertEqual(got["state"], "failed")
+        self.assertIn(said, got["message"])
+        self.assertIn(said, " ".join(p["problem"] for p in self.api.check_mod()["problems"]))
 
     def test_paint_and_stamp(self):
         self.api.terrain_add(self.pack, [{"brush": "paint", "x": 1500, "y": 1500, "radius": 800, "colour": "#a0522d"},

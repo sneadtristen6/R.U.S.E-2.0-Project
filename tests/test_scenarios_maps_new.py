@@ -238,6 +238,21 @@ class Names(MapGame):
         self.assertEqual(page_said(self.api, "new_mod", "Nul", "map"), "")
         self.assertEqual(self.map_dir().name, "nul-2")
 
+    # FINDING F12: a name pasted with a character the map's file (TOML) can't hold (DEL, or a control character other
+    # than the spaces and line ends the Studio folds) on Duplicate map: the page is told "The Studio would have saved
+    # map.toml, which it can't read back (Illegal character '\x7f' ...), so nothing was saved. Please report this.",
+    # but the new map's folder is left (with a blank start's files in it), and from then on no Test in game of the
+    # map changes builds: "the map BlitzNight isn't in this game (DataMapBlitzNight_v09.dat is missing) ..." (8 errors
+    # a folder), naming a map the Maps list doesn't show.
+    @unittest.expectedFailure
+    def test_f12_a_refused_duplicate_leaves_nothing_behind(self):
+        self.api.duplicate_map(BLITZ, "Blitz at Dusk")   # the player's other work in the same map changes
+        for name in ("Blitz\x7fNight", "Blitz\x01Noon"):
+            said = page_said(self.api, "duplicate_map", BLITZ, name, None, "blank_terrain")
+            self.assertIn("so nothing was saved", said)
+        self.assertEqual(sorted(f.name for f in (self.map_dir() / "maps").iterdir()), ["BlitzAtDusk"])
+        self.assertBuilds()
+
     def test_refusals_in_the_players_language(self):
         for lang in ("fr", "ru", "fa", "jpn"):
             self.in_lang(lang)

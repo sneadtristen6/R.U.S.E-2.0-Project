@@ -2,7 +2,13 @@
 own. It is test_studio's WithMod (a Studio on its made-up game, a fresh home per test, a game that only pretends to
 start) with test_newmap's made-up map added to that game: Blitz (pack SuperCrossRoads4) with its map-list entry, its
 BATTLES entry, its scenario, grid, constants and map pack, and its name in the menus, here in all ten of the game's
-languages. The game's program file is the one WithMod writes; nothing here names it.
+languages; on its ground test_scenery's village (a town hall and oaks, so it has types to place), and a cover grid
+(test_cover's) and a level-build state (test_statedb's way) the build can read. OperationGame offers Blitz as an
+Operation with a mission of its own to copy. The game's program file is the one WithMod writes; nothing here names it.
+
+What this made-up game can't show (the real install's dry builds do): a map made bigger (it has no far-view files to
+grow), the RUSE Guard scripts (no Battles launcher script; switched off where IA_Common.dat is in it), the units' class
+names and the nations' packs a mission's units need.
 
 Each scenario drives the Studio through the calls its page makes (ruse_studio.api.StudioApi), then checks what the
 player is told, the map's files, and whether the map still builds (Test in game on this made-up game: the build

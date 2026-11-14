@@ -153,6 +153,14 @@ class MissionWords(MapGame):
         self.assertTrue(said)
         self.assertNotIn("A BATTLES map can't have a mission of its own yet", said)
 
+    # F3 too: Map Paint's own pictures refuse with rusemod.groundtex.TextureError, not StudioError: English as well.
+    @unittest.expectedFailure
+    def test_f3_a_ground_picture_with_no_map_changes_refused_in_french(self):
+        self.in_lang("fr")
+        said = page_said(self.api, "add_ground_picture", "grass", "data:image/png;base64,AAAA")
+        self.assertTrue(said)
+        self.assertNotIn("Pick or make a mod first: its pictures are kept in it.", said)
+
     def test_the_tray_says_why_in_its_own_words(self):
         pack = self.api.duplicate_map(BLITZ, "Blitz at Dusk")["pack"]
         self.assertEqual(self.api.mission(pack), {"allowed": False, "why": "mission_why_battles", "kind": "skirmish"})
