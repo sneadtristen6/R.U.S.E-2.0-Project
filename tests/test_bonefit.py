@@ -465,7 +465,8 @@ class TheBuild(unittest.TestCase):
         from rusemod import buildtext, wordedtext
         mine = [t for t in buildtext.templates() if ": its figure {1}" in t or "the model splits at" in t
                 or "chosen to split the model" in t or "The game isn't seen to animate" in t
-                or "couldn't be checked" in t]
+                or "its animations and bones couldn't be checked" in t]   # (the missions check's own "couldn't be
+        # checked" lines are the build checks', not this check's)
         self.assertEqual(len(mine), 12)
         self.assertEqual(wordedtext.missing(buildtext.FILE, mine), [])
         fr = buildtext.worded(f"warning: my-mod: {UNIT}: the model splits at horse bip01, its first bone, so every "
