@@ -14,6 +14,10 @@ stood in for (StudioApi._home_set_env, _home_restart: never the real user variab
 - two files landing on one place, another job running, long paths on or not Windows: refused at once in words;
 - every refusal of a folder too deep (the Generic Horse's Add: the platform folder, the mod's folder, a path longer
   than Windows takes) is what the page offers the move beside (home_move_offer's "needed");
+- the short folder the Studio picks, or one the modder chooses with Choose another folder… (the owner, 2026-11-13: "It
+  can be selected automatically, but the modder should be able to choose"), each checked the same way before anything
+  is copied: on a drive of this PC, empty or new, outside what gets copied and the game's folder, short enough; an
+  empty folder he chose is left there when a copy fails;
 - the words the page shows, in the 11 languages."""
 import json
 import os
@@ -241,6 +245,140 @@ class TheMove(unittest.TestCase):
             self.assertFalse(self.api.home_move_offer()["can"])
 
 
+class TheChosenFolder(unittest.TestCase):
+    """The short folder picked automatically, or one the modder chooses instead (the owner, 2026-11-13, to "The short
+    folder, such as C:\\RUSE2, is picked automatically. OK, or should the modder choose?": "It can be selected
+    automatically, but the modder should be able to choose"): Choose another folder… (home_move_choose, the folder
+    window stood in for: _home_pick), both checked the same way before anything is copied. On e9a092c3 home_move took
+    no folder and there was no Choose. TheMove's folders and stand-ins (never the real Windows setting)."""
+    setUp = TheMove.setUp
+    tearDown = TheMove.tearDown
+
+    def chooses(self, folder):
+        """home_move_choose with the folder window answering `folder` (None: cancelled); the start it was opened at."""
+        asked = []
+        self.api._home_pick = lambda window, start: asked.append(start) or (str(folder) if folder else None)
+        return self.api.home_move_choose(), asked
+
+    def test_a_chosen_folder_gets_everything_and_the_studio_switches_to_it(self):
+        chosen = Path(self.tmp.name) / "Games" / "R2"            # (a new folder: made by the move)
+        got, asked = self.chooses(chosen)
+        self.assertEqual(got, {"to": str(chosen)})
+        self.assertEqual(asked, [self.to.parent])                 # (opened at the top of the drive the Studio picked on)
+        view = finished(self.api, self.api.home_move(got["to"])["job"])
+        self.assertEqual(view["state"], "done", view.get("message"))
+        moved = tree(chosen)
+        self.assertEqual(moved["library/air-nerf/mod.toml"], self.before["home"]["library/air-nerf/mod.toml"])
+        self.assertEqual(moved["mods/cavalry/mod.toml"], self.before["work"]["Mods/cavalry/mod.toml"])
+        self.assertEqual(json.loads(moved["mods/cavalry/files/models/Descriptor_Unit_Horse_Squad.json"])["from"],
+                         str(chosen / "horse_squad" / "horse-squad-rifle.glb"))
+        self.assertFalse(self.to.exists())                        # (not the folder the Studio picked)
+        self.assertEqual(self.set, [("RUSE_PLATFORM_HOME", str(chosen))])
+        self.assertEqual(self.restarted, [chosen])
+        self.assertEqual(view["result"]["to"], str(chosen))
+        self.assertEqual(tree(self.home), self.before["home"])   # nothing deleted, nothing changed
+        self.assertEqual(tree(self.work), self.before["work"])
+
+    def test_an_empty_folder_he_made_is_used_and_left_there_empty_when_the_copy_fails(self):
+        chosen = Path(self.tmp.name) / "Mine"
+        chosen.mkdir()
+        self.assertEqual(self.chooses(chosen)[0], {"to": str(chosen)})
+        real = homemove._same
+
+        def differs(src, dst):
+            return False if src.endswith("studio.log") else real(src, dst)
+        with mock.patch.object(homemove, "_same", differs):
+            view = finished(self.api, self.api.home_move(str(chosen))["job"])
+        self.assertEqual(view["state"], "failed")
+        self.assertIn("nothing was switched and the copy was taken away again", view["message"])
+        self.assertTrue(chosen.is_dir())                          # (his folder stays, as it was: empty)
+        self.assertEqual(list(chosen.iterdir()), [])
+        self.assertEqual((self.set, self.restarted), ([], []))
+
+    def test_a_cancelled_window_chooses_nothing(self):
+        self.assertEqual(self.chooses(None)[0], {"to": None})
+        self.api._home_pick = None
+        self.assertIsNone(self.api._window)
+        self.assertEqual(self.api.home_move_choose(), {"to": None})   # (no window: no folder window opened)
+
+    def test_a_folder_that_cant_be_the_short_folder_is_refused_in_words(self):
+        root = Path(self.tmp.name)
+        full = root / "Full"
+        full.mkdir()
+        (full / "his.txt").write_text("his", encoding="utf-8")
+        a_file = root / "a-file.txt"
+        a_file.write_text("x", encoding="utf-8")
+        game = root / "Steam" / "R.U.S.E"
+        game.mkdir(parents=True)
+        self.api._game_dir = game
+        free = next((f"{c}:\\" for c in "ZYXWVUTSRQPONMLKJIHGFEB" if not os.path.isdir(f"{c}:\\")), None)
+        cases = [(full, f"{full} isn't an empty folder: choose an empty folder, or make a new one in the folder window."),
+                 (a_file, f"{a_file} isn't an empty folder"),
+                 (self.home / "R2", f"{self.home / 'R2'} is inside {self.home}, which is what gets copied: choose a "
+                                    f"folder outside it."),
+                 (self.work / "Mods" / "R2", f"{self.work / 'Mods' / 'R2'} is inside {self.work}, which is what gets "
+                                             f"copied"),
+                 (game / "RUSE2", f"{game / 'RUSE2'} is inside the R.U.S.E. folder ({game}): the Studio's files can't go "
+                                  f"there. Choose a folder outside the game."),
+                 ("RUSE2", "RUSE2 isn't on a drive of this PC: choose a folder on one of its drives.")]
+        if free is not None and sys.platform == "win32":
+            cases.append((free + "RUSE2", f"{free}RUSE2 isn't on a drive of this PC"))
+        for folder, said in cases:
+            with self.subTest(folder=str(folder)):
+                with self.assertRaises(StudioError) as caught:
+                    self.chooses(folder)
+                self.assertTrue(str(caught.exception).startswith(said), str(caught.exception))
+                with self.assertRaises(StudioError) as again:   # (the move itself checks it again, at once)
+                    self.api.home_move(str(folder))
+                self.assertEqual(str(again.exception), str(caught.exception))
+        self.assertEqual(list(full.iterdir()), [full / "his.txt"])
+        self.assertFalse((game / "RUSE2").exists())
+        self.assertEqual((self.set, self.restarted, self.api._jobs), ([], [], {}))
+        from ruse_studio import errortext
+        message = str(caught.exception)
+        self.assertNotEqual(errortext.worded(message, "fr"), message)  # (in the modder's language)
+
+    def test_short_enough_for_what_was_refused_the_studio_s_pick_too(self):
+        """Short enough: the path the refusal measured, once in the folder, fits what Windows takes; the folder the
+        Studio picks is checked the same way, so a move that wouldn't help is refused before anything is copied."""
+        mod = self.work / "Mods" / "cavalry"
+        fits = len(str(mod)) - len(str(self.to / "mods" / "cavalry"))   # (the most the move to self.to shortens it)
+        deeper = Path(self.tmp.name) / "abc" / "RUSE2"                  # (4 characters longer than self.to)
+        self.api.__dict__["_too_deep"] = {"what": "mod", "folder": str(mod), "over": fits}
+        self.assertEqual(homemove.still_over(self.to, self.home, self.work, self.api.__dict__["_too_deep"]), 0)
+        with self.assertRaises(StudioError) as caught:
+            self.chooses(deeper)
+        self.assertEqual(str(caught.exception), (
+            f"{deeper} is too deep: there, the path that was too long would still be 4 character(s) longer than Windows "
+            f"takes. Choose a folder nearer the top of a drive, or give the mod or the unit a shorter name."))
+        self.api.__dict__["_too_deep"] = {"what": "mod", "folder": str(mod), "over": fits + 2}
+        with self.assertRaisesRegex(StudioError, "would still be 2 character"):
+            self.api.home_move()                                   # (the Studio's own pick: refused at once too)
+        self.assertFalse(self.to.exists())
+        self.api.__dict__["_too_deep"] = {"what": "platform", "folder": str(self.home),
+                                          "over": len(str(self.home)) - len(str(self.to))}
+        self.assertEqual(homemove.still_over(self.to, self.home, self.work, self.api.__dict__["_too_deep"]), 0)
+        self.assertEqual(homemove.still_over(deeper, self.home, self.work, self.api.__dict__["_too_deep"]), 4)
+        long = str(self.home / horse_squad.FOLDER / ("x" * 300))         # (a path inside the platform folder: it
+        shorter = len(str(self.home)) - len(str(self.to))               # moves with it, that much shorter)
+        needed = {"what": "path", "folder": long, "over": shorter + 7}
+        self.assertEqual(homemove.still_over(self.to, self.home, self.work, needed), 7)
+        needed["over"] = shorter
+        self.assertEqual(homemove.still_over(self.to, self.home, self.work, needed), 0)
+        elsewhere = {"what": "mod", "folder": "D:\\elsewhere\\mod", "over": 50}   # (not a folder the move copies)
+        self.assertEqual(homemove.still_over(self.to, self.home, self.work, elsewhere), 0)
+        self.api.__dict__["_too_deep"] = {"what": "mod", "folder": str(mod), "over": fits}
+        view = finished(self.api, self.api.home_move()["job"])     # (and one that fits is moved)
+        self.assertEqual(view["state"], "done", view.get("message"))
+
+    def test_the_studio_s_pick_is_checked_the_same_way(self):
+        self.to.mkdir()
+        (self.to / "someone else's.txt").write_text("x", encoding="utf-8")
+        with self.assertRaisesRegex(StudioError, "isn't an empty folder"):
+            self.api.home_move()
+        self.assertEqual(sorted(p.name for p in self.to.iterdir()), ["someone else's.txt"])
+
+
 class TheShortFolder(unittest.TestCase):
     def test_the_first_free_name_on_the_platform_folder_s_drive(self):
         taken = set()
@@ -356,14 +494,19 @@ class TheWords(unittest.TestCase):
         from rusemod import buildtext, schema, wordedtext
         words = _words()
         keys = ("home_move_title", "home_move_why", "home_move_what", "home_move_files", "home_move_close_launcher",
-                "home_move_button", "tip_home_move", "home_move_done", "home_move_done_start_again")
+                "home_move_button", "tip_home_move", "home_move_done", "home_move_done_start_again",
+                "home_move_choose", "tip_home_move_choose")
         for key in keys:
             self.assertEqual([lang for lang in schema.APP_LANGS if not words[key].get(lang)], [], key)
         js = (Path(__file__).parents[1] / "src" / "ruse_studio" / "ui" / "eraunits.js").read_text(encoding="utf-8")
         for key in keys:
             self.assertIn(f"w.{key}", js, key)
         self.assertIn("api().home_move_offer()", js)
-        self.assertIn("api().home_move()", js)
+        self.assertIn("api().home_move(moveChosen)", js)      # (the folder chosen, or null: the Studio's pick)
+        self.assertIn("api().home_move_choose()", js)
+        # Choose another folder… sits beside the copy button, its tooltip on it
+        self.assertIn('el("div", { className: "actions" }, go, pick)', js)
+        self.assertIn("title: fill(w.tip_home_move_choose, { to: o.to })", js)
         self.assertNotIn("Copied", buildtext.worded("Copied 3 of 9 files.", "ger"))
         self.assertEqual(wordedtext.missing(buildtext.FILE, buildtext.templates()), [])
 
