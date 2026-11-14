@@ -416,5 +416,17 @@ class ASendingNeverBroughtBack(Adding):
                 self.assertTrue("set_aside" in code or ".message" in code, part)
 
 
+class ThePageCodeRead(unittest.TestCase):
+    def test_each_part_the_findings_read_is_found(self):
+        """The control for SQ-2 and SQ-3's tests (an expected failure takes any error as its failure): each squad.js
+        part they read is found, and what -1 says of a look kept aside is found in countBy, so a part that does read
+        an answer's field is told apart from one that doesn't."""
+        for name in ("openBlender", "addSoldier", "countBy", "removeParts"):
+            with self.subTest(part=name):
+                self.assertIn(f"const {name} = ", page_part(name))
+        self.assertIn("look_kept", page_part("countBy"))
+        self.assertIn("squad_minus_kept", page_part("countBy"))
+
+
 if __name__ == "__main__":
     unittest.main()
