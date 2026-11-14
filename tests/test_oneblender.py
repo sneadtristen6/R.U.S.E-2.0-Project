@@ -267,7 +267,8 @@ class OtherOpeners(unittest.TestCase):
         self.assertEqual(s.calls, [])
 
     def test_the_models_blender_with_nothing_sent_names_this_button(self):
-        """The model's own refusal names its own Bring back the model, a button the squad card hasn't got."""
+        """This button's own refusal names it; the model's own says "bring your changes back" in plain words, as it's
+        said beside Bring back the model too (a squad shown without its card), a button the squad card hasn't got."""
         s = Stand(self.root, squad=True, own_bones=True)
         s.blender_open(E + "Descriptor_Unit_Generic_Horse", {"model": True, "kind": ""})
         s.model_sent = False   # (Blender closed without Send to the R.U.S.E. Studio)

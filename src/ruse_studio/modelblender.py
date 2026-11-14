@@ -240,8 +240,7 @@ class ModelBlenderCalls:
             return None
         kinds = self._soldier_kinds(address)
         if not kinds:
-            raise StudioError("This unit has no soldiers of another kind: Change it in Blender in the Model row is for "
-                              "its model.")
+            raise StudioError("This unit has no soldiers of another kind: open its model in Blender instead.")
         if kind not in kinds:
             raise StudioError(f"This squad has no soldier called {kind}: pick one of those under Its soldiers.")
         return None if kind == next(iter(kinds)) else kind
@@ -545,7 +544,7 @@ class ModelBlenderCalls:
         work, send = self._model_work(address, kind)
         blender = self._blender()
         if blender is None:
-            raise StudioError("Blender isn't found on this PC. Get it free from blender.org (Get Blender), then use "
+            raise StudioError("Blender isn't found on this PC. Get it free from blender.org, then use "
                               "Choose Blender… to show the Studio where blender.exe is.")
         own = self._kind_file(address, kind) if kind else self._own_model_file(address)
         # a model on bones of its own goes out with the animations the mod plays (item 45: an animation back from
@@ -661,7 +660,7 @@ class ModelBlenderCalls:
             ask_to_send(send, SEND_WAIT)
         if not send.is_file():  # not a game rule: the Studio's own hand-over from Blender, nothing sent yet
             raise StudioError("Nothing has come back from Blender yet: in Blender, click Send to the R.U.S.E. Studio at "
-                              "the top, then Bring back the model here.")
+                              "the top, then bring your changes back here.")
         raw = send.read_bytes()
         sha = _sha_of(raw)
         state = back_state(work)

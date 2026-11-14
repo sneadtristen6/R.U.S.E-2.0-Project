@@ -206,7 +206,7 @@ class OneBlenderCalls:
             kind = state.get("kind") or None
             if not self._model_door(address, kind):
                 # not a game rule: the Studio's own hand-over from Blender, nothing sent yet (said with this button's
-                # name: the model's own refusal names its Bring back the model)
+                # name; the model's own refusal says "bring your changes back", as it's said beside either button)
                 raise StudioError("Nothing has come back from Blender yet: in Blender, click Send to the R.U.S.E. "
                                   "Studio at the top, then Bring my changes back here.")
             own = self._kind_file(address, kind) if kind else self._own_model_file(address)

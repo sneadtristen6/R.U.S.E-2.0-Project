@@ -612,7 +612,7 @@ class SquadBlenderCalls:
         from .api import StudioError
         blender = self._blender()
         if blender is None:
-            raise StudioError("Blender isn't found on this PC. Get it free from blender.org (Get Blender), then use "
+            raise StudioError("Blender isn't found on this PC. Get it free from blender.org, then use "
                               "Choose Blender… to show the Studio where blender.exe is.")
         work = self._squad_work(address)
         if self._squad_open(address, work):
