@@ -183,10 +183,10 @@
     crash_no_unit: "The game crashed. {why}",
     crash_why_made: "The game couldn't build the unit's model: the model had no skeleton in that battle, or not the bones its parts need.",
     crash_why_turret: "A turret looked for its part on the unit's model, and that part was never built: the model had no skeleton in that battle.",
-    crash_why_setup: "A unit's model had no skeleton when the game first set it up.",
-    crash_why_part: "A turret names a part its unit's model doesn't have.",
-    crash_why_mesh: "A unit's model had no mesh (its 3D shape) when the game measured its size." });
-  let crashTold = false;
+    crash_why_setup: "A model had no skeleton when the game first set it up.",
+    crash_why_part: "A turret couldn't find its part on its unit's model: the model has no part of that name, that part was never built, or the unit had no model.",
+    crash_why_mesh: "A model had no mesh (its 3D shape) when the game measured its size." });
+  let crashTold = false, crashPlayed = false;   // (?fake=crash: told once, after a Play)
   let fakeBugwatch = { available: true, on: false, name: "", code: "" };  // ?fake=bugoff hides the card, as bugwatch.ON = False does
   if (new URLSearchParams(location.search).get("fake") === "bugoff") fakeBugwatch.available = false;
   // ?fake=agree: the first-start agreement hasn't been accepted yet; ?fake=agree-again: version 3 was, by a player
@@ -435,9 +435,11 @@
         app: "launcher", version: "0.4.8.9", day: new Date().toISOString().slice(0, 10), setup: { windows: "11", language: "us" },
         calls: { play: { n: 2, failed: 0, time: [0, 2, 0, 0, 0] } } }, waiting: [] }),
       bugwatch_seen: async () => ({ ok: true }),
-      // ?fake=crash: after a Play, the game stops at a crash we know while making a mod's unit (app.js watchCrash)
+      // ?fake=crash: after a Play, the game stops at a crash we know while making a mod's unit (app.js watchCrash; the
+      // page also asks when it opens, before any Play: nothing then)
       bugwatch_crash: async () => {
-        const notice = mode === "crash" && !crashTold ? { why: "made", unit: "Horse Squad", added: true } : null;
+        const notice = mode === "crash" && crashPlayed && !crashTold ? { why: "made", unit: "Horse Squad", added: true }
+          : null;
         crashTold = crashTold || Boolean(notice);
         return { watching: false, notice };
       },
@@ -619,6 +621,7 @@
       play: async (id) => {
         playing = { id, step: 0, lines: id === "vanilla" ? ["Starting R.U.S.E. through Steam…"] : script,
           message: "R.U.S.E. is starting." };
+        crashPlayed = true;
         return { job: "fake" };
       },
       browse: async (search) => browseView(search),

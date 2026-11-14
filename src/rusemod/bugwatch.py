@@ -47,13 +47,16 @@ it from the game's crash report"); a day the same kinds, the most of any game th
 its own mods by format and the kinds they hold. Under version 3 a failed Play's own mods are one number
 ("play:set:L1-O2"), as version 3's words say.
 
-THE CRASHES WE KNOW, TOLD TO THE PLAYER (the owner's item 25, 2026-11-13: "if their unit was crashing the game, they
-should be told that" and "they should also be told why that unit made the game crash. For 25, I don't care. You can
-put it in the app."): a game crash at a place rusemod.crashplaces knows gets its plain reason (read_dump's "reason"),
-and under version 4 the unit the game was making (read_dump's "unit": crashplaces.unit_number), named from the crashed
-copy's own data as its card says (unit_named). Neither the reason nor the name is ever sent. GameWatch keeps the
-notice and the window's bugwatch_crash hands it to the page once: the Launcher says it after a Play. Every detail of
-the game's program this needs is in rusemod.crashplaces, the one file of the apps allowed them (tools/check_public.py).
+THE CRASHES WE KNOW, TOLD TO THE PLAYER (the owner's item 25, 2026-11-13: his two answers, whole, are in
+rusemod.crashplaces; they begin "It should tell them the unit that it was making when it crashed." and "For 25, they
+should also be told why that unit made the game crash."): a game crash at a place rusemod.crashplaces knows gets its
+plain reason (read_dump's "reason"), and under version 4 the unit the game was making (read_dump's "unit":
+crashplaces.unit_number), named from the crashed copy's own data as its card says (unit_named). Neither the reason
+nor the name is ever sent. GameWatch keeps the notice for the game it watched, before anything of Bug Watch's own is
+written (a record that can't be written never costs the player it), and drops one never taken when the next game
+starts; the window's bugwatch_crash hands it to the page once: the Launcher says it after a Play, or when its page
+opens again. Every detail of the game's program this needs is in rusemod.crashplaces, the one file of the apps
+allowed them (tools/check_public.py).
 
 Checked our_tools.json: crash_site.py reads a whole crash report for our own research and is private; this module
 reads only the exception record, the module list and the crashed thread's stack of the game's crash report (and, at
@@ -196,8 +199,10 @@ def status(home) -> dict:
             "code": player["id"][:8] if _good_id(player.get("id")) else ""}
 
 
-# --- what version 4 of the agreement added (the owner, 2026-11-13: "sure", to its items: the unit at a model crash
-# and what a player's own mod holds; the map of a script error with it) ---------------------------------------------
+# --- what version 4 of the agreement added (the owner, 2026-11-13: "sure", to "What version 4 of the agreement adds:
+# the unit at a model crash, the game mode, and what a player's own mod holds"; the map of a script error with it).
+# The game mode was taken out of version 4's words afterwards (item 26, left to us: nothing can read the mode from the
+# game's crash report), so nothing here reads or sends it -------------------------------------------------------
 AGREEMENT_V4 = 4  # the agreement's version (rusemod.guard.TERMS_VERSION) from which the fields below may go
 # What a player's own mods hold, by kind: for each kind, how many of the player's own mods hold it (never a name, a
 # word, a path or a file; own_holds). "folder" and "rmod": how many are of each format.
@@ -914,11 +919,14 @@ def crash_dumps_since(since: float, local: str | None = None) -> list[Path]:
     for pattern in GAME_DUMPS:
         for p in Path(local).glob(pattern):
             try:
-                if p.stat().st_mtime >= since:
-                    found.append(p)
+                when = p.stat().st_mtime
             except OSError:
                 continue
-    return sorted(found, key=lambda p: p.stat().st_mtime)
+            if when >= since:
+                found.append((when, str(p), p))
+    # (in the order they were written, by the time read once: a report gone meanwhile must not stop the watch before
+    # the player is told: GameWatch)
+    return [p for _when, _name, p in sorted(found)]
 
 
 def _returns_to(exe):
@@ -1027,8 +1035,9 @@ def read_dump(path, exe=None, install=None, unit=False) -> dict | None:
     script guards adds 1 when it steps in, rusemod.scriptguards) and, with the game's install (`install`) given, "map":
     the map its text names, the game's own by its name, a mod's as OWN_MAP (map_of; sent only under version 4 of the
     agreement: Watch.game_crash). At one of the crashes we know (rusemod.crashplaces, for the game build its table is
-    for), "reason": its plain reason's key; and with `unit` (asked only under version 4 of the agreement:
-    GameWatch) and `exe`, "unit": the number of the unit the game was making, when the report kept it
+    for, its chain and the rest of the looked-at stack holding what that place needs: a place that needs them gets
+    none without `exe`), "reason": its plain reason's key; and with `unit` (asked only under version 4 of the
+    agreement: GameWatch) and `exe`, "unit": the number of the unit the game was making, when the report kept it
     (crashplaces.unit_number). Neither goes out as it is (Watch.game_crash, unit_sent). None if it can't be read. The
     dump never leaves the PC (the plan, §2)."""
     try:
@@ -1038,6 +1047,7 @@ def read_dump(path, exe=None, install=None, unit=False) -> dict | None:
     if data[:4] != b"MDMP":
         return None
     access, chain, at_offsets, words, builds, reason, number = None, [], [], [], {}, None, None
+    returns = []  # every place in RUSE.exe the looked-at stack returns to, nearest first (a crash we know: crashplaces)
     try:
         count, rva = struct.unpack_from("<II", data, 8)
         streams = {}
@@ -1085,16 +1095,17 @@ def read_dump(path, exe=None, install=None, unit=False) -> dict | None:
                 look = stack[first:first + STACK_LOOK]
                 words = [w for (w,) in struct.iter_unpack("<Q", look[:len(look) // 8 * 8])]
                 for word in words:
+                    if not base <= word < base + size or not after_call(word - base):
+                        continue
+                    returns.append(word - base)
                     place = f"RUSE.exe+0x{word - base:x}"
-                    if base <= word < base + size and place not in chain and after_call(word - base):
+                    if len(chain) < CHAIN_MOST and place not in chain:   # (what a report sends: the nearest 16)
                         chain.append(place)
                         at_offsets.append(word - base)
-                        if len(chain) >= CHAIN_MOST:
-                            break
                 break
         if game is not None and game[0] <= address < game[0] + game[1]:  # a crash of the game itself: one we know?
             from . import crashplaces
-            reason = crashplaces.reason(builds.get(game), address - game[0], at_offsets)
+            reason = crashplaces.reason(builds.get(game), address - game[0], at_offsets, returns)
             if reason is not None and unit and after_call is not None and words:
                 try:  # (a memory list that can't be read costs the unit only, never the crash's report)
                     number = crashplaces.unit_number(builds.get(game), game[0], words, _kept_memory(data, streams),
@@ -1174,7 +1185,9 @@ QUICK_CLOSE = 60.0  # seconds: a game started from a modded copy that closed soo
 class GameWatch(threading.Thread):
     """Beside the game the apps started (rusemod.play.Starter): when it closes, the minutes it ran with its mods, and
     any crash report it left since it started; at one of the crashes we know, the notice for the player (crash_notice:
-    the plain reason, and under version 4 the unit the game was making, named as its card says)."""
+    the plain reason, and under version 4 the unit the game was making, named as its card says). The notice is kept
+    first, before Bug Watch's own records, and each record that can't be written (a full disk, a folder held) costs
+    only itself; a notice of an earlier game the window never took goes when this game starts."""
 
     def __init__(self, watch: Watch, process, listed: list[str], own: int, sleep=time.sleep, clock=time.time,
                  local: str | None = None, exe=None, folders=None, game=None):
@@ -1186,8 +1199,10 @@ class GameWatch(threading.Thread):
         self.exe = exe  # the copy's program file, for a crash's chain and unit (read_dump); its folder is the copy
 
     def start(self) -> None:
+        global _notice
         with _notice_lock:  # (the window waits for a notice while a game is watched: crash_notice)
             _watching.add(self)
+            _notice = None  # an earlier game's notice the window never took: never said while this game runs
         try:
             super().start()
         except RuntimeError:
@@ -1207,22 +1222,33 @@ class GameWatch(threading.Thread):
             self.sleep(5)
         ran = self.clock() - self.started
         v4 = allows_v4(self.watch.home)
-        holds = own_holds(self.folders) if self.own and self.folders and v4 else None
-        self.watch.played(ran / 60.0, self.listed, self.own, holds)
-        crashed = False
+        crashes = []
         for dump in crash_dumps_since(self.started, self.local):
             found = read_dump(dump, self.exe, install=self.game, unit=v4)  # the unit only under version 4
-            if found:
-                crashed = True
-                if isinstance(found.get("unit"), int) and self.exe is not None:
-                    named = unit_named(found["unit"], Path(self.exe).parent, self.game, self.watch.language())
-                    if named is not None:
-                        found["unit_name"], found["unit_added"] = named["name"], named["added"]
-                self.watch.game_crash(found, self.listed, self.own, holds=holds)
-                if found.get("reason"):
-                    _tell(found)
-        if ran < QUICK_CLOSE and not crashed:  # the game didn't get going, or was quit at once (2026-11-10)
-            self.watch.count("messages", "game:closed-under-1-min")
+            if not found:
+                continue
+            if isinstance(found.get("unit"), int) and self.exe is not None:
+                named = unit_named(found["unit"], Path(self.exe).parent, self.game, self.watch.language())
+                if named is not None:
+                    found["unit_name"], found["unit_added"] = named["name"], named["added"]
+            if found.get("reason"):
+                _tell(found)  # the player first: before any of Bug Watch's own records, which can fail
+            crashes.append(found)
+        holds = own_holds(self.folders) if self.own and self.folders and v4 else None
+        _record(self.watch.played, ran / 60.0, self.listed, self.own, holds)
+        for found in crashes:
+            _record(self.watch.game_crash, found, self.listed, self.own, holds=holds)
+        if ran < QUICK_CLOSE and not crashes:  # the game didn't get going, or was quit at once (2026-11-10)
+            _record(self.watch.count, "messages", "game:closed-under-1-min")
+
+
+def _record(write, *args, **kwargs) -> None:
+    """One of Bug Watch's own records of a watched game; one that can't be written (a full disk, a folder another
+    program holds) costs only itself, never the next one or the player's notice (GameWatch)."""
+    try:
+        write(*args, **kwargs)
+    except OSError:
+        pass
 
 
 # --- the crashes we know, told to the player (the owner's item 25) ------------------------------------------------
@@ -1277,8 +1303,9 @@ def _units_in(pack) -> dict[int, list]:
     from .edat import Edat
     from .patch import Num
     from . import unitcheck
-    with Edat.open(str(pack)) as arc:   # (closed at once: a later build must be able to replace the copy's file)
-        model = load_pack(arc, None)
+    # read whole first (a few MB) and the file let go at once: the copy's own file is never held while its units are
+    # read (2 seconds or more), so a build of that copy just after the game closed can set it aside as usual
+    model = load_pack(Edat(Path(pack).read_bytes()), None)
     out: dict[int, list] = {}
     for name, obj in model.base.objects.items():
         v = obj.props.get(unitcheck.ID) if unitcheck.is_unit(obj) else None

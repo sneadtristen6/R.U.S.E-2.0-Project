@@ -1540,22 +1540,34 @@ async function play() {
   tick();
 }
 
-// --- the game's crash, told (the owner's item 25: "if their unit was crashing the game, they should be told that",
-// and why). Bug Watch watches the game a Play started (rusemod.bugwatch.GameWatch); at a crash we know
+// --- the game's crash, told (the owner's item 25: "... if their unit was crashing the game, they should be told
+// that." and "For 25, they should also be told why that unit made the game crash. ..."; his words whole are in
+// rusemod.crashplaces). Bug Watch watches the game a Play started (rusemod.bugwatch.GameWatch); at a crash we know
 // (rusemod.crashplaces) api.bugwatch_crash hands over its notice once: the plain reason and, when the crash report kept
-// it, the unit the game was making, by its name as its card says. Asked again every few seconds while the game is
-// watched; nothing when Bug Watch is off (no game is watched then) ---
+// it, the unit the game was making, by its name as its card says. Asked a few seconds after a Play and when the page
+// opens (a page opened again, as a browser tab reloaded, still tells the game it started), then again every few
+// seconds while the game is watched, and again after a call that failed; nothing when Bug Watch is off (no game is
+// watched then). A notice the page never took is dropped when the next game starts (GameWatch) ---
 let crashWatch = null;
+const CRASH_TRIES = 5;   // calls in a row that may fail before the page stops asking
 
-function watchCrash() {
+function watchCrash(first = 3000) {
   clearTimeout(crashWatch);
+  let failed = 0;
   const tick = async () => {
     let seen;
-    try { seen = await api().bugwatch_crash(); } catch (err) { return; }  // an older app: nothing to tell
+    try {
+      seen = await api().bugwatch_crash();
+      failed = 0;
+    } catch (err) {
+      failed += 1;
+      if (failed < CRASH_TRIES) crashWatch = setTimeout(tick, 3000);
+      return;
+    }
     if (seen && seen.notice) { setMessage(crashText(seen.notice), "bad"); return; }
     if (seen && seen.watching) crashWatch = setTimeout(tick, 3000);
   };
-  crashWatch = setTimeout(tick, 3000);
+  crashWatch = setTimeout(tick, first);
 }
 
 // One sentence: "The game crashed while making the unit “Horse Squad”." and why, in the player's language
@@ -1802,6 +1814,7 @@ async function start() {
   try { state.fairOn = (await api().fair_play_on()).on; } catch { state.fairOn = false; }  // (an older launcher)
   await setLanguage(state.lang);
   await refresh();
+  watchCrash(0);  // a game this app started may be watched still, or have just stopped at a crash we know
   // the first screen is drawn: the start-up log (rusemod.startlog) notes it, for the troubleshooter's report
   Promise.resolve().then(() => api().start_mark("ready")).catch(() => {});  // an older back end: no log
   checkUpdate();

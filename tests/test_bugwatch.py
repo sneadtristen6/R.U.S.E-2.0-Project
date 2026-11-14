@@ -625,23 +625,24 @@ class VersionFour(BugWatchTest):
 
 
 class KnownCrashes(BugWatchTest):
-    """Item 25 (the owner, 2026-11-13: "if their unit was crashing the game, they should be told that" and "they
-    should also be told why that unit made the game crash"): a crash at a place rusemod.crashplaces knows gets its
-    plain reason, and under version 4 of the agreement the unit the game was making, read from the crash report the
-    way the held reports keep it (the creating step's caller holds the unit's description); the unit goes out only as
-    version 4 says ("one of the game's own units by its number; a unit a mod added only as "a mod's unit""), the
-    reason and the unit's name never. Made-up reports and program files only: every number of the program is the
-    table's own (crashplaces), none is written here."""
+    """Item 25 (the owner, 2026-11-13, his words whole in rusemod.crashplaces: "... if their unit was crashing the
+    game, they should be told that." and "For 25, they should also be told why that unit made the game crash. ..."):
+    a crash at a place rusemod.crashplaces knows gets its
+    plain reason, and under version 4 of the agreement the unit the game was making, read from the crash report as
+    crashplaces.unit_number reads it; the unit goes out only as version 4 says ("one of the game's own units by its
+    number; a unit a mod added only as "a mod's unit""), the reason and the unit's name never. Made-up reports and
+    program files only, laid out by the table's own names (crashplaces): no number or detail of the game's program is
+    written here."""
 
     BASE = Crashes.BASE
-    UNIT, OTHER = 0x16145E50, 0x26145E50   # where the made-up reports keep units' descriptions
+    UNIT, OTHER = 0x10000400, 0x20000400   # where the made-up reports keep units' descriptions (made up)
 
     def setUp(self):
         super().setUp()
         from rusemod import crashplaces
         self.places = crashplaces
         self.made = next(at for at, (key, _needs) in crashplaces.PLACES.items() if key == "made")
-        self.create = crashplaces.CREATING[0] + 0x40    # a place right after a call in the unit-creation step
+        self.create = crashplaces.CREATING[0] + 0x40    # in the table's CREATING range (a call right before it)
         bugwatch.turn_on(self.home, "Nick")
         bugwatch._notice = None
 
@@ -672,8 +673,8 @@ class KnownCrashes(BugWatchTest):
         return path
 
     def description(self, number, at=None, kind=None):
-        """The memory a report keeps round a unit's description (from 256 bytes before it): its kind's table first,
-        its number where the game keeps it."""
+        """A made-up unit description as crashplaces.unit_number reads one (one of its UNIT_CLASSES first, the
+        number at UNIT_NUMBER), as a piece of memory a made-up report keeps (from 256 bytes before it)."""
         blob = bytearray(0x400)
         kind = min(self.places.UNIT_CLASSES) if kind is None else kind
         struct.pack_into("<Q", blob, 0x100, self.BASE + kind)
@@ -693,10 +694,10 @@ class KnownCrashes(BugWatchTest):
         self.assertEqual((found["reason"], found["unit"]), ("made", 4059))
         asked = bugwatch.read_dump(p, program)                    # the unit only when asked (version 4: GameWatch)
         self.assertEqual((asked["reason"], "unit" in asked), ("made", False))
-        alone = bugwatch.read_dump(p, unit=True)                  # no copy's program: no chain, so no unit; the place
-        self.assertEqual((alone["reason"], "unit" in alone), ("made", False))   # alone still says why
+        alone = bugwatch.read_dump(p, unit=True)                  # no copy's program: no chain or stack to tie the
+        self.assertEqual((alone.get("reason"), "unit" in alone), (None, False))   # place to a unit: nothing said
         build = self.places.BUILD
-        big = (build[0] + 0x1000,) + build[1:]                    # a copy with the big-packs game patch: a page longer
+        big = (build[0] + 0x1000,) + build[1:]                    # the table's other build (BUILDS)
         found = bugwatch.read_dump(self.report([0, self.BASE + self.create, self.UNIT], [self.description(4059)],
                                                build=big), program, unit=True)
         self.assertEqual((found["reason"], found["unit"]), ("made", 4059))
@@ -715,27 +716,80 @@ class KnownCrashes(BugWatchTest):
         two = bugwatch.read_dump(self.report(making + [self.OTHER], one + [self.description(4404, self.OTHER)]),
                                  program, unit=True)              # two different units: none said
         self.assertEqual((two["reason"], two.get("unit")), ("made", None))
-        for words in ([self.UNIT, self.BASE + self.create, 0],   # only below the creating step's return (deeper)
-                      [0, self.UNIT]):                           # no return into the creating step at all
+        for words in ([self.UNIT, self.BASE + self.create, 0],   # only below the CREATING return (nearer)
+                      [0, self.UNIT]):                           # no CREATING return at all
             self.assertIsNone(bugwatch.read_dump(self.report(words, one), program, unit=True).get("unit"))
-        not_a_unit = [self.description(4059, kind=0x1234)]       # something else than a unit's description there
+        not_a_unit = [self.description(4059, kind=0x1234)]       # not one of UNIT_CLASSES there
         self.assertIsNone(bugwatch.read_dump(self.report(making, not_a_unit), program, unit=True).get("unit"))
-        nested = [0, self.BASE + self.create, self.UNIT, self.BASE + self.create, self.OTHER]  # an outer creation's
+        nested = [0, self.BASE + self.create, self.UNIT, self.BASE + self.create, self.OTHER]  # beyond the next
         found = bugwatch.read_dump(self.report(nested, one + [self.description(4404, self.OTHER)]), program, unit=True)
-        self.assertEqual(found["unit"], 4059)                     # unit beyond the next return isn't read
+        self.assertEqual(found["unit"], 4059)                     # CREATING return: not read
         with mock.patch.object(bugwatch, "_kept_memory", side_effect=struct.error("cut short")):
             found = bugwatch.read_dump(self.report(making, one), program, unit=True)
         self.assertEqual((found["reason"], found.get("unit")), ("made", None))   # the report itself is still read
 
-    def test_the_name_search_place_counts_only_with_a_turret_in_its_chain(self):
-        search = next(at for at, (_key, needs) in self.places.PLACES.items() if needs)
-        part, turret = self.places.PART_BY_NAME[0] + 0x40, self.places.TWO_AXIS[0][0] + 0x40
-        program = self.program([part, turret])
-        both = [self.BASE + part, self.BASE + turret]
-        self.assertEqual(bugwatch.read_dump(self.report(both, place=search), program)["reason"], "turret")
-        for words in (both[:1], both[1:], []):
-            self.assertNotIn("reason", bugwatch.read_dump(self.report(words, place=search), program))
-        self.assertNotIn("reason", bugwatch.read_dump(self.report(both, place=search)))  # no program, no chain
+    ELSEWHERE = 0x40   # a made-up place in none of the table's ranges (the made-up program has a call right before it)
+
+    def said(self, place, returns, program) -> str | None:
+        """The reason read_dump gives a made-up crash at `place` whose stack returns to `returns` (offsets)."""
+        found = bugwatch.read_dump(self.report([self.BASE + r for r in returns], place=place), program)
+        return found.get("reason")
+
+    def test_a_place_is_told_only_with_what_ties_it_to_its_reason(self):
+        """Review defect 1 (2026-11-13): the part place is told only with the table's TWO_AXIS in its chain, the made
+        place only with its CREATING in the stack (crashplaces.PLACES, IN_STACK); the same crash reached from
+        elsewhere gets no reason."""
+        part = next(at for at, (key, _needs) in self.places.PLACES.items() if key == "part")
+        turret = self.places.TWO_AXIS[1][0] + 0x40
+        program = self.program([turret, self.create, self.ELSEWHERE])
+        self.assertIsNone(self.said(part, [self.ELSEWHERE], program))       # reached from elsewhere: nothing
+        self.assertEqual(self.said(part, [turret], program), "part")        # TWO_AXIS in the chain
+        self.assertIsNone(self.said(self.made, [self.ELSEWHERE], program))  # no CREATING in the stack
+        self.assertEqual(self.said(self.made, [self.ELSEWHERE, self.create], program), "made")
+
+    def test_every_place_needs_all_that_ties_it_and_nothing_else(self):
+        """The same for every place of the table (PLACES' chain groups and IN_STACK's): all it needs, told; any one
+        of it missing, or a crash there reached from elsewhere, not told; a place that needs nothing, always told."""
+        for place, (key, needs) in self.places.PLACES.items():
+            groups = list(needs) + list(self.places.IN_STACK.get(place, ()))
+            ties = [group[0][0] + 0x40 for group in groups]        # one place in each group
+            program = self.program(ties + [self.ELSEWHERE])
+            self.assertEqual(self.said(place, ties, program), key, hex(place))
+            for i in range(len(ties)):
+                self.assertIsNone(self.said(place, ties[:i] + ties[i + 1:], program), hex(place))
+            if groups:
+                self.assertIsNone(self.said(place, [self.ELSEWHERE], program), hex(place))
+            self.assertEqual(bugwatch.read_dump(self.report([self.BASE + t for t in ties], place=place)).get("reason"),
+                             None if groups else key, hex(place))  # no copy's program: no chain to tie it with
+
+    def test_what_ties_a_place_is_found_further_up_than_the_chain_a_report_sends(self):
+        """The table's CREATING can be further up the stack than the 16 places a report sends (two of the held
+        reports): read_dump looks for it in the whole stack it reads, and the chain sent is still the nearest 16."""
+        nearer = [0x40 * (i + 1) for i in range(bugwatch.CHAIN_MOST)]   # 16 made-up places before it
+        program = self.program(nearer + [self.create])
+        found = bugwatch.read_dump(self.report([self.BASE + n for n in nearer + [self.create]], place=self.made),
+                                   program)
+        self.assertEqual(found["reason"], "made")
+        self.assertEqual([c.rsplit("+", 1)[1] for c in found["chain"]], [f"0x{n:x}" for n in nearer])
+
+    def test_a_reason_for_a_place_nothing_ties_to_a_unit_doesnt_say_a_unit(self):
+        """The setup and mesh places: the table ties them to no unit (no chain or stack they need), so their reasons
+        say "a model", in every language, never a unit's (each language's word for unit). The made place, tied to a
+        unit being created, says the unit's model (the control)."""
+        import tomllib
+        unit = {"us": "unit", "fr": "unité", "ger": "einheit", "ita": "unità", "spa": "unidad", "pol": "jednost",
+                "ru": "юнит", "cz": "jednotk", "jpn": "ユニット", "sc": "单位", "fa": "یگان"}
+        words = tomllib.loads((Path(__file__).resolve().parents[1] / "src" / "ruse_launcher" / "words.toml")
+                              .read_text(encoding="utf-8"))
+        in_stack = getattr(self.places, "IN_STACK", {})
+        for key in ("setup", "mesh"):
+            places = [p for p, (k, needs) in self.places.PLACES.items() if k == key]
+            self.assertTrue(places and not any(self.places.PLACES[p][1] or in_stack.get(p) for p in places),
+                            key)                                  # (nothing ties them)
+            for lang, text in words[f"crash_why_{key}"].items():
+                self.assertNotIn(unit[lang], text.lower(), f"{key} {lang}")
+        for lang, text in words["crash_why_made"].items():               # (the control: a unit being created)
+            self.assertIn(unit[lang], text.lower(), lang)
 
     def test_every_reason_has_its_words_in_every_language(self):
         import re
@@ -836,6 +890,193 @@ class KnownCrashes(BugWatchTest):
             closed.set()
             g.join(10)
         self.assertEqual(Api().bugwatch_crash(), {"watching": False, "notice": None})
+
+    def finished_game(self, report: bytes, program, named, w=None):
+        """A game the app started that has closed, leaving `report`, watched to the end here (GameWatch.run; the unit
+        named as `named` says): its Watch. The window isn't asked: the notice stays kept, as when no page asked."""
+        local = self.home / "local"
+        dump = local / "Temp" / "CrashRpt_x" / "report.dmp"
+        dump.parent.mkdir(parents=True, exist_ok=True)
+        dump.write_bytes(report)
+        os.utime(dump, (1500, 1500))
+
+        class Closed:
+            def poll(self):
+                return 0
+
+        times = iter([1000.0, 1600.0])
+        w = w or self.watch()
+        g = bugwatch.GameWatch(w, Closed(), [], 1, sleep=lambda _s: None, clock=lambda: next(times), local=str(local),
+                               exe=program, game=self.home / "game")
+        with mock.patch.object(w, "send_waiting"), mock.patch.object(bugwatch, "unit_named", return_value=named):
+            g.run()
+        return w
+
+    def test_a_notice_the_window_never_took_goes_when_the_next_game_starts(self):
+        """Review defect 3 (2026-11-13): game 1 stops at a crash we know while no page asks (a browser tab reloaded or
+        closed, a call that failed); the player plays again: while game 2 runs, game 1's notice is never said. The
+        control: game 2's own crash we know is told."""
+        import threading
+        program = self.program([self.create])
+        report = self.report([0, self.BASE + self.create, self.UNIT], [self.description(4059)]).read_bytes()
+        self.accept(4)
+        w = self.finished_game(report, program, {"name": "Horse Squad", "added": True})
+        self.assertIsNotNone(bugwatch._notice)                    # game 1's, kept: nobody took it
+        running = threading.Event()
+
+        class Running:
+            def poll(self):
+                return 0 if running.is_set() else None
+
+        local = self.home / "local"
+        g2 = bugwatch.GameWatch(w, Running(), [], 1, sleep=lambda _s: running.wait(0.01), local=str(local),
+                                exe=program, game=self.home / "game")
+        with mock.patch.object(w, "send_waiting"), mock.patch.object(bugwatch, "unit_named",
+                                                                     return_value={"name": "Tiger", "added": False}):
+            g2.start()
+            try:
+                self.assertEqual(bugwatch.crash_notice(), {"watching": True, "notice": None})   # game 2 running
+                dump = local / "Temp" / "CrashRpt_y" / "report.dmp"   # then game 2 stops at a crash we know too
+                dump.parent.mkdir(parents=True, exist_ok=True)
+                dump.write_bytes(report)
+                os.utime(dump, (g2.started + 1, g2.started + 1))
+            finally:
+                running.set()
+                g2.join(10)
+        self.assertEqual(bugwatch.crash_notice(), {"watching": False,
+                                                   "notice": {"why": "made", "unit": "Tiger", "added": False}})
+
+    def test_the_player_is_told_when_bug_watch_cant_write_its_records(self):
+        """Review defect 4 (2026-11-13): Bug Watch's outbox can't be written (a full disk, a folder another program
+        holds): the player is told all the same, and its other records are kept. And when a record before the crash
+        report can't be written, the notice and the crash report still are."""
+        program = self.program([self.create])
+        report = self.report([0, self.BASE + self.create, self.UNIT], [self.description(4059)]).read_bytes()
+        self.accept(4)
+        horse = {"name": "Horse Squad", "added": True}
+        with mock.patch.object(bugwatch.Watch, "_write_out", side_effect=OSError("disk full")):
+            w = self.finished_game(report, program, horse)        # (no error out of the watch)
+        self.assertEqual(bugwatch.crash_notice()["notice"], {"why": "made", "unit": "Horse Squad", "added": True})
+        self.assertEqual(w.days[bugwatch._today()]["played"]["total"], 10)   # the minutes played: kept
+        with mock.patch.object(bugwatch.Watch, "played", side_effect=OSError("held")):
+            w = self.finished_game(report, program, horse)
+        self.assertEqual(bugwatch.crash_notice()["notice"]["unit"], "Horse Squad")
+        self.assertEqual(len(list(w.outbox.glob("crash-*.json"))), 1)        # the crash report: written
+
+    def test_a_crash_report_gone_while_it_is_listed_doesnt_stop_the_watch(self):
+        """The same kind: a crash report gone between two looks (taken away meanwhile) costs only itself; the others
+        are still listed (in the order they were written), and the watch goes on to tell the player."""
+        local = self.home / "local"
+        gone, kept = (local / "Temp" / "CrashRpt_a" / "report.dmp", local / "Temp" / "CrashRpt_b" / "report.dmp")
+        for i, p in enumerate((gone, kept)):
+            p.parent.mkdir(parents=True, exist_ok=True)
+            p.write_bytes(b"MDMP")
+            os.utime(p, (1500 + i, 1500 + i))
+        real, looks = Path.stat, {}
+
+        def stat(path, *args, **kwargs):                          # taken away after its first look
+            looks[str(path)] = looks.get(str(path), 0) + 1
+            if str(path) == str(gone) and looks[str(path)] > 1:
+                raise FileNotFoundError(str(path))
+            return real(path, *args, **kwargs)
+        with mock.patch.object(Path, "stat", stat):
+            self.assertEqual(bugwatch.crash_dumps_since(1000, str(local)), [gone, kept])
+        self.assertEqual(bugwatch.crash_dumps_since(1501, str(local)), [kept])   # (the control: by its time)
+
+    @unittest.skipUnless(os.name == "nt", "Windows refuses to replace a file that is held")
+    def test_a_copys_unit_data_is_let_go_before_its_units_are_read(self):
+        """Review suspicion 4 (2026-11-13): naming a unit reads the crashed copy's unit data for a few seconds after
+        the game closed; all that time the file must not be held, so a build of that copy just then can put a new one
+        in its place (Windows refuses that for a file held open or mapped)."""
+        from fixtures import make_edat
+        pack = self.home / "copy" / bugwatch.UNIT_DATA
+        pack.parent.mkdir(parents=True, exist_ok=True)
+        pack.write_bytes(make_edat([("file", "x.bin", b"x")]))
+        newer, replaced = self.home / "newer.dat", []
+
+        def load_pack(_arc, _cache):                              # while its units are read: a build's new file
+            newer.write_bytes(b"newer")
+            try:
+                os.replace(newer, pack)
+                replaced.append("replaced")
+            except OSError as exc:
+                replaced.append(type(exc).__name__)
+            return mock.Mock(base=mock.Mock(objects={}))
+        with mock.patch("rusemod.build.load_pack", load_pack):
+            self.assertEqual(bugwatch._units_in(pack), {})
+        self.assertEqual(replaced, ["replaced"])
+        self.assertEqual(pack.read_bytes(), b"newer")
+
+    PAGE_IN_NODE = r"""
+const fs = require("fs"), vm = require("vm");
+const [appFile, casesFile] = process.argv.slice(-2);
+const anything = new Proxy(function () {}, { get: (t, k) => (k === Symbol.toPrimitive ? () => "" : anything),
+  apply: () => anything, set: () => true });
+(async () => {
+  const out = [];
+  for (const c of JSON.parse(fs.readFileSync(casesFile, "utf8"))) {
+    const timers = [], said = [], answers = c.answers.slice();
+    let asks = 0;
+    const ctx = vm.createContext({ console, document: anything, localStorage: anything, location: { search: "" },
+      window: { addEventListener() {} }, URLSearchParams,
+      setTimeout: (fn, ms) => { timers.push({ fn, ms }); return timers.length; }, clearTimeout: () => {} });
+    vm.runInContext(fs.readFileSync(appFile, "utf8"), ctx, { filename: "app.js" });
+    ctx.window.pywebview = { api: { bugwatch_crash: async () => {
+      asks += 1;
+      const a = answers.shift();
+      if (a === undefined || a === "throw") throw new Error("the window was busy");
+      return a;
+    } } };
+    Object.assign(ctx, { WORDS: c.words, SAID: said });
+    vm.runInContext("state.words = WORDS; setMessage = (text, kind) => SAID.push([text, kind]);", ctx);
+    vm.runInContext(c.call, ctx);
+    const delays = [];
+    for (let i = 0; i < 40 && timers.length; i++) {
+      const { fn, ms } = timers.shift();
+      delays.push(ms);
+      await fn();
+    }
+    out.push({ asks, delays, said });
+  }
+  process.stdout.write(JSON.stringify(out));
+})();
+"""
+
+    def test_the_page_asks_when_it_opens_and_again_after_a_call_that_failed(self):
+        """Review defect 3, the page's side: the Launcher's own ui/app.js (as it is) run in Node, its calls stood in.
+        Its start asks at once (a page opened again still tells the game it started: start() calls watchCrash(0)); a
+        call that fails is asked again, up to a few in a row, and the notice then said; after a Play it asks a few
+        seconds on, and stops when no game is watched. Skipped when no Node is found."""
+        import re
+        import shutil
+        import subprocess
+        import tomllib
+        node = os.environ.get("RUSE_NODE") or shutil.which("node") or next(
+            (str(p) for p in sorted(Path("D:/RUSE-2.0/tools").glob("node-v*/node.exe"))[::-1]), None)
+        if not node or not Path(node).is_file():
+            self.skipTest("no Node")
+        ui = Path(__file__).resolve().parents[1] / "src" / "ruse_launcher" / "ui"
+        app = (ui / "app.js").read_text(encoding="utf-8")
+        words = {k: v["us"] for k, v in tomllib.loads((ui.parent / "words.toml").read_text(encoding="utf-8")).items()
+                 if k.startswith("crash_")}
+        notice = {"why": "made", "unit": "Horse Squad", "added": True}
+        cases = [{"call": "watchCrash(0)", "words": words,              # two calls fail, then the game is told
+                  "answers": ["throw", "throw", {"watching": True, "notice": None},
+                              {"watching": False, "notice": notice}]},
+                 {"call": "watchCrash(0)", "words": words, "answers": ["throw"] * 9},   # failing on: it stops
+                 {"call": "watchCrash()", "words": words, "answers": [{"watching": False, "notice": None}]}]
+        (self.home / "cases.json").write_text(json.dumps(cases), encoding="utf-8")
+        ran = subprocess.run([node, "-e", self.PAGE_IN_NODE, "--", str(ui / "app.js"), str(self.home / "cases.json")],
+                             capture_output=True, text=True, encoding="utf-8", timeout=120)
+        self.assertEqual(ran.returncode, 0, ran.stderr[-2000:])
+        told, failing, after_play = json.loads(ran.stdout)
+        said = words["crash_mod_unit"].replace("{unit}", "Horse Squad").replace("{why}", words["crash_why_made"])
+        self.assertEqual((told["asks"], told["delays"][0], told["said"]), (4, 0, [[said, "bad"]]))
+        tries = re.search(r"const CRASH_TRIES = (\d+)", app)
+        self.assertEqual((failing["asks"], failing["said"]), (int(tries.group(1)) if tries else None, []))
+        self.assertEqual(after_play, {"asks": 1, "delays": [3000], "said": []})   # (the control: after a Play)
+        start = app[app.index("async function start()"):]
+        self.assertTrue("watchCrash(0)" in start[:start.index("\n}\n")], "start() doesn't ask")   # when it opens
 
     def test_a_units_name_and_whether_a_mod_added_it(self):
         copy, game = self.home / "copy", self.home / "game"

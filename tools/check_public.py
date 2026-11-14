@@ -6,7 +6,8 @@ tracked file is something that belongs only there:
   and tools that go through its data (`listings/`, `docs/FORMATS.md`, ..., every tool but the four named below);
 - game files or data taken out of the game (packs, NDF, texts, textures, meshes, scenery, scripts; `.rmod` mods);
 - details of the game's program: code addresses (`FUN_14xxxxxx`, `0x14xxxxxxx`) or disassembly-tool notes; one file
-  alone may hold them, on the owner's word: the table of the game crashes we know (PROGRAM_TABLE).
+  alone holds the few its table needs, on the owner's word: the table of the game crashes we know (PROGRAM_TABLE),
+  which may say "in the game's program" and is checked for everything else as any file is.
 
     py -3 tools/check_public.py            # the files git tracks here
     py -3 tools/check_public.py FILE ...   # just these (a pre-commit check)
@@ -96,16 +97,22 @@ WORDING_SPOTS = {
 # making when it crashed: (a) put game program details in the public app, which your rules forbid; (b) keep them on
 # our private server and have the app fetch them; (c) take the unit out of the wording", answered: "It should tell
 # them the unit that it was making when it crashed. So while yes, I don't want people knowing how the exact exe code
-# works, if their unit was crashing the game, they should be told that." and "For 25, they should also be told why
-# that unit made the game crash. For 25, I don't care. You can put it in the app." So the table of the game crashes we
-# know (the places, the reasons, how the unit is found) may hold the program's details and the words for them, in
-# this one file only; everything else in it is checked as anywhere, and every other file still is in full.
+# works, if their unit was crashing the game, they should be told that." and later "For 25, they should also be told
+# why that unit made the game crash. For 25, I don't care. You can put it in the app. Like, I thought we've already
+# addressed that we have moved past the point of like certain things like something like that. How is anybody ever
+# going to really go and fucking take it out of the code? Like, that's going to be really difficult." So the table of
+# the game crashes we know (the places, the reasons, how the unit is found) is in the public apps, in this one file
+# only, and the check lets it say where they are, "in the game's program" (PROGRAM_TABLE_WORDS), and nothing more:
+# code addresses, how anything was studied (the owner, 2026-10-02: nothing public may point at it) and every other
+# word the check refuses are refused there as in any other file.
 PROGRAM_TABLE = "src/rusemod/crashplaces.py"
+PROGRAM_TABLE_WORDS = ("in the game's program",)
 
 
 def _without_spots(path: str, text: str) -> str:
-    """The text with the words its file may hold (WORDING_SPOTS) blanked out, the lines kept where they are."""
-    for word in WORDING_SPOTS.get(path, ()):
+    """The text with the words its file may hold (WORDING_SPOTS; the crash table's PROGRAM_TABLE_WORDS) blanked out,
+    the lines kept where they are."""
+    for word in WORDING_SPOTS.get(path, ()) + (PROGRAM_TABLE_WORDS if path == PROGRAM_TABLE else ()):
         text = text.replace(word, " " * len(word))
     return text
 TEXT_LIMIT = 4_000_000
@@ -139,13 +146,11 @@ def problems(paths: list[str], read=lambda p: (ROOT / p).read_bytes()) -> list[s
         if len(data) > TEXT_LIMIT or b"\0" in data[:8192]:
             continue
         text = _without_spots(p, data.decode("utf-8", "replace"))
-        table = p == PROGRAM_TABLE  # the owner's one exception: the program's details may stand there (above)
-        m = PROGRAM.search(text) if not table else None
+        m = PROGRAM.search(text)
         if m:
             out.append(f"{p}: names a place in the game's program ({m.group(0)}); program details stay private")
             continue
-        m = WORDING.search(text) if p not in WORDING_ALLOWED and not table and \
-            not p.startswith(WORDING_ALLOWED_DIRS) else None
+        m = WORDING.search(text) if p not in WORDING_ALLOWED and not p.startswith(WORDING_ALLOWED_DIRS) else None
         if m:
             line = text.count("\n", 0, m.start()) + 1
             out.append(f"{p}:{line}: says what the game's program does or holds ({m.group(0)!r}); public text says "
