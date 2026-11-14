@@ -87,6 +87,21 @@ class TwoModsInOneSet(Player):
         check, j = self.play(launcher, [a, b])
         self.assertTrue(j["state"] == "done" or check["hard"], (check, j.get("message")))
 
+    # U-16 in the Launcher too: Play refused because the set's mods don't build ends with "These mods have errors
+    # (listed above). Nothing was changed." in every language (rusemod.play's BuildError, which rusemod.buildtext
+    # doesn't collect), shown on the set's card (ui/app.js: note j.message)
+    @unittest.expectedFailure
+    def test_a_refused_play_says_why_in_the_players_language(self):
+        a = self.exported("Alpha", lambda: self.call("new_unit", M1, "Super Tank", 40, -1, -1, False, None))
+        b = self.exported("Bravo", lambda: self.call("new_unit", H1, "Super Tank", 60, -1, -1, False, None))
+        launcher = self.launcher()
+        set_id = launcher.new_set("Both", [a, b])["set"]
+        said = {}
+        for lang in ("us", "fr", "ru", "jpn"):
+            launcher.set_pref("lang", lang)
+            said[lang] = wait(launcher, launcher.play(set_id)["job"])["message"]
+        self.assertEqual([lang for lang in said if lang != "us" and said[lang] == said["us"]], [], said["fr"])
+
     def hidden_parent(self, hider_first: bool) -> tuple[dict, dict, str]:
         """Mod A takes M1 out of the menus (the board's take-out: its upgrade M2 made buyable from the start); mod B
         has a copy of M2 (an upgrade of M1). Played together, A loaded first or B."""
