@@ -514,6 +514,115 @@ class WhoMovedIt(UnitGame):
         self.assertEqual(self.unit_notes((both,), "c"), [self.NOTE])
 
 
+def spawning(*classes, hidden=()) -> bytes:
+    """A layout whose listed design items spawn units of `classes` (the last part of the Python class path the game's
+    layouts give a spawn: front.parametres.Classes.Unit_M4_Sherman); `hidden`: spawns not on the list (not loaded)."""
+    every = list(classes) + list(hidden)
+    objects, listed = [], []
+    for k, _cls in enumerate(every):
+        objects.append((0, [(0, val(0x0B, struct.pack("<3f", 1000.0 * k, 500.0, 0.0))), (1, ref(2 * k + 1, 1))]))
+        objects.append((1, [(2, val(0x07, struct.pack("<I", k))), (3, val(0x02, struct.pack("<i", 0)))]))
+        if k < len(classes):
+            listed.append(2 * k)
+    objects.append((2, [(4, val(0x11, struct.pack("<I", len(listed)) + b"".join(ref(i, 0) for i in listed)))]))
+    nd = make_ndf(objects=objects, classes=["TGameDesignItem", "TGameDesignAddOn_Spawn", "TGameDesignItemList"],
+                  props=[("Position", 0), ("AddOn", 0), ("PythonClassName", 1), ("Camp", 1), ("GameDesignItemList", 2)],
+                  strings=[f"front.parametres.Classes.{c}" for c in every], topo=[len(objects) - 1])
+    head = MAGIC + bytes(16) + bytes(2) + struct.pack("<4I", 4, 1, 4, 0)
+    return with_checksum(head + struct.pack("<I", len(nd)) + nd)
+
+
+SPAWN_LAYOUT = BS.join(["test", "map", "alpha", "leveldesign_bh.scenario"])
+
+
+class RmodSpawns(UnitGame):
+    """The review's suspicion 5, of fault 1's kind (an .rmod mod's units with no unit-model check): the units an .rmod
+    mod's layouts spawn get the spawn check our mods' spawns get (spawn_models), alone and beside a folder mod: a German
+    tank spawned on a map whose layout as the game ships it spawns none makes Germany's packs load in every match."""
+    folder_mod = MixedSetUnits.folder_mod
+
+    def setUp(self):
+        super().setUp()
+        self.shipped(spawning("Unit_Jeep"))
+
+    def shipped(self, layout_bytes):
+        (self.game / REV / DATA).write_bytes(make_edat([("file", SPAWN_LAYOUT, layout_bytes)]))
+
+    def spawn_mod(self, layout_bytes, out, *beside):
+        path = self.root / f"{out}.rmod"
+        path.write_text(rmod_text("Spawn Mod", "1.0", {(DATA, SPAWN_LAYOUT.replace(BS, "/")): layout_bytes}),
+                        encoding="utf-8")
+        lines = []
+        result = build_and_write(self.game, [load_mod(path), *beside], out=self.root / out, say=lines.append)
+        return result, lines
+
+    def forced(self, out):
+        """The force bits of the cluster map's loaders in the unit data written to `out`, or None when not written."""
+        from rusemod import unitcheck
+        from rusemod.model import load
+        if not (self.root / out / GLAD).exists():
+            return None
+        written = Edat((self.root / out / GLAD).read_bytes())
+        g, _ = load({self.cluster_map: bytes(written.read(written.find(self.cluster_map)))})
+        return [int(part.props["ForceLoadBitFieldIfSkirmish"].value) for _t, _p, part in unitcheck.loaders(g)]
+
+    def test_an_rmod_mods_layout_spawning_a_german_tank(self):
+        result, lines = self.spawn_mod(spawning("Unit_Jeep", "Unit_Panzer"), "alone")
+        self.assertEqual(result.errors, [], lines)
+        self.assertIn("Spawn Mod: the spawned Panzer use Germany's unit models, which a skirmish loads only when a "
+                      "player has Germany: they now load in every skirmish (3 loaders in 1 cluster maps)",
+                      [f.message for f in result.findings])
+        self.assertEqual(self.forced("alone"), [2] * 3)
+
+    def test_the_same_beside_a_folder_mod(self):
+        result, lines = self.spawn_mod(spawning("Unit_Panzer"), "mixed", self.folder_mod())
+        self.assertEqual(result.errors, [], lines)
+        self.assertIn("Spawn Mod: the spawned Panzer use Germany's unit models, which a skirmish loads only when a "
+                      "player has Germany: they now load in every skirmish (3 loaders in 1 cluster maps)",
+                      [f.message for f in result.findings])
+        self.assertEqual(self.forced("mixed"), [2] * 3)
+
+    def test_said_by_its_name_on_its_card(self):
+        """(as review fault 6 (b) asks of an .rmod mod's units: a player reads the unit by its card's name)"""
+        from test_dic import make_dic
+        from rusemod import loc
+        from rusemod.dic import name_to_key
+        rev = self.game / REV
+        old = Edat((rev / GLAD).read_bytes())
+        members = {e.path: bytes(old.read(e)) for e in old.entries}
+        members["genglad\\patchable\\gfx\\everything.cpp.gladndfbin"] = army_ndf(card=name_to_key("UNI_PZ"))
+        (rev / GLAD).write_bytes(make_edat([("file", m, d) for m, d in sorted(members.items())]))
+        old = Edat((rev / "ZZ_Win.dat").read_bytes())
+        members = {e.path: bytes(old.read(e)) for e in old.entries}
+        members[loc.member("baseunite", "us")] = make_dic([(name_to_key("UNI_PZ"), "PANZER IV")])
+        (rev / "ZZ_Win.dat").write_bytes(make_edat([("file", m, d) for m, d in sorted(members.items())]))
+        result, lines = self.spawn_mod(spawning("Unit_Panzer"), "carded")
+        self.assertEqual(result.errors, [], lines)
+        self.assertIn("Spawn Mod: the spawned PANZER IV use Germany's unit models, which a skirmish loads only when a "
+                      "player has Germany: they now load in every skirmish (3 loaders in 1 cluster maps)",
+                      [f.message for f in result.findings])
+
+    def test_a_layout_that_cant_be_read_is_said(self):
+        result, lines = self.spawn_mod(b"not a layout", "unread")
+        self.assertEqual(result.errors, [], lines)
+        self.assertIn("Spawn Mod: a map layout it changes can't be read, so whether the units it spawns have their "
+                      "models in every match wasn't checked", [f.message for f in result.findings])
+
+    def test_control_a_spawn_not_on_the_list(self):
+        result, lines = self.spawn_mod(spawning("Unit_Jeep", hidden=("Unit_Panzer",)), "hidden")   # (not loaded)
+        self.assertEqual(result.errors, [], lines)
+        self.assertFalse([f.message for f in result.findings if "spawned" in f.message])
+        self.assertIsNone(self.forced("hidden"))
+
+    def test_controls_what_the_games_own_layout_of_that_map_spawns(self):
+        self.shipped(spawning("Unit_Panzer"))   # (the game's layout of that map spawns the tank already)
+        for out, beside in (("own", ()), ("own-mixed", (self.folder_mod(),))):
+            result, lines = self.spawn_mod(spawning("Unit_Panzer", "Unit_Jeep"), out, *beside)
+            self.assertEqual(result.errors, [], lines)
+            self.assertFalse([f.message for f in result.findings if "spawned" in f.message], out)
+            self.assertFalse(any(self.forced(out) or []), out)
+
+
 class WhoIsNamed(MadeUpGame):
     """Review fault 3: a mod whose edits take out or rename only places the mission doesn't lack is not named for it."""
 

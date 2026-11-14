@@ -3345,6 +3345,20 @@ cz = "místa, která mise sledují od začátku, se nepodařilo zkontrolovat ({0
 jpn = "ミッションが開始時から見張る場所を確かめられませんでした（{0}）"
 sc = "无法检查各任务从开始就监视的地点（{0}）"
 fa = "جاهایی که مأموریت‌ها از آغاز زیر نظر دارند بررسی نشد ({0})"
+# build checks, the review's fixes (item 29, suspicion 5): an .rmod mod's map layout that can't be read, so the units
+# it spawns weren't checked (build.rmod_layout_spawns)
+[ec07b2a0cbf]
+us = "{0}: a map layout it changes can't be read, so whether the units it spawns have their models in every match wasn't checked"
+fr = "{0} : une disposition de carte qu'il modifie ne peut pas être lue, donc on n'a pas vérifié si les unités qu'elle fait apparaître ont leurs modèles dans chaque partie"
+ger = "{0}: ein Kartenaufbau, den er ändert, lässt sich nicht lesen, daher wurde nicht geprüft, ob die Einheiten, die er erscheinen lässt, in jedem Spiel ihre Modelle haben"
+ita = "{0}: una disposizione di mappa che modifica non si può leggere, quindi non si è controllato se le unità che fa comparire hanno i loro modelli in ogni partita"
+spa = "{0}: no se puede leer una disposición de mapa que cambia, así que no se comprobó si las unidades que hace aparecer tienen sus modelos en cada partida"
+pol = "{0}: nie da się odczytać układu mapy, który zmienia, więc nie sprawdzono, czy jednostki, które się na nim pojawiają, mają swoje modele w każdej grze"
+ru = "{0}: раскладку карты, которую он меняет, не удаётся прочитать, поэтому не проверено, есть ли у появляющихся на ней юнитов модели в каждом матче"
+cz = "{0}: rozložení mapy, které mění, nelze přečíst, takže se nezkontrolovalo, zda jednotky, které se na něm objevují, mají své modely v každé hře"
+jpn = "{0}：変更するマップの配置を読めないため、そこに出現するユニットがすべての試合でモデルを持つかは確かめていません"
+sc = "{0}：它更改的某个地图布局无法读取，因此没有检查其中生成的单位是否在每场比赛中都有模型"
+fa = "{0}: یک چیدمان نقشه که تغییر می‌دهد خوانده نمی‌شود، پس بررسی نشد که یگان‌هایی که در آن ظاهر می‌شوند در هر بازی مدل‌هایشان را دارند یا نه"
 # build checks, the review's fixes (item 29): an .rmod mod's unit said to a player by its name on its card, with no code
 # names (build.unit_models for rmod_unit_models)
 [ec658f14009]
