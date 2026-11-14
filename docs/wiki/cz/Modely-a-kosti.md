@@ -33,7 +33,7 @@ koly bez animací, takže tahle stránka je hlavně o vojácích, koních a stvo
 | | Na kostech vojáka ze hry | S vlastními kostmi |
 |---|---|---|
 | **Co to je** | Voják změněný v Blenderu, nebo tvůj model nasazený na kosti vojáka | Kůň, kůň s jezdcem, jakékoli stvoření, udělané v Blenderu na tvých kostech |
-| **Jak ho udělat** | **Otevřít v Blenderu** na kartě družstva: každý voják se otevře se svými kostmi (viz [[Otevřít v Blenderu|Otevřít-v-Blenderu]]) | V Blenderu, pak **Importovat model…** na kartě družstva (viz [[Import modelu|Import-modelu]]) |
+| **Jak ho udělat** | **Otevřít v Blenderu** na kartě družstva: každý voják se otevře se svými kostmi (viz [[Otevřít v Blenderu|Otevřít-v-Blenderu]]) | V Blenderu, pak **Importovat model…** v řádku vojáka, pod **Každý voják** (viz [[Import modelu|Import-modelu]]) |
 | **Jeho animace** | Ty ze hry, jako voják | Vlastní, z jeho souboru |
 | **Jeho dvě poloviny** | Ty ze hry: není co vybírat | Vybíráš je ty (Studio navrhne kost) |
 | **Velikost a místo** | Jak jsi ho udělal v Blenderu, na jeho kostech | Jak je v jeho souboru |

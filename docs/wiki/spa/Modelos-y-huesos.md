@@ -36,7 +36,7 @@ soldados, caballos y criaturas.
 | | Sobre los huesos del soldado del juego | Con huesos propios |
 |---|---|---|
 | **Qué es** | Un soldado cambiado en Blender, o un modelo tuyo puesto sobre los huesos de un soldado | Un caballo, un caballo con su jinete, cualquier criatura, hecho en Blender sobre huesos tuyos |
-| **Cómo se hace** | **Abrir en Blender** en la tarjeta del pelotón: cada soldado se abre con sus huesos (mira [[Abrir en Blender|Abrir-en-Blender]]) | En Blender, y luego **Importar un modelo…** en la tarjeta del pelotón (mira [[Importar un modelo|Importar-un-modelo]]) |
+| **Cómo se hace** | **Abrir en Blender** en la tarjeta del pelotón: cada soldado se abre con sus huesos (mira [[Abrir en Blender|Abrir-en-Blender]]) | En Blender, y luego **Importar un modelo…** en la línea de un soldado, bajo **Cada soldado** (mira [[Importar un modelo|Importar-un-modelo]]) |
 | **Sus animaciones** | Las del juego, como el soldado | Las suyas, de su archivo |
 | **Sus dos mitades** | Las del juego: no hay nada que elegir | Las eliges tú (el Studio sugiere el hueso) |
 | **Su tamaño y su sitio** | Como lo hiciste en Blender, sobre sus huesos | Como en su archivo |

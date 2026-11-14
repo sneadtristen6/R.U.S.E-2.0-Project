@@ -36,7 +36,7 @@ Pferde und Geschöpfe.
 | | Auf den Knochen des Spielsoldaten | Mit eigenen Knochen |
 |---|---|---|
 | **Was es ist** | Ein in Blender geänderter Soldat oder ein eigenes Modell auf den Knochen eines Soldaten | Ein Pferd, ein Pferd mit Reiter, jedes Geschöpf, in Blender auf eigenen Knochen gemacht |
-| **Wie du es machst** | **In Blender öffnen** auf der Karte des Trupps: Jeder Soldat öffnet sich mit seinen Knochen (siehe [[In Blender öffnen|In-Blender-öffnen]]) | In Blender, dann **Ein Modell importieren…** auf der Karte des Trupps (siehe [[Ein Modell importieren|Ein-Modell-importieren]]) |
+| **Wie du es machst** | **In Blender öffnen** auf der Karte des Trupps: Jeder Soldat öffnet sich mit seinen Knochen (siehe [[In Blender öffnen|In-Blender-öffnen]]) | In Blender, dann **Ein Modell importieren…** in der Zeile eines Soldaten, unter **Jeder Soldat** (siehe [[Ein Modell importieren|Ein-Modell-importieren]]) |
 | **Seine Animationen** | Die des Spiels, wie beim Soldaten | Seine eigenen, aus seiner Datei |
 | **Seine zwei Hälften** | Die des Spiels: nichts zu wählen | Du wählst sie (das Studio schlägt den Knochen vor) |
 | **Seine Größe und sein Platz** | Wie du es in Blender gemacht hast, auf seinen Knochen | Wie in seiner Datei |

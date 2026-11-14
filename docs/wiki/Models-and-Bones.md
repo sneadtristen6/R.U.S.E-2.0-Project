@@ -34,7 +34,7 @@ turns its turret and wheels without animations, so most of this page is about so
 | | On the game soldier's bones | On bones of its own |
 |---|---|---|
 | **What it is** | A soldier changed in Blender, or a model of your own put on a soldier's bones | A horse, a horse and its rider, any creature, made in Blender on bones of your own |
-| **How you make it** | **Open in Blender** on the squad's card: each soldier opens with his bones (see [[Open in Blender|Open-in-Blender]]) | In Blender, then **Import a model…** on the squad's card (see [[Import a model|Import-a-Model]]) |
+| **How you make it** | **Open in Blender** on the squad's card: each soldier opens with his bones (see [[Open in Blender|Open-in-Blender]]) | In Blender, then **Import a model…** on a soldier's line, under **Each soldier** (see [[Import a model|Import-a-Model]]) |
 | **Its animations** | The game's, as the soldier's | Its own, from its file |
 | **Its two halves** | The game's own: nothing to choose | You pick them (the Studio suggests the bone) |
 | **Its size and place** | As you made it in Blender, on his bones | As in its file |

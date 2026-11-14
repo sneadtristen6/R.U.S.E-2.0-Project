@@ -35,7 +35,7 @@ chevaux et de créatures.
 | | Sur les os du soldat du jeu | Avec ses propres os |
 |---|---|---|
 | **Ce que c'est** | Un soldat changé dans Blender, ou un modèle à vous posé sur les os d'un soldat | Un cheval, un cheval et son cavalier, toute créature, fait dans Blender sur des os à vous |
-| **Comment le faire** | **Ouvrir dans Blender** sur la carte de l'escouade : chaque soldat s'ouvre avec ses os (voir [[Ouvrir dans Blender|Ouvrir-dans-Blender]]) | Dans Blender, puis **Importer un modèle…** sur la carte de l'escouade (voir [[Importer un modèle|Importer-un-modèle]]) |
+| **Comment le faire** | **Ouvrir dans Blender** sur la carte de l'escouade : chaque soldat s'ouvre avec ses os (voir [[Ouvrir dans Blender|Ouvrir-dans-Blender]]) | Dans Blender, puis **Importer un modèle…** sur la ligne d'un soldat, sous **Chaque soldat** (voir [[Importer un modèle|Importer-un-modèle]]) |
 | **Ses animations** | Celles du jeu, comme le soldat | Les siennes, venues de son fichier |
 | **Ses deux moitiés** | Celles du jeu : rien à choisir | C'est vous qui les choisissez (le Studio propose l'os) |
 | **Sa taille et sa place** | Comme vous l'avez fait dans Blender, sur ses os | Comme dans son fichier |

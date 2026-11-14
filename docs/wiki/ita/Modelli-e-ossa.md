@@ -36,7 +36,7 @@ creature.
 | | Sulle ossa del soldato del gioco | Con ossa tutte sue |
 |---|---|---|
 | **Cos'è** | Un soldato cambiato in Blender, o un tuo modello messo sulle ossa di un soldato | Un cavallo, un cavallo col cavaliere, qualsiasi creatura, fatto in Blender su ossa tue |
-| **Come si fa** | **Apri in Blender** sulla scheda della squadra: ogni soldato si apre con le sue ossa (vedi [[Apri in Blender|Apri-in-Blender]]) | In Blender, poi **Importa un modello…** sulla scheda della squadra (vedi [[Importare un modello|Importare-un-modello]]) |
+| **Come si fa** | **Apri in Blender** sulla scheda della squadra: ogni soldato si apre con le sue ossa (vedi [[Apri in Blender|Apri-in-Blender]]) | In Blender, poi **Importa un modello…** sulla riga di un soldato, sotto **Ogni soldato** (vedi [[Importare un modello|Importare-un-modello]]) |
 | **Le sue animazioni** | Quelle del gioco, come il soldato | Le sue, dal suo file |
 | **Le sue due metà** | Quelle del gioco: niente da scegliere | Le scegli tu (lo Studio suggerisce l'osso) |
 | **Dimensione e posizione** | Come l'hai fatto in Blender, sulle sue ossa | Come nel suo file |

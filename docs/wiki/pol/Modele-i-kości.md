@@ -33,7 +33,7 @@ bez animacji, więc ta strona dotyczy głównie żołnierzy, koni i stworzeń.
 | | Na kościach żołnierza z gry | Z własnymi kośćmi |
 |---|---|---|
 | **Co to jest** | Żołnierz zmieniony w Blenderze albo twój model założony na kości żołnierza | Koń, koń z jeźdźcem, dowolne stworzenie, zrobione w Blenderze na twoich kościach |
-| **Jak go zrobić** | **Otwórz w Blenderze** na karcie oddziału: każdy żołnierz otwiera się ze swoimi kośćmi (zobacz [[Otwórz w Blenderze|Otwórz-w-Blenderze]]) | W Blenderze, potem **Importuj model…** na karcie oddziału (zobacz [[Importowanie modelu|Importowanie-modelu]]) |
+| **Jak go zrobić** | **Otwórz w Blenderze** na karcie oddziału: każdy żołnierz otwiera się ze swoimi kośćmi (zobacz [[Otwórz w Blenderze|Otwórz-w-Blenderze]]) | W Blenderze, potem **Importuj model…** w wierszu żołnierza, pod **Każdy żołnierz** (zobacz [[Importowanie modelu|Importowanie-modelu]]) |
 | **Jego animacje** | Te z gry, jak u żołnierza | Własne, z jego pliku |
 | **Dwie połowy** | Te z gry: nie ma czego wybierać | Wybierasz je ty (Studio proponuje kość) |
 | **Rozmiar i miejsce** | Jak zrobiłeś w Blenderze, na jego kościach | Jak w jego pliku |
