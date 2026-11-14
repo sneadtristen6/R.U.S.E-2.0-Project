@@ -2479,7 +2479,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         from rusemod.tms import Tms
         blender = self._blender()
         if blender is None:
-            raise StudioError("Blender isn't found on this PC. Get it free from blender.org (Get Blender), then use "
+            raise StudioError("Blender isn't found on this PC. Get it free from blender.org, then use "
                               "Choose Blender… to show the Studio where blender.exe is.")
         name, spec, _shipped = self._menu_owner(pack)
         work = self._menu_work(name)
@@ -9536,7 +9536,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         elif what == "blender":   # (the game's own units: refused as Change it in Blender is)
             folder = self._model_work(address, self._blender_kind(address, kind))[0]
             if not folder.is_dir():
-                raise StudioError("There are no Blender files for this unit yet: click Change it in Blender first.")
+                raise StudioError("There are no Blender files for this unit yet: open it in Blender first.")
         else:
             kept = self._model_kept(address)
             if kept is None:
@@ -9708,7 +9708,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         from rusemod.blender import open_models
         blender = self._blender()
         if blender is None:
-            raise StudioError("Blender isn't found on this PC. Get it free from blender.org (Get Blender), then use "
+            raise StudioError("Blender isn't found on this PC. Get it free from blender.org, then use "
                               "Choose Blender… to show the Studio where blender.exe is.")
         found, _textures = self._look_models(address)
         if not found:
@@ -9756,7 +9756,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             raise StudioError("Pick or make a mod first: the paint goes into it.")
         folder = self._look_folder(address)
         if not (folder / unitlook.LOOK_FILE).is_file():
-            raise StudioError("Open this unit in Blender first and paint it, then Bring back.")
+            raise StudioError("Open this unit in Blender first and paint it, then bring your paint back.")
         self._custom_uniform_first(address)
         proc = self._blenders.get(str(folder))
         running = proc is not None and proc.poll() is None

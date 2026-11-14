@@ -420,7 +420,7 @@ class DecoyBlenderCalls:
             raise StudioError(w["decoy_blender_why_game"])
         blender = self._blender()
         if blender is None:
-            raise StudioError("Blender isn't found on this PC. Get it free from blender.org (Get Blender), then use "
+            raise StudioError("Blender isn't found on this PC. Get it free from blender.org, then use "
                               "Choose Blender… to show the Studio where blender.exe is.")
         if self._anim_open(work):
             raise StudioError("This unit's animations are open in Blender already: change them there, then bring your "
