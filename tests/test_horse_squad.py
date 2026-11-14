@@ -18,6 +18,7 @@ files, byte for byte, as the horse-studio2 copy's own calls give with the same t
 riflemen's file, Import model of the heavy-weapon soldier's for his kind), the model records' "from" (the file each was
 made from: the platform folder's copy here) aside, and its era_units.json and credit line besides; taking it out
 removes the unit, both its models and their animations, and its credit line."""
+import hashlib
 import json
 import os
 import shutil
@@ -31,6 +32,7 @@ from pathlib import Path
 from unittest import mock
 
 from test_studio import WithMod
+from rusemod import unitmodel
 from ruse_studio import era_units, horse_squad
 from ruse_studio.api import StudioApi, StudioError
 from ruse_studio.edits import ModEdits
@@ -317,6 +319,138 @@ class OnTheMadeUpGame(WithMod):
         self.assertIn("- Generic Horse (WWII, USA): by sneadtristen6.",
                       (folder / era_units.CREDITS).read_text(encoding="utf-8"))
 
+    # --- its files, kept and known by their bytes (the owner's 12 and 46) ---
+    def added_with(self, mod_name: str, rifle: Path) -> list:
+        """The Generic Horse added to a new mod, the builder standing in with `rifle` and the heavy-weapon soldier's
+        file, its models' import stood in: the files the import was given."""
+        Path(self.api.new_mod(mod_name)["current"])
+        imports = []
+        with mock.patch.dict(sys.modules, {horse_squad.BUILDER: stand_in(rifle, self.heavy)}), \
+                mock.patch.object(StudioApi, "model_import", lambda api, address, file, **kw: imports.append(file)), \
+                mock.patch.object(StudioApi, "_horse_check", lambda api, address: None):
+            view = finished(self.api, self.api.horse_squad_add(0, 10, "Generic Horse", 5, group="new")["job"])
+        self.assertEqual(view["state"], "done", view.get("message"))
+        return imports
+
+    def test_its_files_made_again_differently_go_beside_never_over_the_old_ones(self):
+        """The owner's 46 (an older mod's horse never changes): the platform folder's horse_squad/ files are every
+        mod's, so files made again differently (another builder, another game) go beside them under a name of their
+        own, the old ones as they were; the same bytes made again are the file there, nothing written."""
+        root = self.home / horse_squad.FOLDER
+        self.assertEqual(self.added_with("First", self.rifle), [str(root / "rifle.glb"), str(root / "heavy.glb")])
+        again = Path(tempfile.mkdtemp(dir=self.tmp.name)) / "rifle.glb"
+        again.write_bytes(b"glb rifle, made again differently")
+        beside = root / f"rifle-{hashlib.sha256(again.read_bytes()).hexdigest()[:16]}.glb"
+        self.assertEqual(self.added_with("Second", again), [str(beside), str(root / "heavy.glb")])
+        self.assertEqual(((root / "rifle.glb").read_bytes(), beside.read_bytes()),
+                         (b"glb rifle", b"glb rifle, made again differently"))
+        self.assertEqual(self.added_with("Third", self.rifle), [str(root / "rifle.glb"), str(root / "heavy.glb")])
+        self.assertEqual(sorted(os.listdir(root)), sorted(["heavy.glb", "rifle.glb", beside.name]))
+
+    def horse_made(self, mod_name: str) -> tuple[Path, str]:
+        """A new mod with the Generic Horse's unit as its Add makes it (_era_make), no model yet: (the mod, its
+        address)."""
+        folder = Path(self.api.new_mod(mod_name)["current"])
+        entry = self.api._era_built_entry(KEY)
+        plan = self.api._era_plan(KEY, None, {}, entry, 0, 10, SQUAD, None, None, None, None, "new")
+        made = self.api._era_make(KEY, self.api._era_library()[1], entry, plan, 0, 10, "Generic Horse", 5)
+        return folder, made["address"]
+
+    def modelled(self, address: str, record: dict) -> None:
+        """`address`'s own model file and its record (`record`), as an import leaves them."""
+        model = self.api._own_model_file(address)
+        model.parent.mkdir(parents=True, exist_ok=True)
+        model.write_bytes(b"glb model")
+        model.with_suffix(".json").write_text(json.dumps(record), encoding="utf-8")
+
+    def fitted(self, call) -> list:
+        """`call()` (a Resize or a Move) with its fits stood in (the made-up game has no models to fit to): [(the file
+        each model is fitted again from, its kind)]."""
+        asked = []
+
+        def fit(api, address, file, size, aircraft, facing, own_turret, own_propellers, move, kind=None, **kw):
+            asked.append((file, kind))
+            return {}
+        with mock.patch.object(StudioApi, "_fit_model", fit):
+            call()
+        return asked
+
+    @staticmethod
+    def made_from(name: str, data: bytes) -> dict:
+        """A model's record naming the file it was made from (`name`) and keeping that file's SHA-256 (`data`'s), as
+        Import model writes it (its report's "file_sha256": rusemod.unitmodel.SOURCE_SHA)."""
+        return {"from": name, "size": 1.0, "report": {"file": Path(name).name,
+                                                       "file_sha256": hashlib.sha256(data).hexdigest()}}
+
+    def test_resize_and_move_fit_it_from_this_pc_s_files_with_the_same_bytes(self):
+        """The owner's 12 ("the whole point of having the horse in the game is so it can be made into other units"): a
+        mod made on another PC names only each file's own name (Export), and this PC's horse_squad/ files with the same
+        bytes, under any name, are the ones its models are fitted again from; a file there with that name and other
+        bytes never is."""
+        folder, horse = self.horse_made("Shared")
+        root = self.home / horse_squad.FOLDER
+        root.mkdir(parents=True)
+        (root / "horse-squad-rifle.glb").write_bytes(b"other bytes")
+        (root / "horse-squad-rifle-mine.glb").write_bytes(b"glb rifle")
+        (root / "horse-squad-bazooka.glb").write_bytes(b"glb heavy")
+        self.modelled(horse, self.made_from("horse-squad-rifle.glb", b"glb rifle"))
+        other = self.made_from("horse-squad-bazooka.glb", b"glb heavy")
+        with mock.patch.object(StudioApi, "_kind_records", lambda api, address: [("bazooka", other)]):
+            self.assertTrue(self.api.model_sizes(horse, "us")["resizable"])
+            for call in (lambda: self.api.model_resize(horse, 1.2), lambda: self.api.model_place(horse, [10, 0, 0])):
+                self.assertEqual(self.fitted(call), [(str(root / "horse-squad-rifle-mine.glb"), None),
+                                                     (str(root / "horse-squad-bazooka.glb"), "bazooka")])
+        # none with those bytes on this PC: refused in words, nothing fitted, the mod as it was
+        os.remove(root / "horse-squad-rifle-mine.glb")
+        before = tree(folder)
+        self.assertFalse(self.api.model_sizes(horse, "us")["resizable"])
+        with self.assertRaisesRegex(StudioError, r"isn't there any more \(horse-squad-rifle\.glb\)"):
+            self.fitted(lambda: self.api.model_resize(horse, 1.2))
+        self.assertEqual(tree(folder), before)
+        self.assertEqual((horse_squad.SHA, unitmodel.SOURCE_SHA), ("file_sha256", "file_sha256"))
+
+    def test_an_older_mod_s_horse_is_never_fitted_from_its_file_changed_since(self):
+        """The owner's 46 (an older mod's horse never changes): the file this mod's Generic Horse was made from, there
+        with other bytes now, is never fitted from: Resize and Move are refused in words saying so, the mod as it was;
+        the file with the bytes it was made from, kept beside it, is the one fitted from."""
+        folder, horse = self.horse_made("Older")
+        root = self.home / horse_squad.FOLDER
+        root.mkdir(parents=True)
+        file = root / "horse-squad-rifle.glb"
+        file.write_bytes(b"made again differently")
+        self.modelled(horse, self.made_from(str(file), b"glb rifle"))
+        before = tree(folder)
+        self.assertFalse(self.api.model_sizes(horse, "us")["resizable"])
+        for what, call in (("its size can't be changed", lambda: self.api.model_resize(horse, 1.2)),
+                           ("it can't be moved", lambda: self.api.model_place(horse, [10, 0, 0]))):
+            with self.subTest(what=what), self.assertRaises(StudioError) as said:
+                self.fitted(call)
+            self.assertEqual(str(said.exception), (
+                f"The file the Generic Horse's model was made from has changed since ({file}), so {what} and it stays "
+                f"as it is. To have it made again, on its page in the Units tab (WWII+) click Take it out of my mod, "
+                f"then Add to my mod: what you changed on it is lost."))
+        self.assertEqual(tree(folder), before)
+        kept = root / "horse-squad-rifle-0123456789abcdef.glb"
+        kept.write_bytes(b"glb rifle")
+        self.assertTrue(self.api.model_sizes(horse, "us")["resizable"])
+        self.assertEqual(self.fitted(lambda: self.api.model_resize(horse, 1.2)), [(str(kept), None)])
+
+    def test_another_unit_s_own_file_and_a_record_from_before_are_fitted_from_as_before(self):
+        """No rule beyond the owner's answer: a unit's model made from the modder's own file is fitted again from that
+        file as it is now, changed since or not, and a Generic Horse's record from before the SHA-256 from the file it
+        names."""
+        folder, horse = self.horse_made("Before")
+        mine = Path(tempfile.mkdtemp(dir=self.tmp.name)) / "my-cavalry.glb"
+        mine.write_bytes(b"changed in Blender since")
+        rifles = self.api.new_unit(SQUAD, "My Rifles", 5, group="new")["address"]
+        self.modelled(rifles, self.made_from(str(mine), b"as first imported"))
+        self.assertEqual(self.fitted(lambda: self.api.model_resize(rifles, 1.2)), [(str(mine), None)])
+        older = self.home / horse_squad.FOLDER / "horse-squad-rifle.glb"
+        older.parent.mkdir(parents=True)
+        older.write_bytes(b"glb rifle")
+        self.modelled(horse, {"from": str(older), "size": 1.0, "report": {"file": older.name}})
+        self.assertEqual(self.fitted(lambda: self.api.model_place(horse, [10, 0, 0])), [(str(older), None)])
+
     def test_a_second_ask_follows_the_first(self):
         self.api.new_mod("Twice")
         go = threading.Event()
@@ -475,6 +609,105 @@ class OnTheGame(unittest.TestCase):
         self.assertEqual([ln for ln in left.pop("src/studio.rndf").decode("utf-8").splitlines()
                           if ln.strip() and not ln.startswith("//")], [])
         self.assertEqual(left, fresh)
+
+
+# the riflemen's file of before the horse's fall (2026-11-10): files made again differently (as test_review_loss's)
+PREFALL = Path(os.environ.get("RUSE_HORSE_PREFALL_RIFLE") or "D:/RUSE-2.0/scratch/animmodels/horse-squad-rifle.glb")
+
+
+@unittest.skipUnless(GAME is not None and GAME.is_dir() and INDEX.is_file() and RIFLE.is_file() and HEAVY.is_file()
+                     and PREFALL.is_file(),
+                     "RUSE_GAME names no game folder, or the Studio's game index, the two horse-and-rider files of the "
+                     "copy that passed in the game or the riflemen's file of before the horse's fall aren't there")
+class ItsFilesOnTheGame(unittest.TestCase):
+    """Its files kept and known by their bytes, on the game, through the Studio's own calls (its builder standing in
+    with the passed copy's two files): the owner's 12, to "Another player can't resize or move a Generic Horse from a
+    shared mod ... Accept that?": "the whole point of having the horse in the game is so it can be made into other units
+    and have a" (not accepted), and his 46: an older mod's horse never changes."""
+
+    def setUp(self):
+        self.tmp = Path(tempfile.mkdtemp(prefix="horse-files-", dir=os.environ.get("RUSE_TEST_TMP") or None))
+        self.addCleanup(shutil.rmtree, self.tmp, True)
+        env = mock.patch.dict(os.environ, {"RUSE_PLATFORM_HOME": str(self.tmp / "platform")})   # (the build's cache)
+        env.start()
+        self.addCleanup(env.stop)
+
+    def studio(self, name: str) -> StudioApi:
+        return StudioApi(index_path=INDEX, game_dir=GAME, home=self.tmp / name)
+
+    def added(self, api: StudioApi, mod_name: str, rifle: Path = RIFLE) -> tuple[Path, str]:
+        folder = Path(api.new_mod(mod_name)["current"])
+        with mock.patch.dict(sys.modules, {horse_squad.BUILDER: stand_in(rifle, HEAVY)}):
+            view = finished(api, api.horse_squad_add(0, 8, "Generic Horse", 5, None, None, None, "new")["job"])
+        self.assertEqual(view["state"], "done", view.get("message"))
+        return folder, view["result"]["address"]
+
+    @staticmethod
+    def animations(folder: Path, address: str) -> dict:
+        """{name: the clip's bytes} of the unit's own animations as the mod has them."""
+        from rusemod import anim
+        unit = address.rsplit("/", 1)[-1]
+        own = anim.own_animations(folder, unit)["animations"]
+        return {name: (Path(folder) / anim.OWN / unit / rel).read_bytes() for name, rel in own.items()}
+
+    def opened_by(self, api: StudioApi, export: Path, copy_name: str) -> Path:
+        """`export` added to the Launcher library of `api`'s platform folder and opened with Edit an installed mod."""
+        from rusemod.library import Library
+        info, _replaced = Library(api._home / "library").add(export)
+        copy = Path(api.edit_installed(info["id"], copy_name)["path"])
+        api.choose_mod(str(copy))
+        return copy
+
+    def test_a_shared_mod_s_horse_resized_and_moved_with_this_pc_s_files_of_the_same_bytes(self):
+        from rusemod import package
+        first = self.studio("first")
+        mod, horse = self.added(first, "Cavalry")
+        before = self.animations(mod, horse)
+        export = package.pack(mod, self.tmp / "exported")
+        # another player who added the Generic Horse to a mod of his own: his horse_squad/ has the same two files
+        second = self.studio("second")
+        self.added(second, "My own")
+        copy = self.opened_by(second, export, "Cavalry (my copy)")
+        tail = horse.rsplit("/", 1)[-1]
+        named = json.loads((copy / "files" / "models" / f"{tail}.json").read_text(encoding="utf-8"))["from"]
+        self.assertEqual(named, RIFLE.name)                 # (Export names only the file's own name)
+        self.assertTrue(second.model_sizes(horse, "us")["resizable"])
+        second.model_resize(horse, 1.0)
+        second.model_place(horse, [0, 0, 0])
+        self.assertEqual(self.animations(copy, horse), before)
+        for stem, file in ((tail, RIFLE), (f"{tail}@bazooka", HEAVY)):
+            record = json.loads((copy / "files" / "models" / f"{stem}.json").read_text(encoding="utf-8"))
+            self.assertEqual(record["from"], str(second._home / horse_squad.FOLDER / file.name))
+        # a third whose own horse files are other bytes (made again differently): refused in words, nothing changed
+        third = self.studio("third")
+        theirs = third._home / horse_squad.FOLDER
+        theirs.mkdir(parents=True)
+        shutil.copyfile(PREFALL, theirs / RIFLE.name)
+        shutil.copyfile(HEAVY, theirs / HEAVY.name)
+        other = self.opened_by(third, export, "Cavalry (his copy)")
+        unchanged = tree(other)
+        self.assertFalse(third.model_sizes(horse, "us")["resizable"])
+        for call in (lambda: third.model_resize(horse, 1.0), lambda: third.model_place(horse, [0, 0, 0])):
+            with self.assertRaises(StudioError):
+                call()
+        self.assertEqual(tree(other), unchanged)
+
+    def test_its_files_made_again_differently_never_change_an_older_mod_s_horse(self):
+        api = self.studio("one")
+        older, horse = self.added(api, "Older")
+        before = self.animations(older, horse)
+        kept = api._home / horse_squad.FOLDER
+        made = {p.name: p.read_bytes() for p in kept.iterdir()}
+        again = self.tmp / "again" / RIFLE.name           # (made again differently, under the builder's same name)
+        again.parent.mkdir()
+        shutil.copyfile(PREFALL, again)
+        self.added(api, "Newer", rifle=again)
+        self.assertEqual({name: (kept / name).read_bytes() for name in made}, made)    # never written over
+        self.assertEqual(len(os.listdir(kept)), 3)          # (the newer riflemen's file beside them)
+        api.choose_mod(str(older))
+        api.model_resize(horse, 1.0)
+        api.model_place(horse, [0, 0, 0])
+        self.assertEqual(self.animations(older, horse), before)
 
 
 GERMAN = "$/GFX/Everything/Descriptor_Unit_Soldat_Allemand_Leger"   # another country's rifle squad (a8b65194's pick)

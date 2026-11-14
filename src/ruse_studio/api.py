@@ -8714,14 +8714,16 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         return out
 
     def _kinds_ready(self, address: str, moving: bool) -> list:
-        """Before Resize or Move (`moving`) fits a squad's model again: every other kind's model with its file still
-        there (they go with it, one size and place for the squad), else a StudioError naming the file that isn't,
-        or the record that can't be read or doesn't say it (the one check, finding 12: it read "...isn't there any
-        more (None)..."), nothing changed."""
-        others = self._kind_records(address)
-        for k, r in others:
+        """Before Resize or Move (`moving`) fits a squad's model again: every other kind's model with the file it was
+        made from on this PC (they go with it, one size and place for the squad), each record's "from" the file found
+        (_made_from), else a StudioError naming the file that isn't, or the record that can't be read or doesn't say it
+        (the one check, finding 12: it read "...isn't there any more (None)..."), nothing changed."""
+        others = []
+        for k, r in self._kind_records(address):
             file = r.get("from") if isinstance(r, dict) else None
-            if self._made_from(r) is not None:
+            made = self._made_from(r, address)
+            if made is not None:
+                others.append((k, dict(r, **{"from": str(made)})))
                 continue
             if not isinstance(file, str) or not file:
                 name = self._kind_file(address, k).with_suffix(".json").name
@@ -8731,7 +8733,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                                       f"read or is missing: import that model again under Its soldiers, then move it.")
                 raise StudioError(f"The record of the model of one of its soldiers in the mod ({name}) can't be read "
                                   f"or is missing: import that model again under Its soldiers, then change the size.")
-            self._horse_gone(address, file, moving)   # (the Horse Squad's files: never the modder's to import)
+            self._horse_gone(address, r, moving)   # (the Generic Horse's files: never the modder's to import)
             # (the page's words: model_kinds_title is the box his model is imported in)
             if moving:
                 raise StudioError(f"The file the model of one of its soldiers was made from isn't there any more "
@@ -8831,15 +8833,16 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             # not a game rule: only a model the Studio fitted has a file to fit again
             raise StudioError("This unit has no model of its own to resize: import one first.")
         file = record.get("from")
-        if self._made_from(record) is None:
-            self._horse_gone(address, file, False)   # (the Horse Squad's files: never the modder's to import)
+        made = self._made_from(record, address)
+        if made is None:
+            self._horse_gone(address, record, False)   # (the Generic Horse's files: never the modder's to import)
             raise StudioError(f"The file this model was made from isn't there any more ({file}): import it again "
                               f"to change its size.")
         aircraft = record["aircraft"] if "aircraft" in record else self._unit_kind(address) == "air"
         others = self._kinds_ready(address, False)   # (a squad's other kinds' models: the same size)
 
         def fits(hold):
-            report = self._fit_model(address, file, size, bool(aircraft), self._pinned_facing(record),
+            report = self._fit_model(address, str(made), size, bool(aircraft), self._pinned_facing(record),
                                      bool(record.get("own_turret")), bool(record.get("own_propellers")),
                                      record.get("move"), refit=True, hold=hold)
             for k, r in others:
@@ -8879,8 +8882,9 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             # not a game rule: only a model the Studio fitted has a file to fit again
             raise StudioError("This unit has no model of its own to move: import one first.")
         file = record.get("from")
-        if self._made_from(record) is None:
-            self._horse_gone(address, file, True)   # (the Horse Squad's files: never the modder's to import)
+        made = self._made_from(record, address)
+        if made is None:
+            self._horse_gone(address, record, True)   # (the Generic Horse's files: never the modder's to import)
             raise StudioError(f"The file this model was made from isn't there any more ({file}): import it again "
                               f"to move it.")
         aircraft = record["aircraft"] if "aircraft" in record else self._unit_kind(address) == "air"
@@ -8888,7 +8892,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         # (what the modder made of its animations since stays, as model_resize's; all of the squad moved or none)
 
         def fits(hold):
-            report = self._fit_model(address, file, record_number(record.get("size"), 1.0) or 1.0, bool(aircraft),
+            report = self._fit_model(address, str(made), record_number(record.get("size"), 1.0) or 1.0, bool(aircraft),
                                      self._pinned_facing(record), True, True, move, refit=True, hold=hold)
             for k, r in others:
                 self._fit_model(address, r["from"], record_number(r.get("size"), 1.0) or 1.0,
@@ -8898,16 +8902,13 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         report = self._fitted_together(fits, cut_off)
         return {"model": report, "copy_out": False, **self.look(address)}
 
-    @staticmethod
-    def _made_from(record: dict) -> Path | None:
-        """The file a new unit's model was made from, as its record names it ("from"), when it's on this PC; None
-        when it isn't. An exported mod's records name only the file's own name (rusemod.package: no folder of the
-        maker's PC goes out), which is never looked for in the folder the Studio happens to run in."""
-        file = record.get("from") if isinstance(record, dict) else None
-        if not isinstance(file, str) or not file:
-            return None
-        path = Path(file)
-        return path if path.is_absolute() and path.is_file() else None
+    def _made_from(self, record: dict, address: str | None = None) -> Path | None:
+        """The file the model of new unit `address` was made from, when it's on this PC; None when it isn't: as its
+        record names it ("from"), else found by the bytes it was made from among this PC's Generic Horse files
+        (horse_squad._fit_from: the owner's 12 and 46). An exported mod's records name only the file's own name
+        (rusemod.package: no folder of the maker's PC goes out), which is never looked for in the folder the Studio
+        happens to run in."""
+        return self._fit_from(record, address)
 
     @staticmethod
     def _pinned_facing(record: dict) -> list | None:
@@ -8945,7 +8946,8 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         kind = "air" if self._unit_kind(address) == "air" else "ground"
         # (a field of the wrong shape, a record edited by hand: as if it weren't there)
         stands = record_numbers(record_report(record).get("stands"), 4)
-        return {"size": record_number(record.get("size"), 1.0) or 1.0, "resizable": self._made_from(record) is not None,
+        return {"size": record_number(record.get("size"), 1.0) or 1.0,
+                "resizable": self._made_from(record, address) is not None,
                 "kind": kind, "same_kind": len(self._own_models_of(kind)), "marks": self.model_size_marks(address, lang),
                 "move": (record_numbers(record.get("move"), 3) or [0, 0, 0])[:3],
                 "length": stands[3] if stands else None}

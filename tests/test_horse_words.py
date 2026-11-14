@@ -21,6 +21,7 @@ On the Studio tests' made-up game (WithMod) with a stand-in builder, as tests/te
 Studio's game index (RUSE_GAME_INDEX or RUSE_STUDIO_INDEX, this PC's by default; skipped without it). Nothing of the
 game's is written."""
 import errno
+import hashlib
 import json
 import os
 import re
@@ -480,6 +481,34 @@ class ResizeAndMoveWithItsFilesGone(WithLibrary):
                 with self.subTest(moving=moving, kind="bazooka"), self.assertRaises(StudioError) as said:
                     call()
                 self.assertEqual(str(said.exception), self.way_out(moving))
+
+    def test_its_file_there_with_other_bytes_is_said_in_every_language(self):
+        """The owner's 46 (an older mod's horse never changes): the file it was made from there with other bytes than
+        its record keeps (made again differently, here by hand), Resize and Move say so and that it stays as it is,
+        with its way out by the page's words in the modder's language; the same file name, its words never "isn't there
+        any more"."""
+        Path(self.gone).parent.mkdir(parents=True, exist_ok=True)
+        Path(self.gone).write_bytes(b"made again differently")
+        model = self.api._own_model_file(self.horse)
+        model.with_suffix(".json").write_text(json.dumps({"from": self.gone, "size": 1.0, "report": {
+            "file": Path(self.gone).name, "file_sha256": hashlib.sha256(b"glb rifle").hexdigest()}}), encoding="utf-8")
+        w = words()
+        for moving, call, what in ((False, lambda: self.api.model_resize(self.horse, 1.2), "its size can't be changed"),
+                                   (True, lambda: self.api.model_place(self.horse, [10, 0, 0]), "it can't be moved")):
+            with self.subTest(moving=moving):
+                with self.assertRaises(StudioError) as said:
+                    call()
+                self.assertEqual(str(said.exception), (
+                    f"The file the Generic Horse's model was made from has changed since ({self.gone}), so {what} and "
+                    f"it stays as it is. To have it made again, on its page in the Units tab (WWII+) click Take it out "
+                    f"of my mod, then Add to my mod: what you changed on it is lost."))
+                for lang in OTHERS:
+                    worded = self.said_in(str(said.exception), lang)
+                    self.assertNotEqual(worded, str(said.exception), lang)
+                    self.assertIn(self.gone, worded, lang)
+                    for key in ("units_tab", "eras_era_ww2", "eras_take_out", "eras_add"):
+                        self.assertIn(w[key][lang], worded, (lang, key))
+                    self.assertNotIn("Generic Horse", worded, lang)
 
     def test_every_ground_unit_says_it_skipped_it_and_why_in_the_studio_s_language(self):
         """The page reads each line's first word ("resized" or "skipped": app.js resizeAllRow, as nations.js reads
