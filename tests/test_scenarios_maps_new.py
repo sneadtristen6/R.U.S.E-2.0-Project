@@ -114,6 +114,7 @@ class NewMaps(MapGame):
 FLT_MAX = 3.4028234663852886e38
 
 
+@unittest.skipUnless(__import__("importlib.util").util.find_spec("numpy"), "needs numpy, which the apps carry; the Python 3.11 test job runs without it on purpose")
 class SectorsOnABigMap(MapGame):
     """Make sectors (StudioApi.sector_auto) on a blank map made big, with sectors too small for it: a scenario holds 255
     sectors at most (seen on the real install: Blitz made 16 x 16 cells, sectors of 600 m make 1156)."""

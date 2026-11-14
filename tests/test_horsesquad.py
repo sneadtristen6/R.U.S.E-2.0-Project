@@ -21,7 +21,10 @@ import tempfile
 import unittest
 from pathlib import Path
 
-import numpy as np
+try:
+    import numpy as np
+except ImportError:
+    raise __import__("unittest").SkipTest("needs numpy, which the apps carry (installers/requirements.txt); the Python 3.11 test job runs without it on purpose") from None
 
 from rusemod import baf, horsesquad as hs
 from rusemod.gltf import FLOAT, _Glb

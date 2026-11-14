@@ -26,7 +26,10 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-import numpy  # noqa: F401  (loaded once, before any test patches sys.modules: numpy can't load twice in a process)
+try:
+    import numpy  # noqa: F401  (loaded once, before any test patches sys.modules: numpy can't load twice in a process)
+except ImportError:
+    raise __import__("unittest").SkipTest("needs numpy, which the apps carry (installers/requirements.txt); the Python 3.11 test job runs without it on purpose") from None
 
 from test_export_out import LIBERTY, era_library
 from test_horse_squad import GAME, HEAVY, INDEX, RIFLE, finished, stand_in

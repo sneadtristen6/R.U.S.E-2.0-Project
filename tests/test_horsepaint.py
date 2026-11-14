@@ -12,7 +12,10 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-import numpy as np
+try:
+    import numpy as np
+except ImportError:
+    raise __import__("unittest").SkipTest("needs numpy, which the apps carry (installers/requirements.txt); the Python 3.11 test job runs without it on purpose") from None
 
 from rusemod import horsepaint as hp
 

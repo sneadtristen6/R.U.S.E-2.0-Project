@@ -399,6 +399,7 @@ class HeldOnAModFolder(unittest.TestCase):
 
 
 class TheRecord(unittest.TestCase):
+    @unittest.skipUnless(__import__("sys").platform == "win32", "Windows behaviour: the apps are Windows programs (on Steam Deck, under Proton)")
     def test_a_record_changed_by_hand_names_nothing_outside_the_mod_s_own_files(self):
         from rusemod import holding
         with tempfile.TemporaryDirectory(dir=TMP) as d:

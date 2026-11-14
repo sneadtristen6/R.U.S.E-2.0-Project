@@ -222,7 +222,7 @@ class Unusual(Studio):
         """FE-1: new_mod("🚀 Rockets") stopped with "couldn't update ...mod.toml: Escaped character is not a Unicode
         scalar value" and left a folder whose mod.toml nothing could read (its name written as \\ud83d\\ude80)
         (release adc8ecea). PROPOSED FIX: the name is written as TOML writes it (package._toml)."""
-        for name in ("\U0001f680 Rockets", "Tanks \"Heavy\" \\ Light", "\U00020000\U0001f3c6"):
+        for name in (chr(0x1F680) + " Rockets", "Tanks \"Heavy\" \\ Light", chr(0x20000) + chr(0x1F3C6)):
             with self.subTest(name=name):
                 folder = Path(self.api.new_mod(name)["current"])
                 self.assertEqual(package.info_of(folder)["name"], name)

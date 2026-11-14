@@ -259,6 +259,7 @@ class AFileTooLongAfterAll(unittest.TestCase):
             self.assertEqual(str(said), f"The Generic Horse couldn't be added: {long} isn't there.")
 
 
+@unittest.skipUnless(__import__("importlib.util").util.find_spec("numpy"), "needs numpy, which the apps carry; the Python 3.11 test job runs without it on purpose")
 class TheBuildersNames(unittest.TestCase):
     def test_its_scratch_names_are_short_and_its_files_keep_their_names(self):
         from rusemod import horsesquad

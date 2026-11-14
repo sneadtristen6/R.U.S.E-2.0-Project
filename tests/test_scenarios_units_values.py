@@ -275,6 +275,7 @@ class ReadOnlyFiles(Player):
     mark is off, they work."""
     GAME = "studio"
 
+    @unittest.skipUnless(__import__("sys").platform == "win32", "Windows behaviour: the apps are Windows programs (on Steam Deck, under Proton)")
     def test_the_changes_file_marked_read_only(self):
         import os
         import stat

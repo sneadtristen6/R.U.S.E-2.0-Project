@@ -143,6 +143,7 @@ class DeleteASquad(Unusual):
               "| files", self.soldier_files())
         self.assertEqual((waiting, opened, self.soldier_files()), (False, False, []))
 
+    @unittest.skipUnless(__import__("sys").platform == "win32", "Windows behaviour: the apps are Windows programs (on Steam Deck, under Proton)")
     def test_delete_while_a_soldier_s_look_is_held_open(self):
         """Unusual: soldier 2's look file open in another program (Windows won't let it be moved), then Delete: the
         squad goes all the same (the owner, 2026-11-13: "if someone clicks it should through"), the page says which
@@ -165,6 +166,7 @@ class DeleteASquad(Unusual):
         self.page.choose_mod(str(self.mod))
         self.assertEqual(self.soldier_files(), [])
 
+    @unittest.skipUnless(__import__("sys").platform == "win32", "Windows behaviour: the apps are Windows programs (on Steam Deck, under Proton)")
     def test_made_again_while_a_deleted_soldier_s_look_is_still_held(self):
         """Unusual: as above, and New unit under the same name while the file is still held. By rusemod.holding.forget
         (a file a program still holds is from then on the new unit's), the new squad's soldier 2 wears it: the page

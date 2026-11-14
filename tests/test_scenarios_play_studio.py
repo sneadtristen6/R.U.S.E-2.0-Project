@@ -217,6 +217,7 @@ class TheChecksFixes(PlayScenario):
             held.close()
         return bad, said
 
+    @unittest.skipUnless(__import__("sys").platform == "win32", "Windows behaviour: the apps are Windows programs (on Steam Deck, under Proton)")
     def test_a_fix_that_cant_be_done_the_file_is_held(self):
         """Unusual: Set aside on a broken changes file another program has open (Windows won't let it be renamed):
         refused in words in every language, the file as it was; once let go, Set aside works."""
@@ -226,6 +227,7 @@ class TheChecksFixes(PlayScenario):
         self.assert_worded(said)
         self.assertTrue(Path(self.page.fix_problem({"fix": "set_aside", "file": "src/extra.rndf"})["kept"]).is_file())
 
+    @unittest.skipUnless(__import__("sys").platform == "win32", "Windows behaviour: the apps are Windows programs (on Steam Deck, under Proton)")
     def test_the_held_file_is_the_one_named(self):
         """Finding P-5, its PROPOSED FIX: the refusal named the file Set aside would have made (extra.rndf.broken:
         api.file_named takes the second file of a rename, as for a file put in another's place), not the one another
@@ -234,6 +236,7 @@ class TheChecksFixes(PlayScenario):
         self.assertNotIn(".broken", said["us"])
         self.assertIn(str(bad), said["us"])
 
+    @unittest.skipUnless(__import__("sys").platform == "win32", "Windows behaviour: the apps are Windows programs (on Steam Deck, under Proton)")
     def test_the_held_folder_is_the_one_named(self):
         """Finding P-5's class, its PROPOSED FIX: the check's Rename fix (a map folder named after the map's title,
         rename_map_folder) on a folder with a file another program has open named the folder it would have made

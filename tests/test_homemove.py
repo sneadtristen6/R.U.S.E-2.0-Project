@@ -30,7 +30,12 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-import numpy  # noqa: F401  (loaded once, before any test patches sys.modules: numpy can't load twice in a process)
+try:
+    import numpy  # noqa: F401  (loaded once, before any test patches sys.modules: numpy can't load twice in a process)
+except ImportError:
+    raise __import__("unittest").SkipTest("needs numpy, which the apps carry (installers/requirements.txt); the Python 3.11 test job runs without it on purpose") from None
+if sys.platform != "win32":
+    raise __import__("unittest").SkipTest("Windows' folder-length limit and Windows' own calls: the apps are Windows programs (on Steam Deck, under Proton)")
 
 from test_horse_squad import stand_in
 from test_studio import WithMod

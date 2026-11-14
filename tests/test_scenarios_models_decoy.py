@@ -93,6 +93,7 @@ class MadeUpSquadGame(unittest.TestCase):
 
 
 class Copies(MadeUpSquadGame):
+    @unittest.skipUnless(__import__("sys").platform == "win32", "Windows behaviour: the apps are Windows programs (on Steam Deck, under Proton)")
     def test_copies_named_in_other_scripts_each_its_own(self):
         """Two copies of the run named in Russian with an emoji and in Chinese: each its own copy (ids copy, copy_2),
         its name kept as typed; the Russian one ticked for the new squad at 150%: the build makes its clip for the
@@ -109,6 +110,7 @@ class Copies(MadeUpSquadGame):
         self.assertEqual(list(clips), ["own_copy_copy_fusilier_courselod0.baf"])
         self.assertTrue(any("the copy 跑 (copy_2) is ticked for no unit" in f.message for f in result.findings))
 
+    @unittest.skipUnless(__import__("sys").platform == "win32", "Windows behaviour: the apps are Windows programs (on Steam Deck, under Proton)")
     def test_only_this_unit_on_a_unit_ticked_for_a_copy_then_back_to_the_game_s(self):
         """Only this unit (200%) on the squad ticked for a copy (150%): the squad plays its own, the build says the
         copy isn't played by it; Back to the game's animation on the squad: it plays the copy again."""

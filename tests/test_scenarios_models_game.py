@@ -13,7 +13,10 @@ import tempfile
 import unittest
 from pathlib import Path
 
-import numpy  # noqa: F401  (loaded once, first: numpy can't load twice in a process)
+try:
+    import numpy  # noqa: F401  (loaded once, first: numpy can't load twice in a process)
+except ImportError:
+    raise __import__("unittest").SkipTest("needs numpy, which the apps carry (installers/requirements.txt); the Python 3.11 test job runs without it on purpose") from None
 from test_horse_squad import GAME, INDEX, RIFLE
 from test_ownrig import little_glb, turn_about
 from test_scenarios_models_base import LANGS, PYTHON_WORDS
