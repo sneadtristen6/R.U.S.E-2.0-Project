@@ -19,7 +19,7 @@ from unittest import mock
 from rusemod.webui import page_api
 from ruse_studio import era_units
 from ruse_studio.api import StudioApi, StudioError
-from test_studio import M4, WithMod
+from test_studio import M4, M4_GUN, WithMod
 
 OFFLINE_US = ("this PC couldn't reach the server: there's no internet connection, or something on the way (a firewall, "
               "an antivirus, the server itself) turned the connection down")
@@ -118,6 +118,29 @@ class CodeNames(WithMod):
         self.assertEqual(said, "Tiger-II слишком похоже на имя Tiger II — юнита, который уже есть в игре или в вашем "
                                "моде: у них были бы одни и те же файлы. Выберите другое имя.")
         self.assertNotIn("Descriptor_", said)
+
+    def test_a_name_taken_but_for_its_capitals_is_said_by_the_unit_s_name(self):
+        """morning tank beside Morning Tank (the units scenarios' U-8, refused since last night): the unit there named by
+        its name, not by the address the lowercase name would have had, which no unit has (the review of 11-14 found
+        "... too close to the name of Descriptor_Unit_morning_tank")."""
+        self.page.new_unit(M4, "Morning Tank", 10, group="new")
+        self.assertEqual(self.refused("fr", "new_unit", M4, "morning tank", 10, group="new"),
+                         "Il y a déjà une unité nommée Morning Tank. Choisissez un autre nom.")
+        said = self.refused("us", "new_unit", M4, "morning tank", 10, group="new")
+        self.assertEqual(said, "There's already a unit called Morning Tank. Pick another name.")
+        self.assertNotIn("Descriptor_", said)
+
+    def test_a_decimal_number_too_big_is_said_by_the_value_s_label(self):
+        """1e39 in a 4-byte decimal value (the units scenarios' U-9, refused since last night): the value by its label in
+        the Studio's language, as a whole number too big is (the review of 11-14 found the game's name in every
+        language); the control: the game's name when the Studio shows the game's own names."""
+        for lang in ("fr", "us"):
+            with self.subTest(lang=lang):
+                said = self.refused(lang, "edit", M4_GUN, "TempsEntreDeuxTirs", 1e39)
+                self.assertNotIn("TempsEntreDeuxTirs", said)
+                self.assertIn("1e+39", said)
+        self.assertTrue(self.refused("base", "edit", M4_GUN, "TempsEntreDeuxTirs", 1e39).startswith(
+            "TempsEntreDeuxTirs: 1e+39 doesn't fit"))
 
     def test_a_number_too_big_is_said_by_the_value_s_label(self):
         self.assertEqual(self.refused("fr", "new_unit", M4, "Big", 10_000_000_000, group="new"),
