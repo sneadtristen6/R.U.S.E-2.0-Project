@@ -606,7 +606,7 @@ class OpenedAgain(unittest.TestCase):
         """The run's change brought back while Blender is open; then the run changed in RUSE Decoy (its spine2 turned on
         top of it); then Blender sends again, the stand changed there and the run as it brought it back: the run stays
         as RUSE Decoy made it, named as kept the Studio's, and the stand's change comes in; a Resize after keeps them
-        (278fe767 put the run as Blender had it over the RUSE Decoy change)."""
+        (278fe767 and db197850 put the run as Blender had it over the RUSE Decoy change, named as not kept)."""
         before = self.files()
         handed = self.open(Open())
         self.send(handed["model"].read_bytes(), handed["send"], change=(RUN, HORSE_SPINE, baf.axis_angle("x", 10.0)))
@@ -631,8 +631,8 @@ class OpenedAgain(unittest.TestCase):
     def test_a_ruse_decoy_change_back_to_what_went_out_stays_when_blender_sends_the_run_again(self):
         """The run's change brought back while Blender is open; then the run put back in RUSE Decoy as it was, the clip
         that went out, byte for byte; then Blender sends the run again as it brought it back: the run stays as RUSE Decoy
-        put it back, said as kept the Studio's (being the clip that went out, it was taken for Blender's own and
-        Blender's change put over it without a word)."""
+        put it back, said as kept the Studio's (278fe767 and db197850 took it, being the clip that went out, for one as
+        Blender had it, and put Blender's change over it without a word)."""
         before = self.files()
         handed = self.open(Open())
         self.send(handed["model"].read_bytes(), handed["send"], change=(RUN, HORSE_SPINE, baf.axis_angle("x", 10.0)))
@@ -651,8 +651,9 @@ class OpenedAgain(unittest.TestCase):
     def test_a_ruse_decoy_change_kept_then_changed_in_blender_is_named(self):
         """The run changed in RUSE Decoy while Blender is open and kept by a Bring back that left it untouched; then the
         run changed in that Blender (its scene has the run as it went out) and brought back: Blender's run comes in and
-        the RUSE Decoy change is named, as when both change it before one Bring back (kept once, it was put back the
-        next time without a word: its fingerprint said the mod's run was the file's)."""
+        the RUSE Decoy change is named, as when both change it before one Bring back (278fe767 put the run that went
+        out over it at the first Bring back, named; this piece's first fix, db197850, kept it there and put Blender's
+        over it at the next without a word: its fingerprint said the mod's run was the file's)."""
         handed = self.open(Open())
         decoyed = self.decoy(RUN, SPINE2, 25.0)
         self.send(handed["model"].read_bytes(), handed["send"])
