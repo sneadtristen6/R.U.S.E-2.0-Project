@@ -3285,6 +3285,20 @@ cz = "V exportovaném souboru je každá cesta v těchto vašich souborech READM
 jpn = "エクスポートしたファイルでは、あなたのこれらの README ファイルにあるパスのうち、ユーザー自身のフォルダーで終わり、そのユーザーの名前が書かれているものを丸ごと取り除きました。ほかの言葉は書いたとおりです。Mod の中のファイルはそのままです：{0}。"
 sc = "在导出的文件里，你的这些 README 文件中以某个用户自己的文件夹结尾、因而写出了该用户名字的路径都已整个移除；其他字句都和你写的一样，模组里的文件保持原样：{0}。"
 fa = "در فایل خروجی، هر مسیری در این فایل‌های README شما که به پوشهٔ خود یک کاربر ختم می‌شود و از این رو نام کاربر را می‌آورد، به‌طور کامل برداشته شده است؛ هر کلمهٔ دیگر همان‌طور می‌ماند که نوشتید، و فایل‌های داخل ماد شما همان‌طور که هستند می‌مانند: {0}."
+# Piece 7's fix (review v2, item 35): Export's line for a README of his whose text it can't read, which goes out as he
+# wrote it (rusemod.package.readme_paths_out's `unread`; never silent: the export fix's review, 2026-11-13)
+[eb4461d0781]
+us = "Export can't read the text of these README files of yours, so they go out as you wrote them, with any folder path or user's name in them; save them as UTF-8 and export again to have those taken out: {0}."
+fr = "L'export ne peut pas lire le texte de ces fichiers README à vous : ils partent tels que vous les avez écrits, avec tout chemin de dossier ou nom d'utilisateur qu'ils contiennent ; enregistrez-les en UTF-8 et exportez à nouveau pour que ceux-ci soient retirés : {0}."
+ger = "Der Export kann den Text dieser README-Dateien von Ihnen nicht lesen, daher gehen sie so hinaus, wie Sie sie geschrieben haben, mit jedem Ordnerpfad und Benutzernamen darin; speichern Sie sie als UTF-8 und exportieren Sie erneut, damit diese entfernt werden: {0}."
+ita = "L'esportazione non riesce a leggere il testo di questi tuoi file README, quindi escono come li hai scritti, con ogni percorso di cartella o nome utente che contengono; salvali in UTF-8 ed esporta di nuovo perché vengano tolti: {0}."
+spa = "La exportación no puede leer el texto de estos archivos README tuyos, así que salen tal como los escribiste, con cualquier ruta de carpeta o nombre de usuario que tengan; guárdalos en UTF-8 y vuelve a exportar para que se quiten: {0}."
+pol = "Eksport nie może odczytać tekstu tych twoich plików README, więc wychodzą tak, jak je napisałeś, z każdą ścieżką folderu i nazwą użytkownika, które w nich są; zapisz je w UTF-8 i wyeksportuj ponownie, aby zostały usunięte: {0}."
+ru = "Экспорт не может прочитать текст этих ваших файлов README, поэтому они уходят такими, как вы их написали, со всеми путями к папкам и именами пользователей в них; сохраните их в UTF-8 и экспортируйте снова, чтобы они были убраны: {0}."
+cz = "Export nedokáže přečíst text těchto vašich souborů README, takže odcházejí tak, jak jste je napsali, se všemi cestami ke složkám a jmény uživatelů v nich; uložte je jako UTF-8 a exportujte znovu, aby byly odebrány: {0}."
+jpn = "あなたのこれらの README ファイルの文字をエクスポートが読めないので、中にあるフォルダーのパスやユーザー名ごと、書いたとおりのまま出ていきます。それらを取り除くには、UTF-8 で保存してもう一度エクスポートしてください：{0}。"
+sc = "导出无法读取你的这些 README 文件的文字，所以它们会按你写的原样导出，其中的文件夹路径和用户名都会保留；把它们存为 UTF-8 后再导出一次，就能移除这些内容：{0}。"
+fa = "خروجی نمی‌تواند متن این فایل‌های README شما را بخواند، پس همان‌طور که نوشتید بیرون می‌روند، با هر مسیر پوشه یا نام کاربری که در آن‌هاست؛ آن‌ها را با UTF-8 ذخیره کنید و دوباره خروجی بگیرید تا این‌ها برداشته شوند: {0}."
 # The Studio's folders copied to a short path (ruse_studio.homemove; the owner, 2026-11-13, answer 8: "tell the
 # modder, provide a quick fix that auto does it if they dont want to do it manually")
 [e139faf5cd7]
