@@ -10189,14 +10189,24 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                 pass
         finally:
             ix.close()
+        import time
+        from . import edits as edits_module   # (HOLD_WAIT read when the take-out starts)
+        from .edits import HOLD_STEP
+        # a list file another program holds for a moment is tried again, as delete_unit does (all or nothing: the
+        # take-out puts everything back before each try)
+        end = time.monotonic() + edits_module.HOLD_WAIT
         with self._saving:
-            try:
-                return ModEdits(edits.folder).remove_leftovers(tail)
-            except BaseException as exc:
-                worded = self._take_error(exc, edits.folder)
-                if worded is exc:
-                    raise
-                raise worded from exc
+            while True:
+                try:
+                    return ModEdits(edits.folder).remove_leftovers(tail)
+                except BaseException as exc:
+                    if isinstance(oserror_of(exc), PermissionError) and time.monotonic() < end:
+                        time.sleep(HOLD_STEP)
+                        continue
+                    worded = self._take_error(exc, edits.folder)
+                    if worded is exc:
+                        raise
+                    raise worded from exc
 
     def _clear_waiting(self, *folders) -> list[str]:
         """What a unit's Delete left for a program that had it open (rusemod.holding: out of the build already), taken

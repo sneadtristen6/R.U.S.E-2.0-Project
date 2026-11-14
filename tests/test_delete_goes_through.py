@@ -617,6 +617,24 @@ class OnTheStudio(WithMod):
         self.assertFalse(self.card.exists())
 
     @unittest.skipUnless(WINDOWS, "a file another program holds: Windows")
+    def test_a_leftovers_take_out_tries_a_units_toml_held_for_a_moment_again(self):
+        """The same kind of fault in the other take-out: what a unit the mod no longer has left behind (Delete on it,
+        Test in game's Take out what it left: api._take_leftovers) with units.toml held half a second goes through."""
+        edits = ModEdits(self.folder)
+        unit = edits.new_units.pop(SUPER)
+        edits.save()                                         # (the unit gone from the mod, its rows and files left)
+        self.assertIsNotNone(unit)
+        self.assertIn(self.tail, anim.read_units(self.folder))
+        f = open(self.folder / anim.UNITS, "rb")
+        threading.Timer(0.5, f.close).start()
+        with quick(3.0):
+            got = self.api.delete_unit(SUPER)
+        self.assertIsNone(got["deleted"])
+        self.assertTrue(got["leftovers"])
+        self.assertNotIn(self.tail, anim.read_units(self.folder))
+        self.assertFalse(self.card.exists())
+
+    @unittest.skipUnless(WINDOWS, "a file another program holds: Windows")
     def test_a_units_toml_held_past_the_wait_still_stops_it_in_words_everything_put_back(self):
         """A control: held past the wait, Delete stops as before, names the file in words, and the mod is as it was."""
         before = tree(self.folder)
