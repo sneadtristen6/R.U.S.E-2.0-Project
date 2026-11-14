@@ -3,8 +3,8 @@ title: "Roadmap: what's done, what's next"
 category: Announcements
 order: 2
 ---
-Where things stand, and what's next. Tested-in-game features are marked ✅. Latest: **RUSE Studio 0.9.8.12** and
-**RUSE Launcher 0.4.8.12**, in [Releases](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases).
+Where things stand, and what's next. Tested-in-game features are marked ✅. Latest: **RUSE Studio 0.9.8.20** and
+**RUSE Launcher 0.4.8.20**, in [Releases](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases).
 0.9.x is the alpha; **1.0** is the launch.
 
 ### Done
@@ -44,12 +44,21 @@ Where things stand, and what's next. Tested-in-game features are marked ✅. Lat
 - Launcher: mod sets, `.rmod` support, shared load orders, Supported mods, self-updates, Convert an old mod
 - **Map Paint** (early): paint the ground's picture; up close where the ground under it is cleared
 - **Troubleshoot**, a **clean game backup**, **Check this map**, **Report a problem** and **Help** in both apps
+- **RUSE Guard:** players with the same build play together, cheat mods or not; not fully supported yet
+  (Launcher 0.4.8.19)
+- ✅ **The Generic Horse**, one horse unit for every nation (Studio 0.9.8.20)
+- **A squad soldier by soldier**, **one Open in Blender**, and **animations** for one unit or the units you pick
+  (Studio 0.9.8.20)
 
 ### Next
 
+- **0.9.8.21: the fixes we know of.** Every problem we know of in 0.9.8.20, and its fix, is listed under What's next in
+  the [0.9.8.20 announcement](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/blob/main/docs/community/release-0.9.8.20.md).
 - **Iwo Jima and Pacific Island Defense:** the flagship.
-- **The map importer:** a real place as a map, the first for R.U.S.E. as far as we know. It builds part of Utah Beach
-  into a map that opens in the game; it isn't fully working in the Studio yet
+- **The map importer, still in progress:** a real place as a map, the first for R.U.S.E. as far as we know. It builds
+  part of Utah Beach into a map that opens in the game, but the beach, the water and the ground up close aren't right
+  yet, and it isn't fully working in the Studio
+  ([where it stands](https://github.com/sneadtristen6/R.U.S.E-2.0-Project#the-map-importer-where-it-stands))
 - **Unit and building sounds, and campaign scenes** (being researched)
 
 ### On hold

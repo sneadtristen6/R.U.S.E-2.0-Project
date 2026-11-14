@@ -232,6 +232,74 @@ fixes and a Having trouble? link.**
   such squads need by itself, downloaded once and applied only to your modded copy. Not yet tried in the game from the
   Launcher.
 
+**What's next: 0.9.8.21.** Our tests of this release and your reports turned up the problems below. Each has a fix
+planned for 0.9.8.21: the small ones first, then the bigger ones.
+
+Problems you may meet in 0.9.8.20:
+
+- **Repainting a unit with a model you imported:** Open in Blender with only Its paint ticked opens the game's own
+  paint, not yours. On a copy of the M4 Sherman, paint it red and every M4 Sherman in the game turns red, while your
+  tank stays as it was. The fix: it opens your own model's paint.
+- **Mods named with no letter a to z** (a Russian, Japanese, Chinese or Persian name) all get the same short file name,
+  so two of them can replace each other in the Launcher, and the replaced one is deleted. The fix: Export asks for a
+  short file name in letters a to z, and the Launcher asks before replacing a mod with another name or author and puts
+  the old one in the Recycle Bin.
+- **Two mods in one set that each make a new unit of the same name, or that each have the Generic Horse,** can't be
+  played together: Play stops. The fix: the set screen names the clash and offers to keep both, each mod's units
+  separately; the Generic Horse stays one unit, the later mod's values winning.
+- **Two map mods that make a map with the same folder name:** Play stops and names it, but the mod check before Play
+  doesn't. The fix: the check names it first.
+- **The same soldier removed twice within a second:** the first one's look is lost. The fix: each removed look kept
+  apart.
+- **Export says it failed though it saved** when a file of the mod's older copy in the Launcher's library is open in
+  another program. The fix: it finishes, says the mod wasn't added to the library, and names the file to close.
+- **A crash is explained only to Bug Watch players.** The fix: everyone else gets a short crash code to tell us, naming
+  the kind of crash; Bug Watch keeps the full detail.
+- **On one game map, the Blank Terrain and Blank Ocean starts** get the ordinary ground, not the generated one (the
+  other maps tried were fine). Why isn't known yet.
+- **A few word slips:** after a trip to Blender for paint only, Blender and the Studio still say "Bring back" (the
+  button reads Bring my changes back), in English only; a squad's uniform refusal and "Blender isn't found" name
+  buttons those boxes haven't got; one German line says "Sie" where the rest say "du".
+
+Coming in 0.9.8.21 as well:
+
+- **Making units:** Rename for mods and new units; the mod menu shows each mod's real name; a warning before deleting
+  a copied ammo that a weapon still fires; a unit price below 0 refused, as a research price already is; the building
+  that builds a unit picked from the nation's real buildings, not typed as a number; a copy of a unit you changed
+  starts from your changed values; a second unit with exactly the same name refused in every alphabet; plainer limits
+  ("too big: the game takes at most 2,147,483,647"); a word when a copy of an upgrade stops being an upgrade; a copy of
+  an upgrade made after its research unit was hidden no longer stops the mod building; when two of your mods change
+  the same value, the set screen says which one wins.
+- **Squads, Blender and animations:** a new unit never wears a deleted unit's old look, and old Blender work under the
+  same name is set aside, not picked up; a change to an animation a RUSE Decoy copy plays goes into that copy; on
+  tanks and planes Blender's first hint says "Change the model…"; one way back from Blender, Open in Blender; a bone
+  moved too little to keep is said; nothing changed in Blender means no files rewritten, and unticked bones bring the
+  animations back untouched; Import model says what it left out of a model's animations; Custom uniform and Back to the
+  default uniform in all 11 languages; a broken animations or build-menu groups file said in plain words, with a Set
+  aside button; and 25 small changes where the boxes ask too much of you: more Having trouble? links, "Automatic" in
+  place of "Nearest", Open in Blender as the Model row's own button on tanks and planes, "Repaint in Blender" where only
+  paint comes back, one name, Import model…, everywhere, and links to the wiki's how-tos.
+- **The Generic Horse and other eras:** an older mod keeps its era unit's model, with a button to update it; Resize
+  makes the horse's own files on a PC that hasn't got them.
+- **Export and the Launcher:** your README, credits, licence and docs folder packed with the mod; your whole user name
+  taken out of your README; a mod saved by a newer Studio added with a word to update; a join code after a Studio test
+  says so and offers Play; Export names what it replaced; a download cut short says so; a mod too big for the Launcher
+  refused before packing; a zip holding two mods refused, naming both.
+- **Test in game:** the build's checks run first, so fewer starts fail; a crash during Test in game told in the Studio
+  too; Delete waits for a file another program holds, then names it; the build cache kept with the Studio's own folder.
+- **Maps:** a copy named like a game map refused at once, and Rename for maps; a new map made with only a units mod
+  picked gets a map mod of its own; blocks and water painted over the map's own HQ checked; a river painted on a Blank
+  Terrain start keeps units off that ground, with no warnings about ground you never touched; Map size offers only
+  sizes that build (placing things on a grown map's new ground comes later).
+- **Words:** the Mission and Map Paint refusals in all 11 languages; a mistake in a mod's file said in your language,
+  with where it is; Test in game's "To see your changes" names the game's menus and maps in your language; more of the
+  checks of a mod's files in plain words, the ones players meet most first.
+
+**The map importer is still in progress.** It builds part of Utah Beach into a map that opens in the game, but the
+beach, the water and the ground up close aren't right yet, and it isn't fully working in the Studio. We'd rather wait
+until a real place looks and plays like a real R.U.S.E. map than put out something half done:
+[where it stands](https://github.com/sneadtristen6/R.U.S.E-2.0-Project#the-map-importer-where-it-stands).
+
 **In 0.9.8.19, right before it: RUSE Guard lets players with the same build play together, cheat mods or not. Not fully
 supported yet.** A player told us that he and a friend, both with the same mod pack, were thrown out of every
 multiplayer match, because one mod in it (Infinite Supply Depot) is tagged as a cheat. RUSE Guard treated every game
