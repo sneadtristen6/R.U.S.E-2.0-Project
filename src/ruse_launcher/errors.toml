@@ -721,6 +721,19 @@ jpn = "パックする前に MOD を直してください: {0}"
 sc = "请先修正模组再打包：{0}"
 fa = "پیش از بسته‌بندی، ماد را درست کنید: {0}"
 
+[e1ebcddabbd]
+us = "{0} is damaged: {1} in it doesn't unpack whole. Get the file again (download it again, or ask whoever sent it to send it again)."
+fr = "{0} est abîmé : {1} qu'il contient ne se décompresse pas en entier. Récupérez de nouveau le fichier (téléchargez-le de nouveau, ou demandez à la personne qui l'a envoyé de le renvoyer)."
+ger = "{0} ist beschädigt: {1} darin lässt sich nicht vollständig entpacken. Besorgen Sie die Datei noch einmal (laden Sie sie erneut herunter oder bitten Sie den Absender, sie noch einmal zu schicken)."
+ita = "{0} è danneggiato: {1} al suo interno non si estrae per intero. Procurati di nuovo il file (scaricalo di nuovo, o chiedi a chi l'ha mandato di rimandarlo)."
+spa = "{0} está dañado: {1}, que va dentro, no se descomprime entero. Consigue el archivo otra vez (descárgalo de nuevo o pide a quien lo envió que lo vuelva a enviar)."
+pol = "{0} jest uszkodzony: {1} w środku nie rozpakowuje się w całości. Zdobądź plik jeszcze raz (pobierz go ponownie albo poproś osobę, która go wysłała, o ponowne wysłanie)."
+ru = "{0} повреждён: {1} внутри не распаковывается целиком. Получите файл заново (скачайте его снова или попросите того, кто его прислал, прислать ещё раз)."
+cz = "{0} je poškozený: {1} uvnitř se nerozbalí celý. Opatřete si soubor znovu (stáhněte ho znovu, nebo požádejte toho, kdo ho poslal, ať ho pošle ještě jednou)."
+jpn = "{0} は壊れています。中の {1} を最後まで展開できません。ファイルをもう一度手に入れてください（ダウンロードし直すか、送ってくれた人にもう一度送ってもらう）。"
+sc = "{0} 已损坏：其中的 {1} 无法完整解压。请重新获取这个文件（重新下载，或请发送者再发一次）。"
+fa = "{0} خراب است: {1} درونش کامل باز نمی‌شود. فایل را دوباره بگیرید (دوباره دانلودش کنید، یا از کسی که فرستاده بخواهید دوباره بفرستد)."
+
 [e17ec56e745]
 us = "{0} isn't a mod file: there's no {1} in it (at the top, or inside one folder)."
 fr = "{0} n'est pas un fichier de mod : il ne contient pas de {1} (au premier niveau, ou dans un seul dossier)."

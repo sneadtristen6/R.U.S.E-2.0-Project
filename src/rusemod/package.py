@@ -42,6 +42,7 @@ import tempfile
 import tomllib
 import unicodedata
 import zipfile
+import zlib
 from pathlib import Path, PurePosixPath
 
 from .build import NOT_IN_MODS, BuildError, load_mod
@@ -1199,6 +1200,8 @@ def check(path, read: bool = True) -> dict:
             data = tomllib.loads(z.read(root + MANIFEST).decode("utf-8"))
         except (tomllib.TOMLDecodeError, UnicodeDecodeError) as exc:
             raise PackageError(f"{path.name}: its {MANIFEST} can't be read ({exc}).") from None
+        except DAMAGED:
+            raise _damaged(path, MANIFEST) from None
     info = manifest_info(data)
     _check_info(info)
     info |= {"files": files, "members": members, "root": root, "path": str(path)}
@@ -1236,5 +1239,20 @@ def _extract(path: Path, members: dict, into: Path) -> None:
         for rel, member in members.items():
             target = into / rel
             target.parent.mkdir(parents=True, exist_ok=True)
-            with z.open(member) as src, target.open("wb") as dst:
-                shutil.copyfileobj(src, dst)
+            try:
+                with z.open(member) as src, target.open("wb") as dst:
+                    shutil.copyfileobj(src, dst)
+            except DAMAGED:
+                raise _damaged(path, rel) from None
+
+
+# how a damaged mod file fails to unpack (a byte changed by a download gone wrong): zlib's "Error -3 while
+# decompressing data", zipfile's "Bad CRC-32 for file ...", a member cut short
+DAMAGED = (zipfile.BadZipFile, zlib.error, EOFError)
+
+
+def _damaged(path: Path, rel: str) -> PackageError:
+    """A damaged mod file said in words, never zlib's or zipfile's own (the export scenarios' FE-9, 2026-11-14: the
+    Launcher's Add stopped with "zlib.error: Error -3 while decompressing data: invalid code lengths set")."""
+    return PackageError(f"{path.name} is damaged: {rel} in it doesn't unpack whole. Get the file again (download it "
+                        f"again, or ask whoever sent it to send it again).")

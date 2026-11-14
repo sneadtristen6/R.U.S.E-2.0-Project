@@ -137,5 +137,58 @@ class ThePageGetsIt(unittest.TestCase):
         self.assertIsNone(self.api.page_error(LauncherError("Nobody's words")))  # nothing to say differently
 
 
+class ADamagedModFile(unittest.TestCase):
+    """The export scenarios' FE-9: a mod file with one byte changed (a download gone wrong) stopped the Launcher's Add
+    with zlib's or zipfile's own words ("Error -3 while decompressing data: invalid code lengths set", "Bad CRC-32 for
+    file 'src/eco.rndf'"), no refusal of ours. Now it's said in words naming the file inside, in the player's language;
+    the same file undamaged is added (the control)."""
+
+    MOD = {"mod.toml": '[mod]\nid = "econ-half"\nversion = "1.0.0"\nname = "Half price"\n',
+           "src/eco.rndf": "patch $/B ( ProductionPrice *= 0.5 )\n" * 40}
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.tmp = Path(self._tmp.name)
+        self.whole = self.tmp / "econ-half-1.0.0.rusemod"
+        import zipfile
+        with zipfile.ZipFile(self.whole, "w", zipfile.ZIP_DEFLATED) as z:
+            for rel, text in self.MOD.items():
+                z.writestr(rel, text)
+
+    def tearDown(self):
+        self._tmp.cleanup()
+
+    def damaged(self, member: str) -> Path:
+        import zipfile
+        raw = bytearray(self.whole.read_bytes())
+        with zipfile.ZipFile(self.whole) as z:
+            info = z.getinfo(member)
+        start = info.header_offset + 30 + len(info.filename.encode()) + len(info.extra)
+        raw[start + 3] ^= 0xFF
+        out = self.tmp / ("damaged-" + member.replace("/", "-")) / self.whole.name
+        out.parent.mkdir()
+        out.write_bytes(bytes(raw))
+        return out
+
+    def test_a_damaged_byte_is_said_in_words_in_the_player_s_language(self):
+        for member in ("mod.toml", "src/eco.rndf"):
+            with self.subTest(member=member):
+                api = LauncherApi(home=self.tmp / member.replace("/", "-") / "home", game_dir=self.tmp / "nowhere")
+                api.set_pref("lang", "fr")
+                with self.assertRaises(LauncherError) as caught:
+                    page_api(api).add_mod(str(self.damaged(member)))
+                self.assertEqual(str(caught.exception),
+                                 f"econ-half-1.0.0.rusemod est abîmé : {member} qu'il contient ne se décompresse pas "
+                                 f"en entier. Récupérez de nouveau le fichier (téléchargez-le de nouveau, ou demandez à "
+                                 f"la personne qui l'a envoyé de le renvoyer).")
+                self.assertEqual(api.library(), [])
+
+    def test_control_the_file_undamaged_is_added(self):
+        api = LauncherApi(home=self.tmp / "home", game_dir=self.tmp / "nowhere")
+        api.set_pref("lang", "fr")
+        res = page_api(api).add_mod(str(self.whole))
+        self.assertEqual((res["mod"]["id"], res["replaced"]), ("econ-half", False))
+
+
 if __name__ == "__main__":
     unittest.main()
