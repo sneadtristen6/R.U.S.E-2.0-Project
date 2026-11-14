@@ -28,7 +28,7 @@ with the R.U.S.E. Field Manual and the Balance Overhaul Mod together.
   Commandable Battleship - All Operations mod or the R.U.S.E. Field Manual 1.0.0 gets a new join code too: for some of
   their units, another nation's unit packs now load in every skirmish (below). So does a set with Operation Overlord or
   Operation Fortress Europa: with either of them, the US, German, British and French unit packs now load in every match
-  (below). Every other set keeps its join code. After the update, the next **Play** or **Test in game** builds your game
+  (below). After the update, the next **Play** or **Test in game** builds your game
   again by itself.
 - **Missions a set leaves without their places (Studio and Launcher):** when a set's mods leave a campaign chapter, an
   Operation or the tutorial without a place its mission watches from its start, the build warns, naming the mod and how
