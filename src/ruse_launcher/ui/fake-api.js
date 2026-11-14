@@ -4,7 +4,7 @@
 // copy, ?fake=installfail one mod of several that fails its check; ?fake=backup,
 // ?fake=oldbackup, ?fake=nospace and ?fake=running the clean game backup's states, in Settings; ?fake=firstbackup the
 // installer's "Keep a clean copy" ask, made on the first start; ?fake=lang "Choose your language" with the game set to
-// French in Steam). Only English, French
+// French in Steam; ?fake=crash a game crash we know, told a few seconds after Play). Only English, French
 // and Chinese words are included here; the real launcher has all ten languages. It does nothing in the real window.
 "use strict";
 
@@ -177,6 +177,16 @@
   Object.assign(words.us, { tip_play_waits: "Play waits a moment: the Launcher is checking whether these mods go together.",
     known_campaign_chapters_stop: "Known problem: with this mod on, some campaign chapters stop about a second after they start. It replaces their maps with ones that lack places their missions use.",
     known_tutorial_stops: "Known problem: with this mod on, the tutorial stops about a second after it starts. It replaces the tutorial's map with one that lacks places its mission uses." });
+  // A game crash we know, told after a Play (?fake=crash; words.toml crash_*, item 25)
+  Object.assign(words.us, { crash_unit: "The game crashed while making the unit “{unit}”. {why}",
+    crash_mod_unit: "The game crashed while making “{unit}”, a unit a mod added. {why}",
+    crash_no_unit: "The game crashed. {why}",
+    crash_why_made: "The game couldn't build the unit's model: the model had no skeleton in that battle, or not the bones its parts need.",
+    crash_why_turret: "A turret looked for its part on the unit's model, and that part was never built: the model had no skeleton in that battle.",
+    crash_why_setup: "A unit's model had no skeleton when the game first set it up.",
+    crash_why_part: "A turret names a part its unit's model doesn't have.",
+    crash_why_mesh: "A unit's model had no mesh (its 3D shape) when the game measured its size." });
+  let crashTold = false;
   let fakeBugwatch = { available: true, on: false, name: "", code: "" };  // ?fake=bugoff hides the card, as bugwatch.ON = False does
   if (new URLSearchParams(location.search).get("fake") === "bugoff") fakeBugwatch.available = false;
   // ?fake=agree: the first-start agreement hasn't been accepted yet; ?fake=agree-again: version 3 was, by a player
@@ -425,6 +435,12 @@
         app: "launcher", version: "0.4.8.9", day: new Date().toISOString().slice(0, 10), setup: { windows: "11", language: "us" },
         calls: { play: { n: 2, failed: 0, time: [0, 2, 0, 0, 0] } } }, waiting: [] }),
       bugwatch_seen: async () => ({ ok: true }),
+      // ?fake=crash: after a Play, the game stops at a crash we know while making a mod's unit (app.js watchCrash)
+      bugwatch_crash: async () => {
+        const notice = mode === "crash" && !crashTold ? { why: "made", unit: "Horse Squad", added: true } : null;
+        crashTold = crashTold || Boolean(notice);
+        return { watching: false, notice };
+      },
       troubleshoot: async () => {
         await new Promise((done) => setTimeout(done, 600));  // the real checks take a moment
         const list = findings();

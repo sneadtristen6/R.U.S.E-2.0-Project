@@ -363,14 +363,18 @@ class Crashes(BugWatchTest):
         p.write_bytes(bytes(raw))
         return p
 
-    def dump_with_stack(self, words_before: list, words: list, access=(0, 0x20), memory_list=False) -> bytes:
+    def dump_with_stack(self, words_before: list, words: list, access=(0, 0x20), memory_list=False, place=0x4321,
+                        build=(0x2000000, 0, 0), kept=()) -> bytes:
         """A crash report file of a bad memory access in RUSE.exe (+0x4321) by thread 7: its exception record with
         `access` (what, where) and its registers (the stack's top after `words_before`), the module list, and the
         thread list with its stack: `words_before` (under the top: not the chain's) then `words`. `memory_list`: as
         the game's own crash reporter writes it, the thread's stack named at 0 and kept in a memory list instead."""
         name = "C:\\Games\\R.U.S.E\\RUSE.exe".encode("utf-16-le")
+        # (item 25) `place`: where it stopped, from the program's start; `build`: the program's size, checksum and time
+        # stamp in the module list; `kept`: more memory the report kept, [(address, bytes)], in the memory list too
         stack = b"".join(struct.pack("<Q", w) for w in words_before + words)
         stack_start = 0x000000E5F7F00000
+        memory_list = memory_list or bool(kept)
         streams = 4 if memory_list else 3
         exc_at = 32 + 12 * streams          # the parts, one after another, after the header and the directory
         ctx_at = exc_at + 168
@@ -379,14 +383,19 @@ class Crashes(BugWatchTest):
         threads_at = name_at + 4 + len(name)
         stack_at = threads_at + 4 + 48
         memory_at = stack_at + len(stack)
-        exception = (struct.pack("<II", 7, 0) + struct.pack("<IIQQII", 0xC0000005, 0, 0, self.BASE + 0x4321, 2, 0)
+        exception = (struct.pack("<II", 7, 0) + struct.pack("<IIQQII", 0xC0000005, 0, 0, self.BASE + place, 2, 0)
                      + struct.pack("<QQ", *access) + b"\0" * 104 + struct.pack("<II", 0x4D0, ctx_at))
         context = bytearray(0x4D0)
         struct.pack_into("<Q", context, 0x98, stack_start + 8 * len(words_before))
-        mods = struct.pack("<I", 1) + struct.pack("<QIIII", self.BASE, 0x2000000, 0, 0, name_at) + b"\0" * (108 - 24)
+        mods = struct.pack("<I", 1) + struct.pack("<QIIII", self.BASE, *build, name_at) + b"\0" * (108 - 24)
         threads = struct.pack("<I", 1) + struct.pack("<IIIIQQIIII", 7, 0, 0, 0, 0, stack_start, len(stack),
                                                      0 if memory_list else stack_at, 0x4D0, ctx_at)
-        memory = struct.pack("<I", 1) + struct.pack("<QII", stack_start, len(stack), stack_at)
+        memory = struct.pack("<I", 1 + len(kept)) + struct.pack("<QII", stack_start, len(stack), stack_at)
+        where = memory_at + 4 + 16 * (1 + len(kept))   # the kept pieces' bytes, after the memory list
+        for start, blob in kept:
+            memory += struct.pack("<QII", start, len(blob), where)
+            where += len(blob)
+        memory += b"".join(blob for _start, blob in kept)
         header = b"MDMP" + struct.pack("<IIIIIQ", 0xA793, streams, 32, 0, 0, 0)
         directory = (struct.pack("<III", 6, len(exception), exc_at) + struct.pack("<III", 4, len(mods), mods_at)
                      + struct.pack("<III", 3, len(threads), threads_at))
@@ -613,6 +622,257 @@ class VersionFour(BugWatchTest):
         text = json.dumps(sent) + json.dumps(w.days)
         for secret in ("nicks", "Nick's", "Nicks_Tank", "Unit_Nicks_Ship", "ardennes", "IwoGround", "N.rmod"):
             self.assertNotIn(secret, text)
+
+
+class KnownCrashes(BugWatchTest):
+    """Item 25 (the owner, 2026-11-13: "if their unit was crashing the game, they should be told that" and "they
+    should also be told why that unit made the game crash"): a crash at a place rusemod.crashplaces knows gets its
+    plain reason, and under version 4 of the agreement the unit the game was making, read from the crash report the
+    way the held reports keep it (the creating step's caller holds the unit's description); the unit goes out only as
+    version 4 says ("one of the game's own units by its number; a unit a mod added only as "a mod's unit""), the
+    reason and the unit's name never. Made-up reports and program files only: every number of the program is the
+    table's own (crashplaces), none is written here."""
+
+    BASE = Crashes.BASE
+    UNIT, OTHER = 0x16145E50, 0x26145E50   # where the made-up reports keep units' descriptions
+
+    def setUp(self):
+        super().setUp()
+        from rusemod import crashplaces
+        self.places = crashplaces
+        self.made = next(at for at, (key, _needs) in crashplaces.PLACES.items() if key == "made")
+        self.create = crashplaces.CREATING[0] + 0x40    # a place right after a call in the unit-creation step
+        bugwatch.turn_on(self.home, "Nick")
+        bugwatch._notice = None
+
+    def tearDown(self):
+        bugwatch._notice = None
+        super().tearDown()
+
+    def accept(self, version):
+        VersionFour.accept(self, version)
+
+    def program(self, places) -> Path:
+        """A made-up program file: a call right before each of `places` (offsets from its start), one 4 KB runnable
+        section for each place's page, and nothing else like a call."""
+        pages = sorted({p & ~0xFFF for p in places})
+        raw = bytearray(0x400 + 0x1000 * len(pages))
+        struct.pack_into("<I", raw, 0x3C, 0x80)
+        raw[0x80:0x84] = b"PE\0\0"
+        struct.pack_into("<HH", raw, 0x84, 0x8664, len(pages))
+        struct.pack_into("<H", raw, 0x94, 0xF0)
+        for i, page in enumerate(pages):
+            struct.pack_into("<8sIIIIIIHHI", raw, 0x188 + 40 * i, b".text", 0x1000, page, 0x1000, 0x400 + 0x1000 * i,
+                             0, 0, 0, 0, 0x60000020)
+        for p in places:
+            raw[0x400 + 0x1000 * pages.index(p & ~0xFFF) + (p & 0xFFF) - 5] = 0xE8
+        path = self.home / "copy" / "program.exe"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(bytes(raw))
+        return path
+
+    def description(self, number, at=None, kind=None):
+        """The memory a report keeps round a unit's description (from 256 bytes before it): its kind's table first,
+        its number where the game keeps it."""
+        blob = bytearray(0x400)
+        kind = min(self.places.UNIT_CLASSES) if kind is None else kind
+        struct.pack_into("<Q", blob, 0x100, self.BASE + kind)
+        struct.pack_into("<I", blob, 0x100 + self.places.UNIT_NUMBER, number)
+        return ((at or self.UNIT) - 0x100, bytes(blob))
+
+    def report(self, words=(), kept=(), place=None, build=None, below=()) -> Path:
+        p = self.home / "report.dmp"
+        p.write_bytes(Crashes.dump_with_stack(self, list(below), list(words), place=self.made if place is None else place,
+                                              build=build or self.places.BUILD, kept=list(kept)))
+        return p
+
+    def test_a_crash_we_know_says_why_and_which_unit(self):
+        program = self.program([self.create])
+        p = self.report([0x1234, self.BASE + self.create, 0, self.UNIT, self.UNIT], [self.description(4059)])
+        found = bugwatch.read_dump(p, program, unit=True)
+        self.assertEqual((found["reason"], found["unit"]), ("made", 4059))
+        asked = bugwatch.read_dump(p, program)                    # the unit only when asked (version 4: GameWatch)
+        self.assertEqual((asked["reason"], "unit" in asked), ("made", False))
+        alone = bugwatch.read_dump(p, unit=True)                  # no copy's program: no chain, so no unit; the place
+        self.assertEqual((alone["reason"], "unit" in alone), ("made", False))   # alone still says why
+        build = self.places.BUILD
+        big = (build[0] + 0x1000,) + build[1:]                    # a copy with the big-packs game patch: a page longer
+        found = bugwatch.read_dump(self.report([0, self.BASE + self.create, self.UNIT], [self.description(4059)],
+                                               build=big), program, unit=True)
+        self.assertEqual((found["reason"], found["unit"]), ("made", 4059))
+        self.assertEqual(self.places.BUILDS, {build, big})        # those two only
+
+    def test_no_reason_or_unit_where_it_cant_be_sure(self):
+        program = self.program([self.create])
+        making, one = [0, self.BASE + self.create, self.UNIT], [self.description(4059)]
+        other_build = self.places.BUILD[:2] + (self.places.BUILD[2] + 1,)
+        longer = (self.places.BUILD[0] + 0x2000,) + self.places.BUILD[1:]
+        for place, build in ((0x4321, None), (self.made, other_build), (self.made, longer)):
+            # a place we don't know, or another build of the program (its places may be other code): nothing
+            found = bugwatch.read_dump(self.report(making, one, place=place, build=build), program, unit=True)
+            self.assertEqual((found.get("reason"), found.get("unit")), (None, None))
+            self.assertEqual(found["code"], "0xc0000005")         # the rest is read as before
+        two = bugwatch.read_dump(self.report(making + [self.OTHER], one + [self.description(4404, self.OTHER)]),
+                                 program, unit=True)              # two different units: none said
+        self.assertEqual((two["reason"], two.get("unit")), ("made", None))
+        for words in ([self.UNIT, self.BASE + self.create, 0],   # only below the creating step's return (deeper)
+                      [0, self.UNIT]):                           # no return into the creating step at all
+            self.assertIsNone(bugwatch.read_dump(self.report(words, one), program, unit=True).get("unit"))
+        not_a_unit = [self.description(4059, kind=0x1234)]       # something else than a unit's description there
+        self.assertIsNone(bugwatch.read_dump(self.report(making, not_a_unit), program, unit=True).get("unit"))
+        nested = [0, self.BASE + self.create, self.UNIT, self.BASE + self.create, self.OTHER]  # an outer creation's
+        found = bugwatch.read_dump(self.report(nested, one + [self.description(4404, self.OTHER)]), program, unit=True)
+        self.assertEqual(found["unit"], 4059)                     # unit beyond the next return isn't read
+        with mock.patch.object(bugwatch, "_kept_memory", side_effect=struct.error("cut short")):
+            found = bugwatch.read_dump(self.report(making, one), program, unit=True)
+        self.assertEqual((found["reason"], found.get("unit")), ("made", None))   # the report itself is still read
+
+    def test_the_name_search_place_counts_only_with_a_turret_in_its_chain(self):
+        search = next(at for at, (_key, needs) in self.places.PLACES.items() if needs)
+        part, turret = self.places.PART_BY_NAME[0] + 0x40, self.places.TWO_AXIS[0][0] + 0x40
+        program = self.program([part, turret])
+        both = [self.BASE + part, self.BASE + turret]
+        self.assertEqual(bugwatch.read_dump(self.report(both, place=search), program)["reason"], "turret")
+        for words in (both[:1], both[1:], []):
+            self.assertNotIn("reason", bugwatch.read_dump(self.report(words, place=search), program))
+        self.assertNotIn("reason", bugwatch.read_dump(self.report(both, place=search)))  # no program, no chain
+
+    def test_every_reason_has_its_words_in_every_language(self):
+        import re
+        import tomllib
+        from rusemod import schema
+        self.assertEqual({key for key, _needs in self.places.PLACES.values()}, set(self.places.REASONS))
+        root = Path(__file__).resolve().parents[1] / "src" / "ruse_launcher"
+        words = tomllib.loads((root / "words.toml").read_text(encoding="utf-8"))
+        for key in [f"crash_why_{r}" for r in self.places.REASONS] + ["crash_unit", "crash_mod_unit", "crash_no_unit"]:
+            self.assertEqual(sorted(words[key]), sorted(schema.APP_LANGS), key)
+            blanks = {tuple(sorted(re.findall(r"\{(\w+)\}", text))) for text in words[key].values()}
+            self.assertEqual(len(blanks), 1, key)                 # the same {blanks} in every language
+        app = (root / "ui" / "app.js").read_text(encoding="utf-8")
+        self.assertIn("api().bugwatch_crash()", app)              # the page asks after a Play, and says it
+        self.assertIn('if (j.state === "done") watchCrash();', app)
+        self.assertIn("bugwatch_crash:", (root / "ui" / "fake-api.js").read_text(encoding="utf-8"))
+
+    def run_game(self, report: bytes, named, program):
+        """A game the app started that closed leaving `report`: what went out, what the window is told, and the
+        stand-in that named the unit (`named`: unit_named's answer)."""
+        local = self.home / "local"
+        rpt = local / "Temp" / "CrashRpt_x"
+        rpt.mkdir(parents=True, exist_ok=True)
+        polls = iter([None, 0])
+
+        class Game:
+            def poll(self):
+                return next(polls)
+
+        times = iter([1000.0, 1600.0, 1600.0])
+        w = self.watch()
+
+        def sleep(_seconds):
+            (rpt / "report.dmp").write_bytes(report)
+            os.utime(rpt / "report.dmp", (1500, 1500))
+
+        g = bugwatch.GameWatch(w, Game(), [], 1, sleep=sleep, clock=lambda: next(times), local=str(local),
+                               exe=program, game=self.home / "game")
+        with mock.patch.object(w, "send_waiting"), mock.patch.object(bugwatch, "unit_named",
+                                                                     return_value=named) as naming:
+            g.run()
+        files = list(w.outbox.glob("crash-*.json"))
+        (sent,) = [json.loads(f.read_text()) for f in files]
+        for f in files:
+            f.unlink()
+        return sent, bugwatch.crash_notice(), naming
+
+    def test_the_game_watch_tells_the_player_and_sends_the_unit_as_version_4_says(self):
+        program = self.program([self.create])
+        report = self.report([0, self.BASE + self.create, self.UNIT], [self.description(4059)]).read_bytes()
+        horse = {"name": "Horse Squad", "added": True}
+        self.accept(3)                                            # version 3: why only; no unit read, named or sent
+        sent, told, naming = self.run_game(report, horse, program)
+        self.assertEqual(told, {"watching": False, "notice": {"why": "made", "unit": None, "added": False}})
+        naming.assert_not_called()
+        self.assertNotIn("unit", sent)
+        self.accept(4)                                            # a mod's unit: named for the player, sent as added
+        sent, told, naming = self.run_game(report, horse, program)
+        self.assertEqual(told["notice"], {"why": "made", "unit": "Horse Squad", "added": True})
+        self.assertEqual((sent["unit"], sent["agreement"]), ({"added": True}, 4))
+        self.assertEqual(naming.call_args[0][:2], (4059, program.parent))    # named from the crashed copy's data
+        bodies = [sent]
+        sent, told, _ = self.run_game(report, {"name": "DECOY AIRFIELD", "added": False}, program)
+        self.assertEqual((sent["unit"], told["notice"]["unit"]), ({"game": 4059}, "DECOY AIRFIELD"))  # the game's own
+        bodies.append(sent)
+        for named in (None, {"name": "Horse Squad", "added": None}):   # not found, or whose it is isn't known
+            sent, told, _ = self.run_game(report, named, program)
+            self.assertNotIn("unit", sent)
+            self.assertEqual(told["notice"]["why"], "made")
+            bodies.append(sent)
+        for body in bodies:                                       # never the reason or a name in what goes out
+            self.assertFalse({"reason", "unit_name", "unit_added"} & set(body))
+            self.assertNotIn("Horse", json.dumps(body))
+            self.assertNotIn("DECOY", json.dumps(body))
+            self.assertTrue(is_clean(body))
+        self.assertIsNone(bugwatch.crash_notice()["notice"])      # handed over once
+        unknown = self.report([0, self.BASE + self.create, self.UNIT], [self.description(4059)], place=0x4321)
+        sent, told, _ = self.run_game(unknown.read_bytes(), horse, program)   # a crash we don't know: nothing told
+        self.assertEqual((told["notice"], "unit" in sent), (None, False))
+
+    def test_the_window_waits_while_a_game_is_watched(self):
+        import threading
+        closed = threading.Event()
+
+        class Game:
+            def poll(self):
+                return 0 if closed.is_set() else None
+
+        class Api(bugwatch.BugWatchCalls):
+            _home = str(self.home)
+
+        g = bugwatch.GameWatch(self.watch(), Game(), [], 0, sleep=lambda _s: closed.wait(0.01),
+                               local=str(self.home / "none"))
+        g.start()
+        try:
+            self.assertEqual(Api().bugwatch_crash(), {"watching": True, "notice": None})
+        finally:
+            closed.set()
+            g.join(10)
+        self.assertEqual(Api().bugwatch_crash(), {"watching": False, "notice": None})
+
+    def test_a_units_name_and_whether_a_mod_added_it(self):
+        copy, game = self.home / "copy", self.home / "game"
+        for folder in (copy, game):
+            folder.mkdir(exist_ok=True)
+            (folder / bugwatch.UNIT_DATA).write_bytes(b"x")
+        units = {copy: {12: [("$/GFX/Everything/Descriptor_Unit_M3_Lee", "lee")],
+                        4059: [("$/GFX/Everything/Descriptor_Unit_Horse_Squad", "horse")],
+                        14: [("$/GFX/Everything/Descriptor_Unit_Nicks_Tank", "nick")],
+                        13: [("Descriptor_Unit_A", "a"), ("Descriptor_Unit_B", "b")]},
+                 game: {12: [("$/GFX/Everything/Descriptor_Unit_M3_Lee", "lee")],
+                        14: [("$/GFX/Everything/Descriptor_Unit_Panther", "panther")]}}
+        with mock.patch("rusemod.build.find_pack",
+                        lambda folder, name: Path(folder) / name if (Path(folder) / name).is_file() else None), \
+                mock.patch.object(bugwatch, "_units_in", lambda pack: units[Path(pack).parent]), \
+                mock.patch.object(bugwatch, "_card_name", lambda _copy, obj, _lang: {"lee": "M3 LEE"}.get(obj)):
+            self.assertEqual(bugwatch.unit_named(12, copy, game), {"name": "M3 LEE", "added": False})  # by its card
+            self.assertEqual(bugwatch.unit_named(4059, copy, game), {"name": "Horse Squad", "added": True})
+            self.assertEqual(bugwatch.unit_named(14, copy, game)["added"], True)   # the game's number, another unit
+            self.assertIsNone(bugwatch.unit_named(13, copy, game))                # two units of one number: unsure
+            self.assertIsNone(bugwatch.unit_named(99, copy, game))                # no such unit in the copy
+            self.assertEqual(bugwatch.unit_named(12, copy, None)["added"], None)  # no install: not known
+            self.assertIsNone(bugwatch.unit_named(12, self.home / "gone", game))  # no copy data
+        with mock.patch.object(bugwatch, "_unit_named", side_effect=OSError("held")):
+            self.assertIsNone(bugwatch.unit_named(12, copy, game))                # never raises
+
+    @unittest.skipUnless(os.environ.get("RUSE_GAME") and Path(os.environ.get("RUSE_GAME", ""), "Data").is_dir(),
+                         "needs the game (RUSE_GAME)")
+    def test_a_game_units_name_from_the_games_own_data(self):
+        game = Path(os.environ["RUSE_GAME"])
+        from rusemod.build import DEFAULT_PACK, find_pack
+        numbers = sorted(bugwatch._units_in(find_pack(game, DEFAULT_PACK)))
+        self.assertEqual(bugwatch.UNIT_DATA, DEFAULT_PACK)
+        for lang in ("us", "fr", "fa"):                           # (Persian: the game's English)
+            named = bugwatch.unit_named(numbers[-1], game, game, lang)
+            self.assertEqual(named["added"], False)
+            self.assertTrue(named["name"].strip())
 
 
 class Hooks(BugWatchTest):

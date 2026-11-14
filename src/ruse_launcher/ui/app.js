@@ -1535,8 +1535,34 @@ async function play() {
     if (j.state === "failed") $("progress").open = true;
     render();
     if (state.fair) openFair(false);  // the new copy's join code
+    if (j.state === "done") watchCrash();  // the game is running: told if it stops at a crash we know
   };
   tick();
+}
+
+// --- the game's crash, told (the owner's item 25: "if their unit was crashing the game, they should be told that",
+// and why). Bug Watch watches the game a Play started (rusemod.bugwatch.GameWatch); at a crash we know
+// (rusemod.crashplaces) api.bugwatch_crash hands over its notice once: the plain reason and, when the crash report kept
+// it, the unit the game was making, by its name as its card says. Asked again every few seconds while the game is
+// watched; nothing when Bug Watch is off (no game is watched then) ---
+let crashWatch = null;
+
+function watchCrash() {
+  clearTimeout(crashWatch);
+  const tick = async () => {
+    let seen;
+    try { seen = await api().bugwatch_crash(); } catch (err) { return; }  // an older app: nothing to tell
+    if (seen && seen.notice) { setMessage(crashText(seen.notice), "bad"); return; }
+    if (seen && seen.watching) crashWatch = setTimeout(tick, 3000);
+  };
+  crashWatch = setTimeout(tick, 3000);
+}
+
+// One sentence: "The game crashed while making the unit “Horse Squad”." and why, in the player's language
+function crashText(notice) {
+  const w = state.words, why = w["crash_why_" + notice.why] || "";
+  if (!notice.unit) return fill(w.crash_no_unit, { why });
+  return fill(notice.added ? w.crash_mod_unit : w.crash_unit, { unit: notice.unit, why });
 }
 
 // --- fair play (rusemod.fairplay through api.fair_play): the modded copy's join code to send to the people you play

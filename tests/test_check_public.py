@@ -113,6 +113,22 @@ class Guard(unittest.TestCase):
         self.assertEqual(sorted(f.split(":")[0] for f in found), sorted(bad))
         self.assertIn("strictly data", found[0])
 
+    def test_the_crash_table_alone_may_hold_details_of_the_program(self):
+        """Item 25 (the owner, 2026-11-13: "if their unit was crashing the game, they should be told that" ... "You can
+        put it in the app"): the table of the game crashes we know may name the program's places and parts, in that
+        one file only; the same text in any other file is refused, and the table is still checked for the rest."""
+        import check_public
+        self.assertIsInstance(check_public.PROGRAM_TABLE, str)      # one file, not a list
+        table = (Path(__file__).resolve().parents[1] / check_public.PROGRAM_TABLE).read_bytes()
+        self.assertEqual(check({check_public.PROGRAM_TABLE: table}), [])
+        for elsewhere in ("src/rusemod/bugwatch.py", "src/rusemod/crashplaces2.py", "docs/crashes.md"):
+            self.assertEqual(len(check({elsewhere: table})), 1, elsewhere)   # the very same text: refused there
+        details = b"# FUN_1409bed60 walks a model's parts in the game's program; TTurretOneAxis vfunc14\n"
+        self.assertEqual(check({check_public.PROGRAM_TABLE: details}), [])
+        self.assertEqual(len(check({"src/rusemod/bugwatch.py": details})), 1)
+        self.assertEqual(len(check({check_public.PROGRAM_TABLE: b"# a count of the whole game"})), 1)  # still checked
+        self.assertEqual(len(check({"private/" + check_public.PROGRAM_TABLE: table})), 1)
+
 
 if __name__ == "__main__":
     unittest.main()

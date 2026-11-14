@@ -39,21 +39,32 @@ that closed within a minute with no crash report, "game:closed-under-1-min" (Wat
 
 VERSION 4 OF THE AGREEMENT (rusemod.guard.TERMS_VERSION 4, 2026-11-13; the owner's "sure" to its items): only for a
 player who accepted it (allows_v4), a send also says which version was accepted ("agreement"); a game crash report the
-map the game's script-error text names (the game's own map by its name, any other only as "own": map_of) and what
-the player's own mods hold (own_holds: for each kind of thing, OWN_KINDS, how many of them hold it); a day the same
-kinds, the most of any game that day; a failed Play or Test in game its own mods by format and the kinds they hold.
-Under version 3 a failed Play's own mods are one number ("play:set:L1-O2"), as version 3's words say. The unit the
-game was making at a model crash and the game mode are in version 4's words, but nothing here can read them from the
-game's crash report yet (reading the unit needs details of the game's program in the app: the owner's question).
+map the game's script-error text names (the game's own map by its name, any other only as "own": map_of), what the
+player's own mods hold (own_holds: for each kind of thing, OWN_KINDS, how many of them hold it) and the unit the game
+was making at one of the crashes we know (one of the game's own units by its number, {"game": <its number>}; a unit a
+mod added only as {"added": true}: unit_sent, unit_named; version 4's "The apps send the unit only when they can read
+it from the game's crash report"); a day the same kinds, the most of any game that day; a failed Play or Test in game
+its own mods by format and the kinds they hold. Under version 3 a failed Play's own mods are one number
+("play:set:L1-O2"), as version 3's words say.
+
+THE CRASHES WE KNOW, TOLD TO THE PLAYER (the owner's item 25, 2026-11-13: "if their unit was crashing the game, they
+should be told that" and "they should also be told why that unit made the game crash. For 25, I don't care. You can
+put it in the app."): a game crash at a place rusemod.crashplaces knows gets its plain reason (read_dump's "reason"),
+and under version 4 the unit the game was making (read_dump's "unit": crashplaces.unit_number), named from the crashed
+copy's own data as its card says (unit_named). Neither the reason nor the name is ever sent. GameWatch keeps the
+notice and the window's bugwatch_crash hands it to the page once: the Launcher says it after a Play. Every detail of
+the game's program this needs is in rusemod.crashplaces, the one file of the apps allowed them (tools/check_public.py).
 
 Checked our_tools.json: crash_site.py reads a whole crash report for our own research and is private; this module
-reads only the exception record, the module list and the crashed thread's stack of the game's crash report, on the
-player's PC, as any crash reporter does, and sends the crash code, the module's name and the offset, the access and
-the chain, nothing more (the plan, §2). For the chain it reads the copy's RUSE.exe section table and the few bytes
-before each stack word that points into it: a word right after a call is where that call returns to (2026-11-02, the
-owner's "Yes, add it": a player's crash report named only where the game stopped)."""
+reads only the exception record, the module list and the crashed thread's stack of the game's crash report (and, at
+a crash we know, the memory the report kept round that stack's words, for the unit), on the player's PC, as any crash
+reporter does, and sends the crash code, the module's name and the offset, the access and the chain, and under
+version 4 the unit as above, nothing more (the plan, §2). For the chain it reads the copy's RUSE.exe section table and
+the few bytes before each stack word that points into it: a word right after a call is where that call returns to
+(2026-11-02, the owner's "Yes, add it": a player's crash report named only where the game stopped)."""
 from __future__ import annotations
 
+import bisect
 import json
 import os
 import platform
@@ -185,8 +196,8 @@ def status(home) -> dict:
             "code": player["id"][:8] if _good_id(player.get("id")) else ""}
 
 
-# --- what version 4 of the agreement added (the owner, 2026-11-13: "sure", to "What version 4 of the agreement adds:
-# the unit at a model crash, the game mode, and what a player's own mod holds"; the map of a script error with it) ----
+# --- what version 4 of the agreement added (the owner, 2026-11-13: "sure", to its items: the unit at a model crash
+# and what a player's own mod holds; the map of a script error with it) ---------------------------------------------
 AGREEMENT_V4 = 4  # the agreement's version (rusemod.guard.TERMS_VERSION) from which the fields below may go
 # What a player's own mods hold, by kind: for each kind, how many of the player's own mods hold it (never a name, a
 # word, a path or a file; own_holds). "folder" and "rmod": how many are of each format.
@@ -706,6 +717,13 @@ class Watch:
             out["calls"].popitem()  # the least-used call goes first (they're in order of use)
         return out
 
+    def language(self) -> str:
+        """The app's language as its window keeps it (settings.json "prefs"), "us" when it keeps none: the language a
+        crash's unit is named in (GameWatch)."""
+        values = _settings(self.home)
+        lang = ((values.get("prefs") or {}).get(self.app) or {}).get("lang") or values.get("lang")
+        return lang if isinstance(lang, str) and re.fullmatch(r"[A-Za-z0-9_-]{1,12}", lang) else "us"
+
     def setup(self) -> dict:
         values = _settings(self.home)
         out = {}
@@ -826,8 +844,9 @@ class Watch:
     def game_crash(self, found: dict, listed: list[str], own: int, send=True, holds: dict | None = None) -> Path | None:
         """A game crash report (read_dump's `found`) with the mods that were on. Under version 4 of the agreement also
         the version accepted, the map the game's script-error text names (the game's own by its name, any other only
-        as OWN_MAP) and what the player's own mods hold (`holds`, own_holds). The unit the game was making and the
-        game mode are in version 4 too, but nothing here can read them from the game's crash report yet."""
+        as OWN_MAP), what the player's own mods hold (`holds`, own_holds) and the unit the game was making, when it
+        was read and named (unit_sent: the game's own by its number, a mod's only as added). Never the crash's plain
+        reason or the unit's name: those are only for the player (GameWatch's notice)."""
         if not enabled(self.home):
             return None
         body = {"kind": "game", "code": found["code"], "module": found["module"], "offset": found["offset"],
@@ -847,7 +866,26 @@ class Watch:
             kept = {k: v for k, v in (holds or {}).items() if k in OWN_KINDS and isinstance(v, int) and v > 0}
             if kept and own:
                 body["own"] = kept
+            unit = unit_sent(found)
+            if unit is not None:
+                body["unit"] = unit
         return self.crash(body, send)
+
+
+UNIT_MOST = 1_000_000  # the server's most for a unit's number (worker.js MAX_UNIT): past it the whole report is refused
+
+
+def unit_sent(found: dict) -> dict | None:
+    """What a game crash report sends of the unit the game was making (version 4 of the agreement: "one of the game's
+    own units by its number; a unit a mod added only as "a mod's unit""): {"game": its number} for one of the game's
+    own, {"added": True} for one a mod added (never its number or its name), None when the unit wasn't read from the
+    crash report, or wasn't found in the copy's data (unit_named: then whether a mod added it isn't known)."""
+    number, added = found.get("unit"), found.get("unit_added")
+    if not isinstance(number, int) or isinstance(number, bool) or not isinstance(added, bool):
+        return None
+    if added:
+        return {"added": True}
+    return {"game": number} if 1 <= number <= UNIT_MOST else None
 
 
 def our_frames(tb) -> list:
@@ -946,7 +984,41 @@ def _memory_at(data: bytes, streams: dict, address: int) -> tuple[int, int, int]
     return None
 
 
-def read_dump(path, exe=None, install=None) -> dict | None:
+def _kept_memory(data: bytes, streams: dict):
+    """A reader of the memory a crash report kept: read(address, size) gives those bytes when one kept piece holds
+    them all, else None. The game's own crash reporter keeps hundreds of pieces (round every word on the threads'
+    stacks, from 256 bytes before it to 768 after): sorted once, each read is found by halving."""
+    pieces = []
+    if 5 in streams:  # MemoryListStream: (start, size, where) each
+        at, _ = streams[5]
+        (n,) = struct.unpack_from("<I", data, at)
+        for i in range(n):
+            start, size, where = struct.unpack_from("<QII", data, at + 4 + 16 * i)
+            if where + size <= len(data):
+                pieces.append((start, size, where))
+    if 9 in streams:  # Memory64ListStream: (start, size) each, their bytes one after another from one place
+        at, _ = streams[9]
+        n, where = struct.unpack_from("<QQ", data, at)
+        for i in range(n):
+            start, size = struct.unpack_from("<QQ", data, at + 16 + 16 * i)
+            if where + size <= len(data):
+                pieces.append((start, size, where))
+            where += size
+    pieces.sort()
+    starts = [p[0] for p in pieces]
+
+    def read(address: int, size: int) -> bytes | None:
+        i = bisect.bisect_right(starts, address) - 1
+        if i < 0:
+            return None
+        start, length, where = pieces[i]
+        if address + size > start + length:
+            return None
+        return data[where + address - start:where + address - start + size]
+    return read
+
+
+def read_dump(path, exe=None, install=None, unit=False) -> dict | None:
     """From a crash report file, read on this PC only: {"code", "module", "offset"}; for a bad memory access
     (0xc0000005) "access", what the game tried to do and where ("read 0x20"); with the copy's RUSE.exe (`exe`) given,
     "chain": the places in RUSE.exe the crashed thread's stack returns to, nearest first (up to CHAIN_MOST, each one
@@ -954,14 +1026,18 @@ def read_dump(path, exe=None, install=None) -> dict | None:
     "ignored" (the number on the game's "Previously ignored errors: N" line before it, when there is one: each of our
     script guards adds 1 when it steps in, rusemod.scriptguards) and, with the game's install (`install`) given, "map":
     the map its text names, the game's own by its name, a mod's as OWN_MAP (map_of; sent only under version 4 of the
-    agreement: Watch.game_crash). None if it can't be read. The dump never leaves the PC (the plan, §2)."""
+    agreement: Watch.game_crash). At one of the crashes we know (rusemod.crashplaces, for the game build its table is
+    for), "reason": its plain reason's key; and with `unit` (asked only under version 4 of the agreement:
+    GameWatch) and `exe`, "unit": the number of the unit the game was making, when the report kept it
+    (crashplaces.unit_number). Neither goes out as it is (Watch.game_crash, unit_sent). None if it can't be read. The
+    dump never leaves the PC (the plan, §2)."""
     try:
         data = Path(path).read_bytes()
     except OSError:
         return None
     if data[:4] != b"MDMP":
         return None
-    access, chain = None, []
+    access, chain, at_offsets, words, builds, reason, number = None, [], [], [], {}, None, None
     try:
         count, rva = struct.unpack_from("<II", data, 8)
         streams = {}
@@ -981,10 +1057,11 @@ def read_dump(path, exe=None, install=None) -> dict | None:
             mat, _ = streams[4]
             (n,) = struct.unpack_from("<I", data, mat)
             for i in range(n):
-                base, size, _sum, _stamp, name_rva = struct.unpack_from("<QIIII", data, mat + 4 + 108 * i)
+                base, size, checksum, stamp, name_rva = struct.unpack_from("<QIIII", data, mat + 4 + 108 * i)
                 (length,) = struct.unpack_from("<I", data, name_rva)
                 name = data[name_rva + 4:name_rva + 4 + length].decode("utf-16-le", "replace")
                 modules.append((base, size, re.split(r"[\\/]", name)[-1]))
+                builds[(base, size)] = (size, checksum, stamp)  # which build of it (crashplaces.BUILD)
         module, offset = next(((name, address - base) for base, size, name in modules
                                if base <= address < base + size), ("?", address))
         game = next(((base, size) for base, size, name in modules if name.lower() == "ruse.exe"), None)
@@ -1005,14 +1082,25 @@ def read_dump(path, exe=None, install=None) -> dict | None:
                 first = rsp - start if start <= rsp < start + ssize else 0
                 first -= first % 8
                 base, size = game
-                for o in range(first, min(len(stack), first + STACK_LOOK) - 7, 8):
-                    (word,) = struct.unpack_from("<Q", stack, o)
+                look = stack[first:first + STACK_LOOK]
+                words = [w for (w,) in struct.iter_unpack("<Q", look[:len(look) // 8 * 8])]
+                for word in words:
                     place = f"RUSE.exe+0x{word - base:x}"
                     if base <= word < base + size and place not in chain and after_call(word - base):
                         chain.append(place)
+                        at_offsets.append(word - base)
                         if len(chain) >= CHAIN_MOST:
                             break
                 break
+        if game is not None and game[0] <= address < game[0] + game[1]:  # a crash of the game itself: one we know?
+            from . import crashplaces
+            reason = crashplaces.reason(builds.get(game), address - game[0], at_offsets)
+            if reason is not None and unit and after_call is not None and words:
+                try:  # (a memory list that can't be read costs the unit only, never the crash's report)
+                    number = crashplaces.unit_number(builds.get(game), game[0], words, _kept_memory(data, streams),
+                                                     after_call)
+                except (struct.error, ValueError, IndexError):
+                    number = None
     except struct.error:
         return None
     module = re.sub(r"[^A-Za-z0-9_.+ -]", "_", module)[:64] or "?"
@@ -1021,6 +1109,10 @@ def read_dump(path, exe=None, install=None) -> dict | None:
         out["access"] = access
     if chain:
         out["chain"] = chain
+    if reason is not None:
+        out["reason"] = reason   # (only for the player: never sent)
+    if number is not None:
+        out["unit"] = number     # (sent only as unit_sent says, under version 4)
     if code == 0x29A:
         text = script_error_text(data)
         if text:
@@ -1081,31 +1173,172 @@ QUICK_CLOSE = 60.0  # seconds: a game started from a modded copy that closed soo
 
 class GameWatch(threading.Thread):
     """Beside the game the apps started (rusemod.play.Starter): when it closes, the minutes it ran with its mods, and
-    any crash report it left since it started."""
+    any crash report it left since it started; at one of the crashes we know, the notice for the player (crash_notice:
+    the plain reason, and under version 4 the unit the game was making, named as its card says)."""
 
     def __init__(self, watch: Watch, process, listed: list[str], own: int, sleep=time.sleep, clock=time.time,
                  local: str | None = None, exe=None, folders=None, game=None):
         super().__init__(daemon=True, name="bug-watch-game")
         self.folders = list(folders or [])  # the mods' folders: what the player's own hold (own_holds, version 4)
-        self.game = game  # the game's install: which maps are the game's own (read_dump's map)
+        self.game = game  # the game's install: which maps are the game's own (read_dump's map), and which units
         self.watch, self.process, self.listed, self.own = watch, process, listed, own
         self.sleep, self.clock, self.local, self.started = sleep, clock, local, clock()
-        self.exe = exe  # the copy's RUSE.exe, for a crash's chain (read_dump)
+        self.exe = exe  # the copy's program file, for a crash's chain and unit (read_dump); its folder is the copy
+
+    def start(self) -> None:
+        with _notice_lock:  # (the window waits for a notice while a game is watched: crash_notice)
+            _watching.add(self)
+        try:
+            super().start()
+        except RuntimeError:
+            with _notice_lock:
+                _watching.discard(self)
+            raise
 
     def run(self) -> None:
+        try:
+            self._watch()
+        finally:
+            with _notice_lock:
+                _watching.discard(self)
+
+    def _watch(self) -> None:
         while self.process.poll() is None:
             self.sleep(5)
         ran = self.clock() - self.started
-        holds = own_holds(self.folders) if self.own and self.folders and allows_v4(self.watch.home) else None
+        v4 = allows_v4(self.watch.home)
+        holds = own_holds(self.folders) if self.own and self.folders and v4 else None
         self.watch.played(ran / 60.0, self.listed, self.own, holds)
         crashed = False
         for dump in crash_dumps_since(self.started, self.local):
-            found = read_dump(dump, self.exe, install=self.game)
+            found = read_dump(dump, self.exe, install=self.game, unit=v4)  # the unit only under version 4
             if found:
                 crashed = True
+                if isinstance(found.get("unit"), int) and self.exe is not None:
+                    named = unit_named(found["unit"], Path(self.exe).parent, self.game, self.watch.language())
+                    if named is not None:
+                        found["unit_name"], found["unit_added"] = named["name"], named["added"]
                 self.watch.game_crash(found, self.listed, self.own, holds=holds)
+                if found.get("reason"):
+                    _tell(found)
         if ran < QUICK_CLOSE and not crashed:  # the game didn't get going, or was quit at once (2026-11-10)
             self.watch.count("messages", "game:closed-under-1-min")
+
+
+# --- the crashes we know, told to the player (the owner's item 25) ------------------------------------------------
+_notice_lock = threading.Lock()
+_watching: set = set()        # the GameWatch threads still watching a game an app started
+_notice: dict | None = None   # the newest crash we know, for the player, until the window has taken it
+
+
+def _tell(found: dict) -> None:
+    """Keep the notice of a crash we know (read_dump's "reason", and GameWatch's name for the unit) for the window."""
+    global _notice
+    name = found.get("unit_name")
+    notice = {"why": found["reason"], "unit": name if isinstance(name, str) and name else None,
+              "added": found.get("unit_added") is True}
+    with _notice_lock:
+        _notice = notice
+
+
+def crash_notice() -> dict:
+    """For the window (BugWatchCalls.bugwatch_crash): {"watching": whether a game an app started is still being
+    watched, so the page asks again; "notice": the newest crash we know since the window last took one, as {"why": the
+    plain reason's key (rusemod.crashplaces.REASONS; words.toml crash_why_<key>), "unit": the unit the game was
+    making, by its name as its card says, or None, "added": whether a mod added it}, else None}. A notice is handed
+    over once."""
+    global _notice
+    with _notice_lock:
+        notice, _notice = _notice, None
+        return {"watching": bool(_watching), "notice": notice}
+
+
+def unit_named(number: int, copy, game, lang: str = "us") -> dict | None:
+    """The unit numbered `number` (its DescriptorId) in the modded copy whose folder is `copy`, from the copy's own
+    data: {"name": its name as its card says (the copy's texts in `lang` when the game has that language, else in
+    English; else its name in the data, which for a mod's unit is the name that mod gave it), "added": whether a mod
+    added it (False when the game's install, `game`, has a unit of that number and that name; None when the install
+    can't be read)}. None when the copy's data can't be read, or holds no unit of that number, or more than one. Read
+    after the game closed (the unit data loads in about 2 seconds). Never raises: the app must never stop on it."""
+    try:
+        return _unit_named(int(number), Path(copy), game, lang)
+    except Exception:  # noqa: BLE001 - a copy rebuilt or moved meanwhile, a file that can't be read: no name
+        return None
+
+
+UNIT_DATA = "ZZ_GladPatchableWin.dat"   # the pack the game's units are in (rusemod.build.DEFAULT_PACK)
+CARD_NAMES = "baseunite"                # the dictionary of the units' names on their cards (build._english_names)
+NAME_MOST = 80                          # characters of a unit's name the notice says
+
+
+def _units_in(pack) -> dict[int, list]:
+    """{DescriptorId: [(name, unit)...]} of every unit in a unit-data pack, loaded the way a build loads it."""
+    from .build import load_pack
+    from .edat import Edat
+    from .patch import Num
+    from . import unitcheck
+    with Edat.open(str(pack)) as arc:   # (closed at once: a later build must be able to replace the copy's file)
+        model = load_pack(arc, None)
+    out: dict[int, list] = {}
+    for name, obj in model.base.objects.items():
+        v = obj.props.get(unitcheck.ID) if unitcheck.is_unit(obj) else None
+        if isinstance(v, Num):
+            out.setdefault(int(v.value), []).append((name, obj))
+    return out
+
+
+def _unit_named(number: int, copy: Path, game, lang: str) -> dict | None:
+    from .build import find_pack
+    pack = find_pack(copy, UNIT_DATA)
+    if pack is None or not pack.is_file():
+        return None
+    units = _units_in(pack).get(number) or []
+    if len(units) != 1:
+        return None
+    name, obj = units[0]
+    added = None
+    own = find_pack(Path(game), UNIT_DATA) if game is not None else None
+    if own is not None and own.is_file():
+        try:
+            same = os.path.samefile(pack, own)  # the copy's unit data linked from the game's: no mod changed it
+        except OSError:
+            same = False
+        theirs = [n for n, _o in (_units_in(own).get(number) or [])] if not same else [name]
+        added = theirs != [name]
+    return {"name": _card_name(copy, obj, lang) or _data_name(name), "added": added}
+
+
+def _card_name(copy: Path, obj, lang: str) -> str | None:
+    """A unit's name as its card says it in the copy: its NameInMenuToken's text in the copy's unit names, in `lang`
+    when the game has that language, else in English."""
+    import html
+    from .build import find_pack
+    from .dic import Dic, name_to_key
+    from .edat import Edat
+    from .patch import Text
+    from . import loc, schema
+    v = obj.props.get("NameInMenuToken")
+    if not isinstance(v, Text) or v.kind != "key":
+        return None
+    key = int(v.value, 16) if v.value.lower().startswith("0x") else name_to_key(v.value)
+    texts = find_pack(copy, loc.PACK)
+    if texts is None or not texts.is_file():
+        return None
+    with Edat.open(str(texts)) as arc:
+        entries = {e.path.lower(): e for e in arc.entries}
+        for language in dict.fromkeys((schema.game_lang(lang), "us")):
+            e = entries.get(loc.member(CARD_NAMES, language).lower())
+            text = Dic(bytes(arc.read(e))).text(key) if e is not None else None
+            said = " ".join(html.unescape(text or "").split())
+            if said:
+                return said[:NAME_MOST]
+    return None
+
+
+def _data_name(name: str) -> str:
+    """A unit's name in the data, as a name to read: Descriptor_Unit_Horse_Squad -> Horse Squad."""
+    short = re.sub(r"^(?:Descriptor_)?(?:Unit_)?", "", str(name).replace("\\", "/").rsplit("/", 1)[-1])
+    return " ".join(short.replace("_", " ").split())[:NAME_MOST] or str(name)[:NAME_MOST]
 
 
 def mods_of(folders) -> tuple[list[str], int]:
@@ -1230,6 +1463,13 @@ class BugWatchCalls:
             counts = json.loads(json.dumps(watch.days.get(day) or _blank_day(watch.version)))
         waiting = sorted(p.name for p in watch.outbox.glob("*.json")) if watch.outbox.is_dir() else []
         return {"today": watch.payload(day, counts), "waiting": waiting}
+
+    def bugwatch_crash(self) -> dict:
+        """After a game this app started: {"watching": whether it's still watched (the page asks again while it is),
+        "notice": the crash we know it stopped at, once, or None} (crash_notice: the plain reason's key, the unit the
+        game was making by its name as its card says, whether a mod added it). Only when Bug Watch is on: it watches
+        the game (rusemod.play.Starter). Bug Watch's own call, so not counted as one of the window's."""
+        return crash_notice()
 
     def bugwatch_seen(self, group: str, key: str) -> dict:
         """The page tells Bug Watch a screen opened ("screens", its name), that screen used ("screen_used": the Launcher's
