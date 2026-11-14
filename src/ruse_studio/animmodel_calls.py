@@ -544,21 +544,37 @@ class AnimModelCalls:
     def _last_fit(self, before: dict, file: Path, clips: dict, carried: dict | None) -> list:
         """What the model's last fit took in, read again for an animation its record has no fingerprint of:
         [({name: the clip's bytes}, whether only near: _near)], from the file it was made from (the record's "from":
-        `clips`, what this fit takes in, when that's the file fitted now, else what it gives now, the way a fit takes
-        it in) and from what the model's own file carried before this fit (`carried`, _carried_before: a fit writes
-        its clips into it, near as they were). [] when neither can be read."""
+        `clips`, what this fit takes in, when that's the file fitted now or the file fitted now has the bytes the model
+        was made from, the one Resize and Move found by them: horse_squad._fit_from; else what the file the record
+        names gives now, the way a fit takes it in, when the record names it by its full path: a file's own name alone,
+        a mod made on another PC, is never looked for in the folder the Studio runs in, nor a file there with other
+        bytes taken for the one the last fit took in: the review of f1fa002c) and from what the model's own file
+        carried before this fit (`carried`, _carried_before: a fit writes its clips into it, near as they were). []
+        when neither can be read."""
         out = []
         old = before.get("from")
         if isinstance(old, str) and old:
-            if self._same_file(old, file):
+            if self._same_file(old, file) or self._made_of(before, file):
                 out.append((clips, False))
-            else:
+            elif Path(old).is_absolute():
                 got = self._file_clips(Path(old))
                 if got:
                     out.append((got, False))
         if carried:
             out.append((carried, True))
         return out
+
+    def _made_of(self, before: dict, file: Path) -> bool:
+        """Whether `file` has the bytes the model whose record is `before` was made from (horse_squad._made_bytes);
+        False when they aren't known or it can't be read."""
+        from .horse_squad import file_sha256
+        sha = self._made_bytes(before)
+        if sha is None:
+            return False
+        try:
+            return file_sha256(file) == sha
+        except OSError:
+            return False
 
     def _carried_before(self, target: Path, before: dict) -> dict | None:
         """The animations the unit's own model file carries now (a fit writes its clips into it: rusemod.modelin.

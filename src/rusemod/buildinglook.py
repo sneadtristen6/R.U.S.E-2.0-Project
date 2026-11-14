@@ -81,15 +81,18 @@ def look_toml(piece: str, model: str, size: float = 1.0, two_sided: bool = False
     return "\n".join(lines) + "\n"
 
 
-def mod_looks(folder) -> dict:
+def mod_looks(folder, skip=None) -> dict:
     """{building name: Look} from a mod folder's files/buildings/<name>/building.toml. AssetError for one that
-    can't be read."""
+    can't be read. `skip` (rusemod.holding.skip_of): a building.toml it names is left out, never read (a deleted
+    building's, another program had it open)."""
     import tomllib
     root = Path(folder) / LOOKS
     if not root.is_dir():
         return {}
     out = {}
     for toml in sorted(root.glob("*/building.toml")):
+        if skip and skip(toml):
+            continue
         where = f"{LOOKS}/{toml.parent.name}/building.toml"
         try:
             data = tomllib.loads(toml.read_text(encoding="utf-8"))

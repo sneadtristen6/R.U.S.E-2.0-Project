@@ -490,7 +490,8 @@ class BoardCalls:
         res = self.delete_unit(address)
         if res.get("deleted") is None:
             raise StudioError(f"{b['name']} couldn't be taken out of the mod")
-        return {**self.board(n, lang), "deleted": address}
+        # ("waiting": a file of it another program had open, out of the build until the Studio takes it out; said)
+        return {**self.board(n, lang), "deleted": address, "waiting": res.get("waiting", [])}
 
     def board_cards(self, addresses) -> dict:
         """The build-menu pictures of the units `addresses` (the board asks once its boxes are drawn): {address: a
@@ -837,7 +838,7 @@ class BoardCalls:
             res = self.delete_unit(address, researched)
             if res.get("deleted") is None:
                 return {**self.board(n, lang), "ask": [c["name"] for c in res.get("ask", [])]}
-            return {**self.board(n, lang), "deleted": address}
+            return {**self.board(n, lang), "deleted": address, "waiting": res.get("waiting", [])}
         relinked = []
         with self._saving:
             edits, info = self._board_read(n)

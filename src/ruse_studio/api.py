@@ -6044,6 +6044,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                               f"drop what it doesn't know when it saves.")
         if st["state"] == "quiet":
             modformat.stamp(path, self.MADE_WITH["tool"], self.MADE_WITH["version"])
+        self._clear_waiting(path)   # (a deleted unit's file another program had open: rusemod.holding)
         settings = self._settings()
         settings[kind] = str(path)
         recent_key = self.KINDS[kind][1]
@@ -8732,14 +8733,16 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         return out
 
     def _kinds_ready(self, address: str, moving: bool) -> list:
-        """Before Resize or Move (`moving`) fits a squad's model again: every other kind's model with its file still
-        there (they go with it, one size and place for the squad), else a StudioError naming the file that isn't,
-        or the record that can't be read or doesn't say it (the one check, finding 12: it read "...isn't there any
-        more (None)..."), nothing changed."""
-        others = self._kind_records(address)
-        for k, r in others:
+        """Before Resize or Move (`moving`) fits a squad's model again: every other kind's model with the file it was
+        made from on this PC (they go with it, one size and place for the squad), each record's "from" the file found
+        (_made_from), else a StudioError naming the file that isn't, or the record that can't be read or doesn't say it
+        (the one check, finding 12: it read "...isn't there any more (None)..."), nothing changed."""
+        others = []
+        for k, r in self._kind_records(address):
             file = r.get("from") if isinstance(r, dict) else None
-            if self._made_from(r) is not None:
+            made = self._made_from(r)
+            if made is not None:
+                others.append((k, dict(r, **{"from": str(made)})))
                 continue
             if not isinstance(file, str) or not file:
                 name = self._kind_file(address, k).with_suffix(".json").name
@@ -8749,7 +8752,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                                       f"read or is missing: import that model again under Its soldiers, then move it.")
                 raise StudioError(f"The record of the model of one of its soldiers in the mod ({name}) can't be read "
                                   f"or is missing: import that model again under Its soldiers, then change the size.")
-            self._horse_gone(address, file, moving)   # (the Horse Squad's files: never the modder's to import)
+            self._horse_gone(address, r, moving)   # (a model made from the Generic Horse's files: their words)
             # (the page's words: model_kinds_title is the box his model is imported in)
             if moving:
                 raise StudioError(f"The file the model of one of its soldiers was made from isn't there any more "
@@ -8849,15 +8852,17 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             # not a game rule: only a model the Studio fitted has a file to fit again
             raise StudioError("This unit has no model of its own to resize: import one first.")
         file = record.get("from")
-        if self._made_from(record) is None:
-            self._horse_gone(address, file, False)   # (the Horse Squad's files: never the modder's to import)
+        made = self._made_from(record)
+        if made is None:
+            self._horse_gone(address, record, False)   # (a model made from the Generic Horse's files: their words)
             raise StudioError(f"The file this model was made from isn't there any more ({file}): import it again "
                               f"to change its size.")
+        changed = self._era_changed(record, made)   # (an era unit's model a newer download replaced: said)
         aircraft = record["aircraft"] if "aircraft" in record else self._unit_kind(address) == "air"
         others = self._kinds_ready(address, False)   # (a squad's other kinds' models: the same size)
 
         def fits(hold):
-            report = self._fit_model(address, file, size, bool(aircraft), self._pinned_facing(record),
+            report = self._fit_model(address, str(made), size, bool(aircraft), self._pinned_facing(record),
                                      bool(record.get("own_turret")), bool(record.get("own_propellers")),
                                      record.get("move"), refit=True, hold=hold)
             for k, r in others:
@@ -8866,7 +8871,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                                 refit=True, hold=hold)
             return report
         report = self._fitted_together(fits, cut_off)
-        return {"model": report, "copy_out": False, **self.look(address)}
+        return {"model": self._era_said(report, made, changed), "copy_out": False, **self.look(address)}
 
     def _fitted_together(self, fits, cut_off: bool = False) -> dict:
         """`fits(hold)` (a Resize's or a Move's: the unit's model, then a squad's other kinds', one size and place for
@@ -8897,16 +8902,18 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             # not a game rule: only a model the Studio fitted has a file to fit again
             raise StudioError("This unit has no model of its own to move: import one first.")
         file = record.get("from")
-        if self._made_from(record) is None:
-            self._horse_gone(address, file, True)   # (the Horse Squad's files: never the modder's to import)
+        made = self._made_from(record)
+        if made is None:
+            self._horse_gone(address, record, True)   # (a model made from the Generic Horse's files: their words)
             raise StudioError(f"The file this model was made from isn't there any more ({file}): import it again "
                               f"to move it.")
+        changed = self._era_changed(record, made)   # (an era unit's model a newer download replaced: said)
         aircraft = record["aircraft"] if "aircraft" in record else self._unit_kind(address) == "air"
         others = self._kinds_ready(address, True)   # (a squad's other kinds' models: moved with it)
         # (what the modder made of its animations since stays, as model_resize's; all of the squad moved or none)
 
         def fits(hold):
-            report = self._fit_model(address, file, record_number(record.get("size"), 1.0) or 1.0, bool(aircraft),
+            report = self._fit_model(address, str(made), record_number(record.get("size"), 1.0) or 1.0, bool(aircraft),
                                      self._pinned_facing(record), True, True, move, refit=True, hold=hold)
             for k, r in others:
                 self._fit_model(address, r["from"], record_number(r.get("size"), 1.0) or 1.0,
@@ -8914,18 +8921,25 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                                 hold=hold)
             return report
         report = self._fitted_together(fits, cut_off)
-        return {"model": report, "copy_out": False, **self.look(address)}
+        return {"model": self._era_said(report, made, changed), "copy_out": False, **self.look(address)}
+
+    def _made_from(self, record: dict) -> Path | None:
+        """The file a new unit's model (its record `record`) was made from, when it's on this PC; None when it isn't:
+        as its record names it ("from"), else found by the bytes it was made from among this PC's Generic Horse files,
+        and one of those only with those bytes (horse_squad._fit_from: the owner's 12 and 46, by the file, never by the
+        unit). An exported mod's records name only the file's own name (rusemod.package: no folder of the maker's PC
+        goes out), which is never looked for in the folder the Studio happens to run in."""
+        return self._fit_from(record)
 
     @staticmethod
-    def _made_from(record: dict) -> Path | None:
-        """The file a new unit's model was made from, as its record names it ("from"), when it's on this PC; None
-        when it isn't. An exported mod's records name only the file's own name (rusemod.package: no folder of the
-        maker's PC goes out), which is never looked for in the folder the Studio happens to run in."""
-        file = record.get("from") if isinstance(record, dict) else None
-        if not isinstance(file, str) or not file:
-            return None
-        path = Path(file)
-        return path if path.is_absolute() and path.is_file() else None
+    def _era_said(report, made, changed: bool):
+        """A Resize's or Move's report (`report`), with the era units' model it was fitted from (`made`) said in its
+        NOT_KEPT ("file") when a newer download replaced it since the model was made (`changed`,
+        era_units._era_changed): fitted from it as it is now, as before, never without a word (the review of f1fa002c,
+        finding 4). Whether such a unit should stay as it was instead is the owner's to say."""
+        if changed and isinstance(report, dict):
+            report.setdefault(NOT_KEPT, {"animations": [], "picks": []})["file"] = str(made)
+        return report
 
     @staticmethod
     def _pinned_facing(record: dict) -> list | None:
@@ -8963,7 +8977,8 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         kind = "air" if self._unit_kind(address) == "air" else "ground"
         # (a field of the wrong shape, a record edited by hand: as if it weren't there)
         stands = record_numbers(record_report(record).get("stands"), 4)
-        return {"size": record_number(record.get("size"), 1.0) or 1.0, "resizable": self._made_from(record) is not None,
+        return {"size": record_number(record.get("size"), 1.0) or 1.0,
+                "resizable": self._made_from(record) is not None,
                 "kind": kind, "same_kind": len(self._own_models_of(kind)), "marks": self.model_size_marks(address, lang),
                 "move": (record_numbers(record.get("move"), 3) or [0, 0, 0])[:3],
                 "length": stands[3] if stands else None}
@@ -10104,14 +10119,20 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         mod's menu_groups.toml goes, and the units its group stood under move to the first remaining unit of that
         group (groups.py).
 
-        All or nothing (the owner's check, 2026-11-13): every file it changes is kept as it was and every file it
-        removes set aside first (edits.TakeOut), so a step that can't finish (a file another program holds, a
-        units.toml that can't be read) leaves the mod as it was, research links too, and says in words which file and
-        what to do; trying again then works. A unit this mod no longer has but whose files or animations are still in
-        it (a Delete that stopped half way in an older Studio): those leftovers are taken out instead, never a game
-        unit's (_take_leftovers), and {"deleted": None, "leftovers": what went} returned."""
+        All or nothing for the mod's lists (the owner's check, 2026-11-13): every file it changes is kept as it was and
+        every file it removes set aside first (edits.TakeOut), so a list file that can't be read or written (a
+        units.toml with a mistake, a list file another program holds) leaves the mod as it was, research links too,
+        and says in words which file and what to do; trying again then works. A file of the unit itself another
+        program holds doesn't stop it (the owner, 2026-11-13: "Why would deleting a unit stop? ... if someone clicks it
+        should through"): it's tried again for a few seconds, then the unit goes all the same and the file waits, out of
+        Test in game's and Export's builds, until the Studio takes it out by itself (rusemod.holding; _clear_waiting):
+        "waiting" names such files, as paths in the mod ([] when none). A unit this mod no longer has but whose files
+        or animations are still in it (a Delete that stopped half way in an older Studio): those leftovers are taken
+        out instead, never a game unit's (_take_leftovers), and {"deleted": None, "leftovers": what went} returned."""
+        import time
         from rusemod import anim, menugroups
-        from .edits import TakeOut
+        from . import edits as edits_module   # (HOLD_WAIT read when Delete is clicked)
+        from .edits import HOLD_STEP, TakeOut
         from .era_units import CREDITS, INDEX
         edits = self._edits()
         if edits is None or address not in edits.new_units:
@@ -10120,31 +10141,40 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                 return {"deleted": None, "leftovers": left, "relinked": [], "left": []}
             raise StudioError(f"{address} isn't a unit made in this mod, so it can't be deleted here")
         folder = edits.folder
-        take = TakeOut(folder)
-        try:
-            for f in (edits.file, edits.names_file, folder / menugroups.FILE, folder / INDEX, folder / CREDITS):
-                take.keep(f)   # (as they are before anything changes: research links, groups, era lines too)
-            research = self._research_gone(address, researched)
-            if "ask" in research:
-                return {"deleted": None, "ask": research["ask"]}
-            with self._saving:
-                edits = ModEdits(folder)
-                source = edits.new_units[address].source if address in edits.new_units else None
-                files = self._groups_gone(edits, address)
-                own_class = self.class_table_of(edits, address)  # an ammunition's own weapon class goes with it
-                edits.remove_unit(address, take)
-                if own_class:
-                    self._drop_class_table(edits, own_class)
-                self._groups_save(edits, *files)
-                self._era_forget(address)     # an era unit's (or the Horse Squad's) record line and credit go with it
-        except BaseException as exc:
-            take.put_back()
-            worded = self._take_error(exc, folder)
-            if worded is exc:
-                raise
-            raise worded from exc
+        # a list file another program holds for a moment (a sync program, an antivirus) is tried again as long as a file
+        # of the unit itself is: the whole take-out, put back in between (the owner: "it should through")
+        end = time.monotonic() + edits_module.HOLD_WAIT
+        while True:
+            take = TakeOut(folder)
+            try:
+                for f in (edits.file, edits.names_file, folder / menugroups.FILE, folder / INDEX, folder / CREDITS):
+                    take.keep(f)   # (as they are before anything changes: research links, groups, era lines too)
+                research = self._research_gone(address, researched)
+                if "ask" in research:
+                    return {"deleted": None, "ask": research["ask"]}
+                with self._saving:
+                    edits = ModEdits(folder)
+                    source = edits.new_units[address].source if address in edits.new_units else None
+                    files = self._groups_gone(edits, address)
+                    own_class = self.class_table_of(edits, address)  # an ammunition's own weapon class goes with it
+                    edits.remove_unit(address, take)
+                    if own_class:
+                        self._drop_class_table(edits, own_class)
+                    self._groups_save(edits, *files)
+                    self._era_forget(address)   # an era unit's (or the Horse Squad's) record line and credit go with it
+                    waiting = take.settle()     # (a file of the unit another program holds: it waits, said on the page)
+            except BaseException as exc:
+                take.put_back()
+                if isinstance(oserror_of(exc), PermissionError) and time.monotonic() < end:
+                    time.sleep(HOLD_STEP)
+                    continue
+                worded = self._take_error(exc, folder)
+                if worded is exc:
+                    raise
+                raise worded from exc
+            break
         take.done()
-        return {"deleted": address, "source": source, "saved": str(edits.file), **research}
+        return {"deleted": address, "source": source, "saved": str(edits.file), **research, "waiting": waiting}
 
     def _take_error(self, exc: BaseException, folder: Path) -> BaseException:
         """A take-out's failure (delete_unit) in words: a file that couldn't be read or written names the file and
@@ -10195,14 +10225,36 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                 pass
         finally:
             ix.close()
+        import time
+        from . import edits as edits_module   # (HOLD_WAIT read when the take-out starts)
+        from .edits import HOLD_STEP
+        # a list file another program holds for a moment is tried again, as delete_unit does (all or nothing: the
+        # take-out puts everything back before each try)
+        end = time.monotonic() + edits_module.HOLD_WAIT
         with self._saving:
-            try:
-                return ModEdits(edits.folder).remove_leftovers(tail)
-            except BaseException as exc:
-                worded = self._take_error(exc, edits.folder)
-                if worded is exc:
-                    raise
-                raise worded from exc
+            while True:
+                try:
+                    return ModEdits(edits.folder).remove_leftovers(tail)
+                except BaseException as exc:
+                    if isinstance(oserror_of(exc), PermissionError) and time.monotonic() < end:
+                        time.sleep(HOLD_STEP)
+                        continue
+                    worded = self._take_error(exc, edits.folder)
+                    if worded is exc:
+                        raise
+                    raise worded from exc
+
+    def _clear_waiting(self, *folders) -> list[str]:
+        """What a unit's Delete left for a program that had it open (rusemod.holding: out of the build already), taken
+        out of these mod folders now, as far as Windows lets: when a mod is opened (choose_mod, the Studio's start) and
+        before Test in game and Export build it. Never stops what calls it: a file still held stays named for next
+        time. Returns what was taken out, as paths in the mods."""
+        from rusemod import holding
+        gone = []
+        for folder in dict.fromkeys(Path(f) for f in folders if f is not None):
+            with self._saving:
+                gone += holding.clear(folder)
+        return gone
 
     def test_in_game(self) -> dict:
         """Build the current mod into the PC's one modded copy (`Modded game` where Settings says, the Launcher's too:
@@ -10231,6 +10283,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             if game is None:
                 # not a game rule: the game or one of its files isn't found
                 raise BuildError("We couldn't find R.U.S.E.")
+            self._clear_waiting(*folders)   # (a deleted unit's file another program had open: rusemod.holding)
             self._starter.modded(game, folders, instance, name, say, words=said, cut_off_errors=True,
                                  title=title_on(self._home))  # R.U.S.E. 2.0's title, unless Settings says the game's
             say(f"Built in {instance}. To see your changes in the game:")
@@ -10517,6 +10570,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             manifest["description"] = description.strip()
 
         def work(say):
+            self._clear_waiting(folder)   # (a deleted unit's file another program had open: rusemod.holding)
             with self._saving:
                 package.update_manifest(folder, mod=manifest)
             game = self._game()
@@ -10542,6 +10596,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             left_out: list = []   # (files the Studio left half written: package.is_work_file, the one check's 13)
             cuts: dict = {}       # (his README's folder paths cut to their names: the owner, 2026-11-13, "cut to file
             #                       name"; package.readme_paths_out)
+            unread: list = []     # (a README of his whose text Export can't read: it goes out as he wrote it)
             with self._saving:
                 stale = self._era_tidy(folder)   # (no record or credit line of a unit the mod no longer has goes out)
                 if stale:
@@ -10549,7 +10604,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                         f"out: {', '.join(stale)}.")
                 path = package.pack(folder, target, build_id=build_id, data_revision=revision, fingerprint=fingerprint,
                                     solved=answers, made_with=self.MADE_WITH, kinds=kinds, home_in=home_in,
-                                    left_out=left_out, cuts=cuts)
+                                    left_out=left_out, cuts=cuts, unread=unread)
             if left_out:
                 say(f"Left out of the exported file: {', '.join(left_out)}. These are files the Studio left half "
                     f"written when it was stopped while writing them (their names end in .part, .partial or .tmp); "
@@ -10570,11 +10625,24 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             if imports:
                 say(f"In the exported file, these map import records name only the folders each map was made from, not "
                     f"where they are on your PC; nothing else in them changed: {', '.join(imports)}.")
-            if cuts:
+            named = {member: [(p, n) for p, n in pairs if n] for member, pairs in cuts.items()}
+            if any(named.values()):
                 said = "; ".join(f"{member} ({', '.join(package.cut_shown(p, n) for p, n in pairs)})"
-                                 for member, pairs in cuts.items())
+                                 for member, pairs in named.items() if pairs)
                 say(f"In the exported file, each folder path in these README files of yours is cut to its own name, "
                     f"every other word as you wrote it; the files in your mod stay as they are: {said}.")
+            # (a path that ends at a user's own folder, taken out whole: the owner, 2026-11-13, "Probably take the
+            # username path out"; package.paths_cut gives it the name "")
+            gone = {member: [p for p, n in pairs if not n] for member, pairs in cuts.items()}
+            if any(gone.values()):
+                said = "; ".join(f"{member} ({', '.join(paths)})" for member, paths in gone.items() if paths)
+                say(f"In the exported file, each path in these README files of yours that ends at a user's own folder, "
+                    f"and so names the user, is taken out completely; every other word stays as you wrote it, and the "
+                    f"files in your mod stay as they are: {said}.")
+            if unread:    # (its folder paths and users' names couldn't be taken out: said, never silent)
+                say(f"Export can't read the text of these README files of yours, so they go out as you wrote them, "
+                    f"with any folder path or user's name in them; save them as UTF-8 and export again to have those "
+                    f"taken out: {', '.join(unread)}.")
             if home_in:
                 say(f"These files of the mod name your PC's home folder ({package.home_shown()}) and go out as they are, "
                     f"since Export never changes what you wrote: change them in the mod if that shouldn't be shared: "

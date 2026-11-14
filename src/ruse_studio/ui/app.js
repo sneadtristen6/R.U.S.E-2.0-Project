@@ -3113,6 +3113,9 @@ function notKeptSaid(lost) {
   if (lost.animations && lost.animations.length) said.push(fill(w.model_kept_not_anims, { names: lost.animations.join(", ") }));
   if (lost.picks && lost.picks.length) said.push(fill(w.model_kept_not_picks, { actions: lost.picks.map(action).join(", ") }));
   if (lost.record) said.push(w.model_kept_not_record);   // (its record couldn't be read: what else it held)
+  // (an era unit's model a newer download of its era replaced since it was made: fitted from the new one, said;
+  // StudioApi._era_said)
+  if (lost.file) said.push(fill(w.model_kept_not_file, { file: lost.file }));
   return said.join(" ");
 }
 
@@ -3960,15 +3963,28 @@ function researchAsk(box, name, children, goAhead, cancel) {
 }
 
 // After a unit went: `done`, then what became of the units researched from it (re-linked to its own parent or made
-// buyable from the start; or left researched from a unit that's gone, which the check bar then lists)
+// buyable from the start; or left researched from a unit that's gone, which the check bar then lists), and the files of
+// it another program had open (waitingTold)
 function researchTold(res, done) {
   const w = state.words;
   const lines = [done, ...(res.relinked || []).map((r) => r.to ? fill(w.research_relinked, { name: r.name, to: r.to.name })
     : fill(w.research_relinked_none, { name: r.name }))];
   const left = res.left || [];
   if (left.length) lines.push(fill(w.research_left, { names: left.map((c) => c.name).join(", ") }));
+  const waiting = waitingTold(res);
+  if (waiting) lines.push(waiting);
   say(lines.join(" "), left.length ? "warn" : "ok");
   if (left.length || (res.relinked || []).length) checkMod();
+}
+
+// Delete goes through (the owner, 2026-11-13): a file of the deleted unit another program had open stays in the mod's
+// folder until the Studio takes it out by itself, out of Test in game and Export meanwhile (StudioApi.delete_unit
+// "waiting", the board's take-outs too): said in one line, or null when nothing waits
+function waitingTold(res) {
+  const w = state.words, files = (res && res.waiting) || [];
+  if (!files.length) return null;
+  return files.length === 1 ? fill(w.unit_deleted_waiting_one, { file: files[0] })
+    : fill(w.unit_deleted_waiting_many, { files: files.join(", ") });
 }
 
 // A unit's place in the upgrade chains and its research (StudioApi.upgrade, set_upgrade, set_research; LittleGroove's

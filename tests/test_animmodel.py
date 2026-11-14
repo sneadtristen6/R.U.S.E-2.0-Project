@@ -4,6 +4,7 @@ of the two halves, the unit's own clips and rows kept (and kept again when the m
 keeping its animations, the build pointing the figures that wear the model at its own two masks, and the Studio's
 import telling such a model from one on the game soldier's bones."""
 import base64
+import hashlib
 import json
 import sqlite3
 import struct
@@ -191,11 +192,16 @@ class TheModelsFile(unittest.TestCase):
                 report = unitmodel.import_model(Path("game"), TANK, src, out, own_bones=True, clips=clips)
             back = rig.read_rig(out)
             again, _notes = unitmodel.own_clips(back, unitmodel.own_record(unitmodel.read_mod_glb(out).report))
+            made_from, in_its_file = hashlib.sha256(src.read_bytes()).hexdigest(), unitmodel.read_mod_glb(out).report
         self.assertEqual(list(clips), ["Walk", "Pose"])
         self.assertEqual([a["name"] for a in report[OWN_SKELETON]["animations"]], ["Walk", "Pose"])
         self.assertEqual([a.name for a in back.animations], ["Walk", "Pose"])
         for name in clips:          # the file's animations give the same clips again
             self.assertEqual(again[name], clips[name], name)
+        # (the bytes it was made from, known again by the report the Studio keeps: the Generic Horse's files,
+        # ruse_studio.horse_squad; never in the model file written)
+        self.assertEqual(report[unitmodel.SOURCE_SHA], made_from)
+        self.assertNotIn(unitmodel.SOURCE_SHA, in_its_file)
 
     def test_a_one_frame_pose_stays_one_frame(self):
         r = rig_of_bytes(little_glb([("Pose", [(2, "rotation", [0.0], [turn_about("x", 45.0)], "LINEAR")])]))
