@@ -2865,8 +2865,8 @@ spa = "{0}: su figura {1} dispara desde un hueso llamado {2}, que el modelo no t
 pol = "{0}: jej figura {1} strzela z kości o nazwie {2}, której model nie ma, więc jednostka będzie strzelać bez widocznych strzałów (widziane w teście). W Blenderze dodaj kość o nazwie {3} u wylotu lufy, pod kością, z którą porusza się broń, potem przenieś model."
 ru = "{0}: его фигура {1} стреляет из кости {2}, которой нет у модели, поэтому юнит будет стрелять без видимых выстрелов (видели в тесте). В Blender добавьте кость {3} у дула оружия, под костью, с которой двигается оружие, затем верните модель."
 cz = "{0}: jeho figura {1} střílí z kosti jménem {2}, kterou model nemá, takže jednotka bude střílet bez viditelných výstřelů (viděno v testu). V Blenderu přidej kost jménem {3} u ústí zbraně, pod kost, se kterou se zbraň hýbe, a pak model přenes."
-jpn = "{0}：そのフィギュア {1} は {2} という骨から撃ちますが、モデルにはその骨がないため、ユニットは射撃が見えないまま撃ちます（テストで確認）。Blender で武器の銃口に {3} という骨を、武器と一緒に動く骨の下に追加し、モデルを戻してください。"
-sc = "{0}：它的形象 {1} 从名为 {2} 的骨骼射击，而模型没有这根骨骼，因此单位开火时看不到任何射击（测试中见过）。在 Blender 中，在武器枪口处、武器所随动骨骼之下添加一根名为 {3} 的骨骼，然后带回模型。"
+jpn = "{0}：そのフィギュア {1} は {2} という骨から撃ちますが、モデルにはその骨がないため、ユニットは射撃が見えないまま撃ちます（テストで確認）。Blender で武器の銃口に {3} という骨を、武器と一緒に動く骨の下に追加し、直したモデルを Studio に戻してください。"
+sc = "{0}：它的形象 {1} 从名为 {2} 的骨骼射击，而模型没有这根骨骼，因此单位开火时看不到任何射击（测试中见过）。在 Blender 中，在武器枪口处、武器所随动骨骼之下添加一根名为 {3} 的骨骼，然后把改好的模型带回 Studio。"
 fa = "{0}: شکل {1} آن از استخوانی به نام {2} شلیک می‌کند که مدل ندارد، پس یگان بدون هیچ شلیک دیدنی تیراندازی می‌کند (در یک آزمایش دیده شد). در Blender استخوانی به نام {3} در دهانهٔ سلاح، زیر استخوانی که سلاح با آن حرکت می‌کند، اضافه کنید و سپس مدل را بازگردانید."
 
 [e74ad449c4f]
@@ -2878,8 +2878,8 @@ spa = "{0}: su figura {1} cuelga {2} pieza(s) de un hueso llamado {3}, que el mo
 pol = "{0}: jej figura {1} wiesza {2} część/części na kości o nazwie {3}, której model nie ma: gra może się na tym zatrzymać (jeszcze nie sprawdzone w grze). W Blenderze dodaj kość o nazwie {4} tam, gdzie należy ta część, potem przenieś model."
 ru = "{0}: его фигура {1} вешает деталей: {2} на кость {3}, которой нет у модели: игра может на этом остановиться (в игре ещё не проверено). В Blender добавьте кость {4} там, где должна быть эта деталь, затем верните модель."
 cz = "{0}: jeho figura {1} věší {2} část(í) na kost jménem {3}, kterou model nemá: hra se na tom může zastavit (ve hře zatím nevyzkoušeno). V Blenderu přidej kost jménem {4} tam, kam ta část patří, a pak model přenes."
-jpn = "{0}：そのフィギュア {1} は {2} 個の部品を {3} という骨に付けますが、モデルにはその骨がありません。ゲームが止まることがあります（ゲームではまだ試していません）。Blender でその部品の付く場所に {4} という骨を追加し、モデルを戻してください。"
-sc = "{0}：它的形象 {1} 把 {2} 个部件挂在名为 {3} 的骨骼上，而模型没有这根骨骼：游戏可能因此停止（尚未在游戏中试过）。在 Blender 中，在该部件所在处添加一根名为 {4} 的骨骼，然后带回模型。"
+jpn = "{0}：そのフィギュア {1} は {2} 個の部品を {3} という骨に付けますが、モデルにはその骨がありません。ゲームが止まることがあります（ゲームではまだ試していません）。Blender でその部品の付く場所に {4} という骨を追加し、直したモデルを Studio に戻してください。"
+sc = "{0}：它的形象 {1} 把 {2} 个部件挂在名为 {3} 的骨骼上，而模型没有这根骨骼：游戏可能因此停止（尚未在游戏中试过）。在 Blender 中，在该部件所在处添加一根名为 {4} 的骨骼，然后把改好的模型带回 Studio。"
 fa = "{0}: شکل {1} آن {2} قطعه را به استخوانی به نام {3} آویزان می‌کند که مدل ندارد: بازی ممکن است روی آن متوقف شود (هنوز در بازی آزموده نشده). در Blender استخوانی به نام {4} جایی که آن قطعه باید باشد اضافه کنید و سپس مدل را بازگردانید."
 
 [e5112ddb6ed]
@@ -2904,8 +2904,8 @@ spa = "{0}: el modelo tiene {1} huesos. No se ha visto al juego animar un modelo
 pol = "{0}: model ma {1} kości. Nie widziano, by gra animowała model z więcej niż {2} kośćmi (jeszcze nie sprawdzone w grze): może stać w miejscu. W Blenderze połącz lub usuń kości, aż będzie ich {3} lub mniej, potem przenieś model."
 ru = "{0}: в модели костей: {1}. Не замечено, чтобы игра анимировала модель, где их больше {2} (в игре ещё не проверено): она может стоять неподвижно. В Blender объедините или удалите кости, чтобы их было не больше {3}, затем верните модель."
 cz = "{0}: model má {1} kostí. Hra nebyla viděna animovat model s více než {2} kostmi (ve hře zatím nevyzkoušeno): může stát na místě. V Blenderu spoj nebo smaž kosti, dokud jich nebude {3} nebo méně, a pak model přenes."
-jpn = "{0}：モデルの骨は {1} 本です。骨が {2} 本を超えるモデルをゲームが動かすのは確認されていません（ゲームではまだ試していません）。止まったままになるかもしれません。Blender で骨をまとめるか削除して {3} 本以下にし、モデルを戻してください。"
-sc = "{0}：模型有 {1} 根骨骼。尚未见过游戏让超过 {2} 根骨骼的模型动起来（尚未在游戏中试过）：它可能一动不动。在 Blender 中合并或删除骨骼，直到不超过 {3} 根，然后带回模型。"
+jpn = "{0}：モデルの骨は {1} 本です。骨が {2} 本を超えるモデルをゲームが動かすのは確認されていません（ゲームではまだ試していません）。止まったままになるかもしれません。Blender で骨をまとめるか削除して {3} 本以下にし、直したモデルを Studio に戻してください。"
+sc = "{0}：模型有 {1} 根骨骼。尚未见过游戏让超过 {2} 根骨骼的模型动起来（尚未在游戏中试过）：它可能一动不动。在 Blender 中合并或删除骨骼，直到不超过 {3} 根，然后把改好的模型带回 Studio。"
 fa = "{0}: مدل {1} استخوان دارد. دیده نشده که بازی مدلی با بیش از {2} استخوان را متحرک کند (هنوز در بازی آزموده نشده): ممکن است بی‌حرکت بماند. در Blender استخوان‌ها را ادغام یا حذف کنید تا {3} یا کمتر شوند، سپس مدل را بازگردانید."
 
 [eb58110f9ad]
