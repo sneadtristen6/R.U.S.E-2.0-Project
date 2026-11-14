@@ -24,21 +24,28 @@ with the R.U.S.E. Field Manual and the Balance Overhaul Mod together.
   with the Field Manual before the Balanced Realism Mod; the warning names each unit.
 - **Join codes:** a set the build changes this way gets a new join code, so every player in a match with it needs this
   version. A set with a mod that gives a gun crew a model of its own gets a new join code too: the crew's little
-  far-away figure now wears that model. A set with the Balanced Realism Mod, the Navy Mod, Sand Box or either Static
-  Commandable Battleship - All Operations mod gets a new join code too: for some of their units, another nation's unit
-  packs now load in every skirmish (below). Every other set keeps its join code. After the update, the next **Play** or
-  **Test in game** builds your game again by itself.
+  far-away figure now wears that model. A set with the Balanced Realism Mod, the Navy Mod, Sand Box, either Static
+  Commandable Battleship - All Operations mod or the R.U.S.E. Field Manual 1.0.0 gets a new join code too: for some of
+  their units, another nation's unit packs now load in every skirmish (below). So does a set with Operation Overlord or
+  Operation Fortress Europa: with either of them, the US, German, British and French unit packs now load in every match
+  (below). Every other set keeps its join code. After the update, the next **Play** or **Test in game** builds your game
+  again by itself.
 - **Missions a set leaves without their places (Studio and Launcher):** when a set's mods leave a campaign chapter, an
   Operation or the tutorial without a place its mission watches from its start, the build warns, naming the mod and how
   many campaign chapters or Operations it does this to, or the tutorial: the game stops about a second after such a
   mission starts. Every mod is checked, whatever its version, your own too: the build reads the missions from your own
-  game when it builds. The set still builds and plays as before, and the build's count of warnings includes these.
-  Checked with builds of the community mods; not yet tried in the game.
+  game when it builds. The set still builds and plays as before, and the build's count of warnings includes these. 1 VS
+  7 AI and 1 VS 15 AI get such a warning too: they replace the maps of one campaign chapter with ones that lack places
+  its missions use, and the warning stays until that chapter is tried with them in the game. Checked with builds of the
+  community mods; not yet tried in the game.
 - **.rmod mods' units get their models (Studio and Launcher):** a unit an .rmod mod (RUSE Mod Manager's format) makes,
   or moves to another nation, now gets the same model check as a Studio mod's unit, in any set and with the mod alone:
   when its model is only in another nation's unit packs, the build makes those packs load in every skirmish, so it has
   its model in matches where no player has that nation, and a note names the unit as its card does; where that can't be
-  done, the build refuses the set and says why. Not yet tried in the game.
+  done, the build refuses the set and says why. The same goes for a unit an .rmod mod's map places that the game's own
+  version of that map doesn't: Operation Overlord and Operation Fortress Europa place British and French units, beside
+  American and German ones, on the map of the campaign's Utah Beach chapter, so with either of them the US, German,
+  British and French unit packs now load in every skirmish, campaign chapter and Operation. Not yet tried in the game.
 - **The Launcher's mod set editor says why:** when it can't make or save a set (no mod ticked, or a mod that is no
   longer in your library), it now says so inside the editor, under its buttons. Before, the message went to the set's
   page, hidden behind the editor, so nothing seemed to happen. **Create** and **Save** wait until a mod is ticked.
@@ -53,6 +60,19 @@ with the R.U.S.E. Field Manual and the Balance Overhaul Mod together.
   many. **Import model…** also works now on a unit with a **Custom uniform**: it takes the copy out, and **Use the
   copied unit's model** gives it back in one click. The wiki's Import a Model page has the steps. Tested in the game
   with a squad's soldier weighted in Blender; the Custom uniform part was checked outside the game.
+- **A mod's files not saved as UTF-8 (Studio and Launcher):** a mod's file saved by Excel as "CSV (Comma delimited)" or
+  by Notepad as "Unicode" is now named, with its line and how to save it again as UTF-8, by the build, by the check
+  before **Test in game** (which offers **Set aside** for it) and by the Launcher when you add the mod; before, an error
+  in programmers' words came up, naming no file. A file Notepad saved as "UTF-8 with BOM" is read. When the check's
+  **Set aside**, or its rename, meets a file another program has open, it names that file, not the name it would have
+  got. Checked by tests.
+- **Plain words, in your language (Studio and Launcher):** 279 more messages now come in all 11 languages, in plain
+  words: the Launcher's refusals and the line at the top of its window; how **Test in game**, **Play** and installs end,
+  and a Play refused before it starts; a build's lines from its steps; why the update check, the mod list or the list of
+  units from other eras can't be reached without the internet, never in Windows' own words; a damaged mod file; the game
+  backup in Settings and Sign in through Steam; the refusals of RUSE Decoy, the **Music** and **Nations** tabs, the
+  maps' ground paint and the missions; your mod's changes file broken by hand; and a name already taken, said by the
+  unit's name instead of a code name, or a number that doesn't fit, said by its label on the page. Checked by tests.
 - **Bug Watch says why, if you ticked it:** which check refused a build or found a mistake (a fixed name from our code),
   how far a **Play** or **Test in game** got, which mods from our list were on and how many of your own, Plays refused
   before they started, and updates offered, installed or failed. Never the words shown, a path, or the names, words or
@@ -73,8 +93,9 @@ with the R.U.S.E. Field Manual and the Balance Overhaul Mod together.
   changed. Because it changed, both apps show it to you once more when they open; your username stays, and the Bug Watch
   box stays as you had it.
 
-**Also new in 0.9.8.20, in the Studio: a squad soldier by soldier, one Open in Blender, animations for one unit or
-for the units you pick, models with animations of their own and the Generic Horse.**
+**Also new in 0.9.8.20, in the Studio: a squad soldier by soldier, one Open in Blender, animations for one unit or for
+the units you pick, models with animations of their own, the Generic Horse, fixes from our tests of what players do, map
+fixes and a Having trouble? link.**
 
 - **A squad, soldier by soldier:** a squad's page now starts with its squad card and a line for each soldier, in place
   of its **Its own model** box. **Open in Blender** on its card opens its soldiers side by side, each with his own copy
@@ -170,6 +191,42 @@ for the units you pick, models with animations of their own and the Generic Hors
 - **Smaller things:** each factory is called by its building's name; in Persian, the game's names show in English, never
   as code names; the check before **Test in game** also reads the map you're editing when it is a folder of its own, and
   offers its fixes there too.
+- **New mod… and Export with unusual names and texts:** **New mod…** now makes a mod whose name holds an emoji or a rare
+  character such as 𠮷, or is very long; before, it failed, and an emoji left a broken mod in the mod menu. In the mod's
+  folder name and its exported file's name, an accented letter loses only its accent (Équipe gives equipe, before quipe;
+  ß, ł and ø are still left out), and a long name gives them at most 40 letters; the name itself stays whole. **Export
+  mod…** sends a version typed with full-width or Persian digits (１.０.０, ۱.۰.۰) in plain digits (1.0.0), and a character
+  pasted into the author or the description no longer stops it. When another program has one of the mod's files open,
+  Export names that file (before, it only said permission was denied), and an Export started while another one runs is
+  refused in words (before, the two wrote one file and left a half-written one behind). Checked by tests; not yet tried
+  in the installed Studio.
+- **Names and numbers:** **New unit…** refuses a name that differs from another unit's only in its capitals (tiger ii
+  beside Tiger II), as a name already taken: Windows doesn't tell capitals apart in file names, so the two shared their
+  files, and deleting one took the other's card and model. A mod that already has such a pair keeps it. A decimal number
+  too big for the game (1e39, say) is refused on the **Units** tab and the **AI and player settings** tab, as on the
+  **All values** tab, instead of stopping every build of the mod. An emoji or a rare character in the credit of a
+  building's own look no longer makes that look unreadable, on its page or for the build. Checked by tests.
+- **Squads and Blender:** **Custom uniform** is refused, in words, while a soldier of the squad wears a model of his
+  own, as the mod would then no longer build: click **Back to the game's look** on that soldier first. The squad page
+  says where a sending from Blender you never brought back, or a removed soldier's own look, was kept aside. **Will it
+  work in the game?** reads a model's own animations as the build plays them, so a squad given a model with animations
+  of its own, such as the Generic Horse's riflemen, isn't said to stop the game for animations the build never plays. A
+  repaint brought back from Blender stays when a later trip leaves **Its paint** unticked. Checked by tests, the repaint
+  also with Blender on our PC; not yet tried in the game.
+- **Maps:** **Map size** no longer stops the build when a **Blank Terrain** or **Blank Ocean** map made from one of 16
+  of the game's 32 maps (Frontline, Tank Graveyard and Vesuvio among them) is made bigger; anything placed on its new
+  ground still stops the build (a bigger Frontline with a tree there did), and that is still to be mended. A new map,
+  new map changes or the copy **Edit an installed mod** makes, named Nul or another name Windows keeps for itself, gets
+  a folder Windows can make, its name kept as typed. When **Duplicate map** is refused for a character the map's file
+  can't hold, nothing is left behind; before, a half-made map stayed, and every later **Test in game** stopped. **Make
+  sectors** with sectors too small for the map is refused and nothing is saved; before, the setting was saved anyway,
+  and the sectors view failed until **Undo**. Checked by tests; not yet tried in the game.
+- **Having trouble? Read the guide:** a small link at the end of the help in 7 boxes where bones, animations or Blender
+  need explaining (the squad card, the Blender box of a unit that isn't a squad, **Its two halves**, **Its animations**,
+  **Will it work in the game?** and two in RUSE Decoy) opens that topic's wiki page in your language. The wiki has three
+  new pages in all 11 languages, Models and Bones, Unit Animations and Open in Blender, and five pages mended where they
+  no longer matched the apps (Play With Friends now explains join codes). The link was seen in a preview of the page,
+  not yet in the installed Studio.
 - **Players, update your Launcher:** a mod whose squads have soldiers of their own, or whose units have animations of
   their own, needs Launcher 0.4.8.20 or newer: an older one can't give them. This Launcher gets the small game patch
   such squads need by itself, downloaded once and applied only to your modded copy. Not yet tried in the game from the
