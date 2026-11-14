@@ -1,4 +1,5 @@
 """Text mods (MOD_FORMAT §6): csv rows, handing out game keys, and writing them into the .dic files."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import unittest
 
 from test_dic import make_dic

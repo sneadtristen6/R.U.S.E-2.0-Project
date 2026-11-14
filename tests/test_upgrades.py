@@ -1,5 +1,6 @@
 """Upgrades (the unit page's Upgrade box; LittleGroove's upgrade chains): the unit a unit is researched from, its
 research price and time, saved in the mod and built, on a made-up game."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import struct
 import tempfile
 import unittest

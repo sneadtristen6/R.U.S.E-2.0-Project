@@ -1,5 +1,6 @@
 """The 3D map picture a blank map's menus show (rusemod.menudraw): the slab the game's own are drawn as, the white
 dots the build puts where players start (wherever the starting points are then), and the big pictures' frame."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import unittest
 
 from rusemod import menudraw

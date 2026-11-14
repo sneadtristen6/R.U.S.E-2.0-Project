@@ -1,5 +1,6 @@
 """Bigger maps (rusemod.bigmap, newmap's size / clouds / room, sectors' Make sectors): the pieces that need no game
 files. The grown map itself was proven in the game (an 80.7 km map, 2026-10-17); its build runs on a real copy."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import math
 import struct
 import unittest

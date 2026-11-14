@@ -1,6 +1,7 @@
 """The build's checks for fonts, videos, Flash menus and shaders (rusemod.filechecks; the owner, 2026-10-08: "just write
 a check for those four kinds"), on small made-up files. (Every one of the game's own 4 fonts, 5 Flash menus, its
 shader file and 96 videos passes them: checked read-only against the game, 2026-10-08.)"""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import struct
 import unittest
 import zlib

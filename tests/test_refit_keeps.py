@@ -8,6 +8,7 @@ page. An animation the modder didn't change follows the file, as before (the sil
 differently, waits on the owner). A unit on the game soldier's bones keeps RUSE Decoy's rows through all of it
 (rusemod.anim.add_unit_clip's). The silent-loss review's F2, as a class. On test_animmodel's made-up game: no game
 needed."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import json
 import re
 import struct

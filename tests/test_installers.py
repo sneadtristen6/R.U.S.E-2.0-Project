@@ -1,5 +1,6 @@
 """The installer build's pieces that can be checked anywhere (installers/, packaging on Windows itself runs in
 .github/workflows/apps.yml): the icons, the build commands, the installed apps' self-test and log file."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import importlib.util
 import io
 import os

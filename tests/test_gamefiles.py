@@ -2,6 +2,7 @@
 (2026-10-08): a mod carries only a delta against the game's own file, made for that one version of it; every file is
 checked as its kind before the game gets it; added files only in the mod's own folder; a later mod's version of a file
 wins, and the build says so; the game's packs are never written."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import random
 import struct
 import tempfile

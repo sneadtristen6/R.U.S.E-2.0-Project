@@ -1,4 +1,5 @@
 """DXT1 blocks and TGU1 texture payloads, on made-up pictures (no game files)."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import struct
 import unittest
 from pathlib import Path

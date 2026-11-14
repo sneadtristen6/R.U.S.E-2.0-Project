@@ -22,6 +22,7 @@ Export writes only the file's own name in each record, never a folder).
     record naming the unit it no longer has;
   - another player who hasn't the era downloaded opens the exported file and takes the Horse Squad out: the credits
     file is written again without the Liberty's CC-BY line, though the Liberty stays in his copy."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import json
 import os
 import re

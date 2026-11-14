@@ -10,6 +10,7 @@ wrote the record in place, so a write stopped part way left it that way).
   so a change of the modder's is named, never put back without a word; what else the record held (a split chosen on the
   page, a Custom uniform the model took the place of) is said as not kept ("record").
 On test_animmodel's made-up game (tests/test_refit_keeps.py's stand-ins): no game needed."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import json
 import unittest
 from pathlib import Path

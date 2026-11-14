@@ -1,6 +1,7 @@
 """.rmod mods through LittleGroove's engine (rusemod.rmod), on made-up packs: nothing is written to the game, the
 changes reach the modded copy, mods with scripts are refused, and mods that don't go together are found before
 anything is built (no game files needed)."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import base64
 import json
 import tempfile

@@ -4,6 +4,7 @@ pack; a guard that carries on after the game's own function is joined only to th
 left as the mod has it, with a note; a game without the script packs gets nothing; and nothing here stops a build.
 What each guard does with the game's own function is checked where the game's scripts are (the project's template
 compiler runs every case under the game's Python before it writes scriptguards_compiled.py)."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import os
 import unittest
 from pathlib import Path

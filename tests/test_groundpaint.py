@@ -1,5 +1,6 @@
 """Painting on the ground's picture (rusemod.groundpaint), on a tiny made-up tile set: 2x1 cells of 1,000 map units,
 a 256-pixel overview tile like the game's (its size comes from the payload, never assumed) and 512-pixel tiles."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import math
 import struct
 import unittest

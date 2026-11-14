@@ -2,6 +2,7 @@
 the owner, 2026-10-10: "all of the error messages should be able to have a fix or like a fix button or like a how-to
 fix in like plain people language"): problems read back into their parts, the fixes edit only what they say, and the
 Studio's mod check offers them."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import tempfile
 import tomllib
 import unittest

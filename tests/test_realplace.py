@@ -2,6 +2,7 @@
 OpenStreetMap areas filled and laid by layer, the bare land cut into fields, the sea's floor and a river's bed, and the
 files and strokes the Studio writes: a made-up place of 600 m, half sea, with a wood, a field with a pond-shaped hole
 and a river."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import math
 import struct
 import tomllib

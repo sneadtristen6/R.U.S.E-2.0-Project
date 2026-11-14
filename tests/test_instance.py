@@ -1,4 +1,5 @@
 """Tests for modded instances, on a small made-up game folder (no real game needed)."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import os
 import shutil
 import stat

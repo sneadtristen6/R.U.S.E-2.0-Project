@@ -6,6 +6,7 @@ the other choice is built again; the menu logo's gold leaves the menu's code alo
 
 Checked our_tools.json: none of its program-reading tools apply; this test never reads the program (its fake game
 folder has a two-byte stand-in for the game's program, as tests/test_gamefiles.py's does)."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import io
 import json
 import struct

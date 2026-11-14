@@ -1,6 +1,7 @@
 """The open brushes (rusemod.nav, Graph.open_ground): ground given back to units where a made-up map's movement has
 none, the reverse of a block, in the main graph and in a town's own local map; blocks and opens in order; the warning
 for water; the files; the AI grid following."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import math
 import struct
 import tomllib

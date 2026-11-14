@@ -1,5 +1,6 @@
 """An ammunition's own weapon class (ruse_studio.weaponclass, "New weapon class" on the ammo page), on a made-up game: a table of damage
 numbers every ammunition links to, stored out of order as the game's is, and two ammunitions that share it."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import struct
 import tempfile
 import tomllib

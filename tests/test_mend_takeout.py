@@ -21,6 +21,7 @@ build, until the Studio takes it out (rusemod.holding; tests/test_delete_goes_th
 held such a file (a model, a clip), three now expect the take-out to go through (each names its old name) and the
 lead's put-back check holds units.toml instead; a held list file (units.toml, era_units.json, the credits) still stops
 it, everything put back, as before."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import json
 import os
 import shutil

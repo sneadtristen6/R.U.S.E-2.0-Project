@@ -1,5 +1,6 @@
 """The guard for the owner's hard rule (2026-10-02): never assume, never generalize. Every refusal about what R.U.S.E.
 does is flagged with its rule, and every rule says what it rests on (rusemod.rules). It changes nothing the apps do."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import ast
 import re
 import unittest

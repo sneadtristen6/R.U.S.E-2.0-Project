@@ -1,6 +1,7 @@
 """rusemod.navnp (numpy) against nav._Spots' own loops: the same rooms, byte for byte, and the same `top`, on made-up
 zones of every kind the loops tell apart (whole-unit middles listed once for their kind, any middles, big zones, a
 grid that cuts them off, more kinds than the loops keep lists for, rooms past a byte, depths right on a STEP)."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import random
 import unittest
 from unittest import mock

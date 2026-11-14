@@ -2,6 +2,7 @@
 their builds aren't destroyed between updates and there's a way to update their old build"): the mod format number in
 mod.toml, an older mod brought up to date with a backup first, a newer Studio's mod not opened without a yes, and a
 rewrite of a map file keeping the tables it doesn't write."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import tempfile
 import tomllib
 import unittest

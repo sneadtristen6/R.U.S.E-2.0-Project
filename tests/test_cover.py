@@ -1,5 +1,6 @@
 """Painted cover and blocked ground (rusemod.cover): a made-up mapinfo.win, painted and read back, and a mod's
 maps/<map>/cover.toml built into the modded copy's DataMap_Win.dat."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import hashlib
 import struct
 import tempfile

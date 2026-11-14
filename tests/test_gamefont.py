@@ -1,5 +1,6 @@
 """The game's lettering on the apps' pages (rusemod.gamefont): copied from the player's game into the app's cache at
 each start, named first by both apps' style sheets, never carried by the apps themselves; on a made-up game."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import tempfile
 import unittest
 from pathlib import Path

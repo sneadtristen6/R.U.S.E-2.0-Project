@@ -2,6 +2,7 @@
 height under any point (bilinear, turned with the square), the ground going toward it by the stroke's fall-off, a
 16-bit heightmap read with every step, and its picture laid on a made-up tile set at every level, under the edge's
 fall-off."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import math
 import struct
 import tempfile

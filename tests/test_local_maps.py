@@ -1,4 +1,5 @@
 """Graph.add_local_maps: a town's own local map, laid out as the shipped ones are (findings ledger F-95)."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import math
 import unittest
 

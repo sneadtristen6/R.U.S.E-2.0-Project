@@ -1,6 +1,7 @@
 """What the windows keep (rusemod.home.PrefsCalls): the language and the Studio's keys, in settings.json in the platform
 folder, so they outlive a restart (the window's own storage doesn't: its address changes every start), an update and
 a reinstall."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import json
 import tempfile
 import unittest

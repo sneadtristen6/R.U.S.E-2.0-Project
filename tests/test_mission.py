@@ -2,6 +2,7 @@
 mission.toml). The script is written the way Python 2.5 compiles it; the pinned bytes below were compared with Python
 2.5.1's own compile of the same source, every field of every code object (2026-10-10), so a change to what's written
 shows here even where no Python 2.5 is installed."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import hashlib
 import struct
 import tomllib

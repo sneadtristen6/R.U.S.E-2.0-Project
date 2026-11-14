@@ -1,5 +1,6 @@
 """RUSE Guard, the Launcher's side (rusemod.guard): signed tokens in DomesticNukes' format, dev keys, signed mod
 manifests, the in-game record, the process scan, and a match's evidence bundle kept or sent."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import json
 import os
 import shutil

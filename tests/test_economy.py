@@ -1,5 +1,6 @@
 """The economy (rusemod.economy, the Studio's Economy tab): values the game has twice (its usual game modes and the
 Nuclear mode), changed in both from one value, or in one mode (shown apart where the two differ), on a made-up game."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import struct
 import tempfile
 import tomllib

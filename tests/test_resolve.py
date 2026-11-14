@@ -1,4 +1,5 @@
 """Mod versions and load order (docs/MOD_FORMAT.md §10.6)."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import unittest
 
 from rusemod.resolve import ModInfo, ResolveError, load_order, matches, pick_versions

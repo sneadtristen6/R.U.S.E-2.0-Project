@@ -2,6 +2,7 @@
 flag is", "warn people if it's a known crash and ... not allow them to start the game if it's going to crash"): every
 flag explained, the Studio's judge of one unit's flags, and the build's new crash: a plane with weapons given the
 recon flag 99 without the fighter flag 100 (T53-T56). Made-up units, no game files needed."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import unittest
 
 from rusemod import flaginfo, schema

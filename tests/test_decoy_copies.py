@@ -8,6 +8,7 @@ changing, ticking, renaming and deleting a copy, where a copy starts (every unit
 animation from Blender, another copy), its refusals in words in eleven languages; and RUSE Decoy's page (decoy.js): a
 tooltip on every new control, every word in eleven languages and on the stand-in page, every call the Studio's and the
 stand-in page's. Nothing here was tried in the game."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import os
 import re
 import sqlite3

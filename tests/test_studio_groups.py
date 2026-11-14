@@ -4,6 +4,7 @@ lines, each unit going into the line of its kind), on a made-up game whose units
 board's groups, the group of a unit's kind (two lines of its kind, none, a new group joined by the next), every way a
 unit comes into a group refusing a 7th while a move inside a group and taking out stay allowed, a group already over
 the most, and the mod's menu_groups.toml kept in step."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import json
 import os
 import struct

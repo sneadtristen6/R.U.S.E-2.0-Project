@@ -4,6 +4,7 @@ way round) give the same meshes, the same fitted parts (a pickle of them: the sa
 .glb bytes either way; which way a model faces is modelin.facing's own either way. The loops are the reference: whole
 arrays made the importer many times faster on a 2.8-million-triangle scan (2026-10-08), and the models it makes must
 not change for it."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import contextlib
 import math
 import pickle

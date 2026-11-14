@@ -1,5 +1,6 @@
 """rusemod.pyscript: the game's compiled Python and its unit list, on a made-up unit list written byte by byte
 (PLAN.md decision 23). The real game is checked by tools/verify_pyscript.py."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import struct
 import tempfile
 import unittest

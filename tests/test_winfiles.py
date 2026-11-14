@@ -1,5 +1,6 @@
 """Windows file and process helpers (rusemod.winfiles): what holds a file, what runs from a folder, a delete that
 ignores the read-only mark. The Windows-only parts start small helper programs of their own and end them."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import os
 import stat
 import subprocess

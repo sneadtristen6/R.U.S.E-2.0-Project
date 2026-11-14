@@ -2,6 +2,7 @@
 `instances_dir`), else $RUSE_INSTANCES, else the recommended place, RUSE-Instances on the game's drive. The owner,
 2026-10-09: "user should be able to choose where files go, game should not force it into one spot. It can have a
 recommended spot maybe but everything should be customizable". On a made-up game folder; nothing starts for real."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import os
 import tempfile
 import unittest

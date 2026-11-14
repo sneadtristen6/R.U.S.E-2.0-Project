@@ -7,6 +7,7 @@ failure to write the set file. The page's side (ui/app.js): the refusals it make
 no mod ticked, a blank name) and the editor opened and used, which it tells Bug Watch itself (api.bugwatch_seen).
 No network, no game: a made-up Launcher home.
 """
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import os
 import re
 import sys

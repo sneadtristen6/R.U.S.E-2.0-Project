@@ -2,6 +2,7 @@
 a mod (its script editor), on a made-up game whose scripts are small ones of our own (none of the game's). Skipped
 where the two libraries LittleGroove's engine uses for it aren't installed (the Python 3.11 test runs:
 .github/workflows/tests.yml), and the tests that make a script where the game's Python 2.5.1 isn't with the apps."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import struct
 import tempfile
 import unittest
