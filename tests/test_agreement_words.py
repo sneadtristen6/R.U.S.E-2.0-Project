@@ -43,6 +43,10 @@ SENT = {
 MODE = {"us": "game mode", "fr": "mode de jeu", "ger": "spielmodus", "ita": "modalità di gioco", "spa": "modo de juego",
         "pol": "tryb gry", "ru": "режим игры", "cz": "herní režim", "jpn": "ゲームモード", "sc": "游戏模式",
         "fa": "حالت بازی"}   # (حالت بازی)
+# The mode in ANY wording (a bare "der Modus", "режим", "モード", ...): each language's word for it alone, a piece of
+# its phrase above and RUSE Guard's own in its match details below; none may be in the crash point at all
+MODE_ANY = {"us": "mode", "fr": "mode", "ger": "modus", "ita": "modalità", "spa": "modo", "pol": "tryb",
+            "ru": "режим", "cz": "režim", "jpn": "モード", "sc": "模式", "fa": "حالت"}   # (حالت)
 # The unit the game was making, as each language says it in the crash point (it stays)
 UNIT = {"us": "the unit the game was making", "fr": "l'unité que le jeu était en train de créer",
         "ger": "die Einheit, die das Spiel gerade erstellte", "ita": "l'unità che il gioco stava creando",
@@ -79,10 +83,13 @@ class VersionFourAsApproved(unittest.TestCase):
             for lang, text in full.items():
                 crash = point(text, "- when an app crashes:")
                 self.assertNotIn(MODE[lang], crash.lower(), f"{app} {lang}")
+                self.assertNotIn(MODE_ANY[lang], crash.lower(), f"{app} {lang}: the mode in another wording")
                 self.assertTrue(crash.endswith(SENT[lang]), f"{app} {lang}: {crash[-120:]}")
         for lang, word in MODE.items():   # the words looked for are the apps' own for the game mode
             help_file = SRC / "rusemod" / ("numberinfo.toml" if lang == "us" else f"numberinfo_{lang}.toml")
             self.assertIn(word, help_file.read_text(encoding="utf-8").lower(), lang)
+            self.assertIn(MODE_ANY[lang], word, lang)
+            self.assertIn(MODE_ANY[lang], MATCH[lang].lower(), lang)
 
     def test_the_unit_the_map_and_ruse_guards_match_mode_stay(self):
         texts = [agreement(app) for app in APPS]
