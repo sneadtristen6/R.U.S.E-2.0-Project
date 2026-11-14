@@ -105,5 +105,45 @@ class ExportedAndOpenedAgain(SquadScenario):
         self.assertEqual([p.get("problem") for p in page.check_mod()["problems"]], [])
 
 
+class TheStudioOpenedAgain(SquadScenario):
+    def test_closed_before_bringing_back_then_opened_again(self):
+        """Usual: +1, soldier 2 a look of his own, the squad opened in Blender, soldier 3 changed and sent, Blender
+        closed; the Studio closed before Bring my changes back, and opened again later (a new Studio on the same
+        platform folder): the squad as it was (6, soldier 2's look), Bring my changes back there under the big button
+        (squad_info's blender.waiting), and it brings soldier 3 in; the page names who changed in every language, and
+        the mod builds with both looks."""
+        from ruse_studio.api import StudioApi
+        from rusemod.webui import page_api
+        from test_scenarios_squads_adding import Adding
+        self.page.soldier_plus(SQUAD)
+        self.page.soldier_import(SQUAD, "2", str(self.model_file("marine.glb", b"glTF marine")))
+        self.page.blender_open(SQUAD, {"model": True, "paint": True, "soldiers": list("123456")}, "us")
+        self.blender_opened()
+        self.blender_sends({"3": model_glb(RIFLE_MODEL, b"CHG3")})
+        again = StudioApi(index_path=self.index, game_dir=self.game, home=self.home)
+        again._look_models, again._blender = self.api._look_models, self.api._blender
+        self.addCleanup(again.set_pref, "lang", "us")
+        page = page_api(again)
+        page.choose_mod(str(self.mod))
+        info = page.squad_info(SQUAD, "us")
+        self.assertEqual((info["count"], [s["wears"] for s in info["soldiers"]], info["blender"]["waiting"]),
+                         (6, ["game", "own", "game", "game", "game", "game"], True))
+        self.assertTrue(page.blender_parts(SQUAD, "us")["open"])
+        r = page.blender_back(SQUAD, "us")
+        self.assertEqual((r["changed"], r["door"]), (["3"], "squad"))
+        infos = {lang: page.squad_info(SQUAD, lang) for lang in LANGS}
+        said = {lang: fill(self.words(lang)["squad_back_some"], changed=Adding.name_of(self, lang, infos[lang], "3"),
+                           unchanged=", ".join(Adding.name_of(self, lang, infos[lang], i) for i in "12456"))
+                for lang in LANGS}
+        self.assert_worded(said, "Changed: Soldier 3: Rifleman. As they were: Soldier 1: Rifleman, Soldier 2: "
+                                 "Rifleman, Soldier 4: Rifleman, Soldier 5: Rifleman, Soldier 6: Bazooka man. Click "
+                                 "Test in game to see it.")
+        self.assertEqual([s["wears"] for s in r["soldiers"]], ["game", "own", "own", "game", "game", "game"])
+        result, _loaded = self.built()
+        self.assertEqual(self.errors(result), [])
+        self.assertEqual(sorted(result.own_models), [f"{STEM}@2", f"{STEM}@3"])
+        self.assertFalse(page.squad_info(SQUAD, "us")["blender"]["waiting"])
+
+
 if __name__ == "__main__":
     unittest.main()
