@@ -1,5 +1,5 @@
 ---
-title: "Studio 0.9.8.20 and Launcher 0.4.8.20: guards where some mod sets stopped the game; an upgrade made in another building keeps its unit; a squad's own soldier, changed in Blender; Bug Watch says why; RUSE Guard lets players with the same build play together (not fully supported yet); imported models sit where the unit stands; a squad soldier by soldier, animations for one unit and the Generic Horse"
+title: "Studio 0.9.8.20 and Launcher 0.4.8.20: guards where some mod sets stopped the game; an upgrade made in another building keeps its unit; a squad's own soldier, changed in Blender; Bug Watch says why; RUSE Guard lets players with the same build play together (not fully supported yet); imported models sit where the unit stands; a squad soldier by soldier, one Open in Blender, animations for one unit or for the units you pick, and the Generic Horse"
 category: Announcements
 order: 25
 ---
@@ -29,6 +29,9 @@ with the R.U.S.E. Field Manual and the Balance Overhaul Mod together.
 - **The Launcher's mod set editor says why:** when it can't make or save a set (no mod ticked, or a mod that is no
   longer in your library), it now says so inside the editor, under its buttons. Before, the message went to the set's
   page, hidden behind the editor, so nothing seemed to happen. **Create** and **Save** wait until a mod is ticked.
+- **Play waits for the mods' check (Launcher):** **Play** stays off until the Launcher has checked whether the set's
+  mods go together, and its tooltip says why. Before, a quick **Play** could send a set whose mods can't go together to
+  the build, which refused it there. Checked by tests; not yet tried in the installed Launcher.
 - **Missions of your own (Studio):** a new map's mission that makes units of a nation its copied mission doesn't load
   now gets that nation's packs, so those units have their models (the game stopped when such a unit was made). The
   mission check also refuses an event that hands a side a person plays to the computer. Not yet tried in the game.
@@ -37,21 +40,46 @@ with the R.U.S.E. Field Manual and the Balance Overhaul Mod together.
   many. **Import model…** also works now on a unit with a **Custom uniform**: it takes the copy out, and **Use the
   copied unit's model** gives it back in one click. The wiki's Import a Model page has the steps. Tested in the game
   with a squad's soldier weighted in Blender; the Custom uniform part was checked outside the game.
-- **Bug Watch says why, if you ticked it:** which check refused a build or found a mistake (a fixed name from our
-  code), how far a **Play** or **Test in game** got, which mods from our list were on and how many of your own
-  (counted by kind, never named), Plays refused before they started, and updates offered, installed or failed. Never
-  the words shown, a path, or anything your own mods hold. All of it is in the agreement you accepted (version 3), so
-  it isn't shown to you again.
+- **Bug Watch says why, if you ticked it:** which check refused a build or found a mistake (a fixed name from our code),
+  how far a **Play** or **Test in game** got, which mods from our list were on and how many of your own, Plays refused
+  before they started, and updates offered, installed or failed. Never the words shown, a path, or the names, words or
+  files of your own mods. A game's crash report after a script error also says how often the guards above kept that game
+  going (not yet tried in the game).
+- **A game crash we know names its unit (Launcher, if you ticked Bug Watch):** when the game crashes in one of the ways
+  we know, the Launcher says so after **Play**, in your language: the unit the game was making, by the name on its card
+  (and whether a mod added it), and why, in plain words. It reads this on your PC, from the game's own crash report and
+  your modded copy; the name and the reason are never sent. The unit is told once you've accepted the agreement's
+  version 4 (below). The Studio's **Test in game** doesn't say it. Checked on earlier crash reports; not yet tried in
+  the game.
+- **The agreement, version 4:** it now lists more of what Bug Watch sends, if you ticked it: how many mods of your own
+  you had and what kinds of things they hold, such as units, maps, missions or scripts (counted by kind, never named,
+  and never their words, paths or files); at a game crash, the map it was on (one of the game's own maps by its name, a
+  map a mod made only as "a mod's map") and the unit the game was making (one of the game's own units by its number, a
+  unit a mod added only as "a mod's unit"), each only when the game's crash report shows it; and which version of the
+  agreement you accepted. It also says now that the names and words of your own mods are never sent. Nothing else in it
+  changed. Because it changed, both apps show it to you once more when they open; your username stays, and the Bug Watch
+  box stays as you had it.
 
-**Also new in 0.9.8.20, in the Studio: a squad soldier by soldier, animations for one unit, models with animations of
-their own and the Generic Horse.**
+**Also new in 0.9.8.20, in the Studio: a squad soldier by soldier, one Open in Blender, animations for one unit or
+for the units you pick, models with animations of their own and the Generic Horse.**
 
 - **A squad, soldier by soldier:** a squad's page now starts with its squad card and a line for each soldier, in place
-  of its **Its own model** box. **Change the squad in Blender** opens all its soldiers side by side, each with his own
-  copy of his pictures; after **Send to the R.U.S.E. Studio** in Blender, **Bring my changes back** gives each soldier
-  only what was done to him. On his line a soldier has **Import a model…** and, once he has a model of his own, **Back
-  to the game's look**. Seen from far away, the squad's little figures wear the look most of its soldiers wear. Tested
-  in the game with a squad whose bazooka man alone was painted red.
+  of its **Its own model** box. **Open in Blender** on its card opens its soldiers side by side, each with his own copy
+  of his pictures; after **Send to the R.U.S.E. Studio** in Blender, **Bring my changes back** gives each soldier only
+  what was done to him. On his line a soldier has **Import a model…** and, once he has a model of his own, **Back to the
+  game's look**. Seen from far away, the squad's little figures wear the look most of its soldiers wear. Tested in the
+  game with a squad whose bazooka man alone was painted red.
+- **One Open in Blender:** a unit's page has one **Open in Blender**: on a squad's card, and for any other unit in its
+  **Model** row, under **More**, in the **Change it in Blender** box. **What goes to Blender ▾** beside it ticks what
+  goes: a squad's soldiers (for a squad on bones of its own, such as the Generic Horse, which model), **Its bones** for
+  a model on bones of its own, and **Its paint**; untick one and **Bring my changes back** leaves it as it was. While
+  Blender has the unit, the button reads **Bring my changes back**. One of the game's own units that isn't a squad sends
+  its paint alone, as **Repaint in Blender** did: copy it first to change its model. A model on bones of its own goes to
+  Blender with its animations: one you don't change there comes back exactly as it went out, and of one you change, only
+  the bones you changed are new; a change made in RUSE Decoy while Blender has the model stays when that animation comes
+  back unchanged, and the page says so. Tested: a new M4 Sherman's whole model changed in Blender, then in the game; in
+  the Studio, a copied G.I. squad's soldiers, the Generic Horse with **Its bones** unticked, and the game's own M4
+  Sherman's paint. The animations coming back unchanged were checked with Blender on our PC, not yet in the game.
 - **More or fewer soldiers:** **Add a soldier** brings in a copy of one in the squad, a soldier from another squad, or
   a model file; **Remove** takes one out; **+1 soldier** and **−1 soldier** add or take away a rifleman at once,
   without Blender. A squad has 2 to 8 soldiers, and a soldier can have a look of his own that no other soldier wears.
@@ -65,6 +93,12 @@ their own and the Generic Horse.**
   own copy, or for every unit that plays it. **Back to what every unit plays** takes the unit's own copy out. **Motion
   capture** goes on one unit the same way. Tested in the game with a squad dancing on the spot while every other squad
   stood as before; a speed, a stand-in or a bone changed for one unit, not yet.
+- **Copies of an animation for the units you pick:** in RUSE Decoy, **Copy this animation…** makes a copy of an
+  animation in your mod, listed under **Your copies**. Change the copy, then tick under **Who plays it** the units that
+  play it in place of the animation, or under a unit only some of its soldiers or parts; every other unit plays the
+  animation as before. **Back to the game's animation** takes your changes to the copy out again, and **Delete the
+  copy** takes it out of your mod. Tested in the game with two copies of the soldiers' standing animations with a dance
+  in them, ticked for a new squad and for the G.I. squad's bazooka man alone.
 - **Animations changed in Blender:** for a new unit made in your mod, **Change its animations in Blender** in RUSE
   Decoy opens Blender with the unit and every animation it plays, each named for what it does in it. Change one, click
   **Send to the R.U.S.E. Studio**, then **Bring my changes back**: the changed ones become that unit's own, and every
@@ -80,28 +114,49 @@ their own and the Generic Horse.**
   of their own on their own line. Tested in the game with a Generic Horse made this way: riflemen and a bazooka man on
   horses, firing, riding as themselves on long moves, each horse falling with its rider; another animation picked by
   hand or another split, not yet.
-- **The Generic Horse:** riflemen and a heavy-weapon soldier, each on a horse of his own, now listed in the **Units** tab
-  with the units from other eras (**WWII+**, USA), off until you add it. **Add to my mod** makes its horses and riders
-  on your PC from your own copy of the game (nothing is downloaded), adds it as a new unit of your mod and puts
-  sneadtristen6 in your mod's credits; **Take it out of my mod** takes it all out again. It is made the same way as the
-  Generic Horse tested above; added from the **Units** tab, not yet tried in the game.
-- **Its own shine after Blender:** a model sent to Blender with **Change it in Blender** and brought back with **Bring
-  back the model** keeps its own shine and side-colour layer; before, it came back with the plain one a model from a
-  file gets. When one can't be kept, the page says which. Not yet tried in the game.
+- **The Generic Horse:** riflemen and a heavy-weapon soldier, each on a horse of his own, now listed in the **Units**
+  tab with the units from other eras (**WWII+**, USA), off until you add it. **Add to my mod** makes its horses and
+  riders on your PC from your own copy of the game (nothing is downloaded), adds it as a new unit of your mod and puts
+  sneadtristen6 in your mod's credits; **Take it out of my mod** takes it all out again. There is one Generic Horse for
+  every nation: its riders are always made from the G.I. squad, and in your mod it's a unit like any other, in the build
+  menu you pick when you add it (the **Nations** tab moves it to another nation). Tested in the game added from the
+  **Units** tab. Not yet tried in the game: in a mod someone shares with you, its Generic Horse can now be resized and
+  moved on your PC once your Studio has made the horse's files (adding it to any mod of yours makes them); and when the
+  Studio makes those files again and they come out different, they go beside the old ones, so a mod's Generic Horse
+  never changes when you resize or move it (if its own files are gone or changed, **Resize** and **Move it** say so and
+  leave it as it is).
+- **A folder too deep for Windows:** when the Generic Horse's **Add to my mod** is refused because the Studio's folders
+  are too deep for Windows, its page now offers a short folder, such as C:\RUSE2: **Copy everything to C:\RUSE2 and
+  start again** copies the Studio's settings, the Launcher's library and mod sets, and your mods, maps, exported files
+  and backups there, checks every file, makes both apps use that folder from then on and starts the Studio again from
+  it; **Choose another folder…** picks another one instead. Nothing is deleted: your old folders stay where they are.
+  Checked by tests; not yet tried in a real Studio.
+- **Its own shine after Blender:** a model sent to Blender with **Open in Blender** and brought back with **Bring my
+  changes back** keeps its own shine and side-colour layer; before, it came back with the plain one a model from a file
+  gets. When one can't be kept, the page says which. Not yet tried in the game.
 - **Where your model is kept:** the **Model** row (on a squad's page, **More options**) says where your mod keeps the
   unit's own model on your PC, with **Show in folder**.
 - **The Nations tab:** **Start a new mod** now asks only for a name and opens the Studio on the new mod; the guided
   steps are off for now. What only they had is on the **Nations** tab: **Keep its units** or **Start it empty** for
   each nation, and **No research** or **Keep the game's research** for the whole mod.
+- **Delete goes through:** **Delete this unit**, **Take it out of my mod** and the **Nations** tab's take-outs no longer
+  stop when another program has one of the unit's files open: the unit goes all the same, and a file still held stays in
+  the mod's folder for now. **Test in game** and **Export mod…** leave it out, and the Studio removes it by itself
+  later, once that program lets go of it. A list file of the mod that another program holds for more than 3 seconds
+  still stops Delete, with everything put back and the file named. Checked by tests; not yet tried in the game.
 - **A unit with no card picture (Studio and Launcher):** a unit shown in a build menu with no card picture is now
   refused when the game is built, with what to change. In a test the game stopped as it started with such a unit (a
   copy of the HQ truck shown in a build menu).
 - **Export leaves your PC's folders out:** an exported mod no longer carries the folders of your PC that the Studio
-  wrote into its model records (often with your Windows user name in them): only the file's own name goes. What you
-  wrote yourself (README, descriptions, credits) goes out as you wrote it, and Export tells you if it names your home
-  folder. The credits of units from other eras, the Generic Horse's too, now go with the mod.
-- **Smaller things:** each factory is called by its building's name; in Persian, the game's names show in English,
-  never as code names.
+  wrote into its model records (often with your Windows user name in them): only the file's own name goes. In your own
+  README files, each folder path is cut to its own name, and a path that ends at a user's own folder, and so names that
+  user, is taken out whole; Export lists each cut, and the README in your mod stays as you wrote it. A README Export
+  can't read goes out as you wrote it, and Export names it. Your other texts (descriptions, credits) go out as you wrote
+  them, and Export tells you if one names your home folder. The credits of units from other eras, the Generic Horse's
+  too, now go with the mod.
+- **Smaller things:** each factory is called by its building's name; in Persian, the game's names show in English, never
+  as code names; the check before **Test in game** also reads the map you're editing when it is a folder of its own, and
+  offers its fixes there too.
 - **Players, update your Launcher:** a mod whose squads have soldiers of their own, or whose units have animations of
   their own, needs Launcher 0.4.8.20 or newer: an older one can't give them. This Launcher gets the small game patch
   such squads need by itself, downloaded once and applied only to your modded copy. Not yet tried in the game from the
@@ -184,8 +239,8 @@ modded game with one of those mods could be built. The apps now read them the wa
 
 **Also new, in 0.9.8.13:** if you ticked Bug Watch and the game crashes, its report now also says what the game was
 trying to read or write, and up to 16 places in the game that led to the crash. Both are read from the game's own
-crash report on your PC, which still never leaves it. The agreement lists these two things now (version 3; nothing
-else in it changed), so both apps show it to you once more.
+crash report on your PC, which still never leaves it. The agreement listed these two things then (version 3; nothing
+else in it changed), so both apps showed it to you once more.
 
 **Fixed in 0.9.8.12:** 0.9.8.10 / 0.4.8.10 and 0.9.8.11 / 0.4.8.11 couldn't build a modded game: Play and Test in game
 stopped with "No such file or directory: ...fairplay_watch.bin", because their installers left out three of RUSE
