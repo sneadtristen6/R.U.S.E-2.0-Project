@@ -281,7 +281,8 @@ class RmodUnits(unittest.TestCase):
         self.assertTrue(rmod_unit_models(run, shipped, zz_win, result))
         self.assertEqual(result.errors, [])
         said = "\n".join(f.message for f in result.findings)
-        self.assertIn("$/Panzer is in US's army (Nationalite 0)", said)
+        # (said to a player, with no code names: the review of 95e9b910; its name made readable, no card here)
+        self.assertIn("Panzer, in US's army, has a model of Germany's units", said)
         self.assertIn("Germany's unit models now load in every skirmish", said)
 
     def test_a_new_unit_with_another_nation_s_model(self):

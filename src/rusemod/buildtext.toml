@@ -3331,6 +3331,32 @@ cz = "místa, která mise sledují od začátku, se nepodařilo zkontrolovat: na
 jpn = "ミッションが開始時から見張る場所を確かめられませんでした。メニューかミッションのファイルを読めません（{0}）"
 sc = "无法检查各任务从开始就监视的地点：无法读取菜单或某个任务的文件（{0}）"
 fa = "جاهایی که مأموریت‌ها از آغاز زیر نظر دارند بررسی نشد: منوها یا فایل‌های یک مأموریت خوانده نمی‌شوند ({0})"
+# build checks, the review's fixes (item 29): an .rmod mod's unit said to a player by its name on its card, with no code
+# names (build.unit_models for rmod_unit_models)
+[ec658f14009]
+us = "{0}{1}, in {2}'s army, has a model of {3}'s units: {4}'s unit models now load in every skirmish, so it shows in matches where no player has {5} too"
+fr = "{0}{1}, dans l'armée de {2}, a un modèle des unités de {3} : les modèles d'unités de {4} se chargent maintenant dans chaque escarmouche, il apparaît donc aussi dans les parties où aucun joueur n'a {5}"
+ger = "{0}{1}, in der Armee von {2}, hat ein Modell der Einheiten von {3}: die Einheitenmodelle von {4} laden jetzt in jedem Gefecht, also erscheint es auch in Spielen, in denen kein Spieler {5} hat"
+ita = "{0}{1}, nell'esercito di {2}, ha un modello delle unità di {3}: i modelli delle unità di {4} ora si caricano in ogni schermaglia, quindi compare anche nelle partite in cui nessun giocatore ha {5}"
+spa = "{0}{1}, en el ejército de {2}, tiene un modelo de las unidades de {3}: los modelos de unidades de {4} ahora se cargan en cada escaramuza, así que también aparece en partidas donde ningún jugador tiene {5}"
+pol = "{0}{1}, w armii {2}, ma model jednostek {3}: modele jednostek {4} wczytują się teraz w każdej potyczce, więc pokazuje się też w rozgrywkach, gdzie żaden gracz nie ma {5}"
+ru = "{0}{1}, в армии {2}, использует модель юнитов {3}: модели юнитов {4} теперь загружаются в каждом сражении, так что он виден и в матчах, где ни у кого нет {5}"
+cz = "{0}{1}, v armádě {2}, má model jednotek {3}: modely jednotek {4} se teď načítají v každé potyčce, takže se ukáže i v zápasech, kde žádný hráč nemá {5}"
+jpn = "{0}{1}（{2} の軍）は {3} のユニットのモデルを使っています。{4} のユニットモデルを全スカーミッシュで読み込むようにしたので、誰も {5} を使わない試合でも表示されます"
+sc = "{0}{1}（{2} 的军队）使用 {3} 单位的模型：{4} 的单位模型现在会在每场遭遇战中加载，因此在没有玩家使用 {5} 的对局中也会显示"
+fa = "{0}{1}، در ارتش {2}، مدلی از یگان‌های {3} دارد: مدل‌های یگان‌های {4} اکنون در هر نبرد آزاد بارگذاری می‌شوند، پس در مسابقه‌هایی هم که هیچ بازیکنی {5} را ندارد دیده می‌شود"
+[ec17e26ca7f]
+us = "{0}{1}, in {2}'s army, has a model only {3}'s units have, and the unit data has no cluster maps that could load {4}'s models in every match: in matches where no player has {5}, this unit would have no model, or crash the game"
+fr = "{0}{1}, dans l'armée de {2}, a un modèle que seules les unités de {3} ont, et les données d'unités n'ont aucune carte de cluster qui pourrait charger les modèles de {4} dans chaque partie : dans les parties où aucun joueur n'a {5}, cette unité n'aurait pas de modèle, ou ferait planter le jeu"
+ger = "{0}{1}, in der Armee von {2}, hat ein Modell, das nur die Einheiten von {3} haben, und die Einheitendaten haben keine Cluster-Maps, die die Modelle von {4} in jedem Spiel laden könnten: in Spielen, in denen kein Spieler {5} hat, hätte diese Einheit kein Modell oder ließe das Spiel abstürzen"
+ita = "{0}{1}, nell'esercito di {2}, ha un modello che hanno solo le unità di {3}, e i dati delle unità non hanno mappe cluster che possano caricare i modelli di {4} in ogni partita: nelle partite in cui nessun giocatore ha {5}, questa unità non avrebbe modello, o farebbe bloccare il gioco"
+spa = "{0}{1}, en el ejército de {2}, tiene un modelo que solo tienen las unidades de {3}, y los datos de unidades no tienen mapas de clúster que puedan cargar los modelos de {4} en cada partida: en las partidas donde ningún jugador tiene {5}, esta unidad no tendría modelo, o colgaría el juego"
+pol = "{0}{1}, w armii {2}, ma model, który mają tylko jednostki {3}, a dane jednostek nie mają map klastrów, które mogłyby wczytać modele {4} w każdej rozgrywce: w rozgrywkach, gdzie żaden gracz nie ma {5}, ta jednostka nie miałaby modelu albo wywaliłaby grę"
+ru = "{0}{1}, в армии {2}, использует модель, которая есть только у юнитов {3}, а в данных юнитов нет карт кластеров, которые загружали бы модели {4} в каждом матче: в матчах, где ни у кого нет {5}, у этого юнита не было бы модели или игра вылетала бы"
+cz = "{0}{1}, v armádě {2}, má model, který mají jen jednotky {3}, a data jednotek nemají mapy clusterů, které by načetly modely {4} v každém zápase: v zápasech, kde žádný hráč nemá {5}, by tato jednotka neměla model, nebo by shodila hru"
+jpn = "{0}{1}（{2} の軍）は {3} のユニットにしかないモデルを使っていますが、{4} のモデルを全試合で読み込めるクラスターマップがユニットデータにありません。誰も {5} を使わない試合では、このユニットにモデルがないか、ゲームが落ちます"
+sc = "{0}{1}（{2} 的军队）使用只有 {3} 单位才有的模型，而单位数据中没有能在每场对局加载 {4} 模型的集群地图：在没有玩家使用 {5} 的对局中，此单位将没有模型或会导致游戏崩溃"
+fa = "{0}{1}، در ارتش {2}، مدلی دارد که فقط یگان‌های {3} دارند، و در داده‌های یگان‌ها هیچ cluster map وجود ندارد که بتواند مدل‌های {4} را در هر مسابقه بارگذاری کند: در مسابقه‌هایی که هیچ بازیکنی {5} را ندارد، این یگان مدلی نخواهد داشت، یا بازی کرش می‌کند"
 # Export's line for a modder's README whose folder paths were cut to their names (the owner, 2026-11-13, question A:
 # "cut to file name"; rusemod.package.readme_paths_out)
 [e0db0b3035c]

@@ -140,9 +140,10 @@ def ref(i, cls=0):
     return val(0x09, struct.pack("<III", 0xBBBBBBBB, i, cls))
 
 
-def menus(entries) -> tuple[bytes, bytes]:
+def menus(entries, titles=None) -> tuple[bytes, bytes]:
     """(the map list, the menus) for `entries` [(map-list name, GUID, cluster base name, menu: campaign, operation,
-    tutorial, battles or unlisted)], laid out like the game's (rusemod.newmap's reading)."""
+    tutorial, battles or unlisted)], laid out like the game's (rusemod.newmap's reading). `titles`: {GUID: the text
+    key of its name in the menus}, given as its menu entry's Description, as the game's are."""
     m_objects, strings = [], []
     for name, guid, base, _menu in entries:
         at = len(m_objects)
@@ -155,7 +156,9 @@ def menus(entries) -> tuple[bytes, bytes]:
                        props=[("Name", 0), ("GUID", 0), ("ClusterLoads", 0), ("NdfTransaction", 1), ("BaseName", 2)],
                        strings=strings, topo=[0], compress=True)
     classes = {"campaign": 0, "tutorial": 0, "operation": 1, "battles": 2, "unlisted": 0}
-    g_objects = [(classes[menu], [(0, val(0x1A, guid))]) for _n, guid, _b, menu in entries]
+    g_objects = [(classes[menu], [(0, val(0x1A, guid))]
+                  + ([(5, val(0x1D, struct.pack("<Q", titles[guid])))] if titles and guid in titles else []))
+                 for _n, guid, _b, menu in entries]
     packs = []
     for cls, list_prop, menu, tuto in ((3, 1, "campaign", False), (3, 1, "tutorial", True), (4, 2, "operation", False),
                                        (5, 3, "battles", False)):
@@ -166,7 +169,8 @@ def menus(entries) -> tuple[bytes, bytes]:
     globals_ = make_ndf(objects=g_objects + packs,
                         classes=["TChapterMapInfo", "TChallengeMapInfo", "TMultiMapInfo", "TChapterPack",
                                  "TChallengePack", "TMultiPack"],
-                        props=[("GUID", 0), ("ChapterList", 3), ("ChallengeList", 4), ("MultiList", 5), ("IsTuto", 3)],
+                        props=[("GUID", 0), ("ChapterList", 3), ("ChallengeList", 4), ("MultiList", 5), ("IsTuto", 3),
+                               ("Description", 0)],
                         topo=[len(g_objects)], compress=True)
     return mapinfo, globals_
 
@@ -182,13 +186,14 @@ def cluster(layout_path="DataDir:\\Test\\Map\\M01_Leipzig/LevelDesign.scenario",
 LEIPZIG = ("M01_Leipzig", GUIDS["leipzig"], "Patchable\\Scenario\\M01_Leipzig\\Scenario\\ClusterMap", "campaign")
 
 
-def game_files(entries=(LEIPZIG,), layouts=None, scripts=None, clusters=None) -> dict:
+def game_files(entries=(LEIPZIG,), layouts=None, scripts=None, clusters=None, titles=None, texts=None) -> dict:
     """{pack: {member: bytes}}: the made-up game's three packs, one chapter by default (M01_Leipzig: its layout holds
-    Zone_A and Zone_B, its script watches Zone_A from its start)."""
-    mapinfo, globals_ = menus(entries)
+    Zone_A and Zone_B, its script watches Zone_A from its start). `titles` as menus' ; `texts`: ZZ_Win.dat's members,
+    when the game should have that pack too."""
+    mapinfo, globals_ = menus(entries, titles)
     return {GLAD: {MAPINFO: mapinfo, GLOBALS: globals_, **(clusters or {CLUSTER: cluster()})},
             DATA: layouts or {LAYOUT: layout("Zone_A", "Zone_B")},
-            IA: scripts or {SCRIPT: mission()}}
+            IA: scripts or {SCRIPT: mission()}, **({"ZZ_Win.dat": texts} if texts else {})}
 
 
 def rmod_text(name, version, files, mod_id=None) -> str:
@@ -293,23 +298,23 @@ class MissionWarnings(MadeUpGame):
 
 
 # --- item 29: a set made only of .rmod mods -------------------------------------------------------------------------
-def army_ndf() -> bytes:
+def army_ndf(card=None) -> bytes:
     """test_unitcheck's German tank (its model's mesh an unnamed object) with a class name, as the game's units have:
-    what an .rmod mod's change finds it by."""
+    what an .rmod mod's change finds it by. `card`: the text key of its name on its card (NameInMenuToken), if any."""
     from test_unitcheck import PANZER_MODEL, path_text, ref as uref
+    named = [(6, val(0x1D, struct.pack("<Q", card)))] if card is not None else []
     return make_ndf(objects=[(0, [(0, val(0x03, struct.pack("<I", 2))), (1, val(0x02, struct.pack("<i", 1))),
-                                  (2, uref(1, 1)), (5, val(0x07, struct.pack("<I", 1)))]),
+                                  (2, uref(1, 1)), (5, val(0x07, struct.pack("<I", 1)))] + named),
                              (1, [(3, uref(2, 2))]),
                              (2, [(4, path_text(0))])],
                     classes=["TUniteAuSolDescriptor", "TGfxDescriptorModeleWithAnimation", "TResourceMultiMaterialMesh"],
                     props=[("DescriptorId", 0), ("Nationalite", 0), ("GfxDescriptor", 0), ("MeshDescriptor", 1),
-                           ("FileName", 2), ("ClassNameForDebug", 0)],
+                           ("FileName", 2), ("ClassNameForDebug", 0), ("NameInMenuToken", 0)],
                     strings=["WW2\\Res3D\\Units\\" + PANZER_MODEL, "Unit_Panzer"], exports={0: "Panzer"}, compress=True)
 
 
-class RmodOnlyUnits(unittest.TestCase):
-    """build_and_write with a set made only of .rmod mods, on a made-up game with a unit, a cluster map and the
-    skirmish mesh packs: a German tank an .rmod gives to the US makes Germany's packs load in every skirmish."""
+class UnitGame(unittest.TestCase):
+    """A made-up game with a unit, a cluster map and the skirmish mesh packs, and builds of a Panzer Mod (.rmod) on it."""
 
     def setUp(self):
         from test_unitcheck import CLUSTER as UNIT_CLUSTER, CLUSTER_MAP, PACKS, mesh_pack
@@ -342,13 +347,20 @@ class RmodOnlyUnits(unittest.TestCase):
         result = build_and_write(self.game, [load_mod(path)], out=self.root / out, say=lines.append)
         return result, lines
 
+
+class RmodOnlyUnits(UnitGame):
+    """build_and_write with a set made only of .rmod mods: a German tank an .rmod gives to the US makes Germany's packs
+    load in every skirmish."""
+
     def test_a_german_tank_for_the_us(self):
         from rusemod import unitcheck
         from rusemod.model import load
         result, lines = self.build("Nationalite", 0, "moved")
         self.assertEqual(result.errors, [], lines)
         said = "\n".join(f.message for f in result.findings)
-        self.assertIn("Panzer Mod: $/Panzer is in US's army (Nationalite 0)", said)
+        # (said to a player, with no code names: the review of 95e9b910; the made-up game has no card texts, so the
+        # unit's name in the data, made readable)
+        self.assertIn("Panzer Mod: Panzer, in US's army, has a model of Germany's units", said)
         self.assertIn("Germany's unit models now load in every skirmish", said)
         written = Edat((self.root / "moved" / GLAD).read_bytes())
         g, _ = load({self.cluster_map: bytes(written.read(written.find(self.cluster_map)))})
@@ -360,6 +372,222 @@ class RmodOnlyUnits(unittest.TestCase):
         self.assertEqual(result.errors, [], lines)
         self.assertFalse(any("now load in every skirmish" in f.message for f in result.findings))
         self.assertNotIn(self.cluster_map, result.changed)
+
+
+# --- the review of 95e9b910 (2026-11-14): its six faults, each as a kind -------------------------------------------
+class MixedSetUnits(UnitGame):
+    """Review fault 1: item 29 ("A": run the unit-model check for .rmod mods' units) reached only sets made of .rmod mods
+    alone; as soon as any mod of ours was in the set (every test copy has two), an .rmod mod's units were never looked
+    at. The same German tank an .rmod mod gives to the US, with a folder mod beside it."""
+
+    def folder_mod(self, name="beside"):
+        from test_build import write_mod
+        return load_mod(write_mod(self.root / "mods", name, {}))
+
+    def build_with(self, value_name, value, out, *beside):
+        text = json.dumps({"$schema": "ruse-mod/v1", "id": "panzer-mod", "name": "Panzer Mod", "version": "1.0",
+                           "author": "Tester", "description": "made up", "game_version": "",
+                           "patches": [{"dat": f"{REV}/{GLAD}", "ndf": "genglad/patchable/gfx/everything.cpp.gladndfbin",
+                                        "changes": [{"action": "patch", "table": "TUniteAuSolDescriptor",
+                                                     "match": {"ClassNameForDebug": "Unit_Panzer"},
+                                                     "set": {value_name: {"type": "Int32", "value": value}}}]}]})
+        path = self.root / f"{out}.rmod"
+        path.write_text(text, encoding="utf-8")
+        lines = []
+        result = build_and_write(self.game, [load_mod(path), *beside], out=self.root / out, say=lines.append)
+        return result, lines
+
+    def test_an_rmod_mods_tank_in_a_set_with_a_folder_mod(self):
+        from rusemod import unitcheck
+        from rusemod.model import load
+        result, lines = self.build_with("Nationalite", 0, "mixed", self.folder_mod())
+        self.assertEqual(result.errors, [], lines)
+        said = "\n".join(f.message for f in result.findings)
+        self.assertIn("Panzer Mod: Panzer, in US's army, has a model of Germany's units", said)
+        written = Edat((self.root / "mixed" / GLAD).read_bytes())
+        g, _ = load({self.cluster_map: bytes(written.read(written.find(self.cluster_map)))})
+        self.assertEqual([int(part.props["ForceLoadBitFieldIfSkirmish"].value)
+                          for _t, _p, part in unitcheck.loaders(g)], [2] * 3)
+
+    def test_controls_a_mixed_set_whose_rmod_moves_no_unit_and_a_folder_mod_alone(self):
+        result, lines = self.build_with("DescriptorId", 7, "priced-mixed", self.folder_mod())
+        self.assertEqual(result.errors, [], lines)
+        self.assertFalse(any("now load in every skirmish" in f.message for f in result.findings))
+        lines = []
+        alone = build_and_write(self.game, [self.folder_mod("alone")], out=self.root / "alone", say=lines.append)
+        self.assertEqual(alone.errors, [], lines)
+        self.assertFalse(any("now load in every skirmish" in f.message for f in alone.findings))
+
+    def test_its_name_on_its_card(self):
+        """Review fault 6 (b): a player reads an .rmod mod's unit by its name on its card (here the game's own tank's,
+        "PANZER IV"), never its path in the data, its nation's number or its model's file."""
+        from test_dic import make_dic
+        from rusemod import loc
+        from rusemod.dic import name_to_key
+        rev = self.game / REV
+        old = Edat((rev / GLAD).read_bytes())
+        members = {e.path: bytes(old.read(e)) for e in old.entries}
+        members["genglad\\patchable\\gfx\\everything.cpp.gladndfbin"] = army_ndf(card=name_to_key("UNI_PZ"))
+        (rev / GLAD).write_bytes(make_edat([("file", m, d) for m, d in sorted(members.items())]))
+        old = Edat((rev / "ZZ_Win.dat").read_bytes())
+        members = {e.path: bytes(old.read(e)) for e in old.entries}
+        members[loc.member("baseunite", "us")] = make_dic([(name_to_key("UNI_PZ"), "PANZER IV")])
+        (rev / "ZZ_Win.dat").write_bytes(make_edat([("file", m, d) for m, d in sorted(members.items())]))
+        result, lines = self.build("Nationalite", 0, "carded")
+        self.assertEqual(result.errors, [], lines)
+        said = "\n".join(f.message for f in result.findings)
+        self.assertIn("Panzer Mod: PANZER IV, in US's army, has a model of Germany's units", said)
+        for code in ("$/", "Nationalite", ".ase2ndfbin", "Descriptor_"):
+            self.assertNotIn(code, said, said)
+
+
+class WhoIsNamed(MadeUpGame):
+    """Review fault 3: a mod whose edits take out or rename only places the mission doesn't lack is not named for it."""
+
+    def studio(self, name, toml_name, text):
+        from test_build import write_mod
+        folder = write_mod(self.root / "mods", name, {})
+        (folder / "maps" / "M01_Leipzig").mkdir(parents=True)
+        (folder / "maps" / "M01_Leipzig" / toml_name).write_text(text, encoding="utf-8")
+        return load_mod(folder)
+
+    def test_a_studio_edit_on_top_of_an_rmods_layout_that_lacks_the_zone(self):
+        nameless = self.rmod("A.rmod", "Nameless Maps", "1.0",
+                             {(DATA, "test/map/m01_leipzig/leveldesign.scenario"): layout("Zone_B", "Other")})
+        other_out = self.studio("takes-other-out", "scenario.toml",
+                                '[[remove]]\nfile = "leveldesign.scenario"\nitem = 1\nkind = "CircularZone"\n')
+        result, lines = self.build(nameless, other_out)
+        self.assertEqual(result.errors, [], lines)
+        self.assertEqual(self.warnings(result), [
+            "Nameless Maps replaces the maps of 1 campaign chapter(s) with ones that lack places their missions use: "
+            "with it on, those chapters stop about a second after they start"])
+
+    def test_control_a_studio_rename_of_the_watched_zone_is_named(self):
+        renamer = self.studio("renamer", "items.toml", '[[set]]\nfile = "leveldesign.scenario"\nitem = 0\n'
+                                                       'kind = "CircularZone"\nname = "Zone_Renamed"\n')
+        result, lines = self.build(renamer)
+        self.assertEqual(result.errors, [], lines)
+        self.assertEqual(self.warnings(result), [
+            "renamer replaces the maps of 1 campaign chapter(s) with ones that lack places their missions use: with it "
+            "on, those chapters stop about a second after they start"])
+
+    def test_an_rmods_scenario_edits_by_name_and_by_object(self):
+        """The same for an .rmod mod's edits of a layout's design items: by name, or by its object's number (resolved
+        on the layout as shipped); one that can't be told is named as before."""
+        from types import SimpleNamespace
+        from rusemod import missionplaces as mp
+        from rusemod.build import _mission_blame, _mission_changers
+        shipped = layout("Zone_A", "Zone_B")   # (objects: Zone_A's item 0 and AddOn 1, Zone_B's item 2 and AddOn 3)
+        member = "test\\map\\m01_leipzig\\leveldesign.scenario"
+
+        def rmod_with(name, changes):
+            path = self.root / f"{name}.rmod"
+            path.write_text(json.dumps({"$schema": "ruse-mod/v1", "id": name, "name": name, "version": "1.0",
+                                        "author": "Tester", "description": "made up", "game_version": "",
+                                        "scenario_patches": [{"dat": f"{REV}/{DATA}",
+                                                              "scenario": "test/map/m01_leipzig/leveldesign.scenario",
+                                                              "changes": changes}]}), encoding="utf-8")
+            return SimpleNamespace(id=name, rmod=path)
+        mods = [rmod_with("by-name-b", [{"action": "delete", "table": "TGameDesignAddOn_CircularZone",
+                                         "match": {"Name": "Zone_B"}}]),
+                rmod_with("by-object-b", [{"action": "delete", "table": "TGameDesignAddOn_CircularZone",
+                                           "match": {"_index": "3"}}]),
+                rmod_with("by-name-a", [{"action": "delete", "table": "TGameDesignAddOn_CircularZone",
+                                         "match": {"Name": "Zone_A"}}]),
+                rmod_with("unknown", [{"action": "delete", "table": "TGameDesignAddOn_CircularZone",
+                                       "match": {"Position": "1"}}])]
+        changers = _mission_changers(mods, [], [], SimpleNamespace(new_maps={}, mission_scripts={}),
+                                     before=lambda _m: shipped, shipped=lambda m: shipped if m.lower() == member else None)
+        mission = mp.Mission("campaign", "M01_Leipzig", CLUSTER.lower(), (member,), (SCRIPT.lower(),))
+        missing = mp.Missing(mission, ["Zone_A"], True, False, False)
+        named, _ = _mission_blame(missing, changers, {DATA.lower(): lambda _m: layout("Zone_B")})
+        self.assertEqual(named, ["by-name-a", "unknown"])
+
+
+class OddMenus(MadeUpGame):
+    """Review fault 4: the check only warns, so nothing in it ever stops a build that built before: menus holding a
+    list where the tutorial's flag is, or anything else going wrong in the check, is one note and the build goes on."""
+
+    def odd_menus(self):
+        mapinfo, globals_ = menus([LEIPZIG])
+        nd_objects = [(0, [(0, val(0x1A, GUIDS["leipzig"]))]),
+                      (1, [(1, val(0x11, struct.pack("<I", 1) + ref(0, 0))), (2, val(0x11, struct.pack("<I", 0)))])]
+        odd = make_ndf(objects=nd_objects, classes=["TChapterMapInfo", "TChapterPack"],
+                       props=[("GUID", 0), ("ChapterList", 1), ("IsTuto", 1)], topo=[1], compress=True)
+        return self.rmod("M.rmod", "Odd Menus", "1.0", {(GLAD, "genglad/patchable/misc/globals.cpp.gladndfbin"): odd})
+
+    def test_menus_with_a_list_where_the_tutorials_flag_is(self):
+        result, lines = self.build(self.odd_menus())
+        self.assertEqual(result.errors, [], lines)
+        self.assertTrue((self.root / "out").exists() and any((self.root / "out").iterdir()), lines)
+        self.assertTrue(any(f.level == "note" and "couldn't be checked" in f.message for f in result.findings),
+                        result.findings)
+
+    def test_anything_going_wrong_in_the_check(self):
+        from unittest import mock
+        mod = self.rmod("Maps.rmod", "Map Pack", "1.0", {(DATA, "test/map/m01_leipzig/leveldesign.scenario"):
+                                                         layout("A_battle_place")})
+        with mock.patch("rusemod.missionplaces.check", side_effect=RuntimeError("something went wrong")):
+            result, lines = self.build(mod)
+        self.assertEqual(result.errors, [], lines)
+        self.assertTrue(any(f.level == "note" and "couldn't be checked" in f.message for f in result.findings))
+        result, _ = self.build(mod, out="again")   # (the control: the same set, the check as it is, warns)
+        self.assertEqual(len(self.warnings(result)), 1)
+
+
+class CountLine(MadeUpGame):
+    """Review fault 5: the report's count line counts every finding of the build, the missions' warnings too (the
+    six's warning used to be counted)."""
+
+    def test_the_count_line_counts_the_missions_warning(self):
+        mod = self.rmod("Maps.rmod", "Map Pack", "1.0", {(DATA, "test/map/m01_leipzig/leveldesign.scenario"):
+                                                         layout("A_battle_place")})
+        result, lines = self.build(mod)
+        warnings = len([f for f in result.findings if f.level == "warning"])
+        notes = len([f for f in result.findings if f.level == "note"])
+        self.assertEqual(warnings, 1)
+        counted = [ln for ln in lines if ln.endswith("note(s)")]
+        self.assertEqual(counted, [f"0 error(s), {warnings} warning(s), {notes} note(s)"])
+        said_at = next(i for i, ln in enumerate(lines) if "1 campaign chapter(s)" in ln)
+        self.assertGreater(lines.index(counted[0]), said_at)   # (said once every finding is in)
+
+    def test_control_a_build_stopped_by_an_error_says_its_count_first(self):
+        from test_build import write_mod
+        folder = write_mod(self.root / "mods", "broken", {"x.rndf": "patch $/Nope ( P = 1 )"})
+        result, lines = self.build(load_mod(folder))
+        self.assertTrue(result.errors, lines)
+        counted = [i for i, ln in enumerate(lines) if ln.endswith("note(s)")]
+        self.assertEqual(len(counted), 1, lines)
+        self.assertEqual(lines[counted[0] + 1], "Nothing was written.")
+
+
+TITLE_KEY = 0x00000007653A5042   # (a made-up text key of a chapter's name in the menus)
+
+
+def titled_game_files() -> dict:
+    """game_files, the chapter's name in the menus given, and the game's menu texts holding it."""
+    from test_dic import make_dic
+    from rusemod import loc
+    return game_files(titles={GUIDS["leipzig"]: TITLE_KEY},
+                      texts={loc.member("flash_txt", "us"): make_dic([(TITLE_KEY, "1. COLDITZ CASTLE")])})
+
+
+class MenuNames(MadeUpGame):
+    """Review fault 6 (a): a note on a mission names it as the menus do (the game's own text of its name), never by
+    its name in the map list, and its reason without a class name of our code."""
+    files = staticmethod(titled_game_files)
+
+    def test_an_unread_missions_note(self):
+        from unittest import mock
+        mod = self.rmod("Bad.rmod", "Bad Script", "1.0",
+                        {(IA, "genpython/1000/test/map/m01_leipzig/scripting/effetmap.xyz"): b"XYZ0 not a script"})
+        with mock.patch("rusemod.fairplay.ON", False):   # (this made-up ZZ_Win.dat holds the menus' texts only)
+            result, _lines = self.build(mod)
+        notes = [f.message for f in result.findings if f.level == "note" and "can't be read" in f.message]
+        self.assertEqual(len(notes), 1, result.findings)
+        self.assertTrue(notes[0].startswith("1. COLDITZ CASTLE: a file of its mission can't be read ("), notes)
+        self.assertNotIn("M01_Leipzig", notes[0])
+        self.assertNotIn("Error", notes[0])
 
 
 if __name__ == "__main__":

@@ -54,7 +54,10 @@ _FOLDER = re.compile(r"(?i)datadir:\\+test\\+(map\\+[a-z0-9_]+\\+scripting[a-z0-
 _LAYOUT = re.compile(r"(?i)^datadir:[\\/]+test[\\/]+map[\\/]+(.+\.scenario)$")
 CONDITION = "ConditionDetectUnitDansZoneDetection"   # units in a zone: its scan reads the zone's size
 TAG = "TagZoneDetection"                             # a zone found by its name in the layout
-_READ_ERRORS = (ValueError, KeyError, IndexError, struct.error, zlib.error, UnicodeDecodeError)
+# what reading a set's files can raise (a value of another type where one is read is a TypeError: the review of
+# 95e9b910, 2026-11-14); the build's mission_places takes anything else as one note too
+_READ_ERRORS = (ValueError, KeyError, IndexError, TypeError, AttributeError, struct.error, zlib.error,
+                UnicodeDecodeError, RecursionError)
 
 
 @dataclass(frozen=True)
@@ -66,6 +69,7 @@ class Mission:
     # of the game)
     scripts: tuple   # its match scripts: members of IA_Common.dat, lower case (whether the pack has them or not)
     problem: str = ""   # why its cluster can't be read (then it names no file here)
+    title: int = 0      # the text key of its name in the menus (its menu entry's Description), 0 for none
 
 
 @dataclass
@@ -142,11 +146,15 @@ def missions(read_glad) -> list[Mission]:
         if "IsTuto" in p and p["IsTuto"].scalar():
             tuto |= refs
     by_guid: dict = {}
+    titles: dict = {}   # GUID -> the text key of its name in the menus (its Description)
     for i, o in enumerate(g.objects):
         kind = KINDS.get(g.classes[o.cls])
         p = _props(g, o) if kind else {}
         if kind and "GUID" in p and i in listed:
             by_guid.setdefault(bytes(p["GUID"].payload), set()).add("tutorial" if i in tuto else kind)
+            said = p.get("Description")
+            if said is not None and said.tc == 0x1D and len(said.payload) >= 8:
+                titles.setdefault(bytes(p["GUID"].payload), struct.unpack("<Q", bytes(said.payload[:8]))[0])
     out = []
     for o in m.objects:
         if m.classes[o.cls] != "TMapLoadInfo":
@@ -162,7 +170,8 @@ def missions(read_glad) -> list[Mission]:
         except _READ_ERRORS as exc:
             layouts, scripts, problem = (), (), str(exc) or type(exc).__name__
         for kind in sorted(kinds, key=ORDER.index):
-            out.append(Mission(kind, _text(m, p.get("Name")) or base, _member(base), layouts, scripts, problem))
+            out.append(Mission(kind, _text(m, p.get("Name")) or base, _member(base), layouts, scripts, problem,
+                               titles.get(bytes(p["GUID"].payload), 0)))
     return out
 
 
@@ -181,8 +190,11 @@ def start_zones(raw: bytes) -> set[str]:
     calls, launch = {}, []
     try:
         _follow(module_code(raw), {}, [], calls, launch)
+    except ScriptError:
+        raise   # (its own words, as they are: a player's note names no class of our code)
     except (IndexError, KeyError, TypeError, ValueError, struct.error, zlib.error, RecursionError) as exc:
-        raise ScriptError(f"{type(exc).__name__}: {exc}") from None
+        raise ScriptError(f"its code can't be followed ({exc})" if str(exc) else "its code can't be followed") \
+            from None
 
     def made(v):
         """A value as the call that made it, when it's a name a call was stored under."""
