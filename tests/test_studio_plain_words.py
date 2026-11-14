@@ -18,6 +18,7 @@ from unittest import mock
 from rusemod.webui import page_api
 from ruse_studio import era_units
 from ruse_studio.api import StudioApi, StudioError
+from test_studio import M4, WithMod
 
 OFFLINE_US = ("this PC couldn't reach the server: there's no internet connection, or something on the way (a firewall, "
               "an antivirus, the server itself) turned the connection down")
@@ -89,6 +90,44 @@ class TheEraListOffline(Base):
         self.assertEqual(view["message"], f"The era units list couldn't be had: the era units list couldn't be loaded "
                                           f"({OFFLINE_US})")
         self.assertEqual(self.refused("us", "era_download", "WWII"), view["message"])
+
+
+class CodeNames(WithMod):
+    """The units scenarios' U-4 and U-5: a refusal naming a unit by its address ("There's already a unit called
+    Descriptor_Unit_Tiger_II (from 'Tiger II')") or a value by its game name ("ProductionPrice: 10000000000 doesn't
+    fit"), in every language. Now the unit by its name and the value by its label, in the Studio's language; the
+    control: the game's names when the Studio shows the game's own names (its "base" setting, a modder's choice)."""
+
+    def setUp(self):
+        super().setUp()
+        self.page = page_api(self.api)
+        self.api.new_mod("Tanks")
+
+    def refused(self, lang: str, call, *args, **kwargs) -> str:
+        self.api.set_pref("lang", lang)
+        with self.assertRaises(StudioError) as caught:
+            getattr(self.page, call)(*args, **kwargs)
+        return str(caught.exception)
+
+    def test_a_name_taken_is_said_by_the_unit_s_name(self):
+        self.page.new_unit(M4, "Tiger II", 10, group="new")
+        self.assertEqual(self.refused("fr", "new_unit", M4, "Tiger II", 10, group="new"),
+                         "Il y a déjà une unité nommée Tiger II. Choisissez un autre nom.")
+        said = self.refused("ru", "new_unit", M4, "Tiger-II", 10, group="new")
+        self.assertEqual(said, "Tiger-II слишком похоже на имя Tiger II — юнита, который уже есть в игре или в вашем "
+                               "моде: у них были бы одни и те же файлы. Выберите другое имя.")
+        self.assertNotIn("Descriptor_", said)
+
+    def test_a_number_too_big_is_said_by_the_value_s_label(self):
+        self.assertEqual(self.refused("fr", "new_unit", M4, "Big", 10_000_000_000, group="new"),
+                         "Prix : 10000000000 ne convient pas (doit être entre -2147483648 et 2147483647)")
+        self.assertEqual(self.refused("us", "new_unit", M4, "Big", 10_000_000_000, group="new"),
+                         "Price: 10000000000 doesn't fit (it must be -2147483648 to 2147483647)")
+
+    def test_control_the_game_s_own_names_when_the_studio_shows_them(self):
+        self.assertEqual(self.refused("base", "new_unit", M4, "Big", 10_000_000_000, group="new"),
+                         "ProductionPrice: 10000000000 doesn't fit (it must be -2147483648 to 2147483647)")
+        self.assertIn("Panther", self.page.new_unit(M4, "Panther", 10, group="new")["address"])  # (made)
 
 
 if __name__ == "__main__":

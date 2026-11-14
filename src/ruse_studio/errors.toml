@@ -3035,6 +3035,32 @@ jpn = "{0}{1} という名前のユニットがすでにあります（{2} か�
 sc = "已有名为 {0}{1} 的单位（来自 {2}）。请换个名字。"
 fa = "از قبل یگانی به نام {0}{1} وجود دارد (از {2}). نام دیگری انتخاب کنید."
 
+[e647a978849]
+us = "There's already a unit called {0}. Pick another name."
+fr = "Il y a déjà une unité nommée {0}. Choisissez un autre nom."
+ger = "Es gibt schon eine Einheit namens {0}. Wähle einen anderen Namen."
+ita = "C'è già un'unità chiamata {0}. Scegli un altro nome."
+spa = "Ya hay una unidad llamada {0}. Elige otro nombre."
+pol = "Jest już jednostka o nazwie {0}. Wybierz inną nazwę."
+ru = "Юнит с именем {0} уже есть. Выберите другое имя."
+cz = "Jednotka jménem {0} už existuje. Vyberte jiný název."
+jpn = "{0} という名前のユニットがすでにあります。別の名前にしてください。"
+sc = "已有名为 {0} 的单位。请换个名字。"
+fa = "از قبل یگانی به نام {0} وجود دارد. نام دیگری انتخاب کنید."
+
+[ec8d9feb0e1]
+us = "{0} is too close to the name of {1}, a unit already in the game or your mod: the two would get the same files. Pick another name."
+fr = "{0} est trop proche du nom de {1}, une unité déjà dans le jeu ou dans votre mod : les deux auraient les mêmes fichiers. Choisissez un autre nom."
+ger = "{0} ist dem Namen von {1} zu ähnlich, einer Einheit, die schon im Spiel oder in deinem Mod ist: Beide bekämen dieselben Dateien. Wähle einen anderen Namen."
+ita = "{0} è troppo simile al nome di {1}, un'unità già nel gioco o nella tua mod: le due avrebbero gli stessi file. Scegli un altro nome."
+spa = "{0} se parece demasiado al nombre de {1}, una unidad que ya está en el juego o en tu mod: las dos tendrían los mismos archivos. Elige otro nombre."
+pol = "{0} jest zbyt podobne do nazwy {1}, jednostki, która już jest w grze albo w twoim modzie: obie dostałyby te same pliki. Wybierz inną nazwę."
+ru = "{0} слишком похоже на имя {1} — юнита, который уже есть в игре или в вашем моде: у них были бы одни и те же файлы. Выберите другое имя."
+cz = "{0} je příliš podobné jménu {1}, jednotky, která už je ve hře nebo ve vašem módu: obě by dostaly stejné soubory. Vyberte jiný název."
+jpn = "{0} は、ゲームか MOD にすでにあるユニット {1} の名前に近すぎます。2 つが同じファイルを使うことになります。別の名前にしてください。"
+sc = "{0} 与游戏或你的模组中已有单位 {1} 的名字太接近：两者会用到相同的文件。请换个名字。"
+fa = "{0} خیلی به نام {1} نزدیک است، یگانی که از قبل در بازی یا ماد شماست: هر دو فایل‌های یکسانی می‌گرفتند. نام دیگری انتخاب کنید."
+
 [ee989930807]
 us = "That spawn isn't in the mod any more."
 fr = "Cette apparition n'est plus dans le mod."

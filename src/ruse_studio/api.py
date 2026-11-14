@@ -340,7 +340,7 @@ def _whole(value, kind: str, prop: str):
     r = int(Decimal(str(value)).quantize(Decimal(1), rounding=ROUND_HALF_UP))
     lo, hi = (0, 1) if kind == "bool" else INT_RANGES[kind]
     if not lo <= r <= hi:
-        raise StudioError(f"{prop}: {r} doesn't fit (it must be {lo} to {hi})")
+        raise StudioError(f"{prop}: {r} doesn't fit (it must be {lo} to {hi})", prop=prop)
     return r
 
 
@@ -352,7 +352,13 @@ def safe_name(name: str) -> str:
 
 
 class StudioError(Exception):
-    pass
+    """A refusal in words for the modder (said again in his language: page_error). `prop`, when given, is the game's
+    name of the value the words name: the page says it by that value's own label in the Studio's language (the units
+    scenarios' U-5, 2026-11-14: "ProductionPrice: 10000000000 doesn't fit ...", the code name in every language)."""
+
+    def __init__(self, *args, prop: str | None = None):
+        super().__init__(*args)
+        self.prop = prop
 
 
 def file_named(exc: OSError, fallback=None):
@@ -772,6 +778,9 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         if not isinstance(exc, StudioError) and type(exc).__name__ not in OTHERS:
             return None
         said = self._worded(str(exc))
+        prop = getattr(exc, "prop", None)
+        if prop and prop in said:   # the value by its page label in the Studio's language, not its game name (U-5)
+            said = said.replace(prop, schema.label(prop, self.prefs().get("lang") or schema.BASE), 1)
         return StudioError(said) if said != str(exc) else None
 
     def status(self) -> dict:
@@ -9965,8 +9974,14 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                 while unique and taken(target):
                     target, n = f"{namespace}/{prefix}{stem}_{n}", n + 1
                 if taken(target):
-                    raise StudioError(f"There's already a unit called {prefix}{stem} (from {name!r}). Pick another "
-                                      f"name.")
+                    # the unit there named by its name in the Studio's language, never its address (the units
+                    # scenarios' U-4: "There's already a unit called Descriptor_Unit_Tiger_II (from 'Tiger II')")
+                    other = self._names(ix, [target], self.prefs().get("lang") or schema.BASE,
+                                        edits.new_units)[target]
+                    if other.strip().casefold() == name.strip().casefold():
+                        raise StudioError(f"There's already a unit called {other}. Pick another name.")
+                    raise StudioError(f"{name} is too close to the name of {other}, a unit already in the game or "
+                                      f"your mod: the two would get the same files. Pick another name.")
             else:  # a name without letters or digits A-Z (Japanese, say): the address gets a number instead
                 n = 1
                 while taken(f"{namespace}/{prefix}New_{n}"):
