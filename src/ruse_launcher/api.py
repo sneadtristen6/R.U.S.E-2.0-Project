@@ -178,6 +178,10 @@ class LauncherApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedC
         as it is: the Launcher's own (LauncherError) and those it passes on as they came (the library's, a mod file's,
         the mod list's, a join code's), from errors.toml (ruse_launcher.errortext); an OSError naming a file in words
         (file_words), never Python's own (the export scenarios' FE-9 and FE-14: "[WinError 5] Access is denied: ...")."""
+        from rusemod import update
+        if type(exc).__name__ in update.SHARED_REFUSALS:   # a backup's, the updates', the sign-in's (buildtext.toml)
+            said = update.words(exc, self._lang())
+            return LauncherError(said) if said != str(exc) else None
         if isinstance(exc, OSError) and not isinstance(exc, BackupError):
             plain = file_words(exc)
             return LauncherError(errortext.worded(str(plain), self._lang())) if plain is not None else None

@@ -771,6 +771,10 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         """A page call's StudioError said again in the Studio's language (rusemod.webui page_api), or None to pass it
         on as it is. An OSError a call raised as it came (a file it couldn't read or write) is said in words too, in
         English as well (page_file_error): never Python's own words."""
+        from rusemod import update
+        if type(exc).__name__ in update.SHARED_REFUSALS:   # a backup's, the updates', the sign-in's (buildtext.toml)
+            said = update.words(exc, self.prefs().get("lang") or schema.BASE)
+            return StudioError(said) if said != str(exc) else None
         if isinstance(exc, OSError):
             plain = page_file_error(exc)
             return StudioError(self._worded(str(plain))) if plain is not None else None

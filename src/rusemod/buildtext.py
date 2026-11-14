@@ -33,10 +33,15 @@ ENDS = {
     "ruse_studio/nations.py": {"start": 1},
     "ruse_studio/homemove.py": {"start": 1},
     "ruse_launcher/api.py": {"start": 1, "fail": 0, "_install_job": 1},
-    "rusemod/backup.py": {"_backup_start": 2},
-    "rusemod/update.py": {"start": 1},
+    "rusemod/backup.py": {"_backup_start": 2, "BackupError": 0},
+    "rusemod/update.py": {"start": 1, "UpdateError": 0},
     "rusemod/webui.py": {"_said": 0},
     "rusemod/play.py": {"BuildError": 0},
+    # the refusals of the calls both apps share (a backup's, the updates', the sign-in's: rusemod.update.words says
+    # them, in both apps' page_error and the update check) and why a download failed (rusemod.mod_index plain's words,
+    # said inside "GitHub couldn't be reached to look for updates (...)")
+    "rusemod/ownedpass.py": {"OwnedPassError": 0},
+    "rusemod/mod_index.py": {"_why": 0},
 }
 
 # how the build marks a finding in its lines: "warning: ..." (said at once) and "  error    ..." (the report)
