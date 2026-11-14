@@ -14,7 +14,8 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from test_scenarios_units_base import A1, M1, P1, S1, Player
+from test_scenarios_units_base import A1, M1, P1, S1, Player, Refused  # noqa: F401 (Refused: U-1's record test,
+#                                                    which comes back when U-1's PROPOSED FIX commit is reverted)
 from rusemod import package
 from ruse_launcher.api import LauncherApi
 
