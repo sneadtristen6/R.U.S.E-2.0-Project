@@ -1438,13 +1438,14 @@ def _own_bones(g, sk: dict, record: str, stem: str) -> int:
     return holder
 
 
-def _own_animations(g, sk: dict, first: int, animations: dict) -> None:
+def _own_animations(g, sk: dict, first: int, animations: dict, nodes: list | None = None) -> None:
     """write_glb's animations for a model on bones of its own: each game clip (`animations`, {name: its bytes}, on the
-    record `sk`) as a glTF animation of the bone nodes from `first` on, every key of each track as the clip keeps it
-    (a turn as it's unpacked, a move and a size as stored), as glTF plays them (LINEAR): a track's one key held from
-    the clip's start to its end, two keys across the whole clip (the game doesn't read their times), more at their
-    times; a clip of one frame as one key at 0. rusemod.rig reads them back, so the build and a later import get the
-    same clips again (within what a clip's numbers hold)."""
+    record `sk`) as a glTF animation of the bone nodes from `first` on (`nodes`: each bone's node, in the record's
+    order, for a file whose bones are laid out otherwise: own_animations_into), every key of each track as the clip
+    keeps it (a turn as it's unpacked, a move and a size as stored), as glTF plays them (LINEAR): a track's one key
+    held from the clip's start to its end, two keys across the whole clip (the game doesn't read their times), more at
+    their times; a clip of one frame as one key at 0. rusemod.rig reads them back, so the build and a later import get
+    the same clips again (within what a clip's numbers hold)."""
     from . import baf
     from .gltf import FLOAT
     from .rig import move_out, size_out, turn_out
@@ -1470,7 +1471,7 @@ def _own_animations(g, sk: dict, first: int, animations: dict) -> None:
             return times_of[t]
         samplers, channels = [], []
         for u, track in enumerate(c.tracks):
-            node = first + csk["index"][u]
+            node = nodes[csk["index"][u]] if nodes is not None else first + csk["index"][u]
             for path, keys, conv, kind in (("translation", track.T, lambda k: move_out(k[1:4]), "VEC3"),
                                            ("rotation", track.R, lambda k: turn_out(baf.unpack_quat(k[1:5])), "VEC4"),
                                            ("scale", track.S, lambda k: size_out(k[1:4]), "VEC3")):
@@ -1482,3 +1483,238 @@ def _own_animations(g, sk: dict, first: int, animations: dict) -> None:
                                  "interpolation": "LINEAR"})
                 channels.append({"sampler": len(samplers) - 1, "target": {"node": node, "path": path}})
         out.append({"name": name, "samplers": samplers, "channels": channels})
+
+
+# --- a model's own animations put into its file anew (item 45: an animation back from Blender the exact same) ---
+class _IntoViews:
+    """What _own_animations writes with (rusemod.gltf._Glb's accessor) on a document and its buffer views as
+    rusemod.gltf.glb_views gives them, for pack_glb to lay out: the same accessors, each on a view of its own."""
+
+    def __init__(self, doc: dict, views: list):
+        self.doc, self.views = doc, views
+
+    def accessor(self, values: list, kind: str, ctype: int, target: int | None = None) -> int:
+        from .gltf import FLOAT, UBYTE, UINT, USHORT, add_view
+        width = {"SCALAR": 1, "VEC2": 2, "VEC3": 3, "VEC4": 4}[kind]
+        code = {FLOAT: "f", UBYTE: "B", USHORT: "H", UINT: "I"}[ctype]
+        flat = [c for v in values for c in (v if width > 1 else (v,))]
+        view = add_view(self.doc, self.views, struct.pack(f"<{len(flat)}{code}", *flat))
+        if target:
+            self.doc["bufferViews"][view]["target"] = target
+        self.doc.setdefault("accessors", []).append({"bufferView": view, "componentType": ctype, "count": len(values),
+                                                     "type": kind})
+        return len(self.doc["accessors"]) - 1
+
+
+# glTF extensions whose data lean on accessors or buffer views outside the places _drop_animations renumbers: a file
+# that uses one keeps its old animations' data where it was (left unused), never a reference set wrong
+_LEANS_ON_DATA = ("EXT_mesh_gpu_instancing", "KHR_draco_mesh_compression", "EXT_meshopt_compression",
+                  "KHR_materials_variants")
+
+
+def _drop_animations(doc: dict, views: list) -> None:
+    """A document's animations taken out (rusemod.gltf.glb_views' form), with each accessor only they used and each
+    buffer view only those used, the others renumbered where meshes, skins, accessors and images name them."""
+    old = doc.pop("animations", None) or []
+    if any(e in _LEANS_ON_DATA for e in doc.get("extensionsUsed") or []):
+        return
+    acc = doc.get("accessors") or []
+    theirs = {s.get(k) for a in old if isinstance(a, dict) for s in a.get("samplers") or [] if isinstance(s, dict)
+              for k in ("input", "output")}
+    used: set = set()
+    for mesh in doc.get("meshes") or []:
+        for prim in mesh.get("primitives") or []:
+            used.update((prim.get("attributes") or {}).values())
+            used.add(prim.get("indices"))
+            for t in prim.get("targets") or []:
+                used.update(t.values())
+    for skin in doc.get("skins") or []:
+        used.add(skin.get("inverseBindMatrices"))
+    gone = {i for i in theirs if isinstance(i, int) and 0 <= i < len(acc) and i not in used}
+    if not gone:
+        return
+    new_of = {}
+    for i in range(len(acc)):
+        if i not in gone:
+            new_of[i] = len(new_of)
+    their_views = {acc[i].get("bufferView") for i in gone} | {
+        ((acc[i].get("sparse") or {}).get(part) or {}).get("bufferView") for i in gone for part in ("indices", "values")}
+    doc["accessors"] = [a for i, a in enumerate(acc) if i not in gone]
+    for mesh in doc.get("meshes") or []:
+        for prim in mesh.get("primitives") or []:
+            prim["attributes"] = {k: new_of.get(v, v) for k, v in (prim.get("attributes") or {}).items()}
+            if isinstance(prim.get("indices"), int):
+                prim["indices"] = new_of[prim["indices"]]
+            if prim.get("targets"):
+                prim["targets"] = [{k: new_of.get(v, v) for k, v in t.items()} for t in prim["targets"]]
+    for skin in doc.get("skins") or []:
+        if isinstance(skin.get("inverseBindMatrices"), int):
+            skin["inverseBindMatrices"] = new_of[skin["inverseBindMatrices"]]
+    still: set = set()
+    for a in doc["accessors"]:
+        still.add(a.get("bufferView"))
+        for part in ("indices", "values"):
+            still.add(((a.get("sparse") or {}).get(part) or {}).get("bufferView"))
+    for image in doc.get("images") or []:
+        still.add(image.get("bufferView"))
+    drop = {v for v in their_views if isinstance(v, int) and 0 <= v < len(views) and v not in still}
+    if not drop:
+        return
+    view_of = {}
+    for v in range(len(views)):
+        if v not in drop:
+            view_of[v] = len(view_of)
+    doc["bufferViews"] = [bv for v, bv in enumerate(doc.get("bufferViews") or []) if v not in drop]
+    views[:] = [data for v, data in enumerate(views) if v not in drop]
+    for a in doc["accessors"]:
+        if isinstance(a.get("bufferView"), int):
+            a["bufferView"] = view_of[a["bufferView"]]
+        for part in ("indices", "values"):
+            sub = (a.get("sparse") or {}).get(part)
+            if isinstance(sub, dict) and isinstance(sub.get("bufferView"), int):
+                sub["bufferView"] = view_of[sub["bufferView"]]
+    for image in doc.get("images") or []:
+        if isinstance(image.get("bufferView"), int):
+            image["bufferView"] = view_of[image["bufferView"]]
+
+
+def _blender_animations(g, sk: dict, animations: dict, nodes: list) -> None:
+    """Each clip of `animations` ({name: its bytes}, on the record `sk`) as Blender is given it (own_animations_into's
+    `blender`): every bone's pose at each of the clip's frames as the game plays it (rusemod.baf.sample, onto `nodes`:
+    each bone's node in the record's order), keyed where Blender's straight lines between keys need a key to give that
+    frame back (rusemod.animglb.blender_keys: Blender draws a turn between two keys along a straight line through its
+    four numbers, the game along the arc; given only the clip's own keys, an untouched trip came back off by more than
+    rusemod.rig.TOL_BACK_* on 18 of the Generic Horse's 25 clips, real Blender 4.5.14, 2026-11-13), each key at its
+    frame of the game's 30 a second (a clip of other timing: its frames spread over its length), as RUSE Decoy's
+    Blender button gives Blender a unit's clips (rusemod.animglb.add_animations). A clip of one frame: one key."""
+    from . import baf
+    from .animglb import blender_keys
+    from .gltf import FLOAT
+    from .rig import move_out, size_out, turn_out
+    out = g.doc.setdefault("animations", [])
+    for name, data in animations.items():
+        c = baf.parse(data)
+        csk = baf.skeleton(c.skeleton)
+        if csk["names"] != sk["names"]:
+            # not a game rule: a clip goes with the skeleton it was made on
+            raise ModelError(f"the animation {name} is on other bones than the model's")
+        frames = max(1, c.frames)
+        step = 1.0 / baf.FPS if frames > 1 and abs(c.duration - (frames - 1) / baf.FPS) < 1e-6 else \
+            (c.duration / (frames - 1) if frames > 1 else 0.0)
+        times_of: dict = {}
+
+        def times(kept: list) -> int:
+            t = tuple(k * step for k in kept)
+            if t not in times_of:
+                times_of[t] = g.accessor(list(t), "SCALAR", FLOAT, target=None)
+                g.doc["accessors"][times_of[t]]["min"], g.doc["accessors"][times_of[t]]["max"] = [min(t)], [max(t)]
+            return times_of[t]
+        samplers, channels = [], []
+        for u, track in enumerate(c.tracks):
+            poses = [baf.sample(track, k / (frames - 1) if frames > 1 else 0.0) for k in range(frames)]
+            turns = baf.same_side([p[1] for p in poses])
+            for path, keys, vals, conv, kind in (("translation", track.T, [p[0] for p in poses], move_out, "VEC3"),
+                                                 ("rotation", track.R, turns, turn_out, "VEC4"),
+                                                 ("scale", track.S, [p[2] for p in poses], size_out, "VEC3")):
+                kept = _blender_frames(keys, vals, path, frames, blender_keys) if frames > 1 else [0]
+                samplers.append({"input": times(kept), "output": g.accessor([tuple(conv(vals[k])) for k in kept],
+                                                                             kind, FLOAT, target=None),
+                                 "interpolation": "LINEAR"})
+                channels.append({"sampler": len(samplers) - 1, "target": {"node": nodes[csk["index"][u]], "path": path}})
+        out.append({"name": name, "samplers": samplers, "channels": channels})
+
+
+def _blender_frames(keys: list, values: list, path: str, frames: int, blender_keys) -> list:
+    """The frames of one of a clip's channels (`keys`, as the clip keeps them; `values`, its pose at each frame) that
+    Blender is given a key at (_blender_animations): the clip's own keys' frames, the first and the last, and, between
+    two of them, a turn's frames where Blender's straight line would miss the game's arc by more than rusemod.animglb's
+    TOL_TURN (_arc_frames; a move and a size go straight between keys in both). When a key isn't on one of the clip's
+    frames: the frames rusemod.animglb.blender_keys chooses on the whole channel (`blender_keys`)."""
+    from . import baf
+    at = {0, frames - 1}
+    if len(keys) > 2:
+        for k in keys:
+            f = round(k[0] / baf.LAST_TIME * (frames - 1))
+            if baf.frame_time(f, frames) != k[0]:
+                return blender_keys(values, path)
+            at.add(f)
+    ends = sorted(at)
+    if path != "rotation":
+        return ends
+    out = [ends[0]]
+    for a, b in zip(ends, ends[1:]):
+        out += _arc_frames(values, a, b)
+    return out
+
+
+def _arc_frames(turns: list, a: int, b: int) -> list:
+    """The frames after `a` up to `b` that Blender is given a turn's key at so that, drawing a straight line through
+    the four numbers between keys (then made length one), it gives every frame between them within rusemod.animglb's
+    TOL_TURN of `turns` (the game's, along the arc): `b` when the line from `a` does, else the halves', each the same
+    way (a few looks along the stretch, never one for every pair of its frames)."""
+    from .animglb import TOL_TURN, _apart, _nlerp
+    if b - a <= 1 or all(_apart(_nlerp(turns[a], turns[b], (m - a) / (b - a)), turns[m]) <= TOL_TURN
+                         for m in range(a + 1, b)):
+        return [b]
+    mid = (a + b) // 2
+    return _arc_frames(turns, a, mid) + _arc_frames(turns, mid, b)
+
+
+def clip_lengths(animations: dict) -> list:
+    """[{"name", "seconds", "frames"}] of each clip of `animations` ({name: its bytes}), as an import's report lists a
+    model's own animations (OWN_SKELETON's "animations", rusemod.unitmodel._import_own_bones)."""
+    from . import baf
+    out = []
+    for name, data in animations.items():
+        c = baf.parse(data)
+        out.append({"name": name, "seconds": round(c.duration, 4), "frames": c.frames})
+    return out
+
+
+def own_animations_into(doc: dict, views: list, animations: dict, blender: bool = False) -> None:
+    """A model's document on bones of its own (rusemod.gltf.glb_views' form: write_glb's file, or one Blender sent back)
+    with `animations` ({name: a game clip's bytes on its skeleton}, in their order) in place of the animations it has:
+    each written as write_glb writes a model's own (_own_animations; `blender`: as Blender is given them,
+    _blender_animations), onto the node of the bone of its name (the joints of its first skin, any case), the data
+    only its old animations used taken out (_drop_animations), and the report write_glb keeps in it (OWN_SKELETON's
+    "animations") saying them. ModelError, the document as it was, when a clip is on bones the file hasn't got."""
+    from . import baf
+    skins = [s for s in doc.get("skins") or [] if s.get("joints")]
+    if not skins:
+        # not a game rule: a model's own animations move its bones
+        raise ModelError("no bones in it for its animations")
+    nodes = doc.get("nodes") or []
+    at: dict = {}
+    for j in skins[0]["joints"]:
+        at.setdefault(str(nodes[j].get("name", "")).lower(), j)
+    sk = None
+    for name, data in animations.items():     # (each read first: a refusal leaves the document as it was)
+        csk = baf.skeleton(baf.parse(data).skeleton)
+        if sk is not None and csk["names"] != sk["names"]:
+            # not a game rule: a model's animations are all on its one skeleton
+            raise ModelError(f"the animation {name} is on other bones than the model's")
+        sk = sk or csk
+    if sk is not None:
+        missing = [n for n in sk["names"] if n.lower() not in at]
+        if missing:
+            # not a game rule: a clip moves the bones of the skeleton it was made on
+            raise ModelError(f"its animations move bones the file hasn't got: {', '.join(missing[:6])}")
+    _drop_animations(doc, views)
+    if sk is not None:
+        nodes = [at[n.lower()] for n in sk["names"]]
+        if blender:
+            _blender_animations(_IntoViews(doc, views), sk, animations, nodes)
+        else:
+            _own_animations(_IntoViews(doc, views), sk, 0, animations, nodes)
+    report = ((doc.get("asset") or {}).get("extras") or {}).get("rusemod_report")
+    own = report.get(OWN_SKELETON) if isinstance(report, dict) else None
+    if isinstance(own, dict) and isinstance(own.get("animations"), list):
+        own["animations"] = clip_lengths(animations)
+
+
+def own_animations_glb(raw: bytes, animations: dict, blender: bool = False) -> bytes:
+    """own_animations_into on a .glb's bytes: the file with `animations` in place of its own."""
+    from .gltf import glb_views, pack_glb
+    doc, views = glb_views(raw)
+    own_animations_into(doc, views, animations, blender)
+    return pack_glb(doc, views)

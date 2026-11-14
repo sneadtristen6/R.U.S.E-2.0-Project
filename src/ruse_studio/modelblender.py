@@ -34,6 +34,18 @@ in, and Resize and Move fit again from. A material that comes back under a name 
 Blender) has the plain 144, and the import's report says so ("blender_alpha", and its notes). A model imported from a
 file keeps the plain 144 as before (the owner, the same day: "Keep it flat").
 
+A model on bones of its own (the Generic Horse's horse and rider) goes out with the animations the mod plays for the
+unit (files/anim/units.toml, files/anim/own/<unit>/: RUSE Decoy changes them there, never in the model's file), and
+each animation that comes back as it went out is the mod's own clip again, byte for byte, a changed one differing only
+in the bones changed (the owner, 2026-11-13, item 45: "Yes, an animation that comes back from Bundler should come back
+the exact same"; before, a trip with nothing changed rewrote all 25 of the Generic Horse's animation files, a key at
+every frame). Change it in Blender writes them into the file Blender opens keyed where Blender needs a key to show
+every frame as the game plays it (rusemod.modelin.own_animations_into), and keeps each clip that went out beside the
+work file (ruse_studio.animblender.write_sent); Bring back the model puts the skeleton record and those clips back in
+what Blender sent (rusemod.rig.with_record, with_went_out: Blender keeps no extras), in the order they went out, so the
+mod's list of them stays; the import keeps them (ruse_studio.animmodel_calls._went_out_kept, rusemod.rig.kept_clip),
+and so does every Resize and Move after, which fit the model again from that file.
+
 What a Bring back couldn't keep is shown to the modder on the page, in his language (a review of 2026-11-12 found it
 said only in the import's report and the model's record, which no page read): the report's "blender_alpha_lost" lists
 by name each material that came back with the plain 144 because no alpha picture went out under its name ("none",
@@ -288,16 +300,20 @@ class ModelBlenderCalls:
                     row.pop(k, None)
                 row.update(alpha_lost(report))
 
-    def _own_start(self, own: Path, work: Path) -> tuple[Path, dict]:
+    def _own_start(self, own: Path, work: Path, animations: dict | None = None) -> tuple[Path, dict, bool]:
         """The unit's own model (`own`: files/models/<unit>.glb, or a kind's), as Change it in Blender starts from it,
         the way Change the squad in Blender starts a soldier from his (ruse_studio.squadblender._start_file, "model"):
-        a model on bones of its own (the Generic Horse's horse and rider, its animations in it) as it is, one on the
-        game soldier's bones with them put at their rest poses (rusemod.gltf.rest_bones_glb). Each material's alpha
+        a model on bones of its own (the Generic Horse's horse and rider) as it is, its animations those the mod plays
+        (`animations`, {name: what Blender is given of the clip}: _going_out) in place of the ones its file carries
+        (rusemod.modelin.own_animations_into; RUSE Decoy changes them in the mod, never in that file), one on the game
+        soldier's bones with them put at their rest poses (rusemod.gltf.rest_bones_glb). Each material's alpha
         picture (Import model keeps it in the file, its "rusemod_alpha_texture") is written beside it and listed by
         the material's name for Bring back the model (alpha.json; Blender keeps no picture a material doesn't show),
-        each material named once. Returns (the file, {material: its alpha picture's file name in `work`})."""
+        each material named once. Returns (the file, {material: its alpha picture's file name in `work`}, whether
+        `animations` went in: not when its file isn't on their bones, so its own went as before)."""
         import struct as _struct
         from rusemod import gltf, models
+        from rusemod.modelin import ModelError, own_animations_into
         from .api import StudioError, file_error
         from .squadblender import _put
         try:
@@ -347,12 +363,88 @@ class ModelBlenderCalls:
                 mat["extras"] = extras
             else:
                 mat.pop("extras", None)
+        put = False
+        if animations and record.get("skeleton") == "own":
+            try:
+                own_animations_into(doc, views, animations, blender=True)
+                put = True
+            except (ModelError, ValueError, KeyError, IndexError, TypeError, _struct.error):
+                put = False     # (its file isn't on the bones of the mod's animations: its own go, as before)
         start = work / f"{own.stem}_own.glb"
         try:
             _put(start, gltf.pack_glb(doc, views))
         except OSError as exc:              # (said in words, never in Python's own)
             raise file_error(exc, start) from exc
-        return start, alphas
+        return start, alphas, put
+
+    def _going_out(self, own: Path) -> list:
+        """The animations a model on bones of its own goes out to Blender with: those the mod plays for the unit
+        (files/anim/units.toml [unit.<name>.animation], its clip files: AnimModelCalls._own_now), in the mod's order,
+        as rows for ruse_studio.animblender.write_sent ([{"name", "clip", "blender_clip": what Blender is given of it,
+        on the game's 30 frames a second (animblender.on_game_frames), "member": None, "own": its file, "actions":
+        {}}]). [] for a model that isn't on bones of its own, or a unit with none in the mod (its file's own go)."""
+        from rusemod import anim
+        from . import animblender
+        record = read_record(own.with_suffix(".json"))
+        mod = self._mod_dir()
+        if not isinstance(record, dict) or record.get("skeleton") != "own" or mod is None:
+            return []
+        mine, _picks = self._own_now(mod, own.stem)
+        try:
+            files = anim.own_animations(mod, own.stem)["animations"]
+        except anim.AnimError:
+            files = {}
+        if not mine or set(mine) != set(files):   # (one its list names that can't be read: its file's own go, as
+            return []                              # before, and the fit says what it can't read)
+        rows = []
+        for name, clip in mine.items():
+            try:
+                given = animblender.on_game_frames(clip)
+            except (ValueError, IndexError, struct.error):   # (a clip file of the mod's that isn't one: its file's
+                return []                                     # own go, as before, and the fit says what it can't read)
+            rows.append({"name": name, "clip": clip, "blender_clip": given, "member": None, "own": files.get(name),
+                         "actions": {}})
+        return rows
+
+    @staticmethod
+    def _again(send: Path, work: Path, own: Path, given: dict) -> Path:
+        """What a Blender opened again starts from: its last sending (`send`) with the animations the mod plays now
+        (`given`: _going_out's, as Blender is given them) in place of the ones it sent, as <work>/<the model's
+        name>_again.glb, the sending itself left as Blender wrote it; the sending as it is when those aren't on its
+        bones (a bone renamed, added or taken away in Blender: what comes back is then taken in as Blender sends it)."""
+        import struct as _struct
+        from rusemod.modelin import ModelError, own_animations_glb
+        from .api import file_error
+        from .squadblender import _put
+        try:
+            data = own_animations_glb(send.read_bytes(), given, blender=True)
+        except (ModelError, ValueError, KeyError, IndexError, TypeError, _struct.error):
+            return send
+        except OSError as exc:              # (said in words, never in Python's own)
+            raise file_error(exc, send) from exc
+        again = work / f"{own.stem}_again.glb"
+        try:
+            _put(again, data)
+        except OSError as exc:              # (said in words, never in Python's own)
+            raise file_error(exc, again) from exc
+        return again
+
+    @staticmethod
+    def _went_out(work: Path, going: list) -> None:
+        """Keep beside the work file the animations that went out to Blender (`going`, _going_out's rows: each clip as
+        the mod had it, and what Blender was given of it: ruse_studio.animblender.write_sent's animations.json and
+        clips/), on the skeleton record they're on, for Bring back the model; none (a model with no animations of
+        its own, or its file's own gone out): any kept from an opening before are taken away (forget_sent)."""
+        from rusemod import baf
+        from . import animblender
+        from .api import file_error
+        try:
+            if going:
+                animblender.write_sent(work, "own", baf.parse(going[0]["clip"]).skeleton, going)
+            else:
+                animblender.forget_sent(work)
+        except OSError as exc:              # (said in words, never in Python's own)
+            raise file_error(exc, work / animblender.SENT) from exc
 
     def model_blender(self, address: str, lang: str = "us", kind: str | None = None) -> dict:
         """Open the unit's model in Blender to be changed (see the module's note); `kind`: one of a squad's other
@@ -373,14 +465,23 @@ class ModelBlenderCalls:
             raise StudioError("Blender isn't found on this PC. Get it free from blender.org (Get Blender), then use "
                               "Choose Blender… to show the Studio where blender.exe is.")
         own = self._kind_file(address, kind) if kind else self._own_model_file(address)
+        # a model on bones of its own goes out with the animations the mod plays (item 45: an animation back from
+        # Blender as it went out is the mod's own again, byte for byte; _going_out), each kept beside the work file
+        # (ruse_studio.animblender.write_sent) for Bring back the model to set what comes back against; the unit's
+        # animations are its model's, so a squad's other kind (the heavy-weapon soldier's own model) keeps its file's
+        going = self._going_out(own) if not kind and own is not None and own.is_file() else []
+        given = {r["name"]: r["blender_clip"] for r in going}
         if send.is_file():
             start = send  # what was sent last time: the work goes on from it
+            if going:     # (with the animations the mod plays now: RUSE Decoy may have changed one since)
+                start = self._again(send, work, own, given)
         elif own is not None and own.is_file():
             # the unit's own model (a model of its own, Import model's or the Generic Horse's horse and rider with its
             # bones and animations): brought back as the game's soldier, it lost them all without a word (the review
             # of 2026-11-12, test_review_loss's test_change_it_in_blender_opens_its_own_model)
             work.mkdir(parents=True, exist_ok=True)
-            start, alphas = self._own_start(own, work)
+            start, alphas, put = self._own_start(own, work, given)
+            going = going if put else []
             _write(work / ALPHA, {"format": 1, "start": start.name, "alpha": alphas})
         else:
             found = [m for m in self._look_models(address)[0] if "_dest" not in m.lower()]
@@ -403,6 +504,7 @@ class ModelBlenderCalls:
             start = Path(summary["file"])
             # which alpha picture goes out with each material (Blender keeps none of them): Bring back puts them back
             _write(work / ALPHA, {"format": 1, "start": start.name, "alpha": self._alphas_out(start, summary)})
+        self._went_out(work, going)
         w = words(lang)
         (work / "words.json").write_text(json.dumps(
             {"send": w["blender_model_send"], "sent": w["blender_model_sent"],
@@ -419,8 +521,9 @@ class ModelBlenderCalls:
         (_alpha_said). `keep_bones`, `keep_paint` (the one Blender button with Bones or Paint unticked): the bones or
         pictures that went out put back (rusemod.gltf.bones_like, paint_like). Returns model_import()'s answer with
         "work", "kind" and "kept" ({"bones": bones_like's word or None, "paint": the materials put back or None})."""
-        from rusemod import gltf
+        from rusemod import gltf, rig
         from rusemod.blender import ask_to_send
+        from . import animblender
         from .api import StudioError
         from .squadblender import _put
         kind = self._blender_kind(address, kind)
@@ -443,6 +546,17 @@ class ModelBlenderCalls:
                 raw, kept_words["bones"] = gltf.bones_like(raw, start.read_bytes())
             if keep_paint:   # (its unticked Paint: the pictures that went out put back)
                 raw, kept_words["paint"] = gltf.paint_like(raw, start.read_bytes())
+        # (a model on bones of its own: the skeleton record and each animation that went out back in the file, which
+        # Blender keeps no extras of, so the import keeps every animation that came back as it went out byte for byte,
+        # and of a changed one every bone that wasn't: rusemod.rig.with_record, with_went_out, kept_clip; item 45)
+        sent = animblender.read_sent(work)
+        if sent is not None:
+            try:
+                raw = rig.with_record(raw, sent["record"])
+                raw = rig.with_went_out(raw, {a["name"]: a["clip"] for a in sent["animations"]},
+                                        {a["name"]: a["blender_clip"] for a in sent["animations"]})
+            except (ValueError, struct.error):   # (a file that isn't a .glb: Import model says what it is, in words)
+                pass
         went = self._alphas_back(work, send, raw)
         data, put = gltf.with_alpha(raw, {m: str(p) for m, p in went.items()})
         kept = work / KEPT / send.name
