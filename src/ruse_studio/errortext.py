@@ -33,8 +33,10 @@ WITHIN = {"The Generic Horse can't be made from your game: {0}":
                                                           {"_why": 0}),
           "{0} couldn't be downloaded ({1})": (Path(__file__).parents[1] / "rusemod" / "mod_index.py", {"_why": 0})}
 # the Studio's other refusals that reach the page whole, said in the player's language like a StudioError: the era
-# units list's and downloads' (era_units.py: a download job's refusal, and why the list couldn't be had)
-OTHERS = {"EraDownloadError": 0}
+# units list's and downloads' (era_units.py: a download job's refusal, and why the list couldn't be had), and the mod's
+# changes file broken by hand (edits.py EditsFileError: the units scenarios' U-11, its frame in every language now; the
+# mistake it names inside, the file reader's own words, stays as it came)
+OTHERS = {"EraDownloadError": 0, "EditsFileError": 0}
 
 
 def templates_in(paths) -> list[str]:

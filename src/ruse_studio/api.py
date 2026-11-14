@@ -1620,7 +1620,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             mod = self._edits()
             broken = ""
         except EditsFileError as exc:  # browsing still works; editing waits until the file is fixed
-            mod, broken = None, str(exc)
+            mod, broken = None, self._worded(str(exc))   # (in the Studio's language: U-11)
         new_units = mod.new_units if mod else {}
         real, new = self._resolve(mod, address)
         via_real, _via_new = self._resolve(mod, via) if via else ("", None)
@@ -7406,7 +7406,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         try:
             mod, broken = self._edits(), ""
         except EditsFileError as exc:  # looking still works; changing waits until the file is fixed
-            mod, broken = None, str(exc)
+            mod, broken = None, self._worded(str(exc))   # (in the Studio's language: U-11)
         if mod is not None and address in mod.new_objects:
             return self._value_new_page(mod, address, lang)
         text_lang = schema.game_lang("us" if lang == schema.BASE else lang)  # (Persian: the English texts and words)

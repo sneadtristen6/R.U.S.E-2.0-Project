@@ -130,5 +130,36 @@ class CodeNames(WithMod):
         self.assertIn("Panther", self.page.new_unit(M4, "Panther", 10, group="new")["address"])  # (made)
 
 
+class TheChangesFileBrokenByHand(WithMod):
+    """The units scenarios' U-11: the mod's src/studio.rndf broken by hand made the unit page's notice and every
+    refusal English in every language (an EditsFileError, which the page never said again). Now its frame is said in
+    the Studio's language: which file, and to fix or delete it; the mistake it names inside, the file reader's own
+    words, stays as it came (the engine's checks of a mod's files: the owner's pick of 2026-10-16, for later)."""
+
+    def setUp(self):
+        super().setUp()
+        self.page = page_api(self.api)
+        folder = Path(self.api.new_mod("Tanks")["current"])
+        self.rndf = folder / "src" / "studio.rndf"
+        self.rndf.parent.mkdir(parents=True, exist_ok=True)
+        self.rndf.write_text("patch $/GFX/Everything/Nothing ( oops\n", encoding="utf-8")
+
+    def test_the_unit_page_and_a_refusal_say_it_in_the_studio_s_language(self):
+        self.api.set_pref("lang", "fr")
+        why = self.page.unit(M4)["why_not"]
+        self.assertTrue(why.startswith(f"{self.rndf} contient une erreur ("), why)
+        self.assertTrue(why.endswith("). Corrigez-le, ou supprimez-le pour recommencer."), why)
+        with self.assertRaises(StudioError) as caught:
+            self.page.edit(M4, "SeuilMort", 15)
+        self.assertEqual(str(caught.exception), why)
+        self.assertEqual(self.rndf.read_text(encoding="utf-8"), "patch $/GFX/Everything/Nothing ( oops\n")
+
+    def test_control_in_english_as_before(self):
+        self.api.set_pref("lang", "us")
+        why = self.page.unit(M4)["why_not"]
+        self.assertTrue(why.startswith(f"{self.rndf} has a mistake ("), why)
+        self.assertTrue(why.endswith("). Fix it, or delete it to start over."), why)
+
+
 if __name__ == "__main__":
     unittest.main()
