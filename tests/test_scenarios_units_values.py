@@ -51,7 +51,7 @@ class Values(Player):
                 self.assertAlmostEqual(got, value, delta=abs(value) * 1e-6 + 1e-12)
 
     # U-9: a decimal value past what the game's 4-byte number holds (the box takes 1e39 or 1e300) is saved, and the
-    # mod then no longer builds
+    # mod's build then stops with Python's words ("OverflowError: float too large to pack with f format")
     @unittest.expectedFailure
     def test_a_decimal_number_too_big_for_the_game_is_refused_or_builds(self):
         folder = self.mod("Too big a decimal")
@@ -60,9 +60,25 @@ class Values(Player):
                 try:
                     self.call("edit", M4_GUN, "TempsEntreDeuxTirs", value, "", "")
                 except Refused as r:   # refused in words: fine, and the mod still builds
-                    self.assert_plain(r.text)
+                    self.assertNotIn("Overflow", r.text)
                 errors, _ndf, _ = self.build(folder)
                 self.assertEqual(errors, [], self.rndf(folder)[-300:])
+
+    def test_a_decimal_number_too_big_from_the_all_values_tab(self):
+        """The All values tab (value_edit: what's typed, checked by rusemod.values.typed) on the same value."""
+        folder = self.mod("Too big from All values")
+        for value in ("1e39", 1e39):
+            with self.subTest(value=value):
+                try:
+                    self.call("value_edit", M4_GUN, "TempsEntreDeuxTirs", value, "us")
+                    outcome = "saved"
+                except Refused as r:
+                    outcome = "refused: " + r.text
+                try:
+                    errors = self.build(folder)[0]
+                except OverflowError as exc:
+                    errors = [f"the build stopped: OverflowError {exc}"]
+                print(f"\nAll values tab, TempsEntreDeuxTirs = {value!r}: {outcome} | build: {errors}")
 
     def test_a_box_ticked_or_not(self):
         folder = self.mod("Ticks")

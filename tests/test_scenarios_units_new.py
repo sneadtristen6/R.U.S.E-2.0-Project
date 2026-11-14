@@ -119,17 +119,19 @@ class NewUnitOfEveryKind(Player):
         self.assertEqual(self.build(folder)[0], [])
         self.assertEqual(first, U + "Tiger_II")
 
-    def test_a_name_differing_only_in_case_is_taken_as_another_unit(self):
-        """tiger ii after Tiger II, m1 beside the game's M1: another address (Descriptor_Unit_tiger_ii), so it's
-        made (U-8 below: what it does to the other unit's files on Windows)."""
+    def test_what_a_name_differing_only_in_case_does_now(self):
+        """U-8 as it is now (passes on the code as it is; goes once U-8 is mended): tiger ii after Tiger II, m1 beside
+        the game's M1, each another address (Descriptor_Unit_tiger_ii), so each is made."""
         folder = self.mod("Case")
         self.new(H1, "Tiger II")
         self.assertEqual(self.new(H1, "tiger ii")["address"], U + "tiger_ii")
         self.assertEqual(self.new(L1, "m1")["address"], U + "m1")
         self.assertEqual(self.build(folder)[0], [])
 
-    # U-8: two units whose addresses differ only in case (Tiger II and tiger ii) share every file of their own on
-    # Windows, whose file names don't tell case apart: deleting one takes the other's card, model and animations
+    # U-8: two units whose addresses differ only in capitals (Tiger II and tiger ii; m1 and the game's M1) share every
+    # file of their own on Windows, whose file names don't tell capitals apart: deleting tiger ii takes Tiger II's card
+    # and model (its animations' folder too). The test holds for either mend: tiger ii refused, or Delete taking only
+    # its own files.
     @unittest.expectedFailure
     def test_deleting_tiger_ii_leaves_tiger_IIs_own_files(self):
         folder = self.mod("Case files")
@@ -140,9 +142,16 @@ class NewUnitOfEveryKind(Player):
         for f, data in ((card, b"Tiger II's own card"), (model, b"Tiger II's own model")):
             f.parent.mkdir(parents=True, exist_ok=True)
             f.write_bytes(data)
-        small = self.new(H1, "tiger ii")["address"]
-        self.call("delete_unit", small, None)
+        try:
+            small = self.new(H1, "tiger ii")["address"]
+        except Refused as r:   # refused: then in words, in every language
+            small = None
+            self.assertEqual(self.english_left(self.refusal("new_unit", H1, "tiger ii", 40, -1, -1, False, None)), [],
+                             r.text)
+        if small:
+            self.call("delete_unit", small, None)
         self.assertEqual([f.is_file() for f in (card, model)], [True, True], "deleting tiger ii took Tiger II's files")
+        self.assertEqual([card.read_bytes(), model.read_bytes()], [b"Tiger II's own card", b"Tiger II's own model"])
 
     # U-4: the refusal of a name already taken names the game's code name and quotes the name the Python way:
     # "There's already a unit called Descriptor_Unit_Tiger_II (from 'Tiger II'). Pick another name."
