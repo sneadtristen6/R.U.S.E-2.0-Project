@@ -3989,7 +3989,14 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             else:   # after what was there, so Undo brings it back
                 paints.append(row)
             self._save_sectors(pack, _replace(now, paints=tuple(paints)))
-        return self.sector_view(pack, file)
+        try:
+            return self.sector_view(pack, file)
+        except sectors.SectorError as exc:
+            # sectors that can't be made (more than a scenario holds) aren't kept: the sectors as they were, and the
+            # refusal said as the Studio's own (it was saved, and the Sectors view then failed on every look, F14)
+            with self._saving:
+                self._save_sectors(pack, now)
+            raise StudioError(f"Those sectors can't be made ({exc}).") from None
 
     SECTOR_AREAS_MOST = 64   # sectors one shape edit may change (a corner shared by a few, a deleted one)
 

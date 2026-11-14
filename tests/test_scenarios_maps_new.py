@@ -118,13 +118,13 @@ class SectorsOnABigMap(MapGame):
     sectors at most (seen on the real install: Blitz made 16 x 16 cells, sectors of 600 m make 1156)."""
 
     def scenario_file(self, pack):
-        return (self.map_folder(pack) / "scenario.toml").read_text(encoding="utf-8")
+        return tomllib.loads((self.map_folder(pack) / "scenario.toml").read_text(encoding="utf-8"))
 
     # FINDING F14: Make sectors with sectors too small for the map is refused ("leveldesign_normal.scenario: sectors 600 m
     # across make 72361 on this map; a scenario holds 255 at most: make them bigger", English in every language: the
     # error isn't the Studio's own), but the refused setting is saved in scenario.toml anyway: the Sectors view then
-    # fails with the same words on every look until Undo, and Test in game would build it.
-    @unittest.expectedFailure
+    # fails with the same words on every look until Undo, and Test in game would build it. (PROPOSED FIX: the sectors as
+    # they were, and the refusal in the Studio's own frame, "Those sectors can't be made (...)".)
     def test_f14_sectors_too_small_for_the_map_arent_kept(self):
         pack = self.api.duplicate_map(BLITZ, "Big Sectors", preset="blank_terrain")["pack"]
         self.api.set_map_size(pack, 128, 128)
