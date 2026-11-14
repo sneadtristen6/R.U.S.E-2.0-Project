@@ -31,6 +31,7 @@ from __future__ import annotations
 
 import functools
 import json
+import os
 import re
 import time
 import tomllib
@@ -39,7 +40,7 @@ from pathlib import Path
 from rusemod import buildtext, doctor, fairplay, mod_index, startlog, yourfiles
 from rusemod import play as game_start, schema
 from rusemod.lock import CodeError
-from rusemod.backup import BackupCalls
+from rusemod.backup import BackupCalls, BackupError
 from rusemod.bugwatch import BugWatchCalls
 from rusemod.community import APP_NAMES, CommunityCalls
 from rusemod.guardcalls import GuardCalls
@@ -60,7 +61,7 @@ from rusemod.uilang import LanguageCalls, language_code, pc_language, suggest
 from rusemod.webui import Job, job_view
 
 from rusemod.library import MANIFEST, Library, LibraryError, read_info
-from . import __version__
+from . import __version__, errortext
 
 _SET_ID = re.compile(r"^[a-z0-9][a-z0-9-]*$")
 VANILLA = "vanilla"
@@ -75,6 +76,35 @@ class LauncherError(Exception):
     def __init__(self, message: str = "", key: str | None = None):
         super().__init__(message)
         self.words_key = key
+
+
+def file_words(exc: OSError) -> LauncherError | None:
+    """An OSError a page call let through (a file of the library another program holds while a newer version of its
+    mod goes in: the export scenarios' FE-14, "[WinError 5] Access is denied: '...\\library\\tank-test' ->
+    '...\\library\\.old-tank-test'") said in words, as the Studio says its own (ruse_studio.api.file_error): a full
+    disk, a file another program has open or Windows didn't allow, a file not there, else its error number. A move
+    names both places (which of the two is held isn't known). None for an error naming no file and not a full disk
+    (a connection's: passed on as it was)."""
+    import errno
+    named = [str(f) for f in (exc.filename, exc.filename2) if isinstance(f, (str, os.PathLike)) and str(f)]
+    if exc.errno == errno.ENOSPC or getattr(exc, "winerror", None) in (39, 112):
+        if not named:
+            return LauncherError("A disk the Launcher was writing to is full. Make room on it, then try again.")
+        return LauncherError(f"The disk holding {named[-1]} is full. Make room on it, then try again.")
+    if not named:
+        return None
+    if isinstance(exc, PermissionError) and len(named) == 2:
+        return LauncherError(f"{named[0]} couldn't be moved to {named[1]}, because another program has a file of it "
+                             f"open or Windows didn't allow it. Close that program, then try again.")
+    if isinstance(exc, PermissionError):   # (a file another program has open comes as this on Windows)
+        return LauncherError(f"{named[0]} couldn't be read or written, because another program has it open or Windows "
+                             f"didn't allow it. Close that program, then try again.")
+    if isinstance(exc, FileNotFoundError):
+        return LauncherError(f"{named[0]} isn't there.")
+    code = getattr(exc, "winerror", None) or exc.errno
+    if code is None:
+        return LauncherError(f"{named[0]} couldn't be read or written. Please report this.")
+    return LauncherError(f"{named[0]} couldn't be read or written (error {code}). Please report this.")
 
 
 # --- the screen's words ---
@@ -139,6 +169,22 @@ class LauncherApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedC
 
     def strings(self, lang: str = "us") -> dict:
         return words(lang)
+
+    def _lang(self) -> str:
+        return self.prefs().get("lang") or "us"
+
+    def page_error(self, exc):
+        """A page call's refusal said again in the Launcher's language (rusemod.webui page_api), or None to pass it on
+        as it is: the Launcher's own (LauncherError) and those it passes on as they came (the library's, a mod file's,
+        the mod list's, a join code's), from errors.toml (ruse_launcher.errortext); an OSError naming a file in words
+        (file_words), never Python's own (the export scenarios' FE-9 and FE-14: "[WinError 5] Access is denied: ...")."""
+        if isinstance(exc, OSError) and not isinstance(exc, BackupError):
+            plain = file_words(exc)
+            return LauncherError(errortext.worded(str(plain), self._lang())) if plain is not None else None
+        if not isinstance(exc, (LauncherError, LibraryError, PackageError, ModIndexError, CodeError)):
+            return None
+        said = errortext.worded(str(exc), self._lang())
+        return LauncherError(said, key=getattr(exc, "words_key", None)) if said != str(exc) else None
 
     # --- the game ---
     def _game(self) -> tuple[Path | None, dict]:
@@ -538,8 +584,9 @@ class LauncherApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedC
         if fresh or self._index is None:
             try:
                 self._index = mod_index.fetch(self._index_url(), self._home / "index")
-            except ModIndexError as exc:
-                return {"mods": [], "source": "none", "as_of": "", "message": str(exc), "problems": []}
+            except ModIndexError as exc:   # (a whole sentence, in the Launcher's language: the page shows it as it is)
+                return {"mods": [], "source": "none", "as_of": "", "message": errortext.worded(str(exc), self._lang()),
+                        "whole": True, "problems": []}
         result = self._index
         mods = states([dict(m) for m in result.mods], {m["id"]: m["version"] for m in self._library.mods()})
         q = (search or "").strip().lower()
@@ -955,7 +1002,9 @@ class LauncherApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedC
 
     def job(self, job_id: str, since: int = 0) -> dict:
         view = self._with_result(job_view(self._jobs, job_id, since))  # a backup job's result too
-        return buildtext.worded_view(view, self.prefs().get("lang") or "us")  # Play's lines in the player's language
+        if view.get("state") == "failed" and isinstance(view.get("message"), str):
+            view["message"] = errortext.worded(view["message"], self._lang())  # an install's or convert's refusal
+        return buildtext.worded_view(view, self._lang())  # Play's lines in the player's language
 
     def _play(self, chosen: dict, say) -> None:
         title = title_on(self._home)  # R.U.S.E. 2.0's title, unless Settings says the game's

@@ -125,9 +125,11 @@ def worded(catalogue: Path, text: str, lang: str, within=frozenset()) -> str:
 
 def _said(entries: list, text: str, lang: str, within, inside: str | None) -> str:
     """worded's matching: `inside` None, every entry but those for a frame's blank; else only the entries whose
-    "within" is `inside` (the template whose blank `text` is)."""
+    "within" is `inside` (the template whose blank `text` is), or a list holding it (a reason held by two frames: why a
+    download failed, inside the mod list's refusal and inside a mod's)."""
     for pattern, words, _own in entries:
-        if words.get("within") != inside:
+        frames = words.get("within")
+        if frames != inside and not (inside is not None and isinstance(frames, list) and inside in frames):
             continue
         m = pattern.fullmatch(text)
         if m is None:

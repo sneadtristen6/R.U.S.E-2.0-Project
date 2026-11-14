@@ -8,6 +8,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+import socket
 import ssl
 import time
 import tomllib
@@ -226,16 +227,31 @@ def _get(url: str, timeout: float, limit: int) -> bytes:
     return data
 
 
+def _why(text: str) -> str:
+    """One of plain's reasons, as it is: its words are in the apps' catalogues, said in the player's language inside
+    the refusals holding them (ruse_launcher.errortext and ruse_studio.errortext, WITHIN; they list the reasons from
+    the calls to this)."""
+    return text
+
+
 def plain(exc: BaseException, timeout: float = TIMEOUT) -> str:
-    """Why a request failed, in plain words."""
+    """Why a request failed, in plain words, never Windows' or Python's own ("[WinError 10061] No connection could be
+    made because the target machine actively refused it", "[Errno 11001] getaddrinfo failed": the units scenarios'
+    U-12, 2026-11-14)."""
     if isinstance(exc, urllib.error.HTTPError):
-        return f"the server answered {exc.code}"
+        return _why(f"the server answered {exc.code}")
     if isinstance(exc, TimeoutError) or "timed out" in str(exc).lower():
-        return f"no answer in {timeout:g} seconds"
+        return _why(f"no answer in {timeout:g} seconds")
     reason = getattr(exc, "reason", exc)
     if isinstance(reason, ssl.SSLCertVerificationError):  # Windows and Mozilla's list were tried too (net.urlopen)
-        return (f"this PC doesn't trust the site's security certificate ({reason.verify_message}): an antivirus that "
-                f"scans secure connections, a school or work network, or a wrong date on the PC can do that")
+        return _why(f"this PC doesn't trust the site's security certificate ({reason.verify_message}): an antivirus "
+                    f"that scans secure connections, a school or work network, or a wrong date on the PC can do that")
+    if (isinstance(exc, urllib.error.URLError) and isinstance(reason, OSError)) or \
+            isinstance(exc, (ConnectionError, socket.gaierror, socket.herror)):
+        # no internet, a name not found, a connection refused or cut (a file of ours that can't be written, a full
+        # disk, keeps its own words below: it isn't the connection)
+        return _why("this PC couldn't reach the server: there's no internet connection, or something on the way (a "
+                    "firewall, an antivirus, the server itself) turned the connection down")
     if isinstance(exc, urllib.error.URLError):
         return str(exc.reason)
     return str(exc)
