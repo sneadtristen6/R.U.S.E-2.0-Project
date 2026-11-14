@@ -307,9 +307,10 @@ class MusicCalls:
         once the last part is in, as files/replace/<the song's path>.wav."""
         song = self._music_song(member)
         target = self._music_file(song["member"])
-        if target is None:
-            raise MusicError("Pick or make a map project first: a map's sounds are saved in it." if song.get("pair")
-                             else "Pick or make a mod first: songs are saved in a mod.")
+        if target is None:   # (each refusal said as it is here, so errors.toml lists it)
+            if song.get("pair"):
+                raise MusicError("Pick or make a map project first: a map's sounds are saved in it.")
+            raise MusicError("Pick or make a mod first: songs are saved in a mod.")
         if not (isinstance(index, int) and isinstance(count, int) and 0 <= index < count):
             raise MusicError("the song's parts came out of order: try Use this again")
         try:

@@ -28,9 +28,21 @@ def dropped(api: LauncherApi, window, paths) -> None:
     for path in paths:
         try:
             event = {"ok": True, **api.add_mod(path)}
-        except LauncherError as exc:
-            event = {"ok": False, "message": str(exc)}
+        except (LauncherError, OSError) as exc:   # in the Launcher's language, as a page call's refusal is
+            said = api.page_error(exc)
+            if said is None and not isinstance(exc, LauncherError):
+                raise
+            event = {"ok": False, "message": str(said if said is not None else exc)}
         window.evaluate_js(f"window.dispatchEvent(new CustomEvent('mod-dropped', {{detail: {json.dumps(event)}}}))")
+
+
+def _refusals_worded() -> str:
+    """The refusals' words came with the app (errors.toml beside its code): a refusal said again in French."""
+    from .errortext import worded
+    said = worded("Give the mod set a name.", "fr")
+    if said == "Give the mod set a name.":
+        raise RuntimeError("errors.toml isn't beside the app's code: every refusal would stay English")
+    return repr(said)
 
 
 def _workers() -> str:
@@ -62,6 +74,7 @@ def main(argv=None) -> int:
             ("the launcher answers", lambda: f"{len(api.mod_sets())} mod set(s), {len(api.library())} mod(s) in the "
                                              f"library; {api.status()['message']}"),
             ("the launcher's words", lambda: f"{len(words('fr'))} in French, e.g. {words('fr')['play']!r}"),
+            ("the launcher's refusals in the player's language", _refusals_worded),
             ("worker programs start (a big map's riverbeds are mended by them)", _workers),
             ("the map sums on whole grids (a big map is painted by them)", _grids),
             ("Mozilla's root list (downloads on a PC whose Windows lacks a site's root)", net.mozilla_check),

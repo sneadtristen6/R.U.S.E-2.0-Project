@@ -83,8 +83,10 @@
     const list = await sections();
     const s = list.sections.find((x) => x.era === era);
     if (!s) {
+      // (a whole sentence in the Studio's language when "whole"; an older back end's is the reason alone)
       return el("div", { className: "notice" }, el("p", { textContent: list.message
-        ? fill(w.eras_no_list, { why: list.message }) : fill(w.eras_none_yet, { era: eraOf(era) }) }));
+        ? (list.whole ? list.message : fill(w.eras_no_list, { why: list.message }))
+        : fill(w.eras_none_yet, { era: eraOf(era) }) }));
     }
     const go = el("button", { type: "button", className: "primary", textContent: fill(w.eras_download, { era: eraOf(era) }),
       title: w.tip_eras_download });

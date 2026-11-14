@@ -19,6 +19,36 @@ ROOT = Path(__file__).parents[1]
 # the files whose say / warn / Finding texts go to the player, and which argument holds the text
 SOURCES = ("rusemod/build.py", "rusemod/play.py", "ruse_studio/api.py", "ruse_launcher/api.py", "ruse_studio/homemove.py")
 CALLS = {"say": 0, "warn": 0, "Finding": 1}
+# a job's last words, in the files whose jobs the apps start (the units scenarios' U-16, 2026-11-14: Test in game's "R.U.S.E.
+# is starting from ..." and Play's were English in every language): Job.start's words for a job done, Job.fail's for
+# one refused before it starts, the words a job ends with when it broke (webui), the installs' and the backups' done
+# words as their callers give them, and Play's and Test in game's own refusals (play.py's BuildError: "These mods have
+# errors (listed above). Nothing was changed."). Only those calls of these files: their other lines are the page's
+# step names ("unpack", "installing"), not words.
+ENDS = {
+    "ruse_studio/api.py": {"start": 1},
+    "ruse_studio/era_units.py": {"start": 1},
+    "ruse_studio/groundtex_calls.py": {"start": 1},
+    "ruse_studio/horse_squad.py": {"start": 1},
+    "ruse_studio/nations.py": {"start": 1},
+    "ruse_studio/homemove.py": {"start": 1},
+    "ruse_launcher/api.py": {"start": 1, "fail": 0, "_install_job": 1},
+    "rusemod/backup.py": {"_backup_start": 2, "BackupError": 0},
+    "rusemod/update.py": {"start": 1, "UpdateError": 0},
+    "rusemod/webui.py": {"_said": 0},
+    "rusemod/play.py": {"BuildError": 0},
+    # the refusals of the calls both apps share (a backup's, the updates', the sign-in's: rusemod.update.words says
+    # them, in both apps' page_error and the update check) and why a download failed (rusemod.mod_index plain's words,
+    # said inside "GitHub couldn't be reached to look for updates (...)")
+    "rusemod/ownedpass.py": {"OwnedPassError": 0},
+    "rusemod/mod_index.py": {"_why": 0},
+    # a build's own lines said from the files of the steps it runs (a mod's sounds, its units' looks, the game files and
+    # game patches it takes, the title and videos it fits, a map's players and scenario warnings), and the Generic
+    # Horse's steps: progress lines of the kind the owner's pick of 2026-10-16 had translated, added since in files
+    # this list didn't read (the plain-words job, 2026-11-14)
+    **{f"rusemod/{name}.py": {"say": 0, "warn": 0} for name in (
+        "gamefiles", "gamepatch", "horsesquad", "players", "scenario", "signature", "sound", "unitlook")},
+}
 
 # how the build marks a finding in its lines: "warning: ..." (said at once) and "  error    ..." (the report)
 _MARKED = re.compile(r"(?P<lead>\s*)(?P<level>warning|error|note)(?P<gap>:\s+|\s+)(?P<rest>\S.*)", re.S)
@@ -33,8 +63,11 @@ LEVELS = {  # the finding's level as the lines say it, in the apps' languages
 
 
 def templates() -> list[str]:
-    """Every build text in the code (SOURCES), as templates."""
-    return wordedtext.templates_in([ROOT / s for s in SOURCES], CALLS, loose=True)
+    """Every build text in the code (SOURCES), then every job's last words (ENDS), as templates, each once."""
+    out = wordedtext.templates_in([ROOT / s for s in SOURCES], CALLS, loose=True)
+    for rel, calls in ENDS.items():
+        out += [t for t in wordedtext.templates_in([ROOT / rel], calls, loose=True) if t not in out]
+    return out
 
 
 def worded(text: str, lang: str) -> str:

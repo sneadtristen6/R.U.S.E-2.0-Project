@@ -76,6 +76,7 @@ async function setLanguage(lang) {
   state.words = await api().strings(lang);
   renderUpdate();
   recheckUpdate();
+  if (state.status) api().status(lang).then(renderStatus).catch(() => {});  // its line in the new language too
   const w = state.words;
   text($("lang-name"), (state.languages.find((l) => l.code === lang) || {}).name || "");
   $("lang-open").title = w.tip_lang_open;
@@ -561,7 +562,7 @@ function useLists(res) {
 
 async function refresh() {
   try {
-    renderStatus(await api().status());
+    renderStatus(await api().status(state.lang));
     useLists({ sets: await api().mod_sets(), library: await api().library() });
   } catch (err) { problem(err); }
 }
@@ -1159,8 +1160,9 @@ function listNote(node, view, offlineExtra) {
   const w = state.words;
   if (view.loading && !view.mods.length) text(node, w.loading_list);
   else if (view.source === "cache") text(node, fill(w.offline_note, { date: view.as_of }));
-  else if (view.source === "none") {  // the launcher's message is a whole sentence already ("The mod list couldn't…")
-    text(node, (/^(The|No) /.test(view.message || "") ? view.message : fill(w.list_failed, { why: view.message }))
+  else if (view.source === "none") {  // the launcher's message is a whole sentence already ("The mod list couldn't…"),
+    // in the Launcher's language ("whole"; an older back end's English one starts with The or No)
+    text(node, (view.whole || /^(The|No) /.test(view.message || "") ? view.message : fill(w.list_failed, { why: view.message }))
       + (offlineExtra ? " " + offlineExtra : ""));
   }
   else if (!view.loading && !view.mods.length) text(node, w.list_empty);

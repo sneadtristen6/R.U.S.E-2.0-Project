@@ -31,6 +31,7 @@ from __future__ import annotations
 
 import functools
 import json
+import os
 import re
 import time
 import tomllib
@@ -39,7 +40,7 @@ from pathlib import Path
 from rusemod import buildtext, doctor, fairplay, mod_index, startlog, yourfiles
 from rusemod import play as game_start, schema
 from rusemod.lock import CodeError
-from rusemod.backup import BackupCalls
+from rusemod.backup import BackupCalls, BackupError
 from rusemod.bugwatch import BugWatchCalls
 from rusemod.community import APP_NAMES, CommunityCalls
 from rusemod.guardcalls import GuardCalls
@@ -60,7 +61,7 @@ from rusemod.uilang import LanguageCalls, language_code, pc_language, suggest
 from rusemod.webui import Job, job_view
 
 from rusemod.library import MANIFEST, Library, LibraryError, read_info
-from . import __version__
+from . import __version__, errortext
 
 _SET_ID = re.compile(r"^[a-z0-9][a-z0-9-]*$")
 VANILLA = "vanilla"
@@ -75,6 +76,35 @@ class LauncherError(Exception):
     def __init__(self, message: str = "", key: str | None = None):
         super().__init__(message)
         self.words_key = key
+
+
+def file_words(exc: OSError) -> LauncherError | None:
+    """An OSError a page call let through (a file of the library another program holds while a newer version of its
+    mod goes in: the export scenarios' FE-14, "[WinError 5] Access is denied: '...\\library\\tank-test' ->
+    '...\\library\\.old-tank-test'") said in words, as the Studio says its own (ruse_studio.api.file_error): a full
+    disk, a file another program has open or Windows didn't allow, a file not there, else its error number. A move
+    names both places (which of the two is held isn't known). None for an error naming no file and not a full disk
+    (a connection's: passed on as it was)."""
+    import errno
+    named = [str(f) for f in (exc.filename, exc.filename2) if isinstance(f, (str, os.PathLike)) and str(f)]
+    if exc.errno == errno.ENOSPC or getattr(exc, "winerror", None) in (39, 112):
+        if not named:
+            return LauncherError("A disk the Launcher was writing to is full. Make room on it, then try again.")
+        return LauncherError(f"The disk holding {named[-1]} is full. Make room on it, then try again.")
+    if not named:
+        return None
+    if isinstance(exc, PermissionError) and len(named) == 2:
+        return LauncherError(f"{named[0]} couldn't be moved to {named[1]}, because another program has a file of it "
+                             f"open or Windows didn't allow it. Close that program, then try again.")
+    if isinstance(exc, PermissionError):   # (a file another program has open comes as this on Windows)
+        return LauncherError(f"{named[0]} couldn't be read or written, because another program has it open or Windows "
+                             f"didn't allow it. Close that program, then try again.")
+    if isinstance(exc, FileNotFoundError):
+        return LauncherError(f"{named[0]} isn't there.")
+    code = getattr(exc, "winerror", None) or exc.errno
+    if code is None:
+        return LauncherError(f"{named[0]} couldn't be read or written. Please report this.")
+    return LauncherError(f"{named[0]} couldn't be read or written (error {code}). Please report this.")
 
 
 # --- the screen's words ---
@@ -140,21 +170,47 @@ class LauncherApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedC
     def strings(self, lang: str = "us") -> dict:
         return words(lang)
 
+    def _lang(self) -> str:
+        return self.prefs().get("lang") or "us"
+
+    def page_error(self, exc):
+        """A page call's refusal said again in the Launcher's language (rusemod.webui page_api), or None to pass it on
+        as it is: the Launcher's own (LauncherError) and those it passes on as they came (the library's, a mod file's,
+        the mod list's, a join code's), from errors.toml (ruse_launcher.errortext); an OSError naming a file in words
+        (file_words), never Python's own (the export scenarios' FE-9 and FE-14: "[WinError 5] Access is denied: ...")."""
+        from rusemod import update
+        if type(exc).__name__ in update.SHARED_REFUSALS:   # a backup's, the updates', the sign-in's (buildtext.toml)
+            said = update.words(exc, self._lang())
+            return LauncherError(said) if said != str(exc) else None
+        if isinstance(exc, OSError) and not isinstance(exc, BackupError):
+            plain = file_words(exc)
+            return LauncherError(errortext.worded(str(plain), self._lang())) if plain is not None else None
+        if not isinstance(exc, (LauncherError, LibraryError, PackageError, ModIndexError, CodeError)):
+            return None
+        said = errortext.worded(str(exc), self._lang())
+        return LauncherError(said, key=getattr(exc, "words_key", None)) if said != str(exc) else None
+
     # --- the game ---
     def _game(self) -> tuple[Path | None, dict]:
         if self._game_dir:
             return self._game_dir, {}
         return find_game_dir(self._home, self._find)
 
-    def status(self) -> dict:
-        """Where the game is, which build, and a sentence for the screen."""
+    def _say(self, text: str, lang: str = "") -> str:
+        """A sentence for the screen in `lang` (the Launcher's own when none is given), from errors.toml, which lists
+        such sentences from the calls to this (the plain-words job, 2026-11-14: the status line at the top was English
+        in every language)."""
+        return errortext.worded(text, lang or self._lang())
+
+    def status(self, lang: str = "") -> dict:
+        """Where the game is, which build, and a sentence for the screen (in `lang`: the page's language)."""
         game, found = self._game()
         if game is None or not game.is_dir():
-            return {"found": False, "message": "We couldn't find R.U.S.E. Is it installed through Steam?"}
+            return {"found": False, "message": self._say("We couldn't find R.U.S.E. Is it installed through Steam?", lang)}
         build = found.get("build_id") or build_of(game) or "?"
         drive = game.drive or game.anchor
         return {"found": True, "game_dir": str(game), "build": build, "branch": found.get("branch", ""),
-                "drive": drive, "message": f"Found R.U.S.E. on {drive} (build {build})"}
+                "drive": drive, "message": self._say(f"Found R.U.S.E. on {drive} (build {build})", lang)}
 
     def choose_game_folder(self) -> dict:
         """Ask for the game folder (when Steam can't tell us). It must hold RUSE.exe."""
@@ -538,8 +594,9 @@ class LauncherApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedC
         if fresh or self._index is None:
             try:
                 self._index = mod_index.fetch(self._index_url(), self._home / "index")
-            except ModIndexError as exc:
-                return {"mods": [], "source": "none", "as_of": "", "message": str(exc), "problems": []}
+            except ModIndexError as exc:   # (a whole sentence, in the Launcher's language: the page shows it as it is)
+                return {"mods": [], "source": "none", "as_of": "", "message": errortext.worded(str(exc), self._lang()),
+                        "whole": True, "problems": []}
         result = self._index
         mods = states([dict(m) for m in result.mods], {m["id"]: m["version"] for m in self._library.mods()})
         q = (search or "").strip().lower()
@@ -617,9 +674,9 @@ class LauncherApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedC
                 raise ModIndexError(f"{len(entries) - len(failed)} of {len(entries)} mods were installed. Not "
                                     f"installed: {'; '.join(failed)}.")
 
-        done = f"{entries[0]['name']} is in the library." if len(entries) == 1 else \
-            f"The {len(entries)} mods are in the library."
-        return self._install_job(work, done)
+        if len(entries) == 1:   # (each said as it is here, so rusemod.buildtext lists it: in the player's language)
+            return self._install_job(work, f"{entries[0]['name']} is in the library.")
+        return self._install_job(work, f"The {len(entries)} mods are in the library.")
 
     # --- the first run: choosing the mods to start with ---
     FIRST_RUN_KEY = "launcher_mods_chosen"  # settings.json: the player has chosen (or skipped) once
@@ -922,22 +979,22 @@ class LauncherApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedC
         self._jobs[job.id] = job
         refused = None  # Bug Watch: a Play refused before its job starts, by which refusal (rusemod.bugwatch.refused)
         if busy:  # one at a time: two would race for the same copy
-            job.state, job.message, refused = "failed", "R.U.S.E. is already being started: wait for it to finish.", \
-                "play_busy"
+            job.fail("R.U.S.E. is already being started: wait for it to finish.")
+            refused = "play_busy"
         elif self._restoring():  # a copy built now would take half-restored files
-            job.state, job.message, refused = "failed", "The game's files are being restored: wait for it to finish.", \
-                "play_restoring"
+            job.fail("The game's files are being restored: wait for it to finish.")
+            refused = "play_restoring"
         elif chosen is None:
-            job.state, job.message, refused = "failed", f"There's no mod set called {set_id!r}.", "play_no_set"
+            job.fail(f"There's no mod set called {set_id!r}.")
+            refused = "play_no_set"
         elif chosen.get("error"):
-            job.state, job.message = "failed", f"The mod set {chosen['name']} has a mistake: {chosen['error']}."
+            job.fail(f"The mod set {chosen['name']} has a mistake: {chosen['error']}.")
             refused = "play_set_mistake"
         elif fairplay.ON and self._untrusted(chosen) and not self.check_mods(chosen["mods"])["hard"]:  # (clashes first)
             # not a game rule: the player's own tick (fair play)
             names = ", ".join(self._untrusted(chosen))
-            job.state, job.message = "failed", (f"{names} run scripts inside the game. Scripts can do anything the "
-                                                f"game can, so tick “I trust this author” for each in the library "
-                                                f"first, only if you do.")
+            job.fail(f"{names} run scripts inside the game. Scripts can do anything the game can, so tick “I trust "
+                     f"this author” for each in the library first, only if you do.")
             refused = "play_untrusted"
         else:
             self._play_job = job.id
@@ -955,7 +1012,9 @@ class LauncherApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedC
 
     def job(self, job_id: str, since: int = 0) -> dict:
         view = self._with_result(job_view(self._jobs, job_id, since))  # a backup job's result too
-        return buildtext.worded_view(view, self.prefs().get("lang") or "us")  # Play's lines in the player's language
+        if view.get("state") == "failed" and isinstance(view.get("message"), str):
+            view["message"] = errortext.worded(view["message"], self._lang())  # an install's or convert's refusal
+        return buildtext.worded_view(view, self._lang())  # Play's lines in the player's language
 
     def _play(self, chosen: dict, say) -> None:
         title = title_on(self._home)  # R.U.S.E. 2.0's title, unless Settings says the game's
