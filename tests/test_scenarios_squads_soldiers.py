@@ -206,16 +206,17 @@ class ACustomUniform(SquadScenario):
         self.assert_worded(said)
         self.assert_worded(back)
 
-    @unittest.expectedFailure    # finding SQ-1: a soldier's own look, then Custom uniform: the mod no longer builds
     def test_a_soldier_s_own_look_then_a_uniform(self):
-        """Unusual: Import a model… on soldier 2's line first, then Custom uniform on the squad: the Studio takes it
-        (it looks only for the squad's own model, files/models/<unit>.glb, never a soldier's), and the mod then has a
-        uniform and a soldier's model together, which its build refuses (rusemod.build.unit_own_copies: one model per
-        unit), its words naming files/models/<unit>.glb, a file the mod hasn't got. Either the uniform is refused in
-        words, as it is over the squad's own model, or the mod builds."""
+        """Unusual (finding SQ-1, its PROPOSED FIX): Import a model… on soldier 2's line first, then Custom uniform on
+        the squad. Before the fix the Studio took it (it looked only for the squad's own model, files/models/<unit>.glb,
+        never a soldier's), and the mod then had a uniform and a soldier's model together, which its build refuses
+        (rusemod.build.unit_own_copies: one model per unit), its words naming files/models/<unit>.glb, a file the mod
+        hasn't got. Now refused in words in every language, as over the squad's own model, nothing changed; the mod
+        builds with his look. The control: with his look back to the game's, Custom uniform is taken and builds."""
         self.page.soldier_import(SQUAD, "2", str(self.model_file("marine.glb", b"glTF marine")))
         # (the page's Custom uniform button is off only while look() has the squad's own model: app.js uniformBox)
         button_on = not self.page.look(SQUAD).get("own_model")
+        before = self.files()
         said = self.refused("model_copy", SQUAD)
         made = (self.models / f"{STEM}.copy.toml").is_file()
         result, _loaded = self.built()
@@ -223,6 +224,15 @@ class ACustomUniform(SquadScenario):
               "refused: " + str(said["us"]) if said["us"] else "taken", "| build:", self.errors(result), "| check:",
               self.problems())
         self.assertTrue(said["us"] is not None or not self.errors(result), (made, self.errors(result)))
+        self.assert_worded(said, "Soldiers of this squad wear models you imported, and a squad can't wear your models "
+                                 "and a uniform at once. To give it a uniform, click Back to the game's look on each "
+                                 "soldier who wears your model first, then Custom uniform.")
+        self.assertEqual((made, self.files()), (False, before))
+        self.assertEqual((self.errors(result), sorted(result.own_models)), ([], [f"{STEM}@2"]))
+        self.page.soldier_reset(SQUAD, "2")
+        self.page.model_copy(SQUAD)
+        self.assertTrue((self.models / f"{STEM}.copy.toml").is_file())
+        self.assertEqual(self.errors(self.built()[0]), [])
 
 
 if __name__ == "__main__":
