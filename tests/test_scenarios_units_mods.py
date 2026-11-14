@@ -123,32 +123,17 @@ class NewMods(Player):
         game_map = Path(self.call("new_mod", "Tank Test", "map")["current"])
         self.assertEqual(game_map.name, "tank-test-3")
 
-    # U-1: a name with a character beyond the first 65,536 (an emoji, a rare kanji such as the 𠮷 of 𠮷野家) makes no
-    # mod: Python's words on the page, and a folder left with a mod.toml that can't be read
-    @unittest.expectedFailure
+    # U-1 (mended by the PROPOSED FIX commit after these tests: before it, a name with a character beyond the first
+    # 65,536, an emoji or the 𠮷 of 𠮷野家, made no mod, said Python's words, and left a folder whose mod.toml couldn't
+    # be read)
     def test_a_name_with_an_emoji_or_a_rare_kanji_makes_a_mod_that_opens(self):
         for name in ("Tanks 🙂", "𠮷野家の戦車"):
             with self.subTest(name=name):
                 folder = self.made(name)
                 self.a_unit_builds(folder)
-
-    def test_what_a_name_with_an_emoji_does_now(self):
-        """U-1 as it is now, so its words and the folder it leaves are on record (this test passes on the code as it
-        is; it fails once U-1 is mended, and goes then)."""
-        with self.assertRaises(Refused) as cm:
-            self.mod("Tanks 🙂")
-        self.assertEqual(cm.exception.kind, "PackageError")
-        self.assertRegex(cm.exception.text, r"couldn't update .*mod\.toml: Escaped character is not a Unicode scalar "
-                                            r"value")
-        left = self.home / "mods" / "tanks"
-        self.assertTrue((left / "mod.toml").is_file())                     # left behind
-        self.assertIn(str(left), [m["path"] for m in self.call("mods", "mod")["mods"]])   # and listed
-        try:
-            picked = self.call("choose_mod", str(left), "mod", False)    # picked from the menu
-        except Refused as r:
-            picked = r
-        print("\nU-1 choose_mod on the folder left:", repr(picked)[:400])
-        self.assertEqual(self.mod("Tanks").name, "tanks-2")                # the next "Tanks" goes beside it
+                self.restart()                                             # opened again from its files
+                self.assertEqual(self.call("mods", "mod")["current"], str(folder))
+                self.assertIn(name, [m["name"] for m in self.call("start_mods")["mods"]])
 
 
 class SwitchingAndReopening(Player):

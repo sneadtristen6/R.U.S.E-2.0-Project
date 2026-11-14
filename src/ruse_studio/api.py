@@ -6002,8 +6002,10 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             folder, n = base / f"{slug}-{n}", n + 1
         (folder / ("maps" if kind == "map" else "src")).mkdir(parents=True)
         made = "A map made in the RUSE Studio." if kind == "map" else "Made in the RUSE Studio."
+        # the name as typed (ensure_ascii=False): JSON's \u escapes split a character past the first 65,536 (an emoji,
+        # the 𠮷 of Japanese names) into two halves TOML refuses, and the mod.toml then couldn't be read (scenario U-1)
         (folder / "mod.toml").write_text(
-            f'[mod]\nid          = "{folder.name}"\nname        = {json.dumps(name or folder.name)}\n'
+            f'[mod]\nid          = "{folder.name}"\nname        = {json.dumps(name or folder.name, ensure_ascii=False)}\n'
             f'version     = "0.1.0"\ndescription = "{made}"\n', encoding="utf-8")
         modformat.stamp(folder, self.MADE_WITH["tool"], self.MADE_WITH["version"])  # in this Studio's mod format
         return self.choose_mod(str(folder), kind)
