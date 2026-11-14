@@ -22,10 +22,23 @@ with the R.U.S.E. Field Manual and the Balance Overhaul Mod together.
   researched, wherever that upgrade is made. The build now makes such an upgrade a research of its own and says so in
   a warning. Tested in the game with the USSR and Italy. It changes some sets with the Balance Overhaul Mod, and sets
   with the Field Manual before the Balanced Realism Mod; the warning names each unit.
-- **Join codes:** a set the build changes this way gets a new join code, so every player in a match with it needs
-  this version. A set with a mod that gives a gun crew a model of its own gets a new join code too: the crew's little
-  far-away figure now wears that model. Every other set keeps its join code. After the update, the next **Play** or
+- **Join codes:** a set the build changes this way gets a new join code, so every player in a match with it needs this
+  version. A set with a mod that gives a gun crew a model of its own gets a new join code too: the crew's little
+  far-away figure now wears that model. A set with the Balanced Realism Mod, the Navy Mod, Sand Box or either Static
+  Commandable Battleship - All Operations mod gets a new join code too: for some of their units, another nation's unit
+  packs now load in every skirmish (below). Every other set keeps its join code. After the update, the next **Play** or
   **Test in game** builds your game again by itself.
+- **Missions a set leaves without their places (Studio and Launcher):** when a set's mods leave a campaign chapter, an
+  Operation or the tutorial without a place its mission watches from its start, the build warns, naming the mod and how
+  many campaign chapters or Operations it does this to, or the tutorial: the game stops about a second after such a
+  mission starts. Every mod is checked, whatever its version, your own too: the build reads the missions from your own
+  game when it builds. The set still builds and plays as before, and the build's count of warnings includes these.
+  Checked with builds of the community mods; not yet tried in the game.
+- **.rmod mods' units get their models (Studio and Launcher):** a unit an .rmod mod (RUSE Mod Manager's format) makes,
+  or moves to another nation, now gets the same model check as a Studio mod's unit, in any set and with the mod alone:
+  when its model is only in another nation's unit packs, the build makes those packs load in every skirmish, so it has
+  its model in matches where no player has that nation, and a note names the unit as its card does; where that can't be
+  done, the build refuses the set and says why. Not yet tried in the game.
 - **The Launcher's mod set editor says why:** when it can't make or save a set (no mod ticked, or a mod that is no
   longer in your library), it now says so inside the editor, under its buttons. Before, the message went to the set's
   page, hidden behind the editor, so nothing seemed to happen. **Create** and **Save** wait until a mod is ticked.
