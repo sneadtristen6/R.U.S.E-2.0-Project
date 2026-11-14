@@ -244,16 +244,22 @@ class Unusual(Studio):
                     continue
                 self.assertEqual(Path(view["result"]["path"]).name, "versions-1.0.0.rusemod")
 
-    @unittest.expectedFailure
     def test_FE6_a_character_pasted_into_the_author_or_description(self):
         """FE-6: a control character pasted into the author or the description (a vertical tab, a bell) or a line
-        separator (U+2028, from a web page or a word processor) stops Export with Python's TOML words: "couldn't
-        update ...mod.toml: Illegal character '\\n' (at line 6, column 17)"."""
+        separator (U+2028, from a web page or a word processor) stopped Export with Python's TOML words: "couldn't
+        update ...mod.toml: Illegal character '\\n' (at line 6, column 17)" (release adc8ecea). PROPOSED FIX: mod.toml
+        holds such a character as \\uXXXX (package._toml), so it stays as he typed it and every export goes on."""
         self.make("Pasted")
-        for author, description in (("Jane\x0bDoe", ""), ("", "first\u2028second"), ("", "bell\x07")):
+        for n, (author, description) in enumerate((("Jane\x0bDoe", ""), ("", "first\u2028second"), ("", "bell\x07"))):
             with self.subTest(author=author, description=description):
-                view = self.export("1.0.0", author, description)
+                view = self.export(f"1.0.{n}", author, description)
                 self.assertEqual(view["state"], "done", view.get("message"))
+                info = package.check(view["result"]["path"])
+                if author:
+                    self.assertEqual(info["authors"], [author])
+                if description:
+                    self.assertEqual(info["description"], description)
+        self.assertEqual(self.export("1.1.0")["state"], "done")          # (and the next export, with them kept)
 
     @unittest.expectedFailure
     def test_FE7_his_own_files_at_the_top_go_along_or_are_named(self):

@@ -168,6 +168,13 @@ def set_values(text: str, table: str, values: dict) -> str:
     return "\n".join(ln for ln in lines if ln is not None) + "\n"
 
 
+# a character a TOML string can't hold as it is (a control character), or that set_values' splitlines() would read as
+# the end of a line (a vertical tab, a form feed, U+001C-U+001E, U+0085, the line and paragraph separators): written as
+# \uXXXX, so a character pasted into an author or a description never makes mod.toml unreadable (the export
+# scenarios' FE-6: "couldn't update ...mod.toml: Illegal character")
+_TOML_ESCAPE = re.compile("[\x00-\x08\x0b-\x1f\x7f\x85\u2028\u2029]")
+
+
 def _toml(v) -> str:
     if isinstance(v, bool):
         return "true" if v else "false"
@@ -175,7 +182,8 @@ def _toml(v) -> str:
         return str(v)
     if isinstance(v, (list, tuple)):
         return "[" + ", ".join(_toml(x) for x in v) + "]"
-    return '"' + str(v).replace("\\", "\\\\").replace('"', '\\"').replace("\n", " ").replace("\r", "") + '"'
+    text = str(v).replace("\\", "\\\\").replace('"', '\\"').replace("\n", " ").replace("\r", "")
+    return '"' + _TOML_ESCAPE.sub(lambda m: f"\\u{ord(m.group(0)):04x}", text) + '"'
 
 
 def update_manifest(folder, mod: dict | None = None, game: dict | None = None,
