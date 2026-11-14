@@ -723,9 +723,10 @@ def _base_picture(doc: dict, views: list, material: dict) -> tuple | None:
 
 
 def paint_like(raw: bytes, model: bytes) -> tuple[bytes, list]:
-    """A .glb sent from Blender (`raw`) with the base colour picture of each of its materials put back as it was in the
-    file that went out (`model`), matched by the material's name; the mesh, the bones and the animations as Blender sent
-    them. For the one Blender button's Paint unticked (the owner, 2026-11-13: what's unticked stays as it was). Returns
+    """A .glb sent from Blender (`raw`) with the base colour picture of each of its materials put back as it is in
+    `model` (the file that went out, or the paint the mod has now: ruse_studio.modelblender's _paint_now), matched by
+    the material's name; the mesh, the bones and the animations as Blender sent them. For the one Blender button's
+    Paint unticked (the owner, 2026-11-13: what's unticked stays as it was). Returns
     (the file, [the name of each material whose picture was put back]); a material new or renamed in Blender, or one
     with no picture in the file, keeps what Blender wrote; a file that can't be read comes back as it is, with []."""
     try:
