@@ -356,6 +356,23 @@ def _ascii_digits(text: str) -> str:
     return "".join(str(unicodedata.decimal(c)) if c.isdecimal() and not "0" <= c <= "9" else c for c in text)
 
 
+FLOAT32_MOST = 3.4028234663852886e38  # the most a 4-byte decimal number (the game's float32) holds
+
+
+def _fits(value, kind: str, prop: str):
+    """A number typed for a property of kind `kind`, as the build will store it: a whole number rounded and checked
+    (_whole); a 4-byte decimal one checked against the most it holds (past it, the build stopped with Python's
+    OverflowError: scenario U-9; the All values tab refuses it too, rusemod.values); any other as it came."""
+    if kind in INT_RANGES:
+        return _whole(value, kind, prop)
+    if kind == "float32":
+        try:
+            struct.pack("<f", value)
+        except OverflowError:
+            raise StudioError(f"{prop}: {value} doesn't fit (it must be {-FLOAT32_MOST} to {FLOAT32_MOST})") from None
+    return value
+
+
 def safe_name(name: str) -> str:
     """The part of a new unit's address made from its name: ASCII letters, digits and _ only (accents dropped, other
     letters left out), which the game's data, its Python unit list and .rndf files all accept."""
@@ -6039,7 +6056,9 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         (folder / ("maps" if kind == "map" else "src")).mkdir(parents=True)
         made = "A map made in the RUSE Studio." if kind == "map" else "Made in the RUSE Studio."
         # (the name as TOML writes it, package._toml: json.dumps wrote a letter outside the first 65,536, an emoji, as
-        # two \ud8xx halves TOML refuses, so the new mod's own mod.toml couldn't be read: the export scenarios' FE-1)
+        # two \ud8xx halves TOML refuses, so the new mod's own mod.toml couldn't be read: the export scenarios' FE-1, the
+        # units scenarios' U-1; the manifest's own writer, which also writes a pasted control character or line
+        # separator as \uXXXX, FE-6)
         (folder / "mod.toml").write_text(
             f'[mod]\nid          = "{folder.name}"\nname        = {package._toml(name or folder.name)}\n'
             f'version     = "0.1.0"\ndescription = "{made}"\n', encoding="utf-8")
@@ -6494,8 +6513,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         elif len(values) != len(p["numbers"]):
             raise StudioError(f"{prop}: expected {len(p['numbers'])} numbers" if p["list"] else f"{prop}: one number")
         kind = types.get(prop + "[]" if p["list"] else prop, "")
-        if kind in INT_RANGES:
-            values = [_whole(v, kind, prop) for v in values]
+        values = [_fits(v, kind, prop) for v in values]
         with self._saving:
             edits = ModEdits(edits.folder)  # read again: another change may have been saved meanwhile
             before = edits.get(o["address"], prop, "shared") if how == "own" else None  # what "all of them" got
@@ -6688,7 +6706,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             if p["list"] != isinstance(value, list) or len(values) != len(p["numbers"]):
                 raise StudioError(f"{prop}: expected {len(p['numbers'])} numbers" if p["list"] else f"{prop}: one number")
             kind = types.get(prop + "[]" if p["list"] else prop, "")
-            got = [_whole(v, kind, prop) for v in values] if kind in INT_RANGES else list(values)
+            got = [_fits(v, kind, prop) for v in values]
             new[mode_] = (got if p["list"] else got[0], p["numbers"] if p["list"] else p["numbers"][0])
         with self._saving:
             edits = ModEdits(edits.folder)  # read again: another change may have been saved meanwhile
@@ -6927,7 +6945,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             if p["list"] != isinstance(value, list) or len(values) != len(p["numbers"]):
                 raise StudioError(f"{prop}: expected {len(p['numbers'])} numbers" if p["list"] else f"{prop}: one number")
             kind = ix.prop_types(found[1]["class"]).get(prop + "[]" if p["list"] else prop, "")
-            got = [_whole(v, kind, prop) for v in values] if kind in INT_RANGES else list(values)
+            got = [_fits(v, kind, prop) for v in values]
             new, game = (got, p["numbers"]) if p["list"] else (got[0], p["numbers"][0])
             with self._saving:
                 edits = ModEdits(edits.folder)  # read again: another change may have been saved meanwhile
@@ -9993,9 +10011,13 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             namespace, tail = source.rsplit("/", 1)
             m = _PREFIX.match(tail)
             prefix = m.group(1) if m else "Descriptor_Unit_"
+            # an address another unit's has but for its capitals is taken too: Windows doesn't tell capitals apart in
+            # file names, so the two would share every file of their own (a card, a model, an animations folder) and
+            # Delete of one would take the other's (scenario U-8: Tiger II, then tiger ii)
+            lowered = {a.lower() for a in edits.new_units} | {u["address"].lower() for u in all_units}
 
             def taken(t: str) -> bool:
-                if t in edits.new_units:
+                if t in edits.new_units or t.lower() in lowered:
                     return True
                 try:
                     ix.show(t)
@@ -10043,7 +10065,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                                                                        o["values"]) else []) if dropped else []
         with self._saving:
             edits = ModEdits(edits.folder)  # read again: another change may have been saved meanwhile
-            if target in edits.new_units:
+            if target.lower() in {a.lower() for a in edits.new_units}:
                 raise StudioError(f"There's already a unit at {target}. Pick another name.")
             self._animations_ready(edits.folder)  # (its animations go along: actions.py)
             files = None
