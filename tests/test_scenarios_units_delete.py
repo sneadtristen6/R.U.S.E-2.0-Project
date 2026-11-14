@@ -277,7 +277,7 @@ class TakeItOutOfMyMod(Player):
     # No connection could be made because the target machine actively refused it)"; mod_index.plain gives a URLError's
     # reason as it is) and Download's refusal ("The era units list couldn't be had: {why}", made as `a if b else c`, so
     # never in errors.toml)
-    @unittest.expectedFailure
+    # (passes with the night's ready fixes together, trial/0920-allfixes; an expected failure on the release 3a9f7553)
     def test_the_era_units_list_cant_be_had_in_the_players_language(self):
         with mock.patch.dict(os.environ, {era_units.URL_ENV: "http://127.0.0.1:9/"}):
             said = self.refusal("era_download", "Modern")

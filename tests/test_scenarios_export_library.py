@@ -135,7 +135,7 @@ class Unusual(Library):
         carol.add_mod(str(self.exported("1.0.0", "Bob", bob)))
         self.assertEqual(sorted(name for name, _v, _a in self.shown(carol).values()), ["Самолёты", "Танки"])
 
-    @unittest.expectedFailure
+    # (passes with the night's ready fixes together, trial/0920-allfixes; an expected failure on the release 3a9f7553)
     def test_FE9_a_damaged_file(self):
         """FE-9: a .rusemod with a damaged byte (a download gone wrong) stops the Launcher's Add with zlib's own error,
         "zlib.error: Error -3 while decompressing data: invalid code lengths set" (not a LauncherError: no words of

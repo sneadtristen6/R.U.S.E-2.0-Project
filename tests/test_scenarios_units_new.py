@@ -158,7 +158,7 @@ class NewUnitOfEveryKind(Player):
 
     # U-4: the refusal of a name already taken names the game's code name and quotes the name the Python way:
     # "There's already a unit called Descriptor_Unit_Tiger_II (from 'Tiger II'). Pick another name."
-    @unittest.expectedFailure
+    # (passes with the night's ready fixes together, trial/0920-allfixes; an expected failure on the release 3a9f7553)
     def test_the_same_name_twice_is_refused_in_plain_words(self):
         self.mod("Twice plainly")
         self.new(H1, "Tiger II")

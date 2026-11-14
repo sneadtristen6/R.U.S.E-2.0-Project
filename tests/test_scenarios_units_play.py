@@ -56,7 +56,7 @@ class TestInGame(Player):
     # from <the copy>. To see your changes: your unit changes show in every game mode." (job.start's done message, which
     # rusemod.buildtext doesn't collect: it reads say, warn and Finding only), and for a mod that doesn't build "These
     # mods have errors (listed above). Nothing was changed." (rusemod.play's BuildError, the same)
-    @unittest.expectedFailure
+    # (passes with the night's ready fixes together, trial/0920-allfixes; an expected failure on the release 3a9f7553)
     def test_its_last_words_in_every_language(self):
         folder = self.mod("Play words")
         self.units()

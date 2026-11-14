@@ -91,7 +91,7 @@ class TwoModsInOneSet(Player):
     # U-16 in the Launcher too: Play refused because the set's mods don't build ends with "These mods have errors
     # (listed above). Nothing was changed." in every language (rusemod.play's BuildError, which rusemod.buildtext
     # doesn't collect), shown on the set's card (ui/app.js: note j.message)
-    @unittest.expectedFailure
+    # (passes with the night's ready fixes together, trial/0920-allfixes; an expected failure on the release 3a9f7553)
     def test_a_refused_play_says_why_in_the_players_language(self):
         a = self.exported("Alpha", lambda: self.call("new_unit", M1, "Super Tank", 40, -1, -1, False, None))
         b = self.exported("Bravo", lambda: self.call("new_unit", H1, "Super Tank", 60, -1, -1, False, None))

@@ -180,7 +180,7 @@ class MissionWords(MapGame):
     # FINDING F3: the Mission trays' refusals (StudioApi.mission_save, mission_unit) are rusemod.mission.MissionError,
     # not StudioError, so the window passes them to the page as they are: English in every language. The problems the
     # trays list (mission()["problems"]) are English too.
-    @unittest.expectedFailure
+    # (passes with the night's ready fixes together, trial/0920-allfixes; an expected failure on the release 3a9f7553)
     def test_f3_a_battles_copys_mission_refused_in_french(self):
         pack = self.api.duplicate_map(BLITZ, "Blitz at Dusk")["pack"]
         self.assertFalse(self.api.mission(pack)["allowed"])
@@ -190,7 +190,7 @@ class MissionWords(MapGame):
         self.assertNotIn("A BATTLES map can't have a mission of its own yet", said)
 
     # F3 too: Map Paint's own pictures refuse with rusemod.groundtex.TextureError, not StudioError: English as well.
-    @unittest.expectedFailure
+    # (passes with the night's ready fixes together, trial/0920-allfixes; an expected failure on the release 3a9f7553)
     def test_f3_a_ground_picture_with_no_map_changes_refused_in_french(self):
         self.in_lang("fr")
         said = page_said(self.api, "add_ground_picture", "grass", "data:image/png;base64,AAAA")
