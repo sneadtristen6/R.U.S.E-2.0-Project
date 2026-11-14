@@ -344,6 +344,14 @@ def _whole(value, kind: str, prop: str):
     return r
 
 
+def _ascii_digits(text: str) -> str:
+    """`text` with full-width letters and signs as the plain ones they stand for (NFKC: a Japanese or Chinese keyboard's
+    １．０．０), and each digit of another script (Persian ۱, Arabic ١...) as 0-9: a version typed so is the version
+    every other player's file and list read (the export scenarios' FE-5: "１.０.０" went out as it was)."""
+    text = unicodedata.normalize("NFKC", text)
+    return "".join(str(unicodedata.decimal(c)) if c.isdecimal() and not "0" <= c <= "9" else c for c in text)
+
+
 def safe_name(name: str) -> str:
     """The part of a new unit's address made from its name: ASCII letters, digits and _ only (accents dropped, other
     letters left out), which the game's data, its Python unit list and .rndf files all accept."""
@@ -10510,8 +10518,8 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         folder = self._mod_dir(kind)
         if folder is None:
             raise StudioError("Pick or make a map first." if kind == "map" else "Pick or make a mod first.")
-        version = (version or "").strip()
-        if not re.fullmatch(r"\d+\.\d+\.\d+", version):
+        version = _ascii_digits((version or "").strip())
+        if not re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", version):
             raise StudioError("The version should be three numbers, like 1.0.0.")
         problem = package.edit_problem(folder)  # not a game rule: an edit never goes out under the original's name
         if problem:

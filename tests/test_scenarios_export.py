@@ -233,13 +233,13 @@ class Unusual(Studio):
             return                                                       # (refused in words: fine too)
         self.assertTrue((folder / "mod.toml").is_file())
 
-    @unittest.expectedFailure
     def test_FE5_a_version_typed_in_other_digits(self):
         """FE-5: a version typed with full-width digits (a Japanese or Chinese keyboard's) or Persian ones is taken as
         it is: the file is versions-１.０.０.rusemod and the library shows １.０.０ (Python's \\d takes every script's
-        digits). Wanted: taken as 1.0.0, or refused with the three-numbers words."""
+        digits; so on the release, adc8ecea). Wanted: taken as 1.0.0, or refused with the three-numbers words.
+        PROPOSED FIX: taken as 1.0.0, full-width dots too (api._ascii_digits)."""
         self.make("Versions")
-        for typed in ("\uff11.\uff10.\uff10", "\u06f1.\u06f0.\u06f0"):
+        for typed in ("\uff11.\uff10.\uff10", "\u06f1.\u06f0.\u06f0", "\uff11\uff0e\uff10\uff0e\uff10"):
             with self.subTest(typed=typed):
                 try:
                     view = self.export(typed)
