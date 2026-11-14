@@ -120,6 +120,41 @@ class Missions(OperationGame):
         got = self.build()
         self.assertEqual(got["state"], "failed")
 
+    def test_events_of_every_kind_and_units_placed_in_a_group(self):
+        """When a zone is entered, when a group is destroyed, when a goal is done; units placed on the map (Add unit,
+        side 1) in a group the mission names. (The made-up units have no class name: the index's lookup stands in,
+        as test_studio's spawn tests do.)"""
+        from unittest import mock
+        shown = {"values": [("ClassNameForDebug", 0, SHERMAN)]}
+        with mock.patch("rusemod.index.Index.show", return_value=shown):
+            self.api.scenario_spawn_many(self.pack, SCEN, "$/GFX/Everything/Descriptor_Unit_M4_Sherman",
+                                         [[2600, 2600], [2700, 2600]], 1, 0.0)
+        rows = tomllib.loads((self.map_folder(self.pack) / "scenario.toml").read_text(encoding="utf-8"))["spawn"]
+        for n in range(len(rows)):
+            self.api.scenario_spawn_set(self.pack, n, "group", "column")
+        goals = [{"id": "hold", "text": "HOLD THE ZONE", "done": "zone", "zone": "zone_1", "main": True},
+                 {"id": "kill", "text": "DESTROY THE COLUMN", "done": "destroyed", "group": "column", "main": True}]
+        events = [{"id": "entered", "when": "zone", "zone": "zone_1", "do": [{"do": "message", "text": "In!"}]},
+                  {"id": "gone", "when": "destroyed", "group": "column", "do": [{"do": "victory"}]},
+                  {"id": "held", "when": "goal", "goal": "hold", "do": [{"do": "money", "side": 0, "amount": 500}]}]
+        view = self.api.mission_save(self.pack, self.draft(goal=goals, event=events))
+        self.assertEqual(self.errors(view), [])
+        self.assertIn("column", view["groups"])
+        got = self.assertBuilds()
+        self.assertTrue(any("its own mission: 2 goal(s), 3 event(s)" in ln for ln in got["lines"]), got["lines"])
+
+    def test_a_camera_move_on_a_map_with_no_camera_file(self):
+        """A camera move (the Camera moves tray) on a copied map with no camera file of its own (this made-up map has
+        none): what the tray and Test in game say."""
+        camera = [{"name": "Flyby", "seconds": 12, "points": [[0, 0, 50000], [3000, 0, 40000]], "look": [1500, 1500, 0]}]
+        view = self.api.mission_save(self.pack, self.draft(camera=camera, mission={"opening": "Flyby", "time_limit": 0,
+                                                                                    "time_up": "defeat",
+                                                                                    "win": "main_goals"}))
+        self.assertEqual(self.errors(view), [])   # (the tray: only "hasn't been tried in the game yet" and the goals)
+        got = self.build()
+        self.assertEqual(got["state"], "failed")
+        self.assertIn("the copied map has no camera file to add the camera moves to", " ".join(got["errors"]))
+
     def test_the_mission_taken_out(self):
         self.api.mission_save(self.pack, self.draft())
         view = self.api.mission_delete(self.pack)
