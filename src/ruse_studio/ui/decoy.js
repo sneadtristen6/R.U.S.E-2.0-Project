@@ -228,7 +228,7 @@
         el("div", { className: "squad-go" }, back, bin));
     });
     box.replaceChildren(el("div", { className: "squad-go" }, ...buttons), ...asides,
-      el("p", { className: "muted small", textContent: w.decoy_blender_how }), ...(D.said ? [D.said] : []));
+      helpLine(w.decoy_blender_how, "animations"), ...(D.said ? [D.said] : []));   // (with app.js's troubleLink)
   }
 
   // a sending kept aside, to the Recycle Bin (StudioApi.decoy_blender_recycle): nothing of it taken in
@@ -644,7 +644,8 @@
     leadLine(a);
     for (const [id, word] of [["da-speed-label", "decoy_anim_speed"], ["da-use-label", "decoy_anim_use"],
       ["da-bones-label", "decoy_anim_bones"], ["da-size-label", "decoy_anim_size"], ["da-axis-label", "decoy_anim_axis"],
-      ["da-turn-label", "decoy_anim_turn"], ["da-close", "decoy_anim_done"]]) $(id).textContent = w[word];
+      ["da-turn-label", "decoy_anim_turn"], ["da-close", "decoy_anim_done"], ["da-help", "help_trouble"]]) $(id).textContent = w[word];
+    $("da-help").title = w.tip_help_trouble_animations || "";
     for (const [id, tip] of [["da-speed", "tip_decoy_anim_speed"], ["da-use", "tip_decoy_anim_use"], ["da-bone", "tip_decoy_anim_bone"],
       ["da-size", "tip_decoy_anim_size"], ["da-axis", "tip_decoy_anim_axis"], ["da-turn", "tip_decoy_anim_turn"]]) $(id).title = w[tip];
     $("da-use").replaceChildren(el("option", { value: "", textContent: w.decoy_anim_use_own }));
@@ -1051,6 +1052,8 @@
       } catch (err) { problem(err); }
     });
     $("da-close").addEventListener("click", () => $("decoy-anim").close());
+    // "Having trouble? Read the guide": the field manual's animations page (app.js troubleLink's call)
+    $("da-help").addEventListener("click", () => api().open_help("wiki", "animations").catch(problem));
     $("da-mc-pick").addEventListener("click", () => $("da-mc-file").click());
     $("da-mc-file").addEventListener("change", mocapPicked);
     $("da-mc-from").addEventListener("input", mocapLabels);

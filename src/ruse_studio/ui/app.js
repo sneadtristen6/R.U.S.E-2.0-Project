@@ -158,6 +158,24 @@ function problem(err) {
   say((err && err.message) || String(err), "error");
 }
 
+// "Having trouble? Read the guide": a quiet link at the end of a hard box's help line, opening the field manual's page
+// on it in the player's language (StudioApi.open_help("wiki", topic), rusemod.community.WIKI_TOPICS: "bones",
+// "animations", "blender"). The owner, 2026-11-13: "maybe have like a link somewhere in the thing where it's like having
+// trouble wiki. I don't know where you put that. I don't want it to look stupid": a link, never another button (his
+// "fewer buttons"), the same words wherever it is, the page it opens in its tooltip
+function troubleLink(topic) {
+  const w = state.words || {};
+  const link = el("button", { type: "button", className: "link small trouble-link", textContent: w.help_trouble || "",
+    title: w[`tip_help_trouble_${topic}`] || "" });
+  link.addEventListener("click", () => api().open_help("wiki", topic).catch(problem));
+  return link;
+}
+
+// a help line with the link after its words (`className`: the line's own, "muted small" by default)
+function helpLine(text, topic, className = "muted small") {
+  return el("p", { className }, text || "", " ", troubleLink(topic));
+}
+
 // --- words ---
 async function setLanguage(lang) {
   state.lang = lang;
@@ -2965,7 +2983,7 @@ function oneBlenderBox(address, info, draw, changed) {
     const how = parts && !parts.can ? parts.why_not || "" : ((parts && (parts.door || parts.route)) === "paint"
       ? w.one_how_paint : w.one_how_unit);
     body.replaceChildren(el("div", { className: "actions" }, big, ...(ticks ? [ticks.toggle] : [])),
-      ...(ticks ? [ticks.box] : []), el("p", { className: "muted small", textContent: how }));
+      ...(ticks ? [ticks.box] : []), helpLine(how, "blender"));
   };
   const reload = async () => {
     parts = await api().blender_parts(address, state.lang).catch(() => null);
@@ -3615,7 +3633,7 @@ function halvesBox(address, r, draw, changed) {
     el("p", { className: "small", textContent: w.fit_halves_how }),
     el("label", { className: "small" }, w.fit_split, " ", pick),
     el("p", { className: "small", textContent: fill(w.fit_halves_counts, { top: h.top.length, bottom: h.bottom.length }) }),
-    el("p", { className: "muted small", textContent: w.fit_halves_example }), tree);
+    helpLine(w.fit_halves_example, "bones"), tree);
 }
 
 // each problem: what doesn't fit, what the game does with it, how to fix it
@@ -3632,7 +3650,7 @@ function fitProblems(r) {
       el("p", { textContent: sayIt[0] }), el("p", { className: "small", textContent: sayIt[1] }),
       el("p", { className: "small", textContent: sayIt[2] })));
   }
-  box.append(el("p", { className: "muted small", textContent: w.fit_checked }));
+  box.append(helpLine(w.fit_checked, "bones"));
   return box;
 }
 
@@ -3839,7 +3857,7 @@ function unitActionsBox(u, first) {
         (v) => fill(w.actions_saved, { action: nameOf(r.action), name: v || said(r.nearest) })));
       return el("tr", {}, el("td", { textContent: nameOf(r.action) }), el("td", {}, pick));
     };
-    const parts = [el("p", { className: "muted small", textContent: w.actions_how })];
+    const parts = [helpLine(w.actions_how, "animations")];
     const byAction = Object.fromEntries(info.rows.map((r) => [r.action, r]));
     for (const a of info.missing) {
       parts.push(el("p", { className: "notice warn", textContent: fill(w.actions_missing,
