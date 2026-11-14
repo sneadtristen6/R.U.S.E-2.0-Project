@@ -615,6 +615,58 @@ class BringItBack(Squad):
         self.assertIn("Cube", res["message"])
 
 
+def base_picture(path: Path) -> bytes:
+    """The bytes of the base colour picture of the first material of a .glb (glb_from's, or one Bring back kept)."""
+    doc, binary = glb_document(Path(path).read_bytes())
+    k = doc["materials"][0]["pbrMetallicRoughness"]["baseColorTexture"]["index"]
+    v = doc["bufferViews"][doc["images"][doc["textures"][k]["source"]]["bufferView"]]
+    return binary[v["byteOffset"]:v["byteOffset"] + v["byteLength"]]
+
+
+class UntickedKeepsWhatTheModHasNow(Squad):
+    """The one Blender button on a squad of game soldiers: what a later trip leaves unticked (the Paint, a soldier) keeps
+    what the mod has now, never what went out on an earlier trip. Controls for the paint-unticked loss of the model's
+    own door (test_modelblender's UntickedPaintKeepsWhatItHasNow): the squad's door writes each soldier's start file
+    anew at each opening from the mod (_start_file), so these hold on 0d5564eb too."""
+
+    def setUp(self):
+        super().setUp()
+        self.calls = self.taking_in()
+
+    def trip(self, sends: dict, only=None, unticked=False) -> dict:
+        """Open the squad (`only`: those soldiers alone, as the one button opens the ticked ones), Blender sends each
+        soldier as it opened him but those in `sends` ({id: bytes}), Bring my changes back with Paint unticked when
+        `unticked`."""
+        with self.patched():
+            self.api._into_blender(SQUAD, "us", only=only)
+        figures = self.blender_opened()
+        self.blender_sends({**figures, **sends})
+        with self.patched():
+            return self.api.squad_blender_back(SQUAD, "us", keep_paint=unticked)
+
+    def test_a_repaint_brought_back_stays_when_a_later_trip_unticks_paint(self):
+        """Bazooka man 5 repainted red with Paint ticked and brought back; Blender opened again, Paint unticked, and he
+        is repainted blue there: what Import model takes in is red, his paint as the mod has it."""
+        self.trip({"5": glb_from(b"PNG-painted-red", "Bazooka man 5 1")})
+        kept = self.work / "kept" / f"{STEM}@5.glb"
+        self.assertEqual(base_picture(kept), b"PNG-painted-red")
+        res = self.trip({"5": glb_from(b"PNG-painted-blue", "Bazooka man 5 1")}, unticked=True)
+        self.assertEqual(res["changed"], ["5"])
+        self.assertEqual(base_picture(kept), b"PNG-painted-red")
+        self.assertEqual(res["kept"]["paint"], {"5": ["Bazooka man 5 1"]})
+
+    def test_a_soldier_left_unticked_on_a_later_trip_keeps_his_files_byte_for_byte(self):
+        """Bazooka man 5 changed and brought back; a later trip with Rifleman 1 alone ticked, he changed and brought
+        back: the bazooka man's model, record and kept file stay byte for byte."""
+        self.trip({"5": glb_from(b"PNG-painted-red", "Bazooka man 5 1")})
+        his = [self.models / f"{STEM}@5.glb", self.models / f"{STEM}@5.json", self.work / "kept" / f"{STEM}@5.glb"]
+        before = [sha(f) for f in his]
+        res = self.trip({"1": glb_from(b"figure-1-moved", "Rifleman 1 1")}, only=["1"])
+        self.assertEqual((res["changed"], res["unchanged"]), (["1"], []))   # (he alone went to Blender)
+        self.assertEqual([c[3] for c in self.calls], ["5", "1"])
+        self.assertEqual([sha(f) for f in his], before)
+
+
 class OneSoldier(Squad):
     def test_import_and_reset_change_him_alone(self):
         """Import a model… on a soldier's line gives him his own look (Import model with his number). Back to the
