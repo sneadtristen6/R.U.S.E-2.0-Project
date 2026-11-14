@@ -12,10 +12,12 @@ it passes once the finding is mended."""
 import struct
 import unittest
 
-from test_scenarios_units_base import LANGS, Player, Refused
+import test_ai
+from test_scenarios_units_base import GAMES, LANGS, Player, Refused
 from test_studio import AMMO, AMMO_75, AMMO_88, M4, M4_GUN, PANZER_IV, PANZER_MOUNT
 
 INT_MOST, INT_LEAST = 2 ** 31 - 1, -2 ** 31
+GAMES["ai"] = test_ai.write_game     # test_ai's made-up game: the AI and player settings tab's values
 
 
 class Values(Player):
@@ -205,6 +207,31 @@ class Values(Player):
         self.assertEqual(self.english_left(said), [], said["fr"])
         notices = {lang: self.call("unit", M4, lang)["why_not"] for lang in LANGS}
         self.assertEqual(self.english_left(notices), [], notices["fr"])
+
+
+class DecimalsOfTheAITab(Player):
+    """U-9's kind of value in the AI and player settings tab (ai_edit takes a decimal as it comes, as the Units tab's
+    edit did), on test_ai's made-up game: a profile's AttaqueTempsActivation, a 4-byte decimal number."""
+    GAME = "ai"
+
+    # U-9 too: past what the game's 4-byte number holds, saved, and the build stops with Python's OverflowError
+    @unittest.expectedFailure
+    def test_an_ai_value_too_big_for_the_game_is_refused_or_builds(self):
+        folder = self.mod("AI too big")
+        try:
+            self.call("ai_edit", test_ai.REGULAR, "AttaqueTempsActivation", 1e39)
+        except Refused as r:
+            self.assertNotIn("Overflow", r.text)
+        try:
+            errors = self.build(folder)[0]
+        except OverflowError as exc:
+            errors = [f"the build stopped: OverflowError {exc}"]
+        self.assertEqual(errors, [])
+
+    def test_an_ai_value_at_the_most_the_game_holds(self):
+        folder = self.mod("AI at the most")
+        self.call("ai_edit", test_ai.REGULAR, "AttaqueTempsActivation", 3.0e38)
+        self.assertEqual(self.build(folder)[0], [])
 
 
 if __name__ == "__main__":
