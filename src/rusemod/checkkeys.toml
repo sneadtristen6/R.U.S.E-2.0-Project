@@ -587,6 +587,12 @@ where = "rusemod.build:rmod_far_upgrades"
 kind = "mistake"
 us = "{0}"
 
+[c80c0ecd15e]
+check = "build.rmod_far_upgrades-2"
+where = "rusemod.build:rmod_far_upgrades"
+kind = "mistake"
+us = "the skirmish unit packs can't be written: {0}"
+
 [ce247f6ff6d]
 check = "build.unit_cards"
 where = "rusemod.build:unit_cards"

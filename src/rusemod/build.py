@@ -1427,17 +1427,25 @@ def rmod_unit_models(run, shipped, zz_win, result: BuildResult, rmods=(), base=N
                        allowed=unitcheck.allowed_models(shipped), who=who)
 
 
-def spawn_models(run, zz_win, mods: list, order: list[str], result: BuildResult, into=None) -> None:
+def spawn_models(run, zz_win, mods: list, order: list[str], result: BuildResult, into=None, rmod_spawns=(),
+                 card=None) -> bool:
     """Units a mod's scenarios spawn. A skirmish loads a nation's unit models only when a player has that nation
     (unitcheck); a spawned unit whose models aren't loaded crashes the game as the match starts (a D-Day test with
     Japanese units spawned and no Japanese player, 2026-10-01). So a spawned unit's models are copied into the common
     skirmish packs, which every skirmish loads (rusemod.unitpacks; `into` as for unit_models); a spawn whose models
-    can't be copied is refused, saying why. (FORCE_LOAD: the old way, the nation's packs loaded everywhere.)"""
+    can't be copied is refused, saying why. (FORCE_LOAD: the old way, the nation's packs loaded everywhere.)
+
+    `rmod_spawns`: the units .rmod mods' layouts spawn ([(a class name, the mods spawning it)], rmod_layout_spawns),
+    looked at the same way and said to a player by `card` (a unit's name on its card, or None) else their class made
+    readable (item 29, A: the model checks for .rmod mods' changes as for ours; the review of 95e9b910, 2026-11-14,
+    its suspicion 5: layouts of library .rmod mods spawn units the game's own don't). Returns whether a spawn needed
+    another nation's models (the game was changed for it, or it was refused)."""
     from .scenario import Spawn
-    spawns = [(m, ids) for moves, ids in scenario_edits(order, mods).values() for m in moves if isinstance(m, Spawn)]
+    spawns = [(m.class_path.rpartition(".")[2], ids, False) for moves, ids in scenario_edits(order, mods).values()
+              for m in moves if isinstance(m, Spawn)] + [(cls, ids, True) for cls, ids in rmod_spawns]
     in_packs = skirmish_models(zz_win) if spawns and zz_win is not None else None
     if in_packs is None:
-        return
+        return False
     by_class = {}
     for name, obj in run.game.objects.items():
         cls = getattr(obj.props.get("ClassNameForDebug"), "value", None) if unitcheck.is_unit(obj) else None
@@ -1445,22 +1453,23 @@ def spawn_models(run, zz_win, mods: list, order: list[str], result: BuildResult,
             by_class.setdefault(cls, name)
     need: dict[int, dict[str, list[str]]] = {}  # nation -> {spawned class: the mods spawning it}
     names: dict[str, str] = {}  # the spawned unit's short name -> its object
-    for s, ids in spawns:
-        name = by_class.get(s.class_path.rpartition(".")[2])
+    for cls, ids, plain in spawns:
+        name = by_class.get(cls)
         if name is None:
             continue
         obj = run.game.objects[name]
         home = unitcheck.nation_of(obj)
+        said = ((card(obj) if card is not None else None) or _readable(cls)) if plain else name.rsplit("/", 1)[-1]
         for model in sorted(unitcheck.model_files(obj, run.game)):
             if model in in_packs["common"]:
                 continue
             where = [i for i, tag in enumerate(unitcheck.PACK_TAGS) if model in in_packs[tag]]
             if where:
                 pick = next((i for i in where if i in need), home if home in where else where[0])
-                need.setdefault(pick, {}).setdefault(name.rsplit("/", 1)[-1], ids)
-                names[name.rsplit("/", 1)[-1]] = name
+                need.setdefault(pick, {}).setdefault(said, ids)
+                names[said] = name
     if not need:
-        return
+        return False
     if not FORCE_LOAD:
         own = into is None
         into = into or unitpacks.Packs(zz_win)
@@ -1497,7 +1506,7 @@ def spawn_models(run, zz_win, mods: list, order: list[str], result: BuildResult,
                                                        f"({_given_note(gave)})"))
         if own:
             result.model_changed.update(into.output())
-        return
+        return True
     loaded = unitcheck.load_everywhere(run.game, set(need))
     _also_loaded(run, [n for n in need if loaded[n][0]], result)
     for nation, units in sorted(need.items()):
@@ -1517,6 +1526,72 @@ def spawn_models(run, zz_win, mods: list, order: list[str], result: BuildResult,
                                                     f"the game would crash as the match starts (a D-Day test with "
                                                     f"Japanese units spawned and no Japanese player did). Spawn units "
                                                     f"whose models every match has, or leave these out"))
+    return True
+
+
+def rmod_layout_spawns(layouts, result: BuildResult) -> list:
+    """The units the .rmod mods' layouts spawn that the game's own layout of that map doesn't: [(a class name, the
+    mods changing that layout)], for spawn_models. `layouts`: [(the mods changing it, its member in DataMap_Win.dat,
+    its bytes as the .rmod mods leave it, as the game ships it or None for a new one)] (build_and_write). The game's
+    own spawns on its own maps are what's fine (as its own units are); a layout that can't be read is a note."""
+    from .missionplaces import layout_items
+
+    def classes(raw) -> set | None:   # (of the listed design items: the ones the game loads)
+        items = layout_items(raw) if raw is not None else None
+        if items is None:
+            return None
+        return {str(it.values.get("PythonClassName", "") or "").rsplit(".", 1)[-1] for it in items
+                if it.kind == "Spawn" and it.listed} - {""}
+    out = []
+    for mods_named, _member, final, shipped in layouts:
+        new = classes(final)
+        if new is None:
+            result.findings.append(Finding("note", f"{', '.join(mods_named)}: a map layout it changes can't be read, so "
+                                                   f"whether the units it spawns have their models in every match "
+                                                   f"wasn't checked"))
+            continue
+        old = (classes(shipped) or set()) if shipped is not None else set()
+        out += [(cls, list(mods_named)) for cls in sorted(new - old)]
+    return out
+
+
+def _rmod_layout_owners(rmods) -> dict:
+    """{a layout's member (lower case, backslashes): the names of the .rmod mods changing it (as they name themselves,
+    the mod list's name), in the set's order}."""
+    from ruse_mod_engine import mod_format
+    out: dict = {}
+    for m in rmods:
+        try:
+            mod = mod_format.load(str(m.rmod))
+            name = str(mod.name or mod.id or m.id)
+            members = [fp.path for g in mod.file_patches for fp in g.files if not fp.container] + \
+                [g.scenario for g in mod.scenario_patches]
+        except (OSError, ValueError, KeyError, TypeError, AttributeError):
+            continue   # (read by the build before: its changes are in; only whose they are is missed here)
+        for member in members:
+            key = str(member).replace("/", "\\").lower()
+            if key.endswith(".scenario") and name not in out.setdefault(key, []):
+                out[key].append(name)
+    return out
+
+
+def _rmod_layouts(run, data_path, rmods, theirs=frozenset()) -> list:
+    """The layouts (.scenario) of DataMap_Win.dat (`data_path`) that the .rmod mods (`run`: rusemod.rmod.apply's) change
+    or add, for rmod_layout_spawns: [(the mods changing it, its member, its bytes as they leave it, as the game ships
+    it or None for a new one)]. `theirs`: the members (lower case, backslashes) a mod of ours replaces whole as a game
+    file, which go into the same packs after them (not an .rmod mod's to answer for)."""
+    data = run.layered(data_path) if run is not None and data_path is not None else None
+    if data is None:
+        return []
+    owners = _rmod_layout_owners(rmods)
+    out = []
+    for member, raw in [*data.changed.items(), *data.added.items()]:
+        key = member.replace("/", "\\").lower()
+        if key not in owners or key in theirs:   # (a layout only our mods' game files change, or the last word on)
+            continue
+        e = data.entry(member) if member in data.changed else None
+        out.append((owners[key], member, bytes(raw), bytes(Edat.read(data, e)) if e is not None else None))
+    return out
 
 
 def mission_models(run, zz_win, mods: list, order: list[str], result: BuildResult) -> None:
@@ -1612,18 +1687,35 @@ def rmod_far_upgrades(arc: Edat, build_id: str, cache, result: BuildResult, mode
     join code are what they were before this step existed, so players on the release before still match.
 
     `models` (the owner, 2026-11-13, item 29, answer A): (the unit data pack as the game ships it, zz_win() giving
-    ZZ_Win.dat as the mods leave it, the set's .rmod files): when the mods changed the unit data pack, the units they
-    make or move get the unit-model check too (rmod_unit_models). A unit that needs another nation's models has that
-    nation's packs load everywhere, as a folder mod's unit has, written with any far upgrade's cut, or it is refused;
-    with neither a cut nor such a unit, `result` is still not touched (notes aside)."""
+    ZZ_Win.dat as the mods leave it, the set's .rmod files, layouts() giving the layouts they change: _rmod_layouts):
+    when the mods changed the unit data pack, the units they make or move get the unit-model check too
+    (rmod_unit_models), and the units their layouts spawn that the game's own don't get the spawn check
+    (rmod_layout_spawns, spawn_models). A unit that needs another nation's models has that nation's packs load
+    everywhere, as a folder mod's unit has, written with any far upgrade's cut, or it is refused; with neither a cut
+    nor such a unit, `result` is still not touched (notes aside)."""
     pack = load_pack(arc, cache)
     run = Engine(pack.base).run([])
     found = BuildResult()
     far_upgrades(run, found)
     looked = False
-    if models is not None and (getattr(arc, "changed", None) or getattr(arc, "added", None)):
-        shipped, zz_win, rmod_files = models
-        looked = rmod_unit_models(run, load_pack(shipped, cache).base, zz_win, found, rmod_files)
+    if models is not None:
+        shipped, zz_win, rmod_files, layouts = models
+        into = None
+        if not FORCE_LOAD:   # (the old way: one set of copies for their units and their spawns)
+            zz = zz_win()
+            into = unitpacks.Packs(zz) if zz is not None else None
+        if getattr(arc, "changed", None) or getattr(arc, "added", None):
+            looked = rmod_unit_models(run, load_pack(shipped, cache).base, zz_win, found, rmod_files, into=into)
+        spawned = rmod_layout_spawns(layouts(), found)   # the units their layouts spawn (spawn_models, as for ours)
+        if spawned:
+            zz = zz_win()
+            looked = spawn_models(run, zz, [], [], found, into, spawned, _unit_cards(zz)) or looked
+        if into is not None and not found.errors:
+            try:
+                found.model_changed.update(into.output())
+            except (unitpacks.PackError, ValueError, struct.error) as exc:
+                # not a game rule: what our writer supports, or a file it can't read or write
+                found.findings.append(Finding("error", f"the skirmish unit packs can't be written: {exc}"))
     if found.errors or not (looked or any(f.level == "warning" for f in found.findings)):
         result.findings += found.findings   # (refused, or notes only: nothing to write)
         return
@@ -3229,7 +3321,9 @@ def build_pack(arc: Edat, mods: list, build_id: str = "0", text_arc: Edat | None
     `text_arc` (ZZ_Win.dat; needed when a mod has text/*.csv or new units). Nothing is written; see
     BuildResult.changed / text_changed / script_changed. `cache`: load_pack's. `rmod_units`, for a set holding .rmod
     mods too, whose changes `arc` already has: (the unit data pack as the game ships it, zz_win() giving ZZ_Win.dat as
-    the mods leave it, the .rmod files), so their own units get the unit-model check with ours (rmod_unit_models)."""
+    the mods leave it, the .rmod files, layouts() giving the layouts they change), so their own units get the
+    unit-model check with ours (rmod_unit_models), and the units their layouts spawn the spawn check with our mods'
+    spawns (rmod_layout_spawns, spawn_models)."""
     order = load_order([m for m, _ in mods])
     by_id = {m.id: (m, ops) for m, ops in mods}
     result = BuildResult(order=[m.id for m in order])
@@ -3309,15 +3403,25 @@ def build_pack(arc: Edat, mods: list, build_id: str = "0", text_arc: Edat | None
         return result
     far_upgrades(run, result)
     into = unitpacks.Packs(text_arc) if text_arc is not None else None
-    if rmod_units is not None and (getattr(arc, "changed", None) or getattr(arc, "added", None)):
-        # .rmod mods changed the unit data under ours: their own units are in `base`, so every unit is set against the
-        # game's as shipped (item 29, answer A, in every set that holds .rmod mods)
-        shipped, zz_win, rmod_files = rmod_units
-        rmod_unit_models(run, load_pack(shipped, cache).base, zz_win if text_arc is None else (lambda: text_arc),
-                         result, rmod_files, base=base, into=into)
+    spawned, spawn_zz = (), text_arc
+    if rmod_units is not None:   # a set holding .rmod mods too (item 29, answer A, in every such set)
+        shipped, zz_win, rmod_files, layouts = rmod_units
+        if into is None and not FORCE_LOAD:   # (the old way: one set of copies for their units and spawns)
+            spawn_zz = zz_win()
+            into = unitpacks.Packs(spawn_zz) if spawn_zz is not None else None
+        if getattr(arc, "changed", None) or getattr(arc, "added", None):
+            # .rmod mods changed the unit data under ours: their own units are in `base`, so every unit is set against
+            # the game's as shipped
+            rmod_unit_models(run, load_pack(shipped, cache).base, zz_win if text_arc is None else (lambda: text_arc),
+                             result, rmod_files, base=base, into=into)
+        else:
+            unit_models(base, run, text_arc, result, into)
+        spawned = rmod_layout_spawns(layouts(), result)   # (the units their layouts spawn, with our mods' spawns)
+        if spawned and spawn_zz is None:
+            spawn_zz = zz_win()
     else:
         unit_models(base, run, text_arc, result, into)
-    spawn_models(run, text_arc, mods, result.order, result, into)
+    spawn_models(run, spawn_zz, mods, result.order, result, into, spawned, _unit_cards(spawn_zz) if spawned else None)
     mission_models(run, text_arc, mods, result.order, result)
     if result.errors:
         return result
@@ -4433,11 +4537,16 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
         arc = open_pack(pack_path)
         text_arc = open_pack(text_path) if text_path else None
         zz_path, rmod_units = find_pack(game, loc.PACK), None
-        if rmods:  # the .rmod mods' own units get the unit-model check, whatever else the set holds (item 29): the
+        if rmods:  # the .rmod mods' own units get the unit-model checks, whatever else the set holds (item 29): the
             # unit data as the game ships it, ZZ_Win.dat as the mods leave it (opened only when a unit is looked at),
-            # and the .rmod files, to say which changes a unit
+            # the .rmod files, to say which changes a unit, and the layouts they change (the units those spawn)
+            from .missionplaces import DATA as data_pack
+            data_path = find_pack(game, data_pack)
+            ours = frozenset(str(g.path).replace("/", "\\").lower() for _id, files in game_files for g in files
+                             if str(g.pack).replace("\\", "/").rsplit("/", 1)[-1].lower() == data_pack.lower())
             rmod_units = (stack.enter_context(Edat.open(str(pack_path))),
-                          lambda: open_pack(zz_path) if zz_path is not None else None, [m.rmod for m in rmods])
+                          lambda: open_pack(zz_path) if zz_path is not None else None, [m.rmod for m in rmods],
+                          lambda: _rmod_layouts(run, data_path, rmods, ours))
         try:
             # the collector paused for the unit data's build: on two-shermans its passes over the loaded model and the
             # engine's copy of it took 2 to 4 seconds, and 5 to 9 with the model read from the cache, which it then

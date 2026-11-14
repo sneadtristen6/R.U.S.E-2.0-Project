@@ -218,12 +218,12 @@ def start_zones(raw: bytes) -> set[str]:
     return out
 
 
-def place_names(raw: bytes) -> set[str] | None:
-    """The names of a layout's named places (.scenario bytes): its listed design items' Name. Read up to the design
-    items when bytes follow them; None when it can't be read even so."""
+def layout_items(raw: bytes) -> list | None:
+    """A layout's (.scenario bytes) design items (rusemod.scenario's), read up to them when bytes follow them; None
+    when it can't be read even so."""
     from .scenario import MAGIC, Scenario, ScenarioError, _items
     try:
-        items = Scenario.read(raw).items
+        return Scenario.read(raw).items
     except (ScenarioError,) + _READ_ERRORS:
         try:
             if raw[:len(MAGIC)] != MAGIC:
@@ -232,9 +232,17 @@ def place_names(raw: bytes) -> set[str] | None:
             size = struct.unpack_from("<I", raw, at)[0]
             if at + 4 + size > len(raw):
                 return None
-            items = _items(Ndf(raw[at + 4:at + 4 + size]))
+            return _items(Ndf(raw[at + 4:at + 4 + size]))
         except _READ_ERRORS:
             return None
+
+
+def place_names(raw: bytes) -> set[str] | None:
+    """The names of a layout's named places (.scenario bytes): its listed design items' Name. Read up to the design
+    items when bytes follow them; None when it can't be read even so."""
+    items = layout_items(raw)
+    if items is None:
+        return None
     return {it.values["Name"] for it in items if it.listed and isinstance(it.values.get("Name"), str)
             and it.values["Name"]}
 
