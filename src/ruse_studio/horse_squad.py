@@ -31,12 +31,20 @@ is and opens that board), every value on its page, its look in Blender.
 Its files are kept and known by their bytes (the owner's 12, to "Another player can't resize or move a Generic Horse
 from a shared mod ... Accept that?": "the whole point of having the horse in the game is so it can be made into other
 units and have a"; his 46: an older mod's horse never changes). Each model's record keeps the SHA-256 of the file it was
-made from (its report's SHA: rusemod.unitmodel.import_model's). The Studio never writes a horse file over one with other
-bytes: made again differently, the new file goes beside the old one under a name of its own (_horse_place), so the file
-an older mod's Generic Horse was made from stays as it was. Resize and Move fit a model again from the file its record
-names, else from the file in this PC's horse_squad/ with the bytes it was made from (a mod made on another PC: its
-records name only the file's own name, rusemod.package), and this mod's Generic Horse only from a file with those
-bytes, else they're refused in words and nothing changes (_fit_from, _horse_gone)."""
+made from (its report's SHA: rusemod.unitmodel.import_model's). The Studio never writes a horse file over one, nor over
+one another Studio puts there at the same moment: made again differently, the new file goes beside the old one under a
+name of its own (_horse_place), so the file an older mod's Generic Horse was made from stays as it was.
+
+Resize and Move go by the FILE a model was made from, never by the unit (_fit_from; the review of f1fa002c, finding 1:
+by the unit, the Generic Horse given the modder's own model was refused once he changed his file, with words that threw
+his work away): a model made from one of the Generic Horse's files (in this PC's horse_squad/; on another PC, whose
+records name only the file's own name, rusemod.package, one with the bytes its builder makes: MADE_BYTES), whatever the
+unit (the Generic Horse, or one the modder made from its files), is fitted again only from a file with the bytes it
+was made from: its own while it has them, else the one in this PC's horse_squad/ that has them, else refused in words
+and nothing changes (_horse_gone), the words saying first the way out that loses nothing: its files made on this PC
+again by adding the Generic Horse to another mod. A record from before the SHA-256 was made from the bytes every Studio
+before made under that name (MADE_BYTES). A model made from any other file (the modder's own) is fitted from it as it
+is now, as before."""
 from __future__ import annotations
 
 import importlib
@@ -55,6 +63,26 @@ SQUAD = "$/GFX/Everything/Descriptor_Unit_Soldat_US_Leger"   # the US rifle squa
 BUILDER = "rusemod.horsesquad"   # its two model files from the player's own game (horse_squad_glbs, HorseSquadError)
 FOLDER = "horse_squad"  # in the platform folder: every horse file the builder made, which the mod's records name
 SHA = "file_sha256"     # a model's record's report: its file's SHA-256 (rusemod.unitmodel.SOURCE_SHA)
+# The bytes the Generic Horse's builder makes under each name it gives (rusemod.horsesquad.FILES), and the release
+# candidate's under its other countries' names (a8b65194, taken out again by b00a04f8): the same at every commit of the
+# builder since it came in (8af3e622), the US ones the passed copy's byte for byte (run on the game 2026-11-13, each
+# commit's own builder: scratch/release-0920/agents/genhorse/builders_all.out and builders_countries.out). No builder
+# ever made a file under another name. A model's record from before f1fa002c keeps no SHA-256: naming one of the
+# Generic Horse's files under one of these names, it was made from these bytes (_made_bytes); under another name (by
+# hand, a test's stand-in builder), it is fitted only while its file has bytes a builder makes (_fit_from). A record
+# naming only a file's own name (a mod from another PC) whose SHA-256 is one of these was made from one of its files
+# (_horse_file). A builder that makes other bytes adds its own here (tests/test_horse_squad.py ties the US ones to the
+# passed copy's).
+MADE_BYTES = {
+    "horse-squad-rifle.glb": "f56a2e237a962d2ada79a218541368d75ec91a1c2d1c8a466eaca70cbb553419",
+    "horse-squad-bazooka.glb": "502da7f365c9d660cfc7b32f9e534c4f0ae0bfef0ab2ff6d2c038b25c7f917d8",
+    "horse-squad-ger-rifle.glb": "1ae41d4b41fd0343dd1b653270c7db66339d604184dfb27338d16258d6fafcc3",
+    "horse-squad-ger-bazooka.glb": "4583729be95c7f205426596c83c7ba649d5748a2a4a84e43d7cd91d8d91880b8",
+    "horse-squad-uk-rifle.glb": "f6868ab83351f2c14af9bcbc1470aea29fb8972304dbad4913fc8941c484ca74",
+    "horse-squad-uk-bazooka.glb": "6f56466cb776250d025920205d89814e1bdcfbf814d81359ef5d05b0d8f62382",
+    "horse-squad-fr-rifle.glb": "912eb487170b11f9cff6f4df3860aff106dd044aa0f3e9d33e2582022229d73f",
+    "horse-squad-fr-bazooka.glb": "ff4f804a7d7e3033f299fd641e4f556e2635154fa85d0f40b1f5b0e2ceb582ad",
+}
 _HEX64 = re.compile(r"[0-9a-f]{64}")
 ROLES = ("rifle", "bazooka")    # the builder's answer: the riflemen's file, the heavy-weapon soldier's
 HEAVY = "bazooka"       # Import model's kind for the heavy-weapon soldier (StudioApi._soldier_kinds)
@@ -93,6 +121,40 @@ def made_sha(record) -> str | None:
     report = record.get("report") if isinstance(record, dict) else None
     sha = report.get(SHA) if isinstance(report, dict) else None
     return sha.lower() if isinstance(sha, str) and _HEX64.fullmatch(sha.lower()) else None
+
+
+def _same_place(a, b) -> bool:
+    """Whether two paths name the same place on this PC (any slashes, any case on Windows, through a link too)."""
+    try:
+        if os.path.normcase(os.path.abspath(str(a))) == os.path.normcase(os.path.abspath(str(b))):
+            return True
+        return os.path.normcase(os.path.realpath(str(a))) == os.path.normcase(os.path.realpath(str(b)))
+    except (OSError, ValueError):
+        return False
+
+
+def _put_new(made: Path, there: Path) -> bool:
+    """`made` moved to `there` only when nothing is there, the check and the move one step, so a file another Studio
+    puts there at the same moment is never written over (the review of f1fa002c: a look, then a replace, could write
+    over one put there between the two); False when something is there, `made` left where it is."""
+    import sys
+    if sys.platform == "win32":
+        try:
+            os.rename(made, there)      # (Windows' rename never writes over a file that's there)
+        except FileExistsError:
+            return False
+        return True
+    try:
+        os.link(made, there)            # (elsewhere a second name for it, which can't be made over one that's there)
+    except FileExistsError:
+        return False
+    except OSError:                     # (a drive that takes no second names: looked at, then moved, as before)
+        if os.path.lexists(there):
+            return False
+        os.replace(made, there)
+        return True
+    os.unlink(made)
+    return True
 
 
 def long_paths_on() -> bool:
@@ -469,16 +531,16 @@ class HorseSquadCalls:
         under the builder's name, or when a file there has other bytes (made by another builder, from another game),
         beside it under that name with the start of its SHA-256 (<name>-<16 letters>.glb, then numbered), never over
         it: the mods made before name that file, and an older mod's horse never changes (the owner's 46). A file there
-        with the same bytes is kept as it is, the new one not written; one that can't be read is left too. Returns where
-        it is."""
+        with the same bytes is kept as it is, the new one not written; one that can't be read is left too. Put there in
+        one step with the look whether a name is free (_put_new): a file another Studio's Add puts under that name at
+        the same moment is never written over either. Returns where it is."""
         sha = file_sha256(made)
         stem, suffix = made.stem, made.suffix
         names = itertools.chain((made.name, f"{stem}-{sha[:16]}{suffix}"),
                                 (f"{stem}-{sha[:16]}-{n}{suffix}" for n in itertools.count(2)))
         for name in names:
             there = root / name
-            if not os.path.lexists(there):
-                os.replace(made, there)
+            if _put_new(made, there):
                 return there
             try:
                 if there.is_file() and file_sha256(there) == sha:
@@ -544,27 +606,38 @@ class HorseSquadCalls:
                               "is still in your mod: take it out of your mod on its page in the Units tab, or delete "
                               "it on its unit page.")
 
-    # --- Resize and Move: the file its model was made from (the owner's 12 and 46) ---
-    def _fit_from(self, record, address: str | None = None) -> Path | None:
-        """The file Resize and Move fit a new unit's model (at `address`, whose model's record is `record`) again from,
-        on this PC (api._made_from); None when there's none. The file its record names ("from") when it's on this PC,
-        as before; else, its record keeping the SHA-256 of the file it was made from (made_sha), the file in this PC's
-        horse_squad/ with those bytes: a mod made on another PC names only the file's own name (rusemod.package), and a
-        Generic Horse there is fitted again here when this PC's own horse files are the same (the owner's 12). This
-        mod's Generic Horse only from a file with those bytes (his 46: an older mod's horse never changes): its record's
-        own while it has them, else the one here that has. A record from before the SHA-256 (or one that says none):
-        its file when it's there, as before (this Studio never writes over a horse file: _horse_place); one there that
-        can't be read now: that file, whose reading says why when it's fitted."""
+    # --- Resize and Move: the file its model was made from (the owner's 12 and 46), by the FILE, never by the unit ---
+    def _fit_from(self, record) -> Path | None:
+        """The file Resize and Move fit a new unit's model (whose record is `record`) again from, on this PC
+        (api._made_from); None when there's none. It goes by the file the record names, never by which unit it is (the
+        review of f1fa002c, finding 1: by the unit, the Generic Horse given the modder's own model was refused once he
+        changed his file, and finding 3: by the unit, an era_units.json that couldn't be read turned the check off).
+
+        A file of the modder's own (anything but the Generic Horse's files: _horse_file), on this PC: that file as it is
+        now, as before, for every unit, the Generic Horse too. One of the Generic Horse's files (his 46: an older mod's
+        horse never changes): only a file with the bytes the model was made from (_made_bytes): its own while it has
+        them, else the one in this PC's horse_squad/ that has them, under any name (_horse_with); one there that can't
+        be read now: that file, whose reading says why when it's fitted. A file not on this PC (a mod made on another
+        PC names only the file's own name, rusemod.package; or gone): the one in this PC's horse_squad/ with the bytes
+        the record keeps (the owner's 12: a Generic Horse from another PC is fitted again here when this PC's own horse
+        files are the same), whatever file it was. A record from before the SHA-256 naming one of the Generic Horse's
+        files under a name no builder gives (by hand, or a test's stand-in builder): its file only while it has bytes
+        a builder makes (MADE_BYTES), never other bytes."""
         file = record.get("from") if isinstance(record, dict) else None
         if not isinstance(file, str) or not file:
             return None
         path = Path(file)
         there = path if path.is_absolute() and path.is_file() else None
-        sha = made_sha(record)
-        if there is not None and (sha is None or not self._horse_is(address)):
+        if there is not None and not self._horse_file(record):
             return there
+        sha = self._made_bytes(record)
         if sha is None:
-            return None
+            if there is None:
+                return None
+            try:
+                return there if file_sha256(there) in MADE_BYTES.values() else None
+            except OSError:
+                return there
         if there is not None:
             try:
                 if file_sha256(there) == sha:
@@ -572,6 +645,34 @@ class HorseSquadCalls:
             except OSError:
                 return there
         return self._horse_with(sha)
+
+    def _horse_file(self, record) -> bool:
+        """Whether the file a model's record (`record`) names is one of the Generic Horse's: by its full path, in this
+        PC's horse_squad/ (the platform folder's); by its own name alone (a mod made on another PC: rusemod.package),
+        when the bytes the record keeps are ones its builder makes (MADE_BYTES). Whatever the unit (the Generic Horse,
+        or one the modder made from its files); never by era_units.json. (A file of the modder's own elsewhere, even
+        one he copied from there, is his: fitted as it is.)"""
+        file = record.get("from") if isinstance(record, dict) else None
+        if not isinstance(file, str) or not file:
+            return False
+        if Path(file).is_absolute():
+            return self._in_horse_folder(file)
+        return made_sha(record) in MADE_BYTES.values()
+
+    def _in_horse_folder(self, file) -> bool:
+        """Whether `file` is in this PC's horse_squad/ (the platform folder's), where it has it or not."""
+        return _same_place(Path(str(file)).parent, self._home / FOLDER)
+
+    def _made_bytes(self, record) -> str | None:
+        """The SHA-256 of the bytes the model whose record is `record` was made from: the one the record keeps
+        (made_sha); else, for one of the Generic Horse's files under a name its builder gives, the bytes every Studio
+        before f1fa002c made under that name (MADE_BYTES: the review of f1fa002c, finding 2, a record from before the
+        SHA-256 fitted from other bytes without a word); None when not known."""
+        sha = made_sha(record)
+        if sha is not None or not self._horse_file(record):
+            return sha
+        file = record.get("from")
+        return MADE_BYTES.get(Path(file).name.lower()) if isinstance(file, str) and file else None
 
     def _horse_with(self, sha: str) -> Path | None:
         """The file in this PC's horse_squad/ (the platform folder's) whose SHA-256 is `sha`; None when none is."""
@@ -589,7 +690,7 @@ class HorseSquadCalls:
 
     def _horse_is(self, address) -> bool:
         """Whether `address` is this mod's Generic Horse (its era_units.json names it); False when that can't be
-        read."""
+        read. Only which way out the words of _horse_gone say goes by it, never whether a model is fitted."""
         from .api import EditsFileError
         if not address:
             return False
@@ -598,36 +699,61 @@ class HorseSquadCalls:
         except (OSError, ValueError, EditsFileError):
             return False
 
+    def _horse_named(self, record, address) -> bool:
+        """Whether a refusal of Resize or Move says the Generic Horse's words (_horse_gone): its record names one of
+        the Generic Horse's files (_horse_file); or, a record from before the SHA-256 naming only a file's own name (a
+        mod exported before it), when the unit is this mod's Generic Horse, as before."""
+        if self._horse_file(record):
+            return True
+        file = record.get("from") if isinstance(record, dict) else None
+        return isinstance(file, str) and bool(file) and not Path(file).is_absolute() and made_sha(record) is None \
+            and self._horse_is(address)
+
     def _horse_gone(self, address: str, record, moving: bool) -> None:
         """Before Resize or Move (`moving`) is refused because no file with the bytes a model was made from is on this
-        PC (_fit_from: None; api.model_resize, model_place, _kinds_ready: their words say "import it again"): when
-        `address` is this mod's Generic Horse, whose files the Studio made in the platform folder (the modder never had
-        them to import), a StudioError saying why and its way out instead: the file its model's `record` names is there
-        with other bytes (changed since: its model is never fitted from them, it stays as it is), or isn't there; taken
-        out of the mod and added again, its files are made again, and what was changed on it goes with it. Nothing for
-        any other unit (a Generic Horse made by hand too: its files are the modder's own)."""
+        PC (_fit_from: None; api.model_resize, model_place, _kinds_ready: their words say "import it again"): when the
+        file the model's `record` names is one of the Generic Horse's (_horse_named), a StudioError saying that it
+        isn't on this PC as it was then (gone, or there with other bytes: its model is never fitted from them, it
+        stays as it is) and the way out that loses nothing first (the review of f1fa002c, finding 5): the Generic
+        Horse added to another mod makes its files on this PC again, and with the same bytes as before (the builder
+        makes the same ones from the same game), Resize and Move then work; else, this mod's Generic Horse taken out
+        of the mod and added again (what was changed on it lost), another unit's model imported again. Nothing for any
+        other file (the modder's own: "import it again")."""
         from .api import StudioError
-        if not self._horse_is(address):
+        if not self._horse_named(record, address):
             return
-        file = record.get("from") if isinstance(record, dict) else None
-        if isinstance(file, str) and file and Path(file).is_absolute() and Path(file).is_file():
-            # not a game rule: its model is fitted again only from the bytes it was made from (the owner's 46)
+        file = record.get("from")
+        # not a game rule: a model made from the Generic Horse's files is fitted again only from the bytes it was
+        # made from (the owner's 46)
+        if self._horse_is(address):
             if moving:
-                raise StudioError(f"The file the Generic Horse's model was made from has changed since ({file}), "
-                                  f"so it can't be moved and it stays as it is. To have it made again, on its page in "
-                                  f"the Units tab (WWII+) click Take it out of my mod, then Add to my mod: what you "
-                                  f"changed on it is lost.")
-            raise StudioError(f"The file the Generic Horse's model was made from has changed since ({file}), so its "
-                              f"size can't be changed and it stays as it is. To have it made again, on its page in the "
-                              f"Units tab (WWII+) click Take it out of my mod, then Add to my mod: what you changed on "
-                              f"it is lost.")
+                raise StudioError(f"The file the Generic Horse's model was made from isn't there any more, or isn't as "
+                                  f"it was then ({file}), so it can't be moved and it stays as it is. Nothing is lost "
+                                  f"if its files are made on this PC again: add the Generic Horse to another mod (a "
+                                  f"new one will do) with Add to my mod in the Units tab (WWII+), then move it here "
+                                  f"again: that works when they come out the same as the ones it was made from. If "
+                                  f"not, on its page in the Units tab (WWII+) click Take it out of my mod, then Add to "
+                                  f"my mod: what you changed on it is lost.")
+            raise StudioError(f"The file the Generic Horse's model was made from isn't there any more, or isn't as it "
+                              f"was then ({file}), so its size can't be changed and it stays as it is. Nothing is lost "
+                              f"if its files are made on this PC again: add the Generic Horse to another mod (a new "
+                              f"one will do) with Add to my mod in the Units tab (WWII+), then change its size here "
+                              f"again: that works when they come out the same as the ones it was made from. If not, on "
+                              f"its page in the Units tab (WWII+) click Take it out of my mod, then Add to my mod: "
+                              f"what you changed on it is lost.")
         if moving:
-            raise StudioError(f"The file the Generic Horse's model was made from isn't there any more ({file}), so it "
-                              f"can't be moved. To have it made again, on its page in the Units tab (WWII+) click Take "
-                              f"it out of my mod, then Add to my mod: what you changed on it is lost.")
-        raise StudioError(f"The file the Generic Horse's model was made from isn't there any more ({file}), so its size "
-                          f"can't be changed. To have it made again, on its page in the Units tab (WWII+) click Take it "
-                          f"out of my mod, then Add to my mod: what you changed on it is lost.")
+            raise StudioError(f"A model of this unit was made from one of the Generic Horse's files, which isn't there "
+                              f"any more, or isn't as it was then ({file}), so it can't be moved and it stays as it "
+                              f"is. Nothing is lost if the Generic Horse's files are made on this PC again: add the "
+                              f"Generic Horse to a mod (a new one will do) with Add to my mod in the Units tab "
+                              f"(WWII+), then move it here again: that works when they come out the same as the ones "
+                              f"it was made from. If not, import that model again.")
+        raise StudioError(f"A model of this unit was made from one of the Generic Horse's files, which isn't there any "
+                          f"more, or isn't as it was then ({file}), so its size can't be changed and it stays as it "
+                          f"is. Nothing is lost if the Generic Horse's files are made on this PC again: add the "
+                          f"Generic Horse to a mod (a new one will do) with Add to my mod in the Units tab (WWII+), "
+                          f"then change its size here again: that works when they come out the same as the ones it was "
+                          f"made from. If not, import that model again.")
 
     def _horse_guard(self, path, switching: bool = False) -> None:
         """While the Horse Squad's unit is being made in a mod (its models imported, after its files are made), that

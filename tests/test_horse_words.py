@@ -430,8 +430,11 @@ class TheTypeInTheStudiosLanguage(unittest.TestCase):
 
 class ResizeAndMoveWithItsFilesGone(WithLibrary):
     """The Horse Squad's two model files are the Studio's own, made in the platform folder's horse_squad/ (the modder
-    never had them): with them gone, Resize and Move say its way out, by the page's words in the modder's language;
-    another unit's refusal stays "import it again" (its file is the modder's own)."""
+    never had them): with them gone, Resize and Move say its way out, by the page's words in the modder's language, the
+    one that loses nothing first (the Generic Horse added to another mod makes its files on this PC again: the review
+    of f1fa002c, finding 5), then its Take it out of my mod and Add to my mod; a unit the modder made from its files,
+    the way out that loses nothing, then importing its model again; another unit's refusal stays "import it again"
+    (its file is the modder's own, whatever unit: by the file, finding 1)."""
 
     def setUp(self):
         super().setUp()
@@ -441,18 +444,29 @@ class ResizeAndMoveWithItsFilesGone(WithLibrary):
         self.horse = self.api._era_make(KEY, self.api._era_library()[1], entry, plan, 0, 10, "Generic Horse", 5)[
             "address"]
         self.other = self.api.new_unit(SQUAD, "My Rifles", 5, group="new")["address"]
+        self.cavalry = self.api.new_unit(SQUAD, "My Cavalry", 5, group="new")["address"]
         self.gone = str(self.home / horse_squad.FOLDER / "horse-squad-rifle.glb")
-        for address in (self.horse, self.other):
+        self.mine = str(Path(tempfile.mkdtemp(dir=self.tmp.name)) / "my-rifles.glb")     # (gone too)
+        for address, made in ((self.horse, self.gone), (self.other, self.mine), (self.cavalry, self.gone)):
             model = self.api._own_model_file(address)
             model.parent.mkdir(parents=True, exist_ok=True)
             model.write_bytes(b"glb")
-            model.with_suffix(".json").write_text(json.dumps({"from": self.gone, "size": 1.0}), encoding="utf-8")
+            model.with_suffix(".json").write_text(json.dumps({"from": made, "size": 1.0}), encoding="utf-8")
 
-    def way_out(self, moving: bool) -> str:
-        what = "it can't be moved" if moving else "its size can't be changed"
-        return (f"The file the Generic Horse's model was made from isn't there any more ({self.gone}), so {what}. To "
-                f"have it made again, on its page in the Units tab (WWII+) click Take it out of my mod, then Add to my "
-                f"mod: what you changed on it is lost.")
+    def way_out(self, moving: bool, horse: bool = True) -> str:
+        what, again = ("it can't be moved", "move it") if moving else ("its size can't be changed", "change its size")
+        if not horse:
+            return (f"A model of this unit was made from one of the Generic Horse's files, which isn't there any more, "
+                    f"or isn't as it was then ({self.gone}), so {what} and it stays as it is. Nothing is lost if the "
+                    f"Generic Horse's files are made on this PC again: add the Generic Horse to a mod (a new one will "
+                    f"do) with Add to my mod in the Units tab (WWII+), then {again} here again: that works when they "
+                    f"come out the same as the ones it was made from. If not, import that model again.")
+        return (f"The file the Generic Horse's model was made from isn't there any more, or isn't as it was then "
+                f"({self.gone}), so {what} and it stays as it is. Nothing is lost if its files are made on this PC "
+                f"again: add the Generic Horse to another mod (a new one will do) with Add to my mod in the Units tab "
+                f"(WWII+), then {again} here again: that works when they come out the same as the ones it was made "
+                f"from. If not, on its page in the Units tab (WWII+) click Take it out of my mod, then Add to my mod: "
+                f"what you changed on it is lost.")
 
     def test_resize_and_move_say_how_to_have_it_made_again(self):
         w = words()
@@ -462,10 +476,27 @@ class ResizeAndMoveWithItsFilesGone(WithLibrary):
                 with self.assertRaises(StudioError) as said:
                     call(self.horse)
                 self.assertEqual(str(said.exception), self.way_out(moving))
+                said_us = str(said.exception)
+                # (the way out that loses nothing before the one that loses his changes: finding 5)
+                self.assertLess(said_us.index("Nothing is lost"), said_us.index("Take it out of my mod"))
                 for lang in OTHERS:          # the page's own words for the tab, the era, and the two buttons
                     worded = self.said_in(str(said.exception), lang)
+                    self.assertNotEqual(worded, said_us, lang)
+                    self.assertIn(self.gone, worded, lang)
                     for key in ("units_tab", "eras_era_ww2", "eras_take_out", "eras_add"):
                         self.assertIn(w[key][lang], worded, (lang, key))
+                    self.assertLess(worded.index(w["eras_add"][lang]), worded.index(w["eras_take_out"][lang]), lang)
+                    self.assertNotIn("Generic Horse", worded, lang)
+                with self.assertRaises(StudioError) as said:     # a unit he made from its files: its way out
+                    call(self.cavalry)
+                self.assertEqual(str(said.exception), self.way_out(moving, horse=False))
+                for lang in OTHERS:
+                    worded = self.said_in(str(said.exception), lang)
+                    self.assertNotEqual(worded, str(said.exception), lang)
+                    self.assertIn(self.gone, worded, lang)
+                    for key in ("units_tab", "eras_era_ww2", "eras_add"):
+                        self.assertIn(w[key][lang], worded, (lang, key))
+                    self.assertNotIn(w["eras_take_out"][lang], worded, lang)
                     self.assertNotIn("Generic Horse", worded, lang)
                 with self.assertRaises(StudioError) as said:                  # another unit: as before
                     call(self.other)
@@ -484,24 +515,20 @@ class ResizeAndMoveWithItsFilesGone(WithLibrary):
 
     def test_its_file_there_with_other_bytes_is_said_in_every_language(self):
         """The owner's 46 (an older mod's horse never changes): the file it was made from there with other bytes than
-        its record keeps (made again differently, here by hand), Resize and Move say so and that it stays as it is,
-        with its way out by the page's words in the modder's language; the same file name, its words never "isn't there
-        any more"."""
+        its record keeps (made again differently, here by hand), Resize and Move say so ("or isn't as it was then") and
+        that it stays as it is, with its way out by the page's words in the modder's language."""
         Path(self.gone).parent.mkdir(parents=True, exist_ok=True)
         Path(self.gone).write_bytes(b"made again differently")
         model = self.api._own_model_file(self.horse)
         model.with_suffix(".json").write_text(json.dumps({"from": self.gone, "size": 1.0, "report": {
             "file": Path(self.gone).name, "file_sha256": hashlib.sha256(b"glb rifle").hexdigest()}}), encoding="utf-8")
         w = words()
-        for moving, call, what in ((False, lambda: self.api.model_resize(self.horse, 1.2), "its size can't be changed"),
-                                   (True, lambda: self.api.model_place(self.horse, [10, 0, 0]), "it can't be moved")):
+        for moving, call in ((False, lambda: self.api.model_resize(self.horse, 1.2)),
+                             (True, lambda: self.api.model_place(self.horse, [10, 0, 0]))):
             with self.subTest(moving=moving):
                 with self.assertRaises(StudioError) as said:
                     call()
-                self.assertEqual(str(said.exception), (
-                    f"The file the Generic Horse's model was made from has changed since ({self.gone}), so {what} and "
-                    f"it stays as it is. To have it made again, on its page in the Units tab (WWII+) click Take it out "
-                    f"of my mod, then Add to my mod: what you changed on it is lost."))
+                self.assertEqual(str(said.exception), self.way_out(moving))
                 for lang in OTHERS:
                     worded = self.said_in(str(said.exception), lang)
                     self.assertNotEqual(worded, str(said.exception), lang)
@@ -514,7 +541,7 @@ class ResizeAndMoveWithItsFilesGone(WithLibrary):
         """The page reads each line's first word ("resized" or "skipped": app.js resizeAllRow, as nations.js reads
         the Nations tab's): the same in every language (translated, the page counted nothing, 0 done and none
         skipped); the reason in the Studio's language."""
-        names = {self.horse: "Generic Horse", self.other: "My Rifles"}
+        names = {self.horse: "Generic Horse", self.other: "My Rifles", self.cavalry: "My Cavalry"}
         for lang in ("us", "fr", "jpn", "fa"):
             with self.subTest(lang=lang):
                 self.api.set_pref("lang", lang)
@@ -528,10 +555,14 @@ class ResizeAndMoveWithItsFilesGone(WithLibrary):
                 horse = lines["Generic Horse"]
                 self.assertEqual(horse[0], "skipped")
                 self.assertEqual(lines["My Rifles"][0], "skipped")
+                self.assertEqual(lines["My Cavalry"][0], "skipped")
                 self.assertEqual(horse[2], self.way_out(False) if lang == "us" else errortext.worded(
                     self.way_out(False), lang))
+                self.assertEqual(lines["My Cavalry"][2], self.way_out(False, horse=False) if lang == "us" else
+                                 errortext.worded(self.way_out(False, horse=False), lang))
                 if lang != "us":
                     self.assertNotIn("Generic Horse", horse[2])
+                    self.assertNotIn("Generic Horse", lines["My Cavalry"][2])
                     self.assertNotIn("import it again", lines["My Rifles"][2])
         for lang in OTHERS:
             self.assertEqual(buildtext.worded("resized\tTiger\t1.2", lang), "resized\tTiger\t1.2")
@@ -539,6 +570,7 @@ class ResizeAndMoveWithItsFilesGone(WithLibrary):
                 "skipped\tTiger\t"), lang)
             self.assertNotEqual(buildtext.worded("skipped\tTiger\tno real-life size known", lang),
                                 "skipped\tTiger\tno real-life size known", lang)
+
 
 
 if __name__ == "__main__":
