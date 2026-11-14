@@ -9933,9 +9933,13 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             namespace, tail = source.rsplit("/", 1)
             m = _PREFIX.match(tail)
             prefix = m.group(1) if m else "Descriptor_Unit_"
+            # an address another unit's has but for its capitals is taken too: Windows doesn't tell capitals apart in
+            # file names, so the two would share every file of their own (a card, a model, an animations folder) and
+            # Delete of one would take the other's (scenario U-8: Tiger II, then tiger ii)
+            lowered = {a.lower() for a in edits.new_units} | {u["address"].lower() for u in all_units}
 
             def taken(t: str) -> bool:
-                if t in edits.new_units:
+                if t in edits.new_units or t.lower() in lowered:
                     return True
                 try:
                     ix.show(t)
@@ -9983,7 +9987,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                                                                        o["values"]) else []) if dropped else []
         with self._saving:
             edits = ModEdits(edits.folder)  # read again: another change may have been saved meanwhile
-            if target in edits.new_units:
+            if target.lower() in {a.lower() for a in edits.new_units}:
                 raise StudioError(f"There's already a unit at {target}. Pick another name.")
             self._animations_ready(edits.folder)  # (its animations go along: actions.py)
             files = None

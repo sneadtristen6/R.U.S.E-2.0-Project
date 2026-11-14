@@ -119,20 +119,22 @@ class NewUnitOfEveryKind(Player):
         self.assertEqual(self.build(folder)[0], [])
         self.assertEqual(first, U + "Tiger_II")
 
-    def test_what_a_name_differing_only_in_case_does_now(self):
-        """U-8 as it is now (passes on the code as it is; goes once U-8 is mended): tiger ii after Tiger II, m1 beside
-        the game's M1, each another address (Descriptor_Unit_tiger_ii), so each is made."""
+    def test_a_name_differing_only_in_capitals_is_refused_as_taken(self):
+        """tiger ii after Tiger II, m1 beside the game's M1: refused as the same name is (U-8's mend); the board's copy
+        of another nation's unit takes the next free address instead, as for the same name."""
         folder = self.mod("Case")
         self.new(H1, "Tiger II")
-        self.assertEqual(self.new(H1, "tiger ii")["address"], U + "tiger_ii")
-        self.assertEqual(self.new(L1, "m1")["address"], U + "m1")
+        for source, name in ((H1, "tiger ii"), (L1, "m1")):
+            with self.subTest(name=name):
+                self.assertEqual(self.english_left(self.refusal("new_unit", source, name, 40, -1, -1, False, None)), [])
+        self.new(H1, "g one")
+        self.assertEqual(self.call("board_put", 0, 10, G1, "", None, "new", "us")["made"], U + "G_One_2")
         self.assertEqual(self.build(folder)[0], [])
 
-    # U-8: two units whose addresses differ only in capitals (Tiger II and tiger ii; m1 and the game's M1) share every
-    # file of their own on Windows, whose file names don't tell capitals apart: deleting tiger ii takes Tiger II's card
-    # and model (its animations' folder too). The test holds for either mend: tiger ii refused, or Delete taking only
-    # its own files.
-    @unittest.expectedFailure
+    # U-8 (mended by the PROPOSED FIX commit after these tests: before it, two units whose addresses differ only in
+    # capitals, Tiger II and tiger ii, m1 and the game's M1, were both made and shared every file of their own on
+    # Windows, whose file names don't tell capitals apart, and deleting tiger ii took Tiger II's card and model). The
+    # test holds for either mend: tiger ii refused, or Delete taking only its own files.
     def test_deleting_tiger_ii_leaves_tiger_IIs_own_files(self):
         folder = self.mod("Case files")
         big = self.new(H1, "Tiger II")["address"]
