@@ -1,5 +1,5 @@
 ---
-title: "Studio 0.9.8.20 and Launcher 0.4.8.20: guards where some mod sets stopped the game; an upgrade made in another building keeps its unit; a squad's own soldier, changed in Blender; Bug Watch says why; RUSE Guard lets players with the same build play together (not fully supported yet); imported models sit where the unit stands; a squad soldier by soldier, one Open in Blender, animations for one unit or for the units you pick, and the Generic Horse"
+title: "Studio 0.9.8.20 and Launcher 0.4.8.20: the Generic Horse, one Open in Blender, plain words and fixes"
 category: Announcements
 order: 25
 ---
