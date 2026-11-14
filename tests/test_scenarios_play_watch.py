@@ -202,9 +202,9 @@ class TheCrashNotice(Watched):
         with mock.patch.object(bugwatch, "unit_named", return_value=named) as naming:
             j = self.wait(la.play("mine")["job"], la)
             self.assertEqual(j["state"], "done", j)
-            end = time.time() + 30
+            end = time.time() + 30       # (asked as the page asks: a notice is handed over once, watching or not)
             seen = la.bugwatch_crash()
-            while seen["watching"] and time.time() < end:
+            while seen["watching"] and seen["notice"] is None and time.time() < end:
                 time.sleep(0.05)
                 seen = la.bugwatch_crash()
         self.naming = naming

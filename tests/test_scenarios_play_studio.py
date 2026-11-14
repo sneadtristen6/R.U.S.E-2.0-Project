@@ -165,6 +165,21 @@ class TheChecksFixes(PlayScenario):
         self.assertEqual(self.in_game()["state"], "done")
         self.assertEqual(value_in(self.copy()), 15)
 
+    def test_a_problem_in_the_maps_own_folder(self):
+        """Usual: the Maps tab's map is a folder of its own, and a changes file in it is broken: the check names it
+        as the map's, with Set aside there; Set aside on it leaves the mod's files alone, and Test in game builds both."""
+        mod = self.a_mod()
+        made = Path(self.page.new_mod("My Map", "map")["current"])
+        (made / "src").mkdir(parents=True, exist_ok=True)
+        (made / "src" / "ground.rndf").write_text(f"patch {M4} ( SeuilMort = ", encoding="utf-8")
+        found = self.page.check_mod()["problems"]
+        self.assertEqual([(p["where"], [f["fix"] for f in p["fixes"]]) for p in found], [("map", ["set_aside"])])
+        mine = sorted(p.name for p in (mod / "src").iterdir())
+        out = self.page.fix_problem({"fix": "set_aside", "file": "src/ground.rndf", "where": "map"})
+        self.assertTrue(Path(out["kept"]).is_relative_to(made))
+        self.assertEqual((out["problems"], sorted(p.name for p in (mod / "src").iterdir())), ([], mine))
+        self.assertEqual(self.in_game()["state"], "done")
+
     def test_take_out_what_it_left(self):
         """Usual (a unit deleted half way by an older Studio left its Custom uniform file): Test in game stops on it,
         its mistake said in the player's language with Take out what it left; that takes the file out, the test then
@@ -217,6 +232,25 @@ class TheChecksFixes(PlayScenario):
         bad, said = self.held_and_set_aside()
         self.assertNotIn(".broken", said["us"])
         self.assertIn(str(bad), said["us"])
+
+    @unittest.expectedFailure    # finding P-5, the same for the check's other renaming fix
+    def test_the_held_folder_is_the_one_named(self):
+        """The check's Rename fix (a map folder named after the map's title, rename_map_folder) on a folder with a file
+        another program has open: the refusal names the folder it would have made (maps/SuperCrossRoads4), not the one
+        held (maps/Blitz)."""
+        folder = self.a_mod()
+        source = folder / "maps" / "Blitz"
+        source.mkdir(parents=True)
+        (source / "scenario.toml").write_text("", encoding="utf-8")
+        held = open(source / "scenario.toml", "rb")
+        try:
+            said = self.refused("rename_map_folder", "Blitz", "SuperCrossRoads4")
+        finally:
+            held.close()
+        print("\nP-5 rename of a held folder:", said["us"])
+        self.assertTrue(source.is_dir())
+        self.assertNotIn("SuperCrossRoads4", said["us"])
+        self.assertIn(str(source), said["us"])
 
     @unittest.expectedFailure    # finding P-4: the check passes mods the build stops on (SQ-7's class)
     def test_the_check_says_what_test_in_game_will_stop_on(self):
