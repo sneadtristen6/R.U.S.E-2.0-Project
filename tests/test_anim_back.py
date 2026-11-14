@@ -602,6 +602,66 @@ class OpenedAgain(unittest.TestCase):
         after = self.files()
         self.assertEqual([k for k in before if after.get(k) != before[k]], [])
 
+    def test_a_ruse_decoy_change_made_after_a_bring_back_stays_when_blender_sends_that_animation_again(self):
+        """The run's change brought back while Blender is open; then the run changed in RUSE Decoy (its spine2 turned on
+        top of it); then Blender sends again, the stand changed there and the run as it brought it back: the run stays
+        as RUSE Decoy made it, named as kept the Studio's, and the stand's change comes in; a Resize after keeps them
+        (278fe767 put the run as Blender had it over the RUSE Decoy change)."""
+        before = self.files()
+        handed = self.open(Open())
+        self.send(handed["model"].read_bytes(), handed["send"], change=(RUN, HORSE_SPINE, baf.axis_angle("x", 10.0)))
+        self.back()
+        decoyed = self.decoy(RUN, SPINE2, 25.0)
+        blender = Blenderish(handed["model"].read_bytes())      # (the same scene: the run as it was sent, the stand too)
+        joints = len(blender.doc["skins"][0]["joints"])
+        doc, binary = modelin.glb_document(blender.send(change=(RUN, HORSE_SPINE, baf.axis_angle("x", 10.0)),
+                                                        order=list(reversed(range(joints)))))
+        stand = Blenderish(gltf_bytes(doc, binary)).send(change=(STAND, HORSE_SPINE, baf.axis_angle("x", 10.0)))
+        handed["send"].write_bytes(stand)
+        back = self.back()
+        self.assertIsNone((back.get("model") or {}).get("not_kept"))
+        self.assertEqual(back.get("differs"), [RUN])
+        after = self.files()
+        self.assertEqual(after[self.run_file], decoyed)
+        self.assertGreater(self.turned(after[self.stand_file], before[self.stand_file], HORSE_SPINE), 9.0)
+        self.assertEqual([k for k in before if after[k] != before[k]], [self.run_file, self.stand_file])
+        self.api.model_resize(self.address, 1.0)      # (fitted again from the same file: the same clips)
+        self.assertEqual([k for k in after if self.files()[k] != after[k]], [])
+
+    def test_a_ruse_decoy_change_back_to_what_went_out_stays_when_blender_sends_the_run_again(self):
+        """The run's change brought back while Blender is open; then the run put back in RUSE Decoy as it was, the clip
+        that went out, byte for byte; then Blender sends the run again as it brought it back: the run stays as RUSE Decoy
+        put it back, said as kept the Studio's (being the clip that went out, it was taken for Blender's own and
+        Blender's change put over it without a word)."""
+        before = self.files()
+        handed = self.open(Open())
+        self.send(handed["model"].read_bytes(), handed["send"], change=(RUN, HORSE_SPINE, baf.axis_angle("x", 10.0)))
+        self.back()
+        own = anim.own_animations(self.mod, self.tail)["animations"]
+        folder = self.mod / anim.OWN / self.tail
+        mine = {n: (folder / f).read_bytes() for n, f in own.items()}
+        mine[RUN] = before[self.run_file]               # (RUSE Decoy: the run as it was)
+        anim.set_animations(self.mod, self.tail, mine)
+        self.send(handed["model"].read_bytes(), handed["send"], change=(RUN, HORSE_SPINE, baf.axis_angle("x", 10.0)))
+        back = self.back()
+        self.assertIsNone((back.get("model") or {}).get("not_kept"))
+        self.assertEqual(back.get("differs"), [RUN])
+        self.assertEqual(self.files()[self.run_file], before[self.run_file])
+
+    def test_a_ruse_decoy_change_kept_then_changed_in_blender_is_named(self):
+        """The run changed in RUSE Decoy while Blender is open and kept by a Bring back that left it untouched; then the
+        run changed in that Blender (its scene has the run as it went out) and brought back: Blender's run comes in and
+        the RUSE Decoy change is named, as when both change it before one Bring back (kept once, it was put back the
+        next time without a word: its fingerprint said the mod's run was the file's)."""
+        handed = self.open(Open())
+        decoyed = self.decoy(RUN, SPINE2, 25.0)
+        self.send(handed["model"].read_bytes(), handed["send"])
+        self.assertEqual(self.back().get("differs"), [RUN])
+        self.send(handed["model"].read_bytes(), handed["send"], change=(RUN, HORSE_SPINE, baf.axis_angle("x", 10.0)))
+        back = self.back()
+        self.assertEqual(((back.get("model") or {}).get("not_kept") or {}).get("animations"), [RUN])
+        self.assertGreater(self.turned(self.files()[self.run_file], decoyed, SPINE2), 20.0)
+
     def test_control_a_change_made_in_both_is_blender_s_and_the_ruse_decoy_change_named(self):
         """The control: the run changed in RUSE Decoy while Blender is open and changed in Blender too (its spine1):
         Blender's comes in and the RUSE Decoy change is named, as before (Changes to these animations weren't kept)."""
@@ -640,10 +700,14 @@ class OpenedAgain(unittest.TestCase):
         self.decoy(RUN, SPINE2, 25.0)
         before = self.files()
         again = self.open()
-        self.assertFalse(again["send"].is_file())     # (brought back: in the mod, taken out of the Blender folder)
-        with self.assertRaises(StudioError):
+        try:
             self.back()
+            refused = None
+        except StudioError as exc:
+            refused = str(exc)
         self.assertEqual([k for k in before if self.files()[k] != before[k]], [])
+        self.assertIn("Nothing has come back from Blender yet", refused or "")
+        self.assertFalse(again["send"].is_file())     # (brought back: in the mod, taken out of the Blender folder)
 
     def test_what_a_blender_opened_before_the_last_one_sends_is_refused(self):
         """A Blender left open when the Studio started again (the one button then offers Open in Blender): opened again,
@@ -658,13 +722,16 @@ class OpenedAgain(unittest.TestCase):
         self.decoy(RUN, SPINE2, 25.0)
         self.api._blenders.clear()        # (the Studio started again: it knows of no Blender)
         again = self.open()
-        self.assertNotEqual(again["session"], handed["session"])
         before = self.files()
         self.send(old, handed["send"], session=handed["session"])
-        with self.assertRaises(StudioError) as said:
+        try:
             self.back()
-        self.assertIn("opened before the one opened last", str(said.exception))
+            refused = None
+        except StudioError as exc:
+            refused = str(exc)
         self.assertEqual([k for k in before if self.files()[k] != before[k]], [])
+        self.assertIn("opened before the one opened last", refused or "")
+        self.assertNotEqual(again["session"], handed["session"])
         self.send(again["model"].read_bytes(), again["send"], session=again["session"])
         self.back()
         self.assertEqual([k for k in before if self.files()[k] != before[k]], [])

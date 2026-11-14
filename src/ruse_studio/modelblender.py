@@ -52,12 +52,15 @@ never brought back opens it with its own animations, as Blender sent them (opene
 and never brought back was dropped without a word), and what went out stays what it is set against; one brought back is
 opened with the mod's animations, as they are now, and taken out of the work folder (it is in the mod), so no Bring back
 sets it against animations it wasn't made from. Which openings are on what went out, which sending was brought back
-last and what each Bring back since took in from Blender are kept in back.json (BACK), and each opening's session goes
-to Blender with its words, which Send writes beside the file (rusemod.blender_model's ABOUT): a sending of a Blender
-opened on other animations than those it would be set against is refused, said. An animation that comes back from
-Blender as it went out while the Studio changed it since (RUSE Decoy) keeps the Studio's change, said in the answer's
-"differs" (RUSE Decoy's own Blender keeps it too: decoyblender's "differs"); one that comes back as it went out after a
-Bring back took a change of it in, Blender's undo of that change, is put back as it went out, as before. Its bones
+last and what each Bring back since took in from Blender are kept in back.json (BACK; each clip changed there in
+took/, TOOK), and each opening's session goes to Blender with its words, which Send writes beside the file
+(rusemod.blender_model's ABOUT): a sending of a Blender opened on other animations than those it would be set against
+is refused, said. An animation that comes back from Blender as it went out, or as the last Bring back took it in, while
+the Studio changed it since Blender last gave the mod a clip of it (RUSE Decoy; studio_changed) keeps the Studio's
+change, said in the answer's "differs" (RUSE Decoy's own Blender keeps it too: decoyblender's "differs"); one Blender
+changed is Blender's and the Studio's change named, as when both change it before one Bring back; one that comes back as
+it went out after a Bring back took a change of it in, Blender's undo of that change, is put back as it went out, as
+before. Its bones
 unticked, the bones the mod's model has are put back (the one Blender button's "what was unticked stays as it was"),
 never those of the file the first opening wrote, which a bone moved and brought back since isn't in.
 
@@ -81,7 +84,7 @@ import struct
 import uuid
 from pathlib import Path
 
-from .animmodel_calls import read_record, write_record
+from .animmodel_calls import NOT_KEPT, read_record, write_record
 
 
 def _read_json(path: Path) -> dict:
@@ -102,6 +105,7 @@ SEND_WAIT = 60.0   # seconds Bring back the model waits for an open Blender to s
 ALPHA = "alpha.json"   # in the work folder: the alpha picture that went out with each material, by the material's name
 KEPT = "kept"          # <work>/kept/<its name>.glb: what Bring back the model took in, each alpha picture back in it
 BACK = "back.json"     # in the work folder: the openings on what went out, the sending brought back last, what it took
+TOOK = "took"          # <work>/took/<its SHA-256>.baf: each clip a Bring back took in from Blender, changed there
 ABOUT = ".json"        # beside the sending, its name and this: what Send says of it (rusemod.blender_model's ABOUT)
 # a squad's second figure carries the heavy weapon: the rifleman is the one to change, and what comes back is the
 # riflemen's model (Import model's first kind; the heavy-weapon soldier keeps the copied unit's until he gets his own,
@@ -127,10 +131,19 @@ def back_state(work: Path) -> dict:
     for it}}."""
     data = _read_json(Path(work) / BACK)
     sessions = data.get("sessions") if isinstance(data.get("sessions"), list) else []
+
     took = data.get("took") if isinstance(data.get("took"), dict) else {}
     return {"format": 1, "sessions": [s for s in sessions if isinstance(s, str) and s],
             "sent": data.get("sent") if isinstance(data.get("sent"), str) else None,
             "took": {k: v for k, v in took.items() if isinstance(k, str) and isinstance(v, str)}}
+
+
+def studio_changed(mine: dict, went: dict, took: dict) -> set:
+    """Of the animations that went out to Blender (`went`: {name: the clip as the mod had it}), those the Studio changed
+    since Blender last gave the mod a clip of them (`mine`: the mod's clips now): the mod's clip is neither the one the
+    last Bring back took in from Blender (`took`: back_state's SHA-256s) nor, before any, the one that went out. Blender
+    has such an animation as it gave it, so its change of one of them is set against a change of the Studio's."""
+    return {n for n, c in went.items() if n in mine and _sha_of(mine[n]) != (took.get(n) or _sha_of(c))}
 
 
 def _said(report) -> dict:
@@ -616,6 +629,8 @@ class ModelBlenderCalls:
                     raise file_error(exc, send) from exc
             self._went_out(work, going)
             state = {"format": 1, "sessions": [session], "sent": None, "took": {}}
+            import shutil
+            shutil.rmtree(work / TOOK, ignore_errors=True)   # (what Bring backs took in on what went out before)
         try:
             _write(work / BACK, state)
         except OSError as exc:              # (said in words, never in Python's own)
@@ -682,18 +697,21 @@ class ModelBlenderCalls:
         # and of a changed one every bone that wasn't: rusemod.rig.with_record, with_went_out, kept_clip; item 45)
         sent = animblender.read_sent(work)
         studio: dict = {}
+        mine: dict = {}     # (the unit's own animations as the mod has them before this Bring back)
+        if sent is not None and not kind and own is not None and self._mod_dir() is not None:
+            mine = self._own_now(self._mod_dir(), own.stem)[0]
         if sent is not None:
             went_out = {a["name"]: a["clip"] for a in sent["animations"]}
             given = {a["name"]: a["blender_clip"] for a in sent["animations"]}
             try:
                 raw = rig.with_record(raw, sent["record"])
-                again: dict = {}
+                settled: dict = {}
                 if not kind:
-                    studio, again = self._settled(address, raw, went_out, given, state["took"])
-                # (the mod's clip of one settled so goes into the file as the clip kept when it comes back as it does
-                # now: the import, and every Resize or Move after, keep it so)
-                raw = rig.with_went_out(raw, {n: studio.get(n, again.get(n, c)) for n, c in went_out.items()},
-                                        {n: again.get(n, g) for n, g in given.items()})
+                    settled, studio = self._settled(raw, went_out, given, state["took"], work, mine)
+                # (the mod's clip of one settled so goes into the file as the clip kept when it comes back as it came
+                # back now, set against what it came back as: the import, and every Resize or Move after, keep it so)
+                raw = rig.with_went_out(raw, {n: settled[n][0] if n in settled else c for n, c in went_out.items()},
+                                        {n: settled[n][1] if n in settled else g for n, g in given.items()})
             except (ValueError, struct.error):   # (a file that isn't a .glb: Import model says what it is, in words)
                 pass
         went = self._alphas_back(work, send, raw)
@@ -711,35 +729,48 @@ class ModelBlenderCalls:
             else:
                 _put(kept, before)
             raise
+        after = self._own_now(self._mod_dir(), own.stem)[0] if mine else {}
+        # (one the Studio changed since Blender last gave the mod a clip of it, that this Bring back put Blender's in
+        # the place of: named, as when both change it before one Bring back. The import names it only when the mod's
+        # clip isn't the last fit's: one whose Studio change a Bring back kept before, or set back in the Studio to
+        # the clip that went out after a Bring back took Blender's in, was put back without a word)
+        if sent is not None and mine:
+            went_out = {a["name"]: a["clip"] for a in sent["animations"]}
+            changed = studio_changed(mine, went_out, state["took"])
+            replaced = [n for n in went_out if n in changed and n not in studio and after.get(n) != mine[n]]
+            if replaced and isinstance(got.get("model"), dict):
+                lost = got["model"].setdefault(NOT_KEPT, {"animations": [], "picks": []})
+                named = list(lost.get("animations") or [])
+                lost["animations"] = named + [n for n in replaced if n not in named]
         self._alpha_said(address, kind, got, put, went)
-        self._brought(work, own if not kind else None, state, sha, sent, studio)
+        self._brought(work, state, sha, sent, studio, after)
         return {**got, "work": str(work), "kind": kind, "kept": kept_words, "differs": list(studio)}
 
-    def _settled(self, address: str, raw: bytes, went: dict, given: dict, took: dict) -> tuple[dict, dict]:
+    @staticmethod
+    def _settled(raw: bytes, went: dict, given: dict, took: dict, work: Path, mine: dict) -> tuple[dict, dict]:
         """Of the animations that went out to Blender (`went`: {name: the clip as the mod had it}; `given`: what Blender
-        was given of each) and that the mod plays another clip for now (one on the same bones), those Blender brought
-        nothing new of, measured as the import measures (`raw`: what Blender sent, its skeleton record back in it;
-        rusemod.rig.kept_clips on its poses), the mod's clip kept for: ({name: the mod's clip}, the same): first, one
-        the Studio changed since (no Bring back since took the mod's clip in from Blender: `took`, back_state's) that
-        came back as it went out: Blender didn't change it, so the Studio's change stays (a change made in RUSE Decoy
-        while Blender was open was undone by a Bring back that left that animation as it was: the review of 2026-11-13;
-        RUSE Decoy's own Blender keeps the Studio's then, its "differs"); then one a Bring back since took in from
-        Blender that came back as it took it in (Blender opened again on a sending never brought back sends a change
-        brought back before again, its numbers through Blender once more: that clip, byte for byte). One Blender
-        changed (again) is Blender's, a Studio change of it named (NOT_KEPT), as before; one a Bring back took a change
-        of in that came back as it went out is Blender's undo of that change, put back as it went out, as before."""
+        was given of each) and that the mod plays another clip for now than the one that went out, or the Studio
+        changed since Blender last gave the mod one (`mine`, AnimModelCalls._own_now's: one on the same bones;
+        studio_changed), those Blender brought nothing new of, measured as the import measures (`raw`: what Blender
+        sent, its skeleton record back in it; rusemod.rig.kept_clip on its poses), the mod's clip kept for: ({name:
+        (the mod's clip, the clip it came back as)}, {name: the mod's clip} of those the Studio changed): first, one the
+        Studio changed that came back as it went out (as Blender was given it), or as the last Bring back took it in
+        (that clip kept in <work>/took/): Blender didn't change it, so the Studio's change stays (a change made in RUSE
+        Decoy while Blender was open was undone by a Bring back that left that animation as it was: the review of
+        2026-11-13; RUSE Decoy's own Blender keeps the Studio's then, its "differs"); then one a Bring back since took
+        in from Blender, as the mod still has it, that came back as it took it in (Blender opened again on a sending
+        never brought back sends a change brought back before again, its numbers through Blender once more: that clip,
+        byte for byte). One Blender changed (again) is Blender's, a Studio change of it named (NOT_KEPT), as before;
+        one a Bring back took a change of in that came back as it went out is Blender's undo of that change, put back
+        as it went out, as before."""
         import dataclasses
         from rusemod import baf, rig, unitmodel
         from rusemod.modelin import glb_document
-        target = self._own_model_file(address)
-        mod = self._mod_dir()
-        if target is None or mod is None:
-            return {}, {}
-        mine, _picks = self._own_now(mod, target.stem)
-        studio, again = {}, {}
+        studio, again, last = {}, {}, {}
+        changed = studio_changed(mine, went, took)
         for name, clip in went.items():
             now = mine.get(name)
-            if now is None or now == clip:
+            if now is None or (now == clip and name not in changed):
                 continue
             try:
                 c = baf.parse(now)
@@ -748,7 +779,16 @@ class ModelBlenderCalls:
                     continue
             except (ValueError, IndexError, struct.error):   # (a clip file that isn't one: the fit says so)
                 continue
-            (again if _sha_of(now) == took.get(name) else studio)[name] = now
+            if name not in changed:     # (the mod's is what the last Bring back took in from Blender)
+                again[name] = now
+                continue
+            studio[name] = now
+            kept_file = Path(work) / TOOK / f"{took.get(name)}.baf"
+            if took.get(name) and kept_file.is_file():      # (what the last Bring back took in of it from Blender)
+                try:
+                    last[name] = kept_file.read_bytes()
+                except OSError:
+                    pass
         if not studio and not again:
             return {}, {}
         try:
@@ -757,27 +797,42 @@ class ModelBlenderCalls:
             record, _notes = unitmodel.own_skeleton(r)
             r = dataclasses.replace(r, animations=[a for a in r.animations if a.name in studio or a.name in again])
             made, _notes = unitmodel.own_clips(r, record)
-            out = {**{n: (went[n], given.get(n)) for n in studio}, **{n: (again[n], None) for n in again}}
-            kept, _changed = rig.kept_clips({n: made[n] for n in out if n in made}, out, r)
+            poses = {a.name: r.poses(a)[1] for a in r.animations if a.name in made}
+            settled = {}
+            for n in made:
+                # (what it may have come back as: what Blender was given of it, or what the last Bring back took in)
+                against = [given.get(n) or went[n], *([last[n]] if n in last else [])] if n in studio else [again[n]]
+                came = next((a for a in against if rig.kept_clip(made[n], a, poses=poses.get(n)) == (a, [])), None)
+                if came is not None:
+                    settled[n] = (studio.get(n) or again[n], came)
         except (ValueError, KeyError, IndexError, TypeError, struct.error):   # (read so by the import, which says it)
             return {}, {}
-        return ({n: now for n, now in studio.items() if kept.get(n) == went[n]},
-                {n: now for n, now in again.items() if kept.get(n) == now})
+        return settled, {n: now for n, now in studio.items() if n in settled}
 
-    def _brought(self, work: Path, own: Path | None, state: dict, sha: str, sent: dict | None, studio: dict) -> None:
+    @staticmethod
+    def _brought(work: Path, state: dict, sha: str, sent: dict | None, studio: dict, after: dict) -> None:
         """After a Bring back took a sending in (its SHA-256 `sha`): back.json says it was brought back (a Blender opened
         again on it opens it with the mod's animations: model_blender) and what it took in from Blender of each
-        animation that went out (`sent`, read_sent's), as the mod has it now: a sending that comes back as it went out
-        after that is Blender's undo of it (_settled). One the Studio's change was kept for (`studio`) took nothing in.
-        A back.json that can't be written loses nothing: the next opening opens the sending as Blender sent it, set
-        against what went out, which is what this Bring back did."""
-        from .squadblender import _write
+        animation that went out (`sent`, read_sent's), as the mod has it now (`after`), each one changed there kept in
+        <work>/took/ (TOOK): a sending that comes back as it went out after that is Blender's undo of it, and the
+        Studio's change of one that comes back as it took it in stays (_settled). One the Studio's change was kept for
+        (`studio`) took nothing in: Blender has it as it gave it before, so a change of it there is set against the
+        Studio's (studio_changed). A back.json or clip that can't be written loses nothing of the mod: the next opening
+        opens the sending as Blender sent it, set against what went out, which is what this Bring back did."""
+        from .squadblender import _put, _write
         took = dict(state["took"]) if sent is not None else {}
-        if sent is not None and own is not None and self._mod_dir() is not None:
-            mine, _picks = self._own_now(self._mod_dir(), own.stem)
+        if sent is not None:
             for a in sent["animations"]:
-                if a["name"] not in studio and a["name"] in mine:
-                    took[a["name"]] = _sha_of(mine[a["name"]])
+                name = a["name"]
+                if name in studio or name not in after:
+                    continue
+                took[name] = _sha_of(after[name])
+                kept = work / TOOK / f"{took[name]}.baf"
+                if after[name] != a["clip"] and not kept.is_file():
+                    try:
+                        _put(kept, after[name])
+                    except OSError:
+                        pass
         try:
             _write(work / BACK, {"format": 1, "sessions": state["sessions"], "sent": sha, "took": took})
         except OSError:
