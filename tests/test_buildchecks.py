@@ -441,6 +441,79 @@ class MixedSetUnits(UnitGame):
             self.assertNotIn(code, said, said)
 
 
+class MixedSetUnitsTheOldWay(UnitGame):
+    """Review fault 1 with FORCE_LOAD off (the old way, kept; no build uses it): the models of an .rmod mod's unit are
+    copied into its nation's skirmish packs, and those copies reach the ZZ_Win.dat the build writes in a set with a
+    folder mod that needs no texts too, as they do in a set of .rmod mods alone (the control)."""
+    folder_mod = MixedSetUnits.folder_mod
+    build_with = MixedSetUnits.build_with
+
+    def setUp(self):
+        super().setUp()
+        import rusemod.build as b
+        self.addCleanup(setattr, b, "FORCE_LOAD", b.FORCE_LOAD)
+        b.FORCE_LOAD = False
+
+    def copied(self, out) -> bool:
+        """Whether the US's skirmish mesh pack in the ZZ_Win.dat written to `out` has the German tank's model."""
+        from rusemod.spk import Spk
+        from test_unitcheck import PANZER_MODEL
+        written = self.root / out / "ZZ_Win.dat"
+        if not written.exists():
+            return False
+        zz = Edat(written.read_bytes())
+        member = zz.entry("gen_5\\pack\\gfxdescriptor\\meshskirmish_us.spk")
+        return member is not None and f"ww2\\res3d\\units\\{PANZER_MODEL}" in Spk(bytes(zz.read(member))).items
+
+    def test_an_rmod_mods_tank_in_a_set_with_a_folder_mod(self):
+        result, lines = self.build_with("Nationalite", 0, "old-mixed", self.folder_mod())
+        self.assertEqual(result.errors, [], lines)
+        self.assertTrue(any("its models go into US's skirmish packs too" in f.message for f in result.findings),
+                        [f.message for f in result.findings])
+        self.assertTrue(self.copied("old-mixed"), lines)
+
+    def test_control_the_rmod_mod_alone(self):
+        result, lines = self.build("Nationalite", 0, "old-alone")
+        self.assertEqual(result.errors, [], lines)
+        self.assertTrue(self.copied("old-alone"), lines)
+
+
+class WhoMovedIt(UnitGame):
+    """Review fault 3's kind in an .rmod mod's unit note: the mod named is the one that gives the unit another nation
+    or other models, not every .rmod mod that changes it (every test copy's cheat mod re-prices most units, and was
+    named beside the mod that moved the unit)."""
+    NOTE = ("Panzer Mod: Panzer, in US's army, has a model of Germany's units: Germany's unit models now load in every "
+            "skirmish, so it shows in matches where no player has Germany too")
+
+    def rmod_setting(self, mod_id, name, values, file_name):
+        text = json.dumps({"$schema": "ruse-mod/v1", "id": mod_id, "name": name, "version": "1.0", "author": "Tester",
+                           "description": "made up", "game_version": "",
+                           "patches": [{"dat": f"{REV}/{GLAD}", "ndf": "genglad/patchable/gfx/everything.cpp.gladndfbin",
+                                        "changes": [{"action": "patch", "table": "TUniteAuSolDescriptor",
+                                                     "match": {"ClassNameForDebug": "Unit_Panzer"},
+                                                     "set": {k: {"type": "Int32", "value": v}
+                                                             for k, v in values.items()}}]}]})
+        path = self.root / f"{file_name}.rmod"
+        path.write_text(text, encoding="utf-8")
+        return load_mod(path)
+
+    def unit_notes(self, mods, out):
+        lines = []
+        result = build_and_write(self.game, list(mods), out=self.root / out, say=lines.append)
+        self.assertEqual(result.errors, [], lines)
+        return [f.message for f in result.findings if "has a model of" in f.message]
+
+    def test_a_mod_that_only_reprices_the_moved_unit_isnt_named(self):
+        moves = self.rmod_setting("panzer-mod", "Panzer Mod", {"Nationalite": 0}, "moves")
+        prices = self.rmod_setting("price-mod", "Price Mod", {"DescriptorId": 7}, "prices")
+        self.assertEqual(self.unit_notes((prices, moves), "a"), [self.NOTE])
+        self.assertEqual(self.unit_notes((moves, prices), "b"), [self.NOTE])
+
+    def test_control_the_mod_that_moves_it_and_reprices_it(self):
+        both = self.rmod_setting("panzer-mod", "Panzer Mod", {"Nationalite": 0, "DescriptorId": 7}, "both")
+        self.assertEqual(self.unit_notes((both,), "c"), [self.NOTE])
+
+
 class WhoIsNamed(MadeUpGame):
     """Review fault 3: a mod whose edits take out or rename only places the mission doesn't lack is not named for it."""
 
@@ -520,8 +593,8 @@ class OddMenus(MadeUpGame):
         result, lines = self.build(self.odd_menus())
         self.assertEqual(result.errors, [], lines)
         self.assertTrue((self.root / "out").exists() and any((self.root / "out").iterdir()), lines)
-        self.assertTrue(any(f.level == "note" and "couldn't be checked" in f.message for f in result.findings),
-                        result.findings)
+        self.assertTrue(any(f.level == "note" and "couldn't be checked: the menus or a mission's files can't be read"
+                            in f.message for f in result.findings), result.findings)
 
     def test_anything_going_wrong_in_the_check(self):
         from unittest import mock
@@ -530,7 +603,9 @@ class OddMenus(MadeUpGame):
         with mock.patch("rusemod.missionplaces.check", side_effect=RuntimeError("something went wrong")):
             result, lines = self.build(mod)
         self.assertEqual(result.errors, [], lines)
-        self.assertTrue(any(f.level == "note" and "couldn't be checked" in f.message for f in result.findings))
+        # (a fault of the check itself is not said to be a file that can't be read)
+        self.assertIn("the places the missions watch from their start couldn't be checked (something went wrong)",
+                      [f.message for f in result.findings if f.level == "note"])
         result, _ = self.build(mod, out="again")   # (the control: the same set, the check as it is, warns)
         self.assertEqual(len(self.warnings(result)), 1)
 
@@ -559,6 +634,19 @@ class CountLine(MadeUpGame):
         counted = [i for i, ln in enumerate(lines) if ln.endswith("note(s)")]
         self.assertEqual(len(counted), 1, lines)
         self.assertEqual(lines[counted[0] + 1], "Nothing was written.")
+
+    def test_control_a_build_stopped_later_by_a_raised_error_says_its_count_once(self):
+        """As before the review's fixes: a build that stops on an error raised in its later work (a map's BuildError;
+        here one made up where the missions are checked) still says its count, once."""
+        from unittest import mock
+        from rusemod.build import BuildError
+        mod = self.rmod("Maps.rmod", "Map Pack", "1.0", {(DATA, "test/map/m01_leipzig/leveldesign.scenario"):
+                                                         layout("A_battle_place")})
+        lines = []
+        with mock.patch("rusemod.build.mission_places", side_effect=BuildError("a map can't be built")):
+            with self.assertRaises(BuildError):
+                build_and_write(self.game, [mod], out=self.root / "out", say=lines.append)
+        self.assertEqual(len([ln for ln in lines if ln.endswith("note(s)")]), 1, lines)
 
 
 TITLE_KEY = 0x00000007653A5042   # (a made-up text key of a chapter's name in the menus)

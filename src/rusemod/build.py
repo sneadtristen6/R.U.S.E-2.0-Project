@@ -1388,9 +1388,15 @@ def rmod_unit_models(run, shipped, zz_win, result: BuildResult, rmods=(), base=N
         cls = getattr(run.game.objects[n].props.get("ClassNameForDebug"), "value", None)
         if not isinstance(cls, str) or not cls:
             continue
-        said = [e.name for e in edits
-                if any(k[3] == cls for k in e.creates) or any(f"ClassNameForDebug={cls}" in k[3].split(";")
-                                                              for k in e.values)]
+        mine = f"ClassNameForDebug={cls}"
+        # the mods that make it, or set its nation or its models, are the ones the finding is about; a mod that only
+        # changes its other values (every test copy's cheat mod re-prices most units) isn't named for it (the review
+        # of 95e9b910, its fault 3's kind); when none of them does (a model changed through another object, which
+        # these edits can't tell), every mod changing the unit is named, as before
+        moved = [e.name for e in edits
+                 if any(k[3] == cls for k in e.creates) or any(mine in k[3].split(";") and _moves_path(str(k[4]))
+                                                               for k in e.values)]
+        said = moved or [e.name for e in edits if any(mine in k[3].split(";") for k in e.values)]
         if said:
             who[n] = list(dict.fromkeys(said))
     return unit_models(shipped if base is None else base, run, zz_win(), result, into, names=sorted(names),
@@ -4288,9 +4294,12 @@ def mission_places(game: Path, stack, open_pack, glad, glad_changed: dict, data_
                                                                shipped[mp.DATA]),
                                       {n.lower(): r for n, r in final.items()},
                                       _menu_titles(lambda: open_pack(texts) if texts is not None else None))
-    except Exception as exc:  # noqa: BLE001 - a check that only warns never stops a build (above)
+    except (OSError, *mp._READ_ERRORS) as exc:   # (the menus or a cluster as the set leaves them, unreadable)
         return [Finding("note", f"the places the missions watch from their start couldn't be checked: the menus "
                                 f"or a mission's files can't be read ({exc})")]
+    except Exception as exc:  # noqa: BLE001 - a check that only warns never stops a build (above); a fault of
+        # this check itself, not said to be a file's
+        return [Finding("note", f"the places the missions watch from their start couldn't be checked ({exc})")]
 
 
 def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Path | None = None,
@@ -4411,8 +4420,8 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                 result = build_pack(arc, mods, build_id, text_arc, cache, rmod_units) if mods else BuildResult()
                 if not mods and rmods:  # .rmod mods only: our build's looks at the unit data they leave (far
                     rmod_far_upgrades(arc, build_id, cache, result, rmod_units)  # upgrades; the unit models)
-                    if result.model_changed and text_arc is None:  # (FORCE_LOAD off, the old way: copies go there)
-                        text_path, text_arc = zz_path, open_pack(zz_path)
+                if result.model_changed and text_arc is None:  # (FORCE_LOAD off, the old way: copies go there, also
+                    text_path, text_arc = zz_path, open_pack(zz_path)  # an .rmod mod's units' beside mods of ours)
         except ResolveError as exc:
             raise BuildError(f"load order: {exc}") from None
         if run:
@@ -4423,12 +4432,17 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
         for line in report_lines(result.findings, show_all=show_all):
             say(line)
 
+        counts_said: list = []
+
         def counted() -> None:
             """The report's count of the build's findings, every one: said when the build stops on errors, else once
             the maps' and the missions' findings are in too (the review of 95e9b910, 2026-11-14: the count, said here
-            before them, missed the missions' warnings, which the six's warning used to be counted with)."""
+            before them, missed the missions' warnings, which the six's warning used to be counted with); a build
+            that stops later on an error raised in its work (a map's BuildError) says it as it stops, as it did."""
+            counts_said.append(True)
             counts = {lvl: sum(1 for f in result.findings if f.level == lvl) for lvl in ("error", "warning", "note")}
             say(f"{counts['error']} error(s), {counts['warning']} warning(s), {counts['note']} note(s)")
+        stack.callback(lambda: counts_said or counted())   # (said once, whichever way the build ends from here)
         if result.errors:
             counted()
             say("Nothing was written.")
