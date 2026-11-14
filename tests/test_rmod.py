@@ -4,6 +4,7 @@ anything is built (no game files needed)."""
 import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import base64
 import json
+import os
 import tempfile
 import unittest
 from pathlib import Path
@@ -180,6 +181,75 @@ class Builds(unittest.TestCase):
         self.assertTrue(any("game's scripts (effetmap.xyz)" in f.message for f in result.findings if
                             f.level == "warning"), result.findings)
         self.assertEqual(self.packed(self.instance)["genpython\\map\\effetmap.xyz"], b"XYZ0 code")
+
+    def test_a_library_mod_known_to_stop_missions_builds_with_a_warning(self):
+        """rusemod.knownissues (the owner, 2026-11-14: "Just keep a warning about 1v7 and 1v15."): a mod known by its
+        .rmod file's bytes gets one warning; the build, its files and its fingerprint (the join code) are as without
+        it."""
+        import hashlib
+        from unittest import mock
+        from rusemod import knownissues
+        a = self.mod("A.rmod", {"genglad/readme.txt": b"from A"}, mod_id="a", name="Mod A")
+        b = self.mod("B.rmod", {"top.bin": b"from B"}, mod_id="b", name="Mod B")
+        before = build_and_write(self.game, [a, b], instance=self.instance, say=lambda s: None)
+        packed_before = self.packed(self.instance)
+        data = Path(b[0].rmod).read_bytes()
+        known = {hashlib.sha256(data).hexdigest(): knownissues.MissionsStop("Mod B", "b@1.2", 3)}
+        lines = []
+        with mock.patch.object(knownissues, "KNOWN", known), mock.patch.object(knownissues, "SIZES", {len(data)}):
+            result = build_and_write(self.game, [a, b], instance=self.instance, say=lines.append)
+        self.assertEqual(result.errors, [])
+        warned = [f.message for f in result.findings if f.level == "warning" and "campaign chapter" in f.message]
+        self.assertEqual(warned, ["Mod B replaces the maps of 3 campaign chapter(s) with ones that lack places their "
+                                  "missions use: with it on, those chapters stop about a second after they start"])
+        self.assertTrue(any(line.startswith("  warning") and "3 campaign chapter(s)" in line for line in lines), lines)
+        self.assertEqual(result.fingerprint, before.fingerprint)
+        self.assertEqual(self.packed(self.instance), packed_before)
+        self.assertFalse(any("campaign chapter" in f.message for f in before.findings))   # not known: not said
+
+    def test_a_known_mod_is_known_by_its_file_not_its_name(self):
+        import hashlib
+        from unittest import mock
+        from rusemod import knownissues
+        from rusemod.build import known_issue_findings
+        t = self.mod("T.rmod", {"top.bin": b"chapter"}, mod_id="t", name="Mod T")
+        data = Path(t[0].rmod).read_bytes()
+        known = {hashlib.sha256(data).hexdigest(): knownissues.MissionsStop("1 VS 7 AI", "1-vs-7-ai-v1@1.0.0", 1)}
+        other = self.mod("U.rmod", {"top.bin": b"chapter, other bytes"}, mod_id="t", name="Mod T")  # same id
+        with mock.patch.object(knownissues, "KNOWN", known), \
+                mock.patch.object(knownissues, "SIZES", {len(data), len(Path(other[0].rmod).read_bytes())}):
+            said = [f.message for f in known_issue_findings([t[0], t[0], other[0]])]
+        self.assertEqual(said, ["1 VS 7 AI replaces the maps of 1 campaign chapter(s) with ones that lack places their "
+                                "missions use: with it on, those chapters stop about a second after they start"])
+        # (once, and only T's file)
+        self.assertIsNone(knownissues.missions_stop(self.root / "no such.rmod"))
+
+    def test_the_two_known_files_are_listed_once_each(self):
+        from rusemod import knownissues
+        self.assertEqual(sorted(k.name for k in knownissues.KNOWN.values()), ["1 VS 15 AI", "1 VS 7 AI"])
+        self.assertEqual({k.count for k in knownissues.KNOWN.values()}, {1})
+        self.assertEqual(len(knownissues.SIZES), 2)
+        self.assertTrue(all(len(sha) == 64 and int(sha, 16) >= 0 for sha in knownissues.KNOWN))
+
+    def test_the_two_real_files_are_known_by_their_bytes(self):
+        """The library's 1 VS 7 AI and 1 VS 15 AI files, where this PC has them (RUSE_COMMUNITY_RMODS, else the
+        project's folder of them), read only: each is known, by the name it gives itself, which is the name the missions
+        check says it by (build.mission_place_findings' `besides`: one warning a mod). Skipped where they aren't."""
+        from ruse_mod_engine import mod_format
+        from rusemod import knownissues
+        folder = Path(os.environ.get("RUSE_COMMUNITY_RMODS") or "D:/RUSE-2.0/mods/community")
+        files = {"1_VS_7_AI_V1.rmod": ("1 VS 7 AI", "1-vs-7-ai-v1@1.0.0"),
+                 "1_VS_15_AI_V1.rmod": ("1 VS 15 AI", "1-vs-15-ai-v1@1.0.0")}
+        if not any((folder / name).is_file() for name in files):
+            self.skipTest(f"neither file is in {folder}")
+        for name, (mod_name, listed) in files.items():
+            with self.subTest(name):
+                path = folder / name
+                if not path.is_file():
+                    self.skipTest(f"{path} isn't on this PC")
+                known = knownissues.missions_stop(path)
+                self.assertEqual((known.name, known.listed, known.count) if known else None, (mod_name, listed, 1))
+                self.assertEqual(str(mod_format.load(str(path)).name), known.name)
 
     def test_a_mod_for_a_pack_the_game_lacks_writes_nothing(self):
         text = rmod_json({"x.bin": b"x"}).replace("ZZ_GladPatchableWin.dat", "NoSuchPack.dat")
