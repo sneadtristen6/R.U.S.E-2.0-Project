@@ -110,6 +110,37 @@ class NewMaps(MapGame):
             self.api.set_map_size(copy, 4, 4)
 
 
+FLT_MAX = 3.4028234663852886e38
+
+
+class MapSizeOnEveryMap(unittest.TestCase):
+    """Map size grows a blank map's close-up mesh (rusemod.bigmap.grow_mesh), stretching its skirt parts' boxes to the
+    new edge. 16 of the game's 32 maps (Frontline, Tank Graveyard, Blood and Sand, Vesuvio, Tripartite, On the Edge,
+    Centre of Gravity, Nuclear Winter, Above the River, Djebel, Handshake over the Elbe and 5 campaign maps) have a
+    skirt part with no points in their close-up mesh, its box written as the floats' far ends (3.4e38 .. -3.4e38)."""
+
+    # FINDING F5: a blank map of one of those maps made bigger with Map size can't be built: the build stops with
+    # Python's words, "OverflowError: float too large to pack with f format" (bigmap.grow_mesh, line 95), shown by
+    # Test in game as "Something went wrong: OverflowError: ...". Seen on the real install: Blank Terrain of Frontline,
+    # 6 x 4 cells (dry build scen-frontline-big).
+    @unittest.expectedFailure
+    def test_f5_a_skirt_part_with_no_points_stretched(self):
+        import struct
+        from test_tms import make_tms
+        from rusemod import bigmap
+        from rusemod.tms import Tms
+        t = Tms(make_tms(gw=2, gh=2, water_cell=(0, 0), water=2000, skirt=True))   # water over one corner cell only
+        data = bytearray(t.skirt_data)
+        _v, _c, boff, _p, nparts = t._skirt_layout()[1]   # the water's side: points along two edges, none on two
+        empty = [p for p in range(nparts) if struct.unpack_from("<6f", data, boff + 24 * p) == (0.0,) * 6]
+        self.assertEqual(len(empty), 2)
+        for p in empty:   # as the game's own files write a part with no points
+            struct.pack_into("<6f", data, boff + 24 * p, FLT_MAX, FLT_MAX, FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX)
+        t.skirt_data = bytes(data)
+        grown, _info = bigmap.grow_mesh(t.to_bytes(), 4, 4, True, 1000.0, 0.0)
+        self.assertEqual((Tms(grown).grid_w, Tms(grown).grid_h), (4, 4))
+
+
 class Names(MapGame):
     """A new map's name: every script the apps' languages use, long ones, symbols, Windows' reserved names, one taken."""
 
