@@ -6192,3 +6192,18 @@ cz = "To, co se vrátilo, poslal Blender otevřený před tím otevřeným napos
 jpn = "戻ってきたものは、最後に開いたBlenderより前に開いたBlenderから送られたため、取り込めません。そのBlenderを閉じ、最後に開いたBlenderで「R.U.S.E. Studioへ送る」を押してから、変更を戻してください。"
 sc = "带回的内容是由最后打开的那个 Blender 之前打开的 Blender 发送的，所以无法收入：请关闭那个 Blender，然后在最后打开的那个中点击“发送到 R.U.S.E. Studio”，再带回你的修改。"
 fa = "آنچه برگشت را Blenderی فرستاده که پیش از آخرین Blender بازشده باز شده بود، پس نمی‌توان آن را گرفت: آن Blender را ببندید، سپس در Blenderی که آخر باز شد روی «ارسال به R.U.S.E. Studio» کلیک کنید و تغییراتتان را بازگردانید."
+
+# squads scenarios (release 0.9.8.20), finding SQ-1's PROPOSED FIX: Custom uniform refused while soldiers of the
+# squad wear models the modder imported (api.model_copy), as it is over the squad's own model
+[e3641b72dfe]
+us = "Soldiers of this squad wear models you imported, and a squad can't wear your models and a uniform at once. To give it a uniform, click Back to the game's look on each soldier who wears your model first, then Custom uniform."
+fr = "Des soldats de cette escouade portent des modèles que vous avez importés, et une escouade ne peut pas porter vos modèles et un uniforme à la fois. Pour lui donner un uniforme, cliquez d'abord sur Revenir à l'apparence du jeu sur chaque soldat qui porte votre modèle, puis sur Uniforme personnalisé."
+ger = "Soldaten dieses Trupps tragen Modelle, die du importiert hast, und ein Trupp kann nicht deine Modelle und eine Uniform zugleich tragen. Um ihm eine Uniform zu geben, klicke zuerst bei jedem Soldaten, der dein Modell trägt, auf Zurück zum Aussehen aus dem Spiel, dann auf Eigene Uniform."
+ita = "Alcuni soldati di questa squadra indossano modelli che hai importato, e una squadra non può indossare i tuoi modelli e un'uniforme insieme. Per darle un'uniforme, clicca prima Torna all'aspetto del gioco su ogni soldato che indossa il tuo modello, poi Uniforme personalizzata."
+spa = "Algunos soldados de este pelotón llevan modelos que importaste, y un pelotón no puede llevar tus modelos y un uniforme a la vez. Para darle un uniforme, haz clic primero en Volver al aspecto del juego en cada soldado que lleve tu modelo, y luego en Uniforme personalizado."
+pol = "Żołnierze tego oddziału noszą zaimportowane przez ciebie modele, a oddział nie może nosić naraz twoich modeli i munduru. Aby dać mu mundur, najpierw kliknij Wróć do wyglądu z gry przy każdym żołnierzu, który nosi twój model, a potem Własny mundur."
+ru = "Солдаты этого отряда носят импортированные вами модели, а отряд не может носить ваши модели и форму одновременно. Чтобы дать ему форму, сначала нажмите «Вернуть вид из игры» у каждого солдата с вашей моделью, затем «Своя форма»."
+cz = "Vojáci tohoto družstva nosí modely, které jste importovali, a družstvo nemůže nosit vaše modely a uniformu zároveň. Chcete-li mu dát uniformu, klikněte nejdřív u každého vojáka, který nosí váš model, na Zpět na vzhled ze hry, pak na Vlastní uniforma."
+jpn = "この分隊には、あなたがインポートしたモデルを使う兵士がいます。分隊はあなたのモデルと軍服を同時に使えません。軍服にするには、まずあなたのモデルを使う兵士それぞれで「ゲームの見た目に戻す」をクリックし、次に「カスタム軍服」をクリックしてください。"
+sc = "这个小队有士兵使用你导入的模型，而小队不能同时使用你的模型和制服。要给它制服，请先在每个使用你模型的士兵上点击“恢复游戏中的外观”，然后点击“自定义制服”。"
+fa = "سربازانی از این جوخه مدل‌هایی را که وارد کرده‌اید می‌پوشند، و جوخه نمی‌تواند هم‌زمان مدل‌های شما و اونیفرم را بپوشد. برای دادن اونیفرم به آن، اول روی هر سربازی که مدل شما را می‌پوشد «بازگشت به ظاهر بازی» را بزنید، بعد «اونیفرم سفارشی» را."

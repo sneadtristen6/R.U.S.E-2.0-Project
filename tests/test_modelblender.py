@@ -788,6 +788,130 @@ def painted(pictures: dict) -> bytes:
     return gltf.pack_glb(doc, views)
 
 
+def repaint(send: Path, colours: dict) -> None:
+    """Blender's paint changed in what it sent (`send`): each material named in `colours` ({name: (r, g, b)}) shows a
+    picture of that one colour, its size kept (a picture of another size would get the plain 144: alpha_sizes)."""
+    from rusemod.dxt import png_bytes
+    doc, views = gltf.glb_views(send.read_bytes())
+    for m in doc["materials"]:
+        if m["name"] in colours:
+            image = doc["images"][doc["textures"][m["pbrMetallicRoughness"]["baseColorTexture"]["index"]]["source"]]
+            w, h, _rgba = read_png(views[image["bufferView"]])
+            image["bufferView"] = gltf.add_view(doc, views, png_bytes(bytes(colours[m["name"]]) * (w * h), w, h))
+    send.write_bytes(gltf.pack_glb(doc, views))
+
+
+def colours_in(model: Path) -> dict:
+    """{each picture of a model the mod keeps (rusemod.modelin.write_glb's): its colour, RGB a pixel}."""
+    doc, binary = modelin.glb_document(model.read_bytes())
+    out = {}
+    for m in doc["materials"]:
+        k = m["pbrMetallicRoughness"]["baseColorTexture"]["index"]
+        _w, _h, rgba = read_png(modelin.glb_image(doc, binary, doc["textures"][k]["source"]))
+        out[m["name"]] = bytes(b for i, b in enumerate(rgba) if i % 4 != 3)
+    return out
+
+
+RED, BLUE = (200, 30, 30), (30, 40, 210)
+
+
+class UntickedPaintKeepsWhatItHasNow(unittest.TestCase):
+    """The one Blender button's Paint unticked keeps the paint the unit's model has NOW (its "what was unticked stays as
+    it was"), never the paint of the file Blender was first opened with: a repaint taken in by an earlier Bring back
+    was put back to the first opening's picture while the page said "Its paint was kept as it was" (found by the anims
+    fixer, 2026-11-14, on 0d5564eb; so since 8f48259e, the one Blender button's calls). ItsOwnShine's stand-ins: the
+    made-up tank of a game model, its model's own Change it in Blender, and the bazooka man's own door (a kind's)."""
+    setUp, tearDown = ItsOwnShine.setUp, ItsOwnShine.tearDown
+    patched, record = ItsOwnShine.patched, ItsOwnShine.record
+
+    def trip(self, address=TANK, kind=None, unticked=False, colours=None) -> dict:
+        """Change it in Blender; Blender sends (`colours`: those materials repainted there); Bring back the model, its
+        Paint unticked when `unticked` (blender_back's keep_paint)."""
+        with self.patched():
+            res = self.api.model_blender(address, "us", kind) if kind else self.api.model_blender(address)
+            send = Path(res["work"]) / f"{Path(res['work']).name}.glb"
+            blender_sends(self.opened[-1], send)
+            if colours:
+                repaint(send, colours)
+            return self.api.model_blender_back(address, 1.0, kind, keep_paint=unticked)
+
+    def model(self, stem="Descriptor_Unit_My_Tank") -> Path:
+        return self.models / f"{stem}.glb"
+
+    def test_a_repaint_brought_back_stays_when_a_later_trip_unticks_paint(self):
+        """Paint ticked, the hull repainted red in Blender and brought back; then Paint unticked, nothing changed in
+        Blender: the hull stays red, nothing is put back (0d5564eb put the game's hull back, and said it kept it)."""
+        self.trip(colours={"test_tank_hull": RED})
+        red = colours_in(self.model())
+        self.assertEqual(red["test_tank_hull"], bytes(RED) * 32)
+        res = self.trip(unticked=True)
+        self.assertEqual(colours_in(self.model()), red)
+        self.assertEqual(res["kept"]["paint"], [])
+
+    def test_paint_unticked_puts_back_the_paint_it_has_now_over_blender_s(self):
+        """Paint ticked, the hull repainted red and brought back; then Paint unticked and the hull repainted blue in
+        Blender: the hull stays red, and that is said (0d5564eb put the game's hull back)."""
+        self.trip(colours={"test_tank_hull": RED})
+        red = colours_in(self.model())
+        res = self.trip(unticked=True, colours={"test_tank_hull": BLUE})
+        self.assertEqual(colours_in(self.model()), red)
+        self.assertEqual(res["kept"]["paint"], ["test_tank_hull"])
+
+    def test_a_resize_between_keeps_the_repaint_too(self):
+        """A Resize between the two trips fits the model again from what the first Bring back took in: the hull stays
+        red through a later trip with Paint unticked."""
+        self.trip(colours={"test_tank_hull": RED})
+        with self.patched():
+            self.api.model_resize(TANK, 1.5)
+        red = colours_in(self.model())
+        self.assertEqual(red["test_tank_hull"], bytes(RED) * 32)
+        self.trip(unticked=True, colours={"test_tank_hull": BLUE})
+        self.assertEqual(colours_in(self.model()), red)
+
+    def test_a_kind_s_own_door_keeps_his_paint_brought_back_too(self):
+        """The bazooka man's own door (a squad's other kind, the Generic Horse's way): the same."""
+        self.api._soldier_kinds = lambda address: {"fusilier": RIFLEMAN, "bazooka": BAZOOKA}
+        self.api._look_models = lambda address: ([BAZOOKA, RIFLEMAN], [])
+        self.trip(SQUAD, kind="bazooka", colours={"test_tank_hull": RED})
+        his = self.model("Descriptor_Unit_My_Riflemen@bazooka")
+        red = colours_in(his)
+        self.trip(SQUAD, kind="bazooka", unticked=True)
+        self.assertEqual(colours_in(his), red)
+        self.assertFalse(self.model("Descriptor_Unit_My_Riflemen").exists())   # (the riflemen's untouched)
+
+    def test_control_a_kind_left_unticked_keeps_his_files_byte_for_byte(self):
+        """The control (so before too), the Generic Horse's way of one kind at a time: the bazooka man repainted and
+        brought back, then a trip of the riflemen alone with Paint unticked: his model, record and kept file stay byte
+        for byte."""
+        self.api._soldier_kinds = lambda address: {"fusilier": RIFLEMAN, "bazooka": BAZOOKA}
+        self.api._look_models = lambda address: ([BAZOOKA, RIFLEMAN], [])
+        self.trip(SQUAD, kind="bazooka", colours={"test_tank_hull": RED})
+        work = self.mod / "blender" / "Descriptor_Unit_My_Riflemen@bazooka"
+        his = [self.model("Descriptor_Unit_My_Riflemen@bazooka"),
+               self.models / "Descriptor_Unit_My_Riflemen@bazooka.json",
+               work / "kept" / "Descriptor_Unit_My_Riflemen@bazooka.glb"]
+        before = [f.read_bytes() for f in his]
+        self.trip(SQUAD, unticked=True, colours={"test_tank_hull": BLUE})
+        self.assertTrue(self.model("Descriptor_Unit_My_Riflemen").is_file())
+        self.assertEqual([f.read_bytes() for f in his], before)
+
+    def test_control_paint_unticked_on_the_first_trip_keeps_the_paint_it_went_out_with(self):
+        """The control (so before too): Paint unticked on the first trip, the hull repainted in Blender: the hull keeps
+        the game's picture it went out with, said."""
+        res = self.trip(unticked=True, colours={"test_tank_hull": RED})
+        game_hull = bytes(b for i, b in enumerate(PICTURES[HULL][2]) if i % 4 != 3)
+        self.assertEqual(colours_in(self.model())["test_tank_hull"], game_hull)
+        self.assertEqual(res["kept"]["paint"], ["test_tank_hull"])
+
+    def test_control_paint_ticked_takes_each_repaint_in(self):
+        """The control (so before too): Paint ticked on each trip, each repaint comes in."""
+        self.trip(colours={"test_tank_hull": RED})
+        self.assertEqual(colours_in(self.model())["test_tank_hull"], bytes(RED) * 32)
+        res = self.trip(colours={"test_tank_hull": BLUE})
+        self.assertEqual(colours_in(self.model())["test_tank_hull"], bytes(BLUE) * 32)
+        self.assertIsNone(res["kept"]["paint"])
+
+
 class PaintKept(unittest.TestCase):
     """The one Blender button's Paint unticked: gltf.paint_like puts each material's picture back as it went out, by the
     material's name; the rest as Blender sent it."""

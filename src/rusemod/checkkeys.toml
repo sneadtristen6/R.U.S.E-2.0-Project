@@ -2578,3 +2578,9 @@ check = "launcher.play.game-not-found"
 where = "ruse_launcher.api:_play"
 kind = "raise"
 us = "We couldn't find R.U.S.E. Choose its folder first."
+
+[ccc5525913e]
+check = "build._mod_text"
+where = "rusemod.build:_mod_text"
+kind = "raise"
+us = "{0}:{1}: isn't saved as UTF-8 text, so it can't be read. Save it as UTF-8 (in Notepad: Save as, Encoding UTF-8; in Excel: Save as, CSV UTF-8 (Comma delimited))."

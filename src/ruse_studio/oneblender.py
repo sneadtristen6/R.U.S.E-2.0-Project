@@ -21,8 +21,9 @@ in, and remembers nothing else than one.json in the unit's Blender folder):
 - a squad on bones of its own (the Generic Horse): one of its kinds at a time (the riflemen with their horse, or the
   heavy-weapon soldier), as Change it in Blender opens them, never the whole squad side by side (five horses, each with
   every animation: ten minutes to open and the break above);
-- Bones or Paint unticked: Bring back puts what went out back (rusemod.gltf.bones_like, paint_like), so it comes back
-  as it was."""
+- Bones or Paint unticked: Bring back puts back what the mod has now (rusemod.gltf.bones_like, paint_like: the model's
+  bones and paint as the mod has them, modelblender's _paint_now; each soldier's as he went out at this opening, made
+  from what the mod has), so it stays as it was."""
 from __future__ import annotations
 
 import json
@@ -180,8 +181,8 @@ class OneBlenderCalls:
 
     def blender_back(self, address: str, lang: str = "us") -> dict:
         """Bring my changes back from the Blender the one button opened (blender_open's one.json): the model's, the
-        squad's or the paint's own bring-back, with the unticked Bones and Paint put back as they went out. Returns that
-        bring-back's answer with "door" and "kept"."""
+        squad's or the paint's own bring-back, with the unticked Bones and Paint put back as the mod has them. Returns
+        that bring-back's answer with "door" and "kept"."""
         from .api import StudioError
         one = self._one_file(address)
         state = _read(one) if one is not None else {}

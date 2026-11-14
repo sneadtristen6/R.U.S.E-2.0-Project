@@ -65,7 +65,7 @@ from rusemod.roadnet import RoadNetError
 from rusemod.terrain import LODS, ground_png, map_list, pack_file, terrain
 from rusemod.webui import Job, job_view, pick_file, pick_folder, pick_save
 
-from .edits import REMOVED, EditsFileError, Link, Literal, ModEdits, NewUnit, plain_name
+from .edits import REMOVED, EditsFileError, Link, Literal, ModEdits, NewUnit, glob_safe, plain_name
 from .music import MusicCalls
 from .decoy import DecoyCalls, DecoyError
 from .era_units import EraUnitCalls
@@ -344,6 +344,35 @@ def _whole(value, kind: str, prop: str):
     return r
 
 
+ID_MOST = 40   # a new mod's id (its folder's and file's name) at most, from a name of any length (as a RUSE Decoy copy's id:
+#               rusemod.anim, "at most 40"): room left in Windows' 259 characters for the mod's own folders
+
+
+def _ascii_digits(text: str) -> str:
+    """`text` with full-width letters and signs as the plain ones they stand for (NFKC: a Japanese or Chinese keyboard's
+    １．０．０), and each digit of another script (Persian ۱, Arabic ١...) as 0-9: a version typed so is the version
+    every other player's file and list read (the export scenarios' FE-5: "１.０.０" went out as it was)."""
+    text = unicodedata.normalize("NFKC", text)
+    return "".join(str(unicodedata.decimal(c)) if c.isdecimal() and not "0" <= c <= "9" else c for c in text)
+
+
+FLOAT32_MOST = 3.4028234663852886e38  # the most a 4-byte decimal number (the game's float32) holds
+
+
+def _fits(value, kind: str, prop: str):
+    """A number typed for a property of kind `kind`, as the build will store it: a whole number rounded and checked
+    (_whole); a 4-byte decimal one checked against the most it holds (past it, the build stopped with Python's
+    OverflowError: scenario U-9; the All values tab refuses it too, rusemod.values); any other as it came."""
+    if kind in INT_RANGES:
+        return _whole(value, kind, prop)
+    if kind == "float32":
+        try:
+            struct.pack("<f", value)
+        except OverflowError:
+            raise StudioError(f"{prop}: {value} doesn't fit (it must be {-FLOAT32_MOST} to {FLOAT32_MOST})") from None
+    return value
+
+
 def safe_name(name: str) -> str:
     """The part of a new unit's address made from its name: ASCII letters, digits and _ only (accents dropped, other
     letters left out), which the game's data, its Python unit list and .rndf files all accept."""
@@ -410,6 +439,16 @@ def file_error(exc: OSError, writing, reading=None) -> StudioError:
     if code is None:
         return StudioError(f"{path} couldn't be read or written. Please report this.")
     return StudioError(f"{path} couldn't be read or written (error {code}). Please report this.")
+
+
+def _held_in_place(exc: OSError, source: Path) -> StudioError:
+    """A rename of a mod's file or folder to a new name (the check's Set aside and Rename) that Windows refused, said
+    in words naming the one being renamed: the error names both, and the one another program holds is the first, where
+    file_named takes the second, as for a new file put in another's place (finding P-5 of the play scenarios,
+    2026-11-14: "...extra.rndf.broken couldn't be read or written, because another program has it open", a file that
+    isn't there)."""
+    exc.filename2 = None
+    return file_error(exc, source)
 
 
 def page_file_error(exc: OSError) -> StudioError | None:
@@ -5858,7 +5897,10 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         with self._saving:
             if target.exists() and target.resolve() != source.resolve():
                 raise StudioError(f"maps/{to} already exists: move the files from maps/{name} into it by hand")
-            source.rename(target)
+            try:
+                source.rename(target)
+            except OSError as exc:
+                raise _held_in_place(exc, source) from exc
         return self.check_mod()
 
     def set_aside(self, file: str, where: str = "mod") -> dict:
@@ -5874,7 +5916,10 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         if not (map_file or unit_file or text_file) or not path.is_file():
             raise StudioError(f"{file} isn't one of this mod's files")
         with self._saving:
-            kept = _aside(path)
+            try:
+                kept = _aside(path)
+            except OSError as exc:
+                raise _held_in_place(exc, path) from exc
         return self.check_mod() | {"kept": str(kept)}
 
     # --- the mod being edited ---
@@ -5991,7 +6036,15 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         if kind == "mod":
             self._horse_guard(None, switching=True)   # (the Horse Squad's unit being made in the mod edited now)
         name = name.strip()
-        slug = re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-") or ("my-map" if kind == "map" else "my-mod")
+        # (its letters without their accents first, as a unit's address keeps them, safe_name: "Équipe de char" was
+        # quipe-de-char, the é dropped; the export scenarios' FE-3)
+        plain = unicodedata.normalize("NFKD", name).encode("ascii", "ignore").decode()
+        slug = re.sub(r"[^a-z0-9]+", "-", plain.lower()).strip("-")
+        if len(slug) > ID_MOST:   # (a long name's folder Windows refused: "[WinError 3] The system cannot find the path
+            #                       specified", the export scenarios' FE-4; the name itself stays whole in mod.toml)
+            cut = slug[:ID_MOST]
+            slug = (cut.rsplit("-", 1)[0] if "-" in cut else cut).strip("-")
+        slug = slug or ("my-map" if kind == "map" else "my-mod")
         base = self._folders()[self.KINDS[kind][0]]
         # a name the other kind has is taken too: its folder name is its id, and Test in game builds the unit mod and
         # the map changes together (two of one id stopped a tester's build, 2026-10-30); the other kind's folders are
@@ -6002,8 +6055,12 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             folder, n = base / f"{slug}-{n}", n + 1
         (folder / ("maps" if kind == "map" else "src")).mkdir(parents=True)
         made = "A map made in the RUSE Studio." if kind == "map" else "Made in the RUSE Studio."
+        # (the name as TOML writes it, package._toml: json.dumps wrote a letter outside the first 65,536, an emoji, as
+        # two \ud8xx halves TOML refuses, so the new mod's own mod.toml couldn't be read: the export scenarios' FE-1, the
+        # units scenarios' U-1; the manifest's own writer, which also writes a pasted control character or line
+        # separator as \uXXXX, FE-6)
         (folder / "mod.toml").write_text(
-            f'[mod]\nid          = "{folder.name}"\nname        = {json.dumps(name or folder.name)}\n'
+            f'[mod]\nid          = "{folder.name}"\nname        = {package._toml(name or folder.name)}\n'
             f'version     = "0.1.0"\ndescription = "{made}"\n', encoding="utf-8")
         modformat.stamp(folder, self.MADE_WITH["tool"], self.MADE_WITH["version"])  # in this Studio's mod format
         return self.choose_mod(str(folder), kind)
@@ -6456,8 +6513,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         elif len(values) != len(p["numbers"]):
             raise StudioError(f"{prop}: expected {len(p['numbers'])} numbers" if p["list"] else f"{prop}: one number")
         kind = types.get(prop + "[]" if p["list"] else prop, "")
-        if kind in INT_RANGES:
-            values = [_whole(v, kind, prop) for v in values]
+        values = [_fits(v, kind, prop) for v in values]
         with self._saving:
             edits = ModEdits(edits.folder)  # read again: another change may have been saved meanwhile
             before = edits.get(o["address"], prop, "shared") if how == "own" else None  # what "all of them" got
@@ -6650,7 +6706,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             if p["list"] != isinstance(value, list) or len(values) != len(p["numbers"]):
                 raise StudioError(f"{prop}: expected {len(p['numbers'])} numbers" if p["list"] else f"{prop}: one number")
             kind = types.get(prop + "[]" if p["list"] else prop, "")
-            got = [_whole(v, kind, prop) for v in values] if kind in INT_RANGES else list(values)
+            got = [_fits(v, kind, prop) for v in values]
             new[mode_] = (got if p["list"] else got[0], p["numbers"] if p["list"] else p["numbers"][0])
         with self._saving:
             edits = ModEdits(edits.folder)  # read again: another change may have been saved meanwhile
@@ -6889,7 +6945,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             if p["list"] != isinstance(value, list) or len(values) != len(p["numbers"]):
                 raise StudioError(f"{prop}: expected {len(p['numbers'])} numbers" if p["list"] else f"{prop}: one number")
             kind = ix.prop_types(found[1]["class"]).get(prop + "[]" if p["list"] else prop, "")
-            got = [_whole(v, kind, prop) for v in values] if kind in INT_RANGES else list(values)
+            got = [_fits(v, kind, prop) for v in values]
             new, game = (got, p["numbers"]) if p["list"] else (got[0], p["numbers"][0])
             with self._saving:
                 edits = ModEdits(edits.folder)  # read again: another change may have been saved meanwhile
@@ -9600,6 +9656,15 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             raise StudioError("This unit has a model you imported, so it can't have its own copy of the model too: a "
                               "unit has only one model. Click Use the copied unit's model under Its own model first, "
                               "then Give it its own copy of the model.")
+        if own is not None and self._soldiers(address) and own.parent.is_dir() and any(
+                f.suffix.lower() == ".glb" for f in own.parent.glob(f"{glob_safe(own.stem)}@*")):
+            # not a game rule: one model per unit, a soldier's own look counted as the squad's model too (rusemod.build.
+            # unit_own_copies, whose words then named <unit>.glb, a file the mod hasn't got: finding SQ-1 of the squads
+            # scenarios, 2026-11-14). Refused, as over the squad's own model, rather than taking his look out (it would
+            # be lost), where Import a model... on his line over a uniform keeps the uniform waiting (squad_copy_out)
+            raise StudioError("Soldiers of this squad wear models you imported, and a squad can't wear your models and "
+                              "a uniform at once. To give it a uniform, click Back to the game's look on each soldier "
+                              "who wears your model first, then Custom uniform.")
         models = self._copy_models(address)
         if not models:
             # not a game rule: the build copies the models the unit's own model parts name
@@ -9946,9 +10011,13 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             namespace, tail = source.rsplit("/", 1)
             m = _PREFIX.match(tail)
             prefix = m.group(1) if m else "Descriptor_Unit_"
+            # an address another unit's has but for its capitals is taken too: Windows doesn't tell capitals apart in
+            # file names, so the two would share every file of their own (a card, a model, an animations folder) and
+            # Delete of one would take the other's (scenario U-8: Tiger II, then tiger ii)
+            lowered = {a.lower() for a in edits.new_units} | {u["address"].lower() for u in all_units}
 
             def taken(t: str) -> bool:
-                if t in edits.new_units:
+                if t in edits.new_units or t.lower() in lowered:
                     return True
                 try:
                     ix.show(t)
@@ -9996,7 +10065,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                                                                        o["values"]) else []) if dropped else []
         with self._saving:
             edits = ModEdits(edits.folder)  # read again: another change may have been saved meanwhile
-            if target in edits.new_units:
+            if target.lower() in {a.lower() for a in edits.new_units}:
                 raise StudioError(f"There's already a unit at {target}. Pick another name.")
             self._animations_ready(edits.folder)  # (its animations go along: actions.py)
             files = None
@@ -10522,9 +10591,13 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         folder = self._mod_dir(kind)
         if folder is None:
             raise StudioError("Pick or make a map first." if kind == "map" else "Pick or make a mod first.")
-        version = (version or "").strip()
-        if not re.fullmatch(r"\d+\.\d+\.\d+", version):
+        version = _ascii_digits((version or "").strip())
+        if not re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", version):
             raise StudioError("The version should be three numbers, like 1.0.0.")
+        exports = self.__dict__.setdefault("_exports", [])   # (this Studio's export jobs)
+        if any(getattr(self._jobs.get(j), "state", None) == "running" for j in exports):
+            # not a game rule: two exports at once wrote one file together (the export scenarios' FE-15)
+            raise StudioError("The Studio is busy with another job: wait for it to finish, then click again.")
         problem = package.edit_problem(folder)  # not a game rule: an edit never goes out under the original's name
         if problem:
             raise StudioError(problem)
@@ -10557,8 +10630,11 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                 say("R.U.S.E. wasn't found, so the file carries no game build or fingerprint.")
             else:
                 say("Building the mod on the game, to record the game build and the fingerprint…")
-                result = build_and_write(game, [load_mod(folder)], say=lambda line: say("  " + line),
-                                         cache=build_cache())
+                try:
+                    mod = load_mod(folder)
+                except OSError as exc:   # (a file another program holds: said in words, naming it; FE-13)
+                    raise file_error(package.named_file(exc, package.files_of(folder)), target) from exc
+                result = build_and_write(game, [mod], say=lambda line: say("  " + line), cache=build_cache())
                 if result.errors:
                     raise BuildError("Fix the mod first: the build above has errors, so nothing was exported.")
                 build_id = build_of(game)
@@ -10580,9 +10656,12 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                 if stale:
                     say(f"The era units' record and credits named units no longer in the mod; their lines were taken "
                         f"out: {', '.join(stale)}.")
-                path = package.pack(folder, target, build_id=build_id, data_revision=revision, fingerprint=fingerprint,
-                                    solved=answers, made_with=self.MADE_WITH, kinds=kinds, home_in=home_in,
-                                    left_out=left_out, cuts=cuts, unread=unread)
+                try:
+                    path = package.pack(folder, target, build_id=build_id, data_revision=revision,
+                                        fingerprint=fingerprint, solved=answers, made_with=self.MADE_WITH, kinds=kinds,
+                                        home_in=home_in, left_out=left_out, cuts=cuts, unread=unread)
+                except OSError as exc:   # (a file another program holds, named by pack, or a full disk: in words)
+                    raise file_error(exc, target) from exc
             if left_out:
                 say(f"Left out of the exported file: {', '.join(left_out)}. These are files the Studio left half "
                     f"written when it was stopped while writing them (their names end in .part, .partial or .tmp); "
@@ -10641,7 +10720,9 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         job = Job()
         job.result = None  # the exported file's size, SHA-256 and list entry, for "Share your mod"
         self._jobs[job.id] = job
-        return job.start(work, f"Saved as {target}", plain=(BuildError, RndfError, OSError, package.PackageError))
+        exports[:] = [j for j in exports if j in self._jobs] + [job.id]
+        return job.start(work, f"Saved as {target}",
+                         plain=(BuildError, RndfError, OSError, package.PackageError, StudioError))
 
     # --- Share your mod: how an exported mod gets onto the supported-mods list (MOD_FORMAT §15) ---
     @staticmethod
