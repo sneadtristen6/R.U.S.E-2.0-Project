@@ -50,6 +50,9 @@ inicia por su cuenta una copia rápida de prueba, para comprobar tu trabajo sobr
 | Cambiar una unidad, crear una nueva, cambiar su munición | [[Editar unidades|Editar-unidades]] |
 | Dar a una unidad o un edificio nuevos un modelo 3D de Blender o de cualquier herramienta 3D, o poner uno en un mapa | [[Importar un modelo|Importar-un-modelo]] |
 | Cambiar los soldados de un pelotón: todo el pelotón de una vez en Blender, o un soldado desde un archivo de modelo | [[Cambiar un pelotón|Cambiar-un-pelotón]] |
+| Llevar una unidad a Blender y traer mis cambios: **Abrir en Blender**, **Qué va a Blender**, **Traer mis cambios** | [[Abrir en Blender|Abrir-en-Blender]] |
+| Entender los huesos: qué son, las dos mitades de un modelo, los pesos en Blender, qué dice **¿Funcionará en el juego?** | [[Modelos y huesos|Modelos-y-huesos]] |
+| Cambiar cómo se mueven las unidades: qué animación usa cada acción, para una unidad o para todas, las copias, en Blender | [[Animaciones de las unidades|Animaciones-de-las-unidades]] |
 | Añadir unidades desde la Primera Guerra Mundial hasta hoy (IGM, IIGM+, Guerra Fría, moderna), a su tamaño real y tras una investigación | [[Unidades de otras épocas|Unidades-de-otras-épocas]] |
 | Dar a una de las naciones del juego un nombre y una bandera nuevos (China en el lugar de Italia) | [[Convertir una nación en otra|Convertir-una-nación-en-otra]] |
 | Cambiar lo que construye cada edificio y en qué orden, la investigación, añadir edificios propios con su propio aspecto | [[Edificios y menús de construcción|Edificios-y-menús-de-construcción]] |

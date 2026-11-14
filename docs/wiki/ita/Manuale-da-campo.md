@@ -49,6 +49,9 @@ avvia da sé una rapida copia di prova, per controllare il tuo lavoro mentre pro
 | Cambiare un'unità, crearne una nuova, cambiarne le munizioni | [[Modificare le unità|Modificare-le-unità]] |
 | Dare a una nuova unità o a un nuovo edificio un modello 3D da Blender o da qualsiasi programma 3D, o metterne uno su una mappa | [[Importare un modello|Importare-un-modello]] |
 | Cambiare i soldati di una squadra: tutta la squadra in una volta in Blender, o un soldato da un file di modello | [[Cambiare una squadra|Cambiare-una-squadra]] |
+| Portare un'unità in Blender e riportare le mie modifiche: **Apri in Blender**, **Cosa va in Blender**, **Riporta le mie modifiche** | [[Apri in Blender|Apri-in-Blender]] |
+| Capire le ossa: cosa sono, le due metà di un modello, i pesi in Blender, cosa dice **Funzionerà nel gioco?** | [[Modelli e ossa|Modelli-e-ossa]] |
+| Cambiare come si muovono le unità: quale animazione usa ogni azione, per un'unità o per tutte, le copie, in Blender | [[Animazioni delle unità|Animazioni-delle-unità]] |
 | Aggiungere unità dalla Prima guerra mondiale a oggi (Grande Guerra, Seconda guerra mondiale+, Guerra fredda, moderne), alle loro dimensioni reali e dietro una ricerca | [[Unità di altre epoche|Unità-di-altre-epoche]] |
 | Dare a una delle nazioni del gioco un nuovo nome e una nuova bandiera (la Cina al posto dell'Italia) | [[Trasformare una nazione in un altro paese|Trasformare-una-nazione-in-un-altro-paese]] |
 | Cambiare cosa costruisce ogni edificio e in quale ordine, la ricerca, aggiungere edifici miei con un aspetto tutto loro | [[Edifici e menu di costruzione|Edifici-e-menu-di-costruzione]] |

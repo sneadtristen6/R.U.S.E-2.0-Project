@@ -191,10 +191,11 @@
       test.addEventListener("click", () => testInGame());
       // (what the last bring-back did, right under the button that did it)
       S.ticks = !open && S.parts && S.parts.can ? oneBlenderTicks(S.parts, S.ticks ? S.ticks.ticks() : null) : null;
+      // (its help line ends with the "Having trouble? Read the guide" link: app.js helpLine)
       const out = [el("div", { className: "squad-go" }, big, test, ...(S.ticks ? [S.ticks.toggle] : [])),
         ...(S.ticks ? [S.ticks.box] : []), ...(S.said ? [S.said] : []),
-        el("p", { className: "squad-how", textContent: open ? w.squad_blender_open_how
-          : S.parts && S.parts.route === "kinds" ? w.one_how_model : w.one_how_squad })];   // (one model, or the ticked)
+        helpLine(open ? w.squad_blender_open_how : S.parts && S.parts.route === "kinds" ? w.one_how_model
+          : w.one_how_squad, "blender", "squad-how")];   // (one model, or the ticked)
       if (missing) {
         const get = el("button", { type: "button", textContent: w.look_get_blender, title: w.tip_look_get_blender });
         get.addEventListener("click", () => api().get_blender().catch(problem));

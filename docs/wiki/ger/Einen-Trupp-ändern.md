@@ -63,14 +63,15 @@ Spiel behalten ihre Soldaten.
 
 - **Weitere Optionen**, unter den Soldaten, sagt, wo dein Mod das Modell jedes Soldaten und deine Blender-Dateien
   aufbewahrt; **Im Ordner zeigen** öffnet den Ordner.
-- Blender geschlossen, bevor du deine Änderungen zurückgeholt hast? Das kleine **Meine Änderungen zurückholen** unter der
-  großen Schaltfläche nimmt, was du zuletzt gesendet hast.
+- Blender geschlossen, bevor du deine Änderungen zurückgeholt hast? **Meine Änderungen zurückholen** nimmt trotzdem, was
+  du zuletzt gesendet hast. Jeder Haken und jede Meldung des großen Knopfs: [[In Blender öffnen|In-Blender-öffnen]].
 - Die Uniform des Trupps ist in **Aussehen und Bewegung**, neben den Werten: **Eigene Uniform** gibt dem Trupp eine eigene
   Uniform, die **In Blender öffnen** auf der Karte für alle Soldaten auf einmal bemalt, wenn unter **Was nach Blender geht** nur **Seine Bemalung** angekreuzt ist. Ein Trupp trägt entweder deine Modelle
   oder eine Uniform.
 - Im Spiel noch nicht ausprobiert: ein Trupp mit 8 oder mit 2 Soldaten.
 
-Mehr über Modelle, Knochen und Animationen: [[Ein Modell importieren|Ein-Modell-importieren]].
+Mehr über Modelle, Knochen und Animationen: [[Ein Modell importieren|Ein-Modell-importieren]],
+[[Modelle und Knochen|Modelle-und-Knochen]] und [[Animationen der Einheiten|Animationen-der-Einheiten]].
 
 **Weiter:** [[Exportieren und teilen|Exportieren-und-teilen]]
 

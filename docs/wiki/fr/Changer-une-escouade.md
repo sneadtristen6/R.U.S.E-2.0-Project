@@ -61,14 +61,15 @@ soldats.
 
 - **Plus d'options**, sous les soldats, dit où votre mod garde le modèle de chaque soldat et vos fichiers Blender ;
   **Afficher dans le dossier** ouvre le dossier.
-- Vous avez fermé Blender avant de ramener vos changements ? Le petit **Ramener mes changements** sous le grand bouton
-  prend ce que vous avez envoyé en dernier.
+- Vous avez fermé Blender avant de ramener vos changements ? **Ramener mes changements** prend quand même ce que vous
+  avez envoyé en dernier. Chaque coche et chaque message du grand bouton : [[Ouvrir dans Blender|Ouvrir-dans-Blender]].
 - L'uniforme de l'escouade est dans **Apparence et mouvements**, à côté des valeurs : **Uniforme personnalisé** donne à
   l'escouade un uniforme à elle, que **Ouvrir dans Blender** sur la carte peint pour tous les soldats à la fois quand seule **Sa peinture** est cochée sous **Ce qui va dans Blender**. Une escouade porte
   soit vos modèles, soit un uniforme.
 - Pas encore essayé en jeu : une escouade de 8 ou de 2.
 
-Plus sur les modèles, les os et les animations : [[Importer un modèle|Importer-un-modèle]].
+Plus sur les modèles, les os et les animations : [[Importer un modèle|Importer-un-modèle]], [[Modèles et os|Modèles-et-os]]
+et [[Animations des unités|Animations-des-unités]].
 
 **Suivant :** [[Exporter et partager|Exporter-et-partager]]
 

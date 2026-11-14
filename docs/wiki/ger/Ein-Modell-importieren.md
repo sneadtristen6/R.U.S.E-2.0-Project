@@ -112,7 +112,8 @@ Trupps beginnt mit seiner Trupp-Karte und einer Zeile für jeden seiner Soldaten
 Gut zu wissen:
 - Die vier Schützen des US-Schützentrupps sind in Blender eine Figur: Das Spiel gibt ihnen ein Modell, also tragen alle vier, was du daran machst. Sein Bazooka-Mann ist eine eigene Figur.
 - Deine Blender-Dateien bleiben im Ordner deines Mods: `Documents\RUSE 2.0\Mods\<dein Mod>\blender\<Name der Einheit>\squad\`. Sie werden nicht in deinen Mod gepackt, wenn du ihn teilst. **Weitere Optionen**, unter den Soldaten, sagt, wo sie liegen, und sein **Im Ordner zeigen** öffnet den Ordner, in dem sie liegen.
-- Blender geschlossen, bevor du deine Änderungen zurückgeholt hast? Das kleine **Meine Änderungen zurückholen** unter der großen Schaltfläche nimmt, was du zuletzt gesendet hast.
+- Blender geschlossen, bevor du deine Änderungen zurückgeholt hast? **Meine Änderungen zurückholen** nimmt trotzdem, was du zuletzt gesendet hast.
+- Jeder Haken von **Was nach Blender geht**, und was **Meine Änderungen zurückholen** dir sagen kann: [[In Blender öffnen|In-Blender-öffnen]].
 - Haben einige Punkte deines Modells keinen Knochen (Blenders automatische Gewichte lassen ein paar aus), sagt die Seite, wie viele: Sie bewegen sich nur mit der Hüfte des Soldaten. Male sie in **Weight Paint** auf einen Knochen und sende erneut.
 - Ein Trupp mit **Eigene Uniform**: Dein Modell nimmt den Platz der Uniform ein (ihre Bemalung bleibt im Mod); sobald jeder Soldat wieder das Aussehen aus dem Spiel hat (**Zurück zum Aussehen aus dem Spiel** in seiner Zeile), kommt die Uniform zurück.
 - Du hast schon eine .glb, auf den Knochen des Spielsoldaten gebaut? **Ein Modell importieren…** in der Zeile dieses Soldaten nimmt sie, wie sie ist.
@@ -140,12 +141,12 @@ Seite der Einheit zeigt **Seine Animationen**, was die Einheit für jede Handlun
   Wähle **In seinem Lastwagen**, um den Lastwagen zu behalten.
 
 **Eine Kopie behält ihre Animationen:** Eine Einheit, die von einer mit eigenen Animationen kopiert wurde, spielt
-dieselben. Um eine nur für sie zu ändern, klick auf **In RUSE Decoy ändern** in ihrer Zeile **Geräusche und Animation**, dann **Nur diese Einheit**.
+dieselben. Um eine nur für sie zu ändern, klick auf **In RUSE Decoy ändern** in ihrer Zeile **Geräusche und Animation**, dann **Nur diese Einheit**. Jeder Weg, eine Animation zu ändern und die des Spiels zurückzubekommen: [[Animationen der Einheiten|Animationen-der-Einheiten]].
 
 Der so im Studio gemachte Generische Reitertrupp lief im Spiel (November 2026).
 ## Ein Modell mit eigenen Knochen und Animationen
 
-Ein Pferd, ein Pferd mit Reiter, irgendein Tier: Ein Modell auf eigenen Knochen kommt mit seinen Animationen auf einen Trupp.
+Ein Pferd, ein Pferd mit Reiter, irgendein Tier: Ein Modell auf eigenen Knochen kommt mit seinen Animationen auf einen Trupp. Was Knochen sind, seine zwei Hälften und was **Funktioniert es im Spiel?** sagt: [[Modelle und Knochen|Modelle-und-Knochen]].
 
 1. **Mach es in Blender**: dein Modell auf einer Armature mit eigenen Knochen (benannt, wie du willst) und eine Action für jede Animation. Benenne die Actions nach dem, was sie zeigen: mindestens **stand** (oder **idle**), **walk** und **run**; **death**, **fire**, **reload**, **hit**, **crouch**, **aim**, **look**, **flee** und **grenade** werden auch erkannt.
 2. **Exportiere es**: **File > Export > glTF 2.0**, Format **glTF Binary (.glb)**, mit angehaktem **Animation**.
@@ -167,7 +168,7 @@ Animationen werden in RUSE Decoy geändert. Klicke auf der Seite der Einheit in 
 1. **Wähle eine.** Unten in Blender listet der Action Editor sie auf: wähle die, die du ändern willst. **Leertaste** spielt sie ab.
 2. **Stelle die Knochen.** Klicke einen Knochen, drücke **Strg+Tab** für den Pose Mode, **R** zum Drehen (**G** verschiebt), dann **I**, um die Pose in diesem Bild festzuhalten. Mach das in jedem Bild, das du änderst: Blender geht von selbst von einer festgehaltenen Pose zur nächsten.
 3. **Sende sie.** Klicke **An das R.U.S.E. Studio senden**: jede Animation geht mit, geändert oder nicht.
-4. **Hol sie zurück.** Klicke in RUSE Decoy auf **Meine Änderungen zurückholen**. Es sagt, welche geändert zurückkamen: die gehören jetzt dieser Einheit, und RUSE Decoy zeigt sie unter **Nur diese Einheit**. Jede andere Einheit und jede Animation, die du nicht angefasst hast, bleibt die des Spiels.
+4. **Hol sie zurück.** Klicke in RUSE Decoy auf **Meine Änderungen zurückholen**. Es sagt, welche geändert zurückkamen: die gehören jetzt dieser Einheit. Jede andere Einheit und jede Animation, die du nicht angefasst hast, bleibt die des Spiels. Was jede seiner Meldungen bedeutet: [[Animationen der Einheiten|Animationen-der-Einheiten]].
 
 Gut zu wissen:
 - Das Spiel spielt Animationen mit 30 Bildern pro Sekunde, und Blender öffnet sie so. Eine Animation öffnet sich so lang, wie das Spiel sie spielt; machst du sie in Blender länger oder kürzer, kommt sie so zurück.

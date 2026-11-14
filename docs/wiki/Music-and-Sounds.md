@@ -50,6 +50,9 @@ to turn it, the wheel zooms; the 3D view needs the internet once):
   animation (what's attached to it grows with it).
 - **Back to the game's** takes every change to it out.
 
+Which animation a unit plays for each thing it does, a change for one unit only, a copy for the units you pick, and a
+new unit's animations in Blender: [[Unit animations|Unit-Animations]].
+
 ## Motion capture
 
 Put a real person's movement on an animation, under **Motion capture**: pick a move from the motion library (3,205
@@ -66,10 +69,10 @@ capture file…** of your own (.bvh, from Mixamo, Blender or any motion capture 
 
 ## A unit's sounds and animations
 
-A unit's page has a **Sounds and animation** section: its own voice lines and engine sounds, and its animations.
-**Change its sounds in RUSE Decoy** opens RUSE Decoy on that unit's own. A unit speaks the lines of its nation and
-kind, so a line changed there is heard from every unit that shares it. Its guns and hits are under the weapons and
-impacts kinds.
+A unit's page has a **Sounds and animation** row in **Look and moves**: its own voice lines and engine sounds, and its
+animations. **Change in RUSE Decoy** opens RUSE Decoy on that unit's own (a building's page has its own **Sounds and
+animation** box). A unit speaks the lines of its nation and kind, so a line changed there is heard from every unit
+that shares it. Its guns and hits are under the weapons and impacts kinds.
 
 ## A map's background sound
 

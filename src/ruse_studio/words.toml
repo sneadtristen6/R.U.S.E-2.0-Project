@@ -7241,6 +7241,60 @@ jpn = "ブラウザでWikiを開きます：各ツールの手順ガイド。"
 sc = "在浏览器中打开 Wiki：每个工具的分步指南。"
 fa = "ویکی را در مرورگرتان باز می‌کند: راهنماهای گام‌به‌گام برای هر ابزار."
 
+# "Having trouble? Read the guide": a quiet link at the end of a hard box's help line (ui/app.js troubleLink), opening
+# the field manual's page on it in the player's language (rusemod.community.WIKI_TOPICS); its tooltip says which page
+[help_trouble]
+us = "Having trouble? Read the guide"
+fr = "Un souci ? Lisez le guide"
+ger = "Probleme? Lies die Anleitung"
+ita = "Problemi? Leggi la guida"
+spa = "¿Problemas? Lee la guía"
+pol = "Masz problem? Przeczytaj poradnik"
+ru = "Не получается? Прочитайте руководство"
+cz = "Nedaří se? Přečti si návod"
+jpn = "うまくいかないときは：ガイドを読む"
+sc = "遇到问题？阅读指南"
+fa = "به مشکل خوردید؟ راهنما را بخوانید"
+
+[tip_help_trouble_bones]
+us = "Opens the field manual's page on bones in your browser, in your language: what bones are, the two halves, weights in Blender, and what each answer of “Will it work in the game?” means."
+fr = "Ouvre dans le navigateur la page du manuel sur les os, dans votre langue : ce que sont les os, les deux moitiés, les poids dans Blender, et ce que veut dire chaque réponse de « Est-ce que cela marchera en jeu ? »."
+ger = "Öffnet im Browser die Seite des Handbuchs über Knochen, in deiner Sprache: was Knochen sind, die zwei Hälften, Gewichte in Blender und was jede Antwort von „Funktioniert es im Spiel?“ bedeutet."
+ita = "Apre nel browser la pagina del manuale sulle ossa, nella tua lingua: cosa sono le ossa, le due metà, i pesi in Blender e cosa vuol dire ogni risposta di «Funzionerà nel gioco?»."
+spa = "Abre en el navegador la página del manual sobre los huesos, en tu idioma: qué son los huesos, las dos mitades, los pesos en Blender y qué quiere decir cada respuesta de «¿Funcionará en el juego?»."
+pol = "Otwiera w przeglądarce stronę podręcznika o kościach, w twoim języku: czym są kości, dwie połowy, wagi w Blenderze i co znaczy każda odpowiedź „Czy zadziała w grze?”."
+ru = "Открывает в браузере страницу руководства о костях на вашем языке: что такое кости, две половины, веса в Blender и что значит каждый ответ «Заработает ли это в игре?»."
+cz = "Otevře v prohlížeči stránku příručky o kostech, ve tvém jazyce: co jsou kosti, dvě poloviny, váhy v Blenderu a co znamená každá odpověď „Bude to ve hře fungovat?“."
+jpn = "マニュアルのボーンのページを、あなたの言語でブラウザに開きます：ボーンとは何か、上半身と下半身、Blenderでのウェイト、「ゲームで動きますか？」の各答えの意味。"
+sc = "在浏览器中用你的语言打开手册中关于骨骼的页面：什么是骨骼、上下两半、Blender 中的权重，以及“能在游戏中正常运行吗？”每个回答的意思。"
+fa = "صفحهٔ دفترچهٔ راهنمای میدانی دربارهٔ استخوان‌ها را به زبان شما در مرورگر باز می‌کند: استخوان‌ها چیستند، دو نیمه، وزن‌ها در Blender، و معنای هر پاسخ «آیا در بازی کار می‌کند؟»."
+
+[tip_help_trouble_animations]
+us = "Opens the field manual's page on animations in your browser, in your language: which animation each action plays, changing one for one unit or for every unit, copies, Blender, and getting the game's back."
+fr = "Ouvre dans le navigateur la page du manuel sur les animations, dans votre langue : quelle animation joue chaque action, en changer une pour une unité ou pour toutes, les copies, Blender, et retrouver celle du jeu."
+ger = "Öffnet im Browser die Seite des Handbuchs über Animationen, in deiner Sprache: welche Animation jede Aktion spielt, eine für eine Einheit oder für alle ändern, Kopien, Blender und die des Spiels zurückholen."
+ita = "Apre nel browser la pagina del manuale sulle animazioni, nella tua lingua: quale animazione usa ogni azione, cambiarne una per un'unità o per tutte, le copie, Blender e riavere quella del gioco."
+spa = "Abre en el navegador la página del manual sobre las animaciones, en tu idioma: qué animación usa cada acción, cambiar una para una unidad o para todas, las copias, Blender y recuperar la del juego."
+pol = "Otwiera w przeglądarce stronę podręcznika o animacjach, w twoim języku: jakiej animacji używa każda czynność, zmiana jednej dla jednej jednostki lub dla wszystkich, kopie, Blender i powrót do animacji gry."
+ru = "Открывает в браузере страницу руководства об анимациях на вашем языке: какую анимацию играет каждое действие, как изменить её для одного юнита или для всех, копии, Blender и как вернуть анимацию игры."
+cz = "Otevře v prohlížeči stránku příručky o animacích, ve tvém jazyce: jakou animaci hraje každá činnost, změna jedné pro jednu jednotku nebo pro všechny, kopie, Blender a návrat k animaci hry."
+jpn = "マニュアルのアニメーションのページを、あなたの言語でブラウザに開きます：各動作が再生するアニメーション、1ユニットだけ・全ユニットでの変更、コピー、Blender、ゲームのものに戻す方法。"
+sc = "在浏览器中用你的语言打开手册中关于动画的页面：每个动作播放哪个动画、只为一个单位或为所有单位修改、副本、Blender，以及如何恢复游戏原有的动画。"
+fa = "صفحهٔ دفترچهٔ راهنمای میدانی دربارهٔ انیمیشن‌ها را به زبان شما در مرورگر باز می‌کند: هر کار کدام انیمیشن را پخش می‌کند، تغییر یکی برای یک یگان یا برای همه، کپی‌ها، Blender، و برگرداندن انیمیشن خود بازی."
+
+[tip_help_trouble_blender]
+us = "Opens the field manual's page on Open in Blender in your browser, in your language: what goes to Blender, the round trip step by step, Bring my changes back, and what to do when something goes wrong."
+fr = "Ouvre dans le navigateur la page du manuel sur Ouvrir dans Blender, dans votre langue : ce qui va dans Blender, l'aller-retour pas à pas, Ramener mes changements, et que faire quand quelque chose ne va pas."
+ger = "Öffnet im Browser die Seite des Handbuchs über In Blender öffnen, in deiner Sprache: was nach Blender geht, der Weg hin und zurück Schritt für Schritt, Meine Änderungen zurückholen und was zu tun ist, wenn etwas schiefgeht."
+ita = "Apre nel browser la pagina del manuale su Apri in Blender, nella tua lingua: cosa va in Blender, andata e ritorno passo passo, Riporta le mie modifiche e cosa fare quando qualcosa va storto."
+spa = "Abre en el navegador la página del manual sobre Abrir en Blender, en tu idioma: qué va a Blender, cómo llevarlo y traerlo paso a paso, Traer mis cambios y qué hacer cuando algo sale mal."
+pol = "Otwiera w przeglądarce stronę podręcznika o Otwórz w Blenderze, w twoim języku: co trafia do Blendera, droga tam i z powrotem krok po kroku, Przenieś moje zmiany i co robić, gdy coś pójdzie nie tak."
+ru = "Открывает в браузере страницу руководства об «Открыть в Blender» на вашем языке: что откроется в Blender, путь туда и обратно шаг за шагом, «Вернуть мои изменения» и что делать, если что-то пошло не так."
+cz = "Otevře v prohlížeči stránku příručky o Otevřít v Blenderu, ve tvém jazyce: co jde do Blenderu, cesta tam a zpět krok za krokem, Přenést moje změny a co dělat, když se něco pokazí."
+jpn = "マニュアルの「Blenderで開く」のページを、あなたの言語でブラウザに開きます：Blenderに送るもの、行き来の手順、「変更を戻す」、うまくいかないときの対処。"
+sc = "在浏览器中用你的语言打开手册中关于“在 Blender 中打开”的页面：哪些内容送到 Blender、往返的每一步、“带回我的修改”，以及出问题时怎么办。"
+fa = "صفحهٔ دفترچهٔ راهنمای میدانی دربارهٔ «باز کردن در Blender» را به زبان شما در مرورگر باز می‌کند: چه چیزی به Blender می‌رود، رفت و برگشت گام‌به‌گام، «بازگرداندن تغییراتم»، و اینکه وقتی مشکلی پیش آمد چه کنید."
+
 [help_discussions]
 us = "Discussions"
 fr = "Discussions"

@@ -48,6 +48,9 @@ szybką kopię testową, byś mógł sprawdzać swoją pracę na bieżąco.
 | Zmienić jednostkę, zrobić nową, zamienić jej amunicję | [[Edycja jednostek|Edycja-jednostek]] |
 | Dać nowej jednostce lub budynkowi model 3D z Blendera lub dowolnego narzędzia 3D albo postawić go na mapie | [[Importowanie modelu|Importowanie-modelu]] |
 | Zmienić żołnierzy oddziału: cały oddział naraz w Blenderze albo jednego żołnierza z pliku modelu | [[Zmiana oddziału|Zmiana-oddziału]] |
+| Zabrać jednostkę do Blendera i przenieść moje zmiany: **Otwórz w Blenderze**, **Co trafia do Blendera**, **Przenieś moje zmiany** | [[Otwórz w Blenderze|Otwórz-w-Blenderze]] |
+| Zrozumieć kości: czym są, dwie połowy modelu, wagi w Blenderze, co mówi **Czy zadziała w grze?** | [[Modele i kości|Modele-i-kości]] |
+| Zmienić, jak ruszają się jednostki: której animacji używa każda czynność, dla jednej jednostki albo dla wszystkich, kopie, w Blenderze | [[Animacje jednostek|Animacje-jednostek]] |
 | Dodać jednostki od I wojny światowej po dziś (I wojna światowa, II wojna światowa+, zimna wojna, współczesność), w ich prawdziwym rozmiarze i dostępne po zbadaniu | [[Jednostki z innych epok|Jednostki-z-innych-epok]] |
 | Dać jednej z nacji gry nową nazwę i flagę (Chiny w miejsce Włoch) | [[Zamiana jednej nacji w inną|Zamiana-jednej-nacji-w-inną]] |
 | Zmienić, co buduje każdy budynek i w jakiej kolejności, badania, dodać własne budynki z własnym wyglądem | [[Budynki i menu budowy|Budynki-i-menu-budowy]] |

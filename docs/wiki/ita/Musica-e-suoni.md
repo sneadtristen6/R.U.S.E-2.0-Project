@@ -52,6 +52,9 @@ un'unità che la usa (trascina per ruotarla, la rotellina fa lo zoom; la vista 3
   per tutta l'animazione (ciò che vi è attaccato cresce con essa).
 - **Torna a quella del gioco** toglie ogni sua modifica.
 
+Quale animazione usa un'unità per ogni cosa che fa, una modifica per una sola unità, una copia per le unità che scegli, e
+le animazioni di una nuova unità in Blender: [[Animazioni delle unità|Animazioni-delle-unità]].
+
 ## Motion capture
 
 Metti il movimento di una persona vera su un'animazione, sotto **Motion capture**: scegli un movimento dalla libreria
@@ -69,8 +72,9 @@ scegli), o **Scegli un file di motion capture…** tuo (.bvh, da Mixamo, Blender
 
 ## Suoni e animazioni di un'unità
 
-La pagina di un'unità ha una sezione **Suoni e animazioni**: le sue battute e i suoni del motore, e le sue animazioni.
-**Cambia i suoi suoni in RUSE Decoy** apre RUSE Decoy su quelli di quell'unità. Un'unità dice le battute della sua
+La pagina di un'unità ha una riga **Suoni e animazioni** in **Aspetto e movimenti**: le sue battute e i suoni del
+motore, e le sue animazioni. **Cambia in RUSE Decoy** apre RUSE Decoy su quelli di quell'unità (la pagina di un edificio
+ha un suo riquadro **Suoni e animazioni**). Un'unità dice le battute della sua
 nazione e del suo tipo, quindi una battuta cambiata lì si sente da ogni unità che la condivide. Le sue armi e i suoi
 colpi sono tra i tipi armi e impatti.
 

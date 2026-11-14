@@ -50,6 +50,9 @@ Studio startet selbst eine schnelle Testkopie, damit du deine Arbeit unterwegs p
 | Eine Einheit ändern, eine neue erstellen, ihre Munition tauschen | [[Einheiten bearbeiten|Einheiten-bearbeiten]] |
 | Einer neuen Einheit oder einem neuen Gebäude ein 3D-Modell aus Blender oder einem anderen 3D-Programm geben, oder eines auf eine Karte setzen | [[Ein Modell importieren|Ein-Modell-importieren]] |
 | Die Soldaten eines Trupps ändern: den ganzen Trupp auf einmal in Blender oder einen Soldaten aus einer Modelldatei | [[Einen Trupp ändern|Einen-Trupp-ändern]] |
+| Eine Einheit nach Blender bringen und meine Änderungen zurückholen: **In Blender öffnen**, **Was nach Blender geht**, **Meine Änderungen zurückholen** | [[In Blender öffnen|In-Blender-öffnen]] |
+| Knochen verstehen: was sie sind, die zwei Hälften eines Modells, Gewichte in Blender, was **Funktioniert es im Spiel?** sagt | [[Modelle und Knochen|Modelle-und-Knochen]] |
+| Ändern, wie sich Einheiten bewegen: welche Animation jede Handlung spielt, für eine Einheit oder alle, Kopien, in Blender | [[Animationen der Einheiten|Animationen-der-Einheiten]] |
 | Einheiten vom Ersten Weltkrieg bis heute hinzufügen (Erster Weltkrieg, Zweiter Weltkrieg+, Kalter Krieg, Moderne), in ihrer echten Größe und hinter Forschung | [[Einheiten aus anderen Epochen|Einheiten-aus-anderen-Epochen]] |
 | Einer Nation des Spiels einen neuen Namen und eine neue Flagge geben (China an Italiens Stelle) | [[Eine Nation in eine andere verwandeln|Eine-Nation-in-eine-andere-verwandeln]] |
 | Ändern, was jedes Gebäude baut und in welcher Reihenfolge, die Forschung; eigene Gebäude mit eigenem Aussehen hinzufügen | [[Gebäude und Baumenüs|Gebäude-und-Baumenüs]] |

@@ -60,14 +60,15 @@ Por ahora un pelotón tiene de 2 a 8 soldados, y conserva un soldado por cada ba
 
 - **Más opciones**, debajo de los soldados, dice dónde guarda tu mod el modelo de cada soldado y tus archivos de Blender;
   **Mostrar en la carpeta** abre la carpeta.
-- ¿Cerraste Blender antes de traer tus cambios? El pequeño **Traer mis cambios** bajo el botón grande toma lo último que
-  enviaste.
+- ¿Cerraste Blender antes de traer tus cambios? **Traer mis cambios** toma igualmente lo último que enviaste. Cada marca
+  y cada mensaje del botón grande: [[Abrir en Blender|Abrir-en-Blender]].
 - El uniforme del pelotón está en **Aspecto y movimientos**, junto a los valores: **Uniforme personalizado** le da al
   pelotón un uniforme propio, que **Abrir en Blender** en la tarjeta pinta para todos los soldados a la vez cuando en **Qué va a Blender** solo está marcada **Su pintura**. Un pelotón lleva o tus
   modelos o un uniforme.
 - Todavía no probado en el juego: un pelotón de 8 o de 2.
 
-Más sobre modelos, huesos y animaciones: [[Importar un modelo|Importar-un-modelo]].
+Más sobre modelos, huesos y animaciones: [[Importar un modelo|Importar-un-modelo]], [[Modelos y huesos|Modelos-y-huesos]] y
+[[Animaciones de las unidades|Animaciones-de-las-unidades]].
 
 **Siguiente:** [[Exportar y compartir|Exportar-y-compartir]]
 

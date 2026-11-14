@@ -59,14 +59,15 @@ ultimi uomini. Solo le squadre che crei tu hanno questi pulsanti: le squadre del
 
 - **Altre opzioni**, sotto i soldati, dice dove la tua mod tiene il modello di ogni soldato e i tuoi file di Blender;
   **Mostra nella cartella** apre la cartella.
-- Hai chiuso Blender prima di riportare le tue modifiche? Il piccolo **Riporta le mie modifiche** sotto il pulsante grande
-  prende ciò che hai inviato per ultimo.
+- Hai chiuso Blender prima di riportare le tue modifiche? **Riporta le mie modifiche** prende comunque ciò che hai
+  inviato per ultimo. Ogni spunta e ogni messaggio del pulsante grande: [[Apri in Blender|Apri-in-Blender]].
 - L'uniforme della squadra è in **Aspetto e movimenti**, accanto ai valori: **Uniforme personalizzata** dà alla squadra
   un'uniforme tutta sua, che **Apri in Blender** sulla scheda dipinge per tutti i soldati insieme quando sotto **Cosa va in Blender** è spuntata solo **La sua pittura**. Una squadra indossa o i tuoi
   modelli o un'uniforme.
 - Non ancora provato in gioco: una squadra di 8 o di 2.
 
-Altro su modelli, ossa e animazioni: [[Importare un modello|Importare-un-modello]].
+Altro su modelli, ossa e animazioni: [[Importare un modello|Importare-un-modello]], [[Modelli e ossa|Modelli-e-ossa]] e
+[[Animazioni delle unità|Animazioni-delle-unità]].
 
 **Avanti:** [[Esportare e condividere|Esportare-e-condividere]]
 

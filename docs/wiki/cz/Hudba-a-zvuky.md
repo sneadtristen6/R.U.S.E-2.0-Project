@@ -49,6 +49,9 @@ hraje (tažením ji otočíte, kolečko přibližuje; 3D pohled jednou potřebuj
   (co je k ní připojené, roste s ní).
 - **Zpět na původní** vezme zpět každou její změnu.
 
+Jakou animaci jednotka hraje pro každou činnost, změna jen pro jednu jednotku, kopie pro jednotky, které vybereš, a
+animace nové jednotky v Blenderu: [[Animace jednotek|Animace-jednotek]].
+
 ## Motion capture
 
 Dejte na animaci pohyb skutečného člověka, pod **Motion capture**: vyberte pohyb z knihovny pohybů (3 205 volných
@@ -65,8 +68,9 @@ capture…** s vlastním (.bvh, z Mixama, Blenderu nebo jakéhokoli programu pro
 
 ## Zvuky a animace jednotky
 
-Stránka jednotky má sekci **Zvuky a animace**: její vlastní repliky a zvuky motoru a její animace. **Změnit její zvuky
-v RUSE Decoy** otevře RUSE Decoy na zvucích té jednotky. Jednotka mluví replikami svého národa a druhu, takže replika
+Stránka jednotky má řádek **Zvuky a animace** ve **Vzhled a pohyb**: její vlastní repliky a zvuky motoru a její
+animace. **Změnit v RUSE Decoy** otevře RUSE Decoy na zvucích té jednotky (stránka budovy má vlastní rámeček **Zvuky a
+animace**). Jednotka mluví replikami svého národa a druhu, takže replika
 změněná tam zazní u každé jednotky, která ji sdílí. Její zbraně a zásahy jsou pod druhy zbraní a zásahů.
 
 ## Zvuk na pozadí mapy
