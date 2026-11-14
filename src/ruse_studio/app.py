@@ -124,6 +124,10 @@ def main(argv=None) -> int:
         log.mark("app_list")
     api.use_documents()  # mods and maps in Documents\RUSE 2.0 (rusemod.yourfiles), moved there the first time
     log.mark("your_files")
+    try:  # the mod and map it opens with: what a unit's Delete left for a program that had it open (rusemod.holding)
+        api._clear_waiting(api._mod_dir(), api._map_dir())
+    except Exception:  # noqa: BLE001 - the start goes on: those files stay out of the build, and go at the next try
+        pass
     api.use_owned_check()  # owned copies only (rusemod.owned): on in the app, off in tests of made-up games
     api.use_guard_server()  # RUSE Guard's evidence goes to the project's server from the app window; tests keep theirs
     api.use_required_updates()  # a required update goes in before Test in game (rusemod.update): the same

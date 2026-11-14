@@ -18,7 +18,11 @@ source's path), and a map's import record (the folders it was made from). The fi
 A modder's own README (README.md, and any README of his in the mod's folders: is_readme) goes out with each folder
 path in it cut to the file's own name (the owner, 2026-11-13, asked "A folder path in a modder's own README, in an
 exported mod: cut it to the file name, or keep it with a warning?", answered "cut to file name"): only the path's
-folders go, every word around it and every other byte stays (readme_paths_out), and Export says each cut. Everything
+folders go, every word around it and every other byte stays (readme_paths_out), and Export says each cut. A path that
+ends at a user's own folder (C:\\Users\\<name> and the like) is taken out whole, the user's name with it (his answer to
+"... keeps the user name. Take those paths out completely?": "Probably take the username path out"). His README is
+read in the text encoding it is written in (UTF-8, UTF-16 or UTF-32, or this PC's own: readme_paths_out); one Export
+can't read goes out as written, and Export says so. Everything
 else a modder wrote is changed nowhere (descriptions, CHANGELOG.md, LICENSE, .rndf, .csv, notes, credits: byte for
 byte; his answer to "Full paths elsewhere in a modder's own text, such as their mod's description: only warn and never
 change them, as now?" was "yes only warn"): a text naming this PC's home folder goes out as written, and Export says so
@@ -27,7 +31,9 @@ record names, and his README in the mod stays as he wrote it.
 """
 from __future__ import annotations
 
+import codecs
 import json
+import locale
 import os
 import re
 import shutil
@@ -206,8 +212,11 @@ def files_of(folder, left_out: list | None = None) -> list[Path]:
     credits and record among them, a record naming no unit left out), the .rmod a community mod's mod.toml names
     ([rmod] file: the mod itself), and everything under src/, text/, files/, maps/ and scripts/ (never caches, hidden
     files, build output, or a file the Studio left half written: is_work_file; `left_out`, a list, gets each of
-    those)."""
+    those). A deleted unit's file another program had open, which the Studio takes out later (rusemod.holding), never
+    goes either: the build leaves it out too."""
+    from .holding import skip_of
     folder = Path(folder)
+    skip = skip_of(folder)
     out = [folder / f for f in TOP_FILES if (folder / f).is_file() and (f != ERA_RECORD or _names_a_unit(folder / f))]
     try:
         named = tomllib.loads((folder / MANIFEST).read_text(encoding="utf-8")).get("rmod", {}).get("file")
@@ -221,7 +230,7 @@ def files_of(folder, left_out: list | None = None) -> list[Path]:
             for root, dirs, names in os.walk(folder / sub):
                 dirs[:] = sorted(d for d in dirs if d not in SKIP and not d.startswith("."))
                 for n in sorted(names):
-                    if n.startswith("."):
+                    if n.startswith(".") or (skip is not None and skip(Path(root) / n)):
                         continue
                     if is_work_file(n):
                         if left_out is not None:
@@ -488,15 +497,326 @@ README_STEM = re.compile(r"readme(?:$|[ ._-])", re.IGNORECASE)
 _NAME_LETTERS = r"[^\\/:*?\"<>|`\x00-\x1f]"        # a letter of a file's or folder's name (Windows allows none of
 #                                                   \/:*?"<>| nor a control; ` is Markdown's, never a name's here)
 _BEFORE = r"(?<![^\s\"'`(\[{<=,;*_])"              # at the start, or after a space, a quote, ` a bracket, =, , ; * _
-_ROOT = re.compile(rf"(?P<file>(?<![A-Za-z0-9])file:/{{2,3}}(?:[A-Za-z]:[\\/]+)?)"
-                   rf"|(?P<unc>{_BEFORE}\\\\(?:\?\\(?:[A-Za-z]:[\\/]+)?)?)"
-                   rf"|(?P<drive>(?<![A-Za-z0-9])[A-Za-z]:[\\/]+)"
-                   rf"|(?P<home>{_BEFORE}~[\\/]+)"
-                   rf"|(?P<var>{_BEFORE}%[A-Za-z0-9_()]+%[\\/]+)"
-                   rf"|(?P<unix>{_BEFORE}/(?![/\s]))", re.IGNORECASE)
+# (and, for a path that ends at a user's own folder only: after a quote or bracket other languages write, or a tag's >)
+_BEFORE_USER = r"(?<![^\s\"'`(\[{<>=,;*_“”‘’„‚«»‹›「」『』（）【】《》〈〉])"
+
+
+def _roots(before: str, more: str = "") -> re.Pattern:
+    """Where a path starts (see above), `before` what may stand just before one; `more`, other starts."""
+    return re.compile(rf"(?P<file>(?<![A-Za-z0-9])file:/{{2,3}}(?:[A-Za-z]:[\\/]+)?)"
+                      rf"|(?P<unc>{before}\\\\(?:\?\\(?:[A-Za-z]:[\\/]+)?)?)"
+                      rf"|(?P<drive>(?<![A-Za-z0-9])[A-Za-z]:[\\/]+)"
+                      rf"|(?P<home>{before}~[\\/]+)"
+                      rf"|(?P<var>{before}%[A-Za-z0-9_()]+%[\\/]+)"
+                      rf"|(?P<unix>{before}/(?![/\s])){more}", re.IGNORECASE)
+
+
+_ROOT = _roots(_BEFORE)
+# (where a path to a user's own folder is looked for, _spans: those starts, and \ alone, a path from the top of the
+# drive Windows is on, \Users\jane)
+_USER_ROOT = _roots(_BEFORE_USER, rf"|(?P<rooted>{_BEFORE_USER}\\(?![\\\s]))"
+                                  r"|(?P<smb>(?<![A-Za-z0-9])smb://(?=[^/\s]))")   # (and a share's smb:// address)
 _FOLDER_RUN = re.compile(rf"({_NAME_LETTERS}+)([\\/]+)")
 _LAST_NAME = re.compile(r"[^\s\\/:*?\"<>|`\x00-\x1f]+")
 _WORDS_NOT_A_NAME = re.compile(r"[,;!?.]\s|[^\s.]\.[A-Za-z][A-Za-z0-9]{0,7}\s")
+
+# A path that ends at a user's own folder goes whole, the user's name with it (the owner, 2026-11-13, asked "A path that
+# ends at the user folder, such as "C:\Users\Jane Doe", keeps the user name. Take those paths out completely?",
+# answered "Probably take the username path out"): the folder right under where a system keeps its users' own folders
+# (_users_places), as a path's last name or, with a slash after it, its last folder, in every way a path is written to
+# it (the export fix's review, 2026-11-13, found that Git Bash's, WSL's, Cygwin's and a drive's own share's ways kept
+# the name):
+# - Windows' Users, and Documents and Settings before Vista (WINDOWS_USERS, any case), at the top of a Windows drive,
+#   however the path writes that top: C:\ or C:/ on any drive, \ alone (the drive Windows is working on: \Users\jane),
+#   \\?\C:\ and \\.\C:\ (Windows' long and device forms),
+#   \\?\Volume{...}\ (a drive by its volume's name), %SystemDrive%\ and %HomeDrive%\, file:///C:/, file://localhost/C:/
+#   and file:///C|/, a drive's own share (\\server\C$\, file://server/C$/), and as Git Bash (/c/), WSL (/mnt/c/), Cygwin
+#   (/cygdrive/c/) and Wine (drive_c/, anywhere in a path) write a Windows drive; and the home of Cygwin and MSYS2 where
+#   they install, at the top of a drive (C:\cygwin64\home\, C:\msys64\home\: UNIX_ON_WINDOWS);
+# - a server's share of its users' folders (SHARE_USERS, a hidden share's $ too): \\server\Users\,
+#   \\?\UNC\server\Users\, \\.\UNC\server\Users\, file://server/Users/, smb://server/Users/, a NAS's \\nas\homes\;
+# - Linux's home and a Mac's Users (UNIX_USERS, written as those systems write them: so a web address's /users/me is no
+#   user's folder), and /var/home, /usr/home, /export/home (USERS_UNDER), at the top of a Linux or Mac disk: /,
+#   file:///, file://localhost/, \\wsl$\<its Linux>\ and \\wsl.localhost\<its Linux>\ (WSL's), a Mac's
+#   /Volumes/<disk>/ and /System/Volumes/Data/.
+# A folder there that is the system's own, no user's (NOT_A_USER: Windows' Public, Default, Default User and All Users,
+# its desktop.ini; a Mac's Shared), or a variable in a name's place (%USERNAME%, $USER, {user}: _VARIABLE), names no
+# user: its path is cut to its own name as any other, as before. A folder called home or users anywhere else
+# (D:\Home\Mods, D:\Mods\users\list.txt) is any folder: its path is cut to its own name. A path that goes on past a
+# user's folder (C:\Users\<name>\Desktop\x.glb) is cut to its own name as before: the user's name is one of its folders,
+# so it goes. Such a path is also looked for after a quote or bracket other languages write (“/home/jane”, «...»,
+# 「...」) and after a tag's > (_USER_ROOT), where a path that names no user stays as it was.
+# Where the name ends, a space in it (Jane Doe): at the slash after it; else at the closing mark of the quotes,
+# backticks or brackets the path is written in (any language's: _QUOTES); else after the longer of a user's name known
+# exactly (this PC's own, and each one the same text writes with a slash after it or in quotes) and its first word with
+# each word after it that starts with a capital letter when the first does (Jane Q Doe), and a name's small words before
+# such a word (Jan de Vries, Ludwig van Beethoven: NAME_SMALL_WORDS), as long as Windows lets a user's name be. A user's
+# name never holds a character Windows refuses in one, nor ends with a full stop (Microsoft Learn, USER_INFO_0: "User
+# account names are limited to 20 characters ... account names cannot be terminated by a period and they cannot include
+# commas or any of the following printable characters: ", /, \, [, ], :, |, <, >, +, =, ;, ?, *"), so those stay in the
+# text, and so do a ! or ' after it and a bracket it closes: the sentence's own. Export lists each path it took out.
+USERS_FOLDERS = frozenset({"users", "home", "documents and settings"})   # (user_of's, as casefold() gives them)
+WINDOWS_USERS = frozenset({"users", "documents and settings"})          # (at the top of a Windows drive, casefold)
+UNIX_USERS = frozenset({"home", "Users"})          # (at the top of a Linux or Mac disk: as Linux and a Mac write them)
+USERS_UNDER = frozenset({"var", "usr", "export"})   # (a Linux or Unix disk's /var/home, /usr/home, /export/home)
+UNIX_ON_WINDOWS = frozenset({"cygwin", "cygwin64", "msys32", "msys64"})   # (Cygwin's, MSYS2's own folders, casefold,
+#                                                     at the top of a drive where they install: their users' home)
+SHARE_USERS = frozenset({"users", "home", "homes", "documents and settings"})   # (a server's share of them, casefold)
+NOT_A_USER = frozenset({"public", "default", "default user", "all users", "desktop.ini", "shared", ".localized",
+                        "lost+found"})              # (a system's own folders there, casefold: no user's)
+NAME_SMALL_WORDS = frozenset({"de", "da", "di", "du", "des", "del", "della", "dos", "das", "van", "von", "der", "den",
+                              "ter", "ten", "zu", "la", "le", "bin", "ibn", "al"})   # (a name's own small words)
+USER_NAME_MOST = 20                                 # Windows' longest user's name (USER_INFO_0, above)
+_DRIVE_END = re.compile(r"(?:^|[\\/])[A-Za-z]:[\\/]+$")   # (a root that ends at a drive: C:\, \\?\C:\, file:///C:/)
+# (a path's start that _ROOT reads only up to its drive's colon: \\.\C:\, file://localhost/C:/, file:///C|/)
+_DRIVE_AFTER = re.compile(r"(?:\\\\\.\\|file:/{2,3}(?:localhost/+)?)[A-Za-z][:|][\\/]+", re.IGNORECASE)
+_DRIVE_VARS = frozenset({"systemdrive", "homedrive"})   # (%SystemDrive%, %HomeDrive%: a drive's top)
+_LETTER = re.compile(r"[a-z]")                       # (a drive's letter, as casefold() gives it)
+_SHARE_OF_A_DRIVE = re.compile(r"[a-z]\$")           # (a drive's own share, C$)
+_WINE_DRIVE = re.compile(r"drive_[a-z]")             # (Wine's C: drive, a folder of its own: drive_c)
+_VOLUME = re.compile(r"volume\{[0-9a-f-]+\}")        # (\\?\Volume{...}\: a drive by its volume's name)
+_VARIABLE = re.compile(r"%[^%\s]+%|\$\{?[A-Za-z_][A-Za-z0-9_]*\}?|\{[^{}\s]*\}")   # (%USERNAME%, $USER, {user})
+_USER_LETTERS = r'[^\s"/\\\[\]:|<>+=;?*,`\x00-\x1f]'   # a letter of a user's name (` is Markdown's, never a name's)
+_USER_WORD = re.compile(_USER_LETTERS + "+")
+_USER_NAME = re.compile(rf"{_USER_LETTERS}+(?: {_USER_LETTERS}+)*")
+_QUOTES = {'"': '"', "'": "'", "`": "`", "(": ")", "[": "]", "{": "}", "<": ">", ">": "<",
+           "\u201c": "\u201d\u201c", "\u2018": "\u2019\u2018", "\u201e": "\u201c\u201d", "\u201a": "\u2018\u2019",
+           "\u201d": "\u201d", "\u2019": "\u2019", "\u00ab": "\u00bb", "\u00bb": "\u00ab\u00bb", "\u2039": "\u203a",
+           "\u203a": "\u2039\u203a", "\u300c": "\u300d", "\u300e": "\u300f", "\uff08": "\uff09", "\u3010": "\u3011",
+           "\u300a": "\u300b", "\u3008": "\u3009"}   # (each opening mark, then what closes it: “…”, „…“, «…», 「…」)
+
+
+def user_of(home) -> str | None:
+    """The user's name in a folder path (this PC's home folder: C:\\Users\\<name>, /home/<name>...), the folder right
+    under one of USERS_FOLDERS; None when it has none."""
+    parts = [p for p in _SEPARATOR.split(str(home or "")) if p]
+    for up, name in zip(parts, parts[1:]):
+        if up.casefold() in USERS_FOLDERS:
+            return name
+    return None
+
+
+def _name_part(word: str) -> str:
+    """A word of a user's name without what reads as the sentence's after it: a full stop (a name never ends with one),
+    ! and ', and a ) that closes no ( of the word."""
+    while word:
+        if word[-1] in ".!'":
+            word = word[:-1]
+        elif word.endswith(")") and word.count(")") > word.count("("):
+            word = word[:-1]
+        else:
+            break
+    return word
+
+
+def _name_goes_on(text: str, k: int) -> bool:
+    """Whether text[k] goes on with the name before it (a letter, a digit, - or _, or a dot before one: .CONTOSO)."""
+    if k >= len(text):
+        return False
+    c = text[k]
+    return c.isalnum() or c in "-_" or (c == "." and k + 1 < len(text) and text[k + 1].isalnum())
+
+
+def _quoted_name(text: str, j: int, before: str) -> str | None:
+    """The name of a user's own folder that starts at text[j], when the path is in quotes, backticks or brackets
+    (`before`, the character just before the path, opens them: _QUOTES): to the closing mark on the same line, when
+    that is a name Windows lets a user have; else None."""
+    closers = _QUOTES.get(before)
+    if not closers:
+        return None
+    line = text.find("\n", j)
+    ends = [k for k in (text.find(c, j) for c in closers) if k > j and (line == -1 or k < line)]
+    name = text[j:min(ends)] if ends else ""
+    if name and len(name) <= USER_NAME_MOST and _USER_NAME.fullmatch(name) and not name.endswith("."):
+        return name
+    return None
+
+
+def _user_name_end(text: str, j: int, before: str, known: list) -> int | None:
+    """Where the name of a user's own folder that starts at text[j], a path's last name, ends (see above): `before`,
+    the character just before the path; `known`, the users' names known exactly, longest first. None when no user's
+    name starts there."""
+    first = _USER_WORD.match(text, j)
+    if first is None:
+        return None
+    quoted = _quoted_name(text, j, before)              # in quotes, backticks or brackets: to the closing mark
+    if quoted is not None:
+        return j + len(quoted)
+    word = _name_part(first.group(0))
+    end = j + len(word)
+    if word and word[0].isupper() and word == first.group(0):
+        k = end                                         # (Jane Doe, Jane Q Doe: each next word with a capital; a
+        while text.startswith(" ", k):                  # name's small words before one: Jan de Vries)
+            more = _USER_WORD.match(text, k + 1)
+            part = _name_part(more.group(0)) if more is not None else ""
+            stop = k + 1 + len(part)
+            if not part or stop - j > USER_NAME_MOST:
+                break
+            if part[0].isupper():
+                end = k = stop
+                if part != more.group(0):               # (the sentence's mark after it: the name ends there)
+                    break
+            elif part in NAME_SMALL_WORDS and part == more.group(0):
+                k = stop                                # (the name goes on only with a word with a capital after it)
+            else:
+                break
+    for name in known:
+        k = j + len(name)
+        if text[j:k].casefold() == name.casefold() and not _name_goes_on(text, k):
+            end = max(end, k)
+            break
+    return end if end > j else None
+
+
+def _names_a_user(name: str) -> bool:
+    """Whether a folder's name right under where a system keeps its users' folders is a user's: not the system's own
+    (NOT_A_USER), nor a variable in a name's place (_VARIABLE)."""
+    return name.casefold() not in NOT_A_USER and not _VARIABLE.fullmatch(name)
+
+
+def _user_at(text: str, j: int) -> bool:
+    """_names_a_user for the name that starts at text[j], a path's last name."""
+    for own in NOT_A_USER:
+        k = j + len(own)
+        if text[j:k].casefold() == own and not _name_goes_on(text, k):
+            return False
+    first = _USER_WORD.match(text, j)
+    return first is not None and not _VARIABLE.fullmatch(_name_part(first.group(0)))
+
+
+def _folders_from(text: str, j: int, forward: bool, server: bool) -> tuple[list, int]:
+    """The folders of a path from text[j] on: ([(a folder's name, where it starts, where its slashes end)], where the
+    last of them ends). A folder is read only up to the next slash or backslash (_folder_name_ok); `forward`, a path
+    written with / only; `server`, its first folder a server's name (which has no space in it)."""
+    folders = []
+    while True:
+        f = _FOLDER_RUN.match(text, j)
+        if f is None or not _folder_name_ok(f.group(1)) or (forward and "\\" in f.group(2)) \
+                or (server and not folders and any(c.isspace() for c in f.group(1))):
+            break
+        folders.append((f.group(1), f.start(), f.end()))
+        j = f.end()
+    return folders, j
+
+
+def _path_at(text: str, m) -> tuple[list, int]:
+    """The folders of the path whose root `m` (_ROOT) found (_folders_from)."""
+    # (a path of unix, home and file kinds is written with / only: a \ after "/Iinclude share" says it is a switch and
+    # words; a server's name, \\server\, has no space in it)
+    return _folders_from(text, m.end(), m.lastgroup in ("unix", "home", "file", "smb"), m.group(0) == "\\\\")
+
+
+def _users_places(kind: str, root: str, folders: list) -> set:
+    """Each k where folders[k], of a path whose root is `root` (of `kind`, _ROOT's group, or "drive" for folders that
+    start at a Windows drive's top), is where a system keeps its users' own folders (see above)."""
+    names = [f[0] for f in folders]
+    low = [n.casefold() for n in names]
+    win, unix, server = [], [], None    # (where a Windows drive's top is, a Linux or Mac disk's, a server's name)
+    if kind in ("drive", "rooted") or _DRIVE_END.search(root):      # C:\, \\?\C:\, file:///C:/; \ alone
+        win.append(0)
+    elif kind == "var":                                             # %SystemDrive%\, %HomeDrive%\
+        if root.strip("%\\/").casefold() in _DRIVE_VARS:
+            win.append(0)
+    elif kind == "unix":
+        unix.append(0)                                              # /home, /Users
+        if len(low) > 1 and _LETTER.fullmatch(low[0]):
+            win.append(1)                                           # /c/: Git Bash's (MSYS2's)
+        if len(low) > 2 and low[0] in ("mnt", "cygdrive") and _LETTER.fullmatch(low[1]):
+            win.append(2)                                           # /mnt/c/: WSL's; /cygdrive/c/: Cygwin's
+        if len(names) > 2 and names[0] == "Volumes":
+            unix.append(2)                                          # /Volumes/<disk>/: a Mac's other disk
+        if names[:3] == ["System", "Volumes", "Data"]:
+            unix.append(3)                                          # a Mac's own disk, as it is kept
+    elif kind == "file":                                            # (file:/// or file://<a server>/, no drive)
+        if root.count("/") >= 3:
+            unix.append(0)
+        elif low and low[0] == "localhost":
+            unix.append(1)
+        else:
+            server = 0
+    elif kind == "smb":                                             # smb://server/share/: a Mac's or Linux's way
+        server = 0
+    elif kind == "unc":
+        if root == "\\\\":
+            if low[:1] == ["."]:                                    # \\.\UNC\server\share\ (\\.\C:\: _DRIVE_AFTER)
+                server = 2 if low[1:2] == ["unc"] else None
+            elif low[:1] in (["wsl$"], ["wsl.localhost"]):
+                unix.append(2)                                      # \\wsl$\<its Linux>\: WSL's disk
+            else:
+                server = 0                                          # \\server\share\
+        elif low[:1] == ["unc"]:
+            server = 1                                              # \\?\UNC\server\share\
+        elif low and _VOLUME.fullmatch(low[0]):
+            win.append(1)                                           # \\?\Volume{...}\
+    places = set()
+    if server is not None and server + 1 < len(low):
+        share = low[server + 1]
+        if _SHARE_OF_A_DRIVE.fullmatch(share):
+            win.append(server + 2)                                  # \\server\C$\: a drive's own share
+        elif share.rstrip("$") in SHARE_USERS:
+            places.add(server + 1)                                  # \\server\Users\, \\server\users$\, \\nas\homes\
+    win += [k + 1 for k, n in enumerate(low) if _WINE_DRIVE.fullmatch(n)]   # .../drive_c/: Wine's C: drive
+    for t in win:
+        if t < len(low) and low[t] in WINDOWS_USERS:
+            places.add(t)
+        elif t + 1 < len(low) and low[t] in UNIX_ON_WINDOWS and low[t + 1] == "home":
+            places.add(t + 1)                                       # C:\cygwin64\home\, C:\msys64\home\
+    for t in unix:
+        if t < len(names) and names[t] in UNIX_USERS:
+            places.add(t)
+        elif t + 1 < len(names) and names[t] in USERS_UNDER and names[t + 1] == "home":
+            places.add(t + 1)
+    return places
+
+
+def _read_path(text: str, m) -> tuple[list, int, set]:
+    """The path whose root `m` (_ROOT or _USER_ROOT) found: (its folders and where they end, as _path_at gives them,
+    and where among them a system keeps its users' folders: _users_places); one that _ROOT reads only up to its drive's
+    colon (\\\\.\\C:\\, file://localhost/C:/, file:///C|/: _DRIVE_AFTER) read from its drive's top on."""
+    d = _DRIVE_AFTER.match(text, m.start())
+    if d is not None and not _DRIVE_END.search(m.group(0)):
+        folders, j = _folders_from(text, d.end(), not d.group(0).startswith("\\"), False)
+        return folders, j, _users_places("drive", "", folders)
+    folders, j = _path_at(text, m)
+    return folders, j, _users_places(m.lastgroup, m.group(0), folders)
+
+
+def _user_folder_end(text: str, m, known: list) -> int | None:
+    """Where the path whose root `m` found ends, when it ends at a user's own folder (see above): its last name right
+    under where a system keeps its users' folders, or its last folder there with its slash after it; None for any
+    other path."""
+    folders, j, places = _read_path(text, m)
+    if not places:
+        return None
+    if _LAST_NAME.match(text, j) is not None:
+        if len(folders) - 1 not in places or not _user_at(text, j):
+            return None
+        start = m.start()
+        return _user_name_end(text, j, text[start - 1] if start else "", known)
+    if len(folders) >= 2 and len(folders) - 2 in places and _names_a_user(folders[-1][0]):
+        return folders[-1][2]
+    return None
+
+
+def _users_written(text: str) -> set:
+    """Each user's name `text` writes exactly, as a folder right under where a system keeps its users' own folders
+    (_users_places): with a slash after it (C:\\Users\\Jane Doe\\Desktop: Jane Doe), or as a path's last name in
+    quotes or brackets ("C:\\Users\\jane doe": _quoted_name)."""
+    out, pos = set(), 0
+    while (m := _USER_ROOT.search(text, pos)) is not None:
+        folders, j, places = _read_path(text, m)
+        for k in places:
+            if k + 1 < len(folders):
+                name = folders[k + 1][0]
+                if _names_a_user(name) and _USER_NAME.fullmatch(name) and not name.endswith(".") \
+                        and (" " not in name or len(name) <= USER_NAME_MOST):
+                    out.add(name)
+            elif k + 1 == len(folders):
+                name = _quoted_name(text, j, text[m.start() - 1] if m.start() else "")
+                if name is not None and _names_a_user(name):
+                    out.add(name)
+        pos = m.start() + 1
+    return out
 
 
 def is_readme(name) -> bool:
@@ -519,41 +839,67 @@ def _folder_name_ok(run: str) -> bool:
     return not (_WORDS_NOT_A_NAME.search(run) or run.count("(") != run.count(")") or "~" in run)
 
 
-def paths_cut(text: str) -> tuple[str, list]:
-    """`text` with each folder path in it cut to its own name (see above): (the text, [(the path as written, the name
-    it became)] in the text's order). A path whose last name is missing (it ends with a slash) keeps its last folder's
-    name, the slash after it as written. A server's name (\\\\server\\share\\...) counts as a folder."""
-    out, cuts, i, pos = [], [], 0, 0
+def _spans(text: str, users=()) -> list[tuple[int, int, int, str]]:
+    """paths_cut's work: for each path it cuts, in the text's order, (where the path starts, where what goes of it ends,
+    where the path as written ends, the name it became: "" for one taken out whole). Only what goes is ever taken
+    out of the text: from where the path starts to where what goes ends."""
+    spans, pos = [], 0
+    known = sorted({u for u in users if u} | _users_written(text), key=len, reverse=True)
     while True:
         m = _ROOT.search(text, pos)
-        if m is None:
+        u = _USER_ROOT.search(text, pos)
+        # (a path after a quote or bracket of another language, or a tag's >: looked at only for a user's folder)
+        only_user = u is not None and (m is None or u.start() < m.start())
+        r = u if only_user else m
+        if r is None:
             break
-        start, j = m.start(), m.end()
-        folders = []      # (its name, where it starts, where its slashes end)
-        forward = m.lastgroup in ("unix", "home", "file")    # (a path of these is written with / only: a \ after
-        server = m.group(0) == "\\\\"                        # "/Iinclude share" says it is a switch and words; a
-        while True:                                          # server's name, \\server\, has no space in it)
-            f = _FOLDER_RUN.match(text, j)
-            if f is None or not _folder_name_ok(f.group(1)) or (forward and "\\" in f.group(2)) \
-                    or (server and not folders and any(c.isspace() for c in f.group(1))):
-                break
-            folders.append((f.group(1), f.start(), f.end()))
-            j = f.end()
+        start = r.start()
+        end = _user_folder_end(text, r, known)
+        if end is not None:                  # (taken out whole: its user's name goes with it)
+            spans.append((start, end, end, ""))
+            pos = end
+            continue
+        folders, j, places = _read_path(text, r)
+        if not any(k + 1 < len(folders) and _names_a_user(folders[k + 1][0]) for k in places):
+            if only_user:
+                pos = start + 1
+                continue
+            folders, j = _path_at(text, m)  # (each folder: its name, where it starts, where its slashes end)
+        # (else a path on past a user's own folder, however it is written: cut to its own name as any other, the
+        # user's name going with its folders)
         last = _LAST_NAME.match(text, j)
         last_name = last.group(0) if last is not None else ""
         names = len(folders) + (1 if last_name else 0)
-        if names < (3 if m.lastgroup == "unix" else 2):
+        if names < (3 if r.lastgroup == "unix" else 2):
             pos = start + 1                  # (not a path that names a folder: the words stay, look further on)
             continue
-        if last_name:
-            cut_to, end = j, last.end()      # everything before the last name goes
-        else:
-            cut_to, end = folders[-1][1], folders[-1][2]   # the last folder's name stays, with its slash
+        if last_name:                        # everything before the last name goes
+            spans.append((start, j, last.end(), last_name))
+            pos = last.end()
+        else:                                # the last folder's name stays, with its slash
+            spans.append((start, folders[-1][1], folders[-1][2], folders[-1][0]))
+            pos = folders[-1][2]
+    return spans
+
+
+def _cut(text: str, spans: list) -> tuple[str, list]:
+    """`text` without what goes of each of _spans' paths, and paths_cut's list of what was cut."""
+    out, cuts, i = [], [], 0
+    for start, gone, end, name in spans:
         out.append(text[i:start])
-        cuts.append((text[start:end], last_name or folders[-1][0]))
-        i, pos = cut_to, end                 # (the text from cut_to on is kept as written)
+        cuts.append((text[start:end], name))
+        i = gone                             # (the text from there on is kept as written)
     out.append(text[i:])
     return "".join(out), cuts
+
+
+def paths_cut(text: str, users=()) -> tuple[str, list]:
+    """`text` with each folder path in it cut to its own name (see above): (the text, [(the path as written, the name
+    it became)] in the text's order). A path whose last name is missing (it ends with a slash) keeps its last folder's
+    name, the slash after it as written. A server's name (\\\\server\\share\\...) counts as a folder. A path that ends
+    at a user's own folder is taken out whole, the name it became "" (_users_places): `users`, users' names known
+    exactly (this PC's own, user_of), say where such a name ends."""
+    return _cut(text, _spans(text, users))
 
 
 _TRAILING = ".,;:!?'\""
@@ -570,31 +916,127 @@ def cut_shown(path: str, name: str) -> str:
     return f"{bare(path) or path} \u2192 {bare(name) or name}"
 
 
-def readme_paths_out(path, name: str | None = None) -> tuple[bytes, list] | None:
+# A README of his is read in the text encoding it is written in (the export fix's review, 2026-11-13: one saved by
+# Notepad as "ANSI" or "Unicode" went out with its user's path whole, and Export said nothing): UTF-8; UTF-16 or UTF-32
+# with the mark Notepad's "Unicode" puts at its start; else this PC's own (_ansi, Notepad's "ANSI"). Only what goes of
+# each path is taken out of its bytes, every other byte as it was (_bytes_without); one none of them reads goes out as
+# written, and Export says so (pack's `unread`).
+_MARKS = ((codecs.BOM_UTF32_LE, "utf-32-le"), (codecs.BOM_UTF32_BE, "utf-32-be"), (codecs.BOM_UTF8, "utf-8"),
+          (codecs.BOM_UTF16_LE, "utf-16-le"), (codecs.BOM_UTF16_BE, "utf-16-be"))
+_UNICODE = frozenset({"utf-8", "utf-16-le", "utf-16-be", "utf-32-le", "utf-32-be"})
+
+
+def _ansi() -> str | None:
+    """This PC's own text encoding for a text saved without Unicode (Windows' ANSI code page, which Notepad calls
+    "ANSI": cp1252, cp1251, cp932...), as Python names it; None where that is Unicode (UTF-8) or not known."""
+    try:
+        name = codecs.lookup(locale.getencoding()).name
+    except (LookupError, ValueError, AttributeError):
+        return None
+    return None if name in _UNICODE else name
+
+
+def _text_of(raw: bytes) -> tuple[str, str] | None:
+    """A text file's words and the encoding they are written in (see above): by the mark at its start, else UTF-8,
+    else this PC's own (_ansi); a mark stays the text's first character, as UTF-8's always did. None when none of them
+    reads it."""
+    tries = [enc for mark, enc in _MARKS if raw.startswith(mark)] + ["utf-8", _ansi()]
+    for enc in tries:
+        if enc is None:
+            continue
+        try:
+            return raw.decode(enc), enc
+        except UnicodeDecodeError:
+            pass
+    return None
+
+
+def _starts(raw: bytes, enc: str) -> list[int] | None:
+    """Where each character of `raw` read as `enc` starts in it, and where the last ends (an encoding of one or more
+    bytes a character: this PC's own, _ansi); None when a byte would make more than one character."""
+    dec = codecs.getincrementaldecoder(enc)()
+    out = [0]
+    for i in range(len(raw)):
+        got = dec.decode(raw[i:i + 1])
+        if len(got) > 1:
+            return None
+        if got:
+            out.append(i + 1)
+    return out if not dec.decode(b"", final=True) else None
+
+
+def _bytes_without(raw: bytes, text: str, enc: str, spans: list) -> bytes | None:
+    """`raw` (`text` written in `enc`) without the bytes of each of _spans' parts that go, every other byte as it was;
+    None when where a character starts can't be told (_starts), or the bytes left don't read as the text left."""
+    if enc in _UNICODE:
+        done = [0, 0]                         # (characters and bytes counted so far: each place only once)
+
+        def at(k: int) -> int:
+            done[1] += len(text[done[0]:k].encode(enc))
+            done[0] = k
+            return done[1]
+    else:
+        starts = _starts(raw, enc)
+        if starts is None or len(starts) != len(text) + 1:
+            return None
+        at = starts.__getitem__
+    out, i = [], 0
+    for start, gone, _end, _name in spans:
+        out.append(raw[i:at(start)])
+        i = at(gone)
+    out.append(raw[i:])
+    data = b"".join(out)
+    try:
+        if data.decode(enc) != _cut(text, spans)[0]:
+            return None
+    except UnicodeDecodeError:
+        return None
+    return data
+
+
+def readme_paths_out(path, name: str | None = None, users=(), unread: list | None = None) -> tuple[bytes, list] | None:
     """What a package holds of the modder's README at `path` (`name`: its path inside the mod; is_readme) when a
-    folder path is in it: (its bytes with each such path cut to its own name, paths_cut's list of what was cut); None
-    for a file that goes out as it is (no folder path in it, not a README, or not UTF-8 text: then it goes out as
-    written, and Export says when it names this PC's home folder)."""
+    folder path is in it: (its bytes with each such path cut to its own name, and each one that ends at a user's own
+    folder taken out whole, paths_cut's list of what was cut; `users`: paths_cut's), in the text encoding it is written
+    in, every other byte as it was (_text_of); None for a file that goes out as it is (no folder path in it, not a
+    README, or a text no encoding above reads: then it goes out as written, and `unread`, a list, gets `name`)."""
     path = Path(path)
     if not is_readme(name or path.name):
         return None
     raw = path.read_bytes()
-    try:
-        text = raw.decode("utf-8")
-    except UnicodeDecodeError:
+    read = _text_of(raw)
+    if read is None:
+        if unread is not None:
+            unread.append(name or path.name)
         return None
-    new, cuts = paths_cut(text)
+    text, enc = read
+    spans = _spans(text, users)
+    new, cuts = _cut(text, spans)
     if not cuts or new == text:
         return None
-    return new.encode("utf-8"), cuts
+    data = new.encode("utf-8") if enc == "utf-8" else _bytes_without(raw, text, enc, spans)
+    if data is None:                          # (can't be cut byte for byte: as written, and said)
+        if unread is not None:
+            unread.append(name or path.name)
+        return None
+    return data, cuts
 
 
 def _home_forms(home) -> list[bytes]:
-    """This PC's home folder as a file could write it: as it is, with forward slashes, with each backslash twice."""
+    """This PC's home folder as a file could write it: as it is, with forward slashes, with each backslash twice; in
+    UTF-8, UTF-16, UTF-32 and this PC's own text encoding (_ansi: a name with é or Иван in it is other bytes there;
+    the export fix's review, 2026-11-13)."""
     s = str(home or "").rstrip("\\/")
     if len(_SEPARATOR.split(s)) < 2 or len(s) < 4:     # (no folder to look for: "/", "C:")
         return []
-    return [f.encode("utf-8") for f in {s, s.replace("\\", "/"), s.replace("\\", "\\\\")}]
+    forms = set()
+    for enc in [e for e in sorted(_UNICODE) + [_ansi()] if e is not None]:
+        for f in {s, s.replace("\\", "/"), s.replace("\\", "\\\\")}:
+            try:
+                forms.add(f.encode(enc))
+            except UnicodeEncodeError:            # (a name this PC's own encoding can't write: not in it, then)
+                pass
+    return sorted(forms)
 
 
 def home_named(data: bytes, home) -> bool:
@@ -614,7 +1056,7 @@ def home_shown() -> str:
 def pack(folder, out, *, build_id: str | None = None, data_revision: str | None = None,
          fingerprint: str | None = None, solved: dict | None = None, made_with: dict | None = None,
          cleaned: list | None = None, kinds: dict | None = None, home_in: list | None = None,
-         home=None, left_out: list | None = None, cuts: dict | None = None) -> Path:
+         home=None, left_out: list | None = None, cuts: dict | None = None, unread: list | None = None) -> Path:
     """Zip the mod at `folder` into one file. `out` is the file to write, or a folder to put `<id>-<version>.rusemod`
     in. The mod is checked first (its manifest, and that it reads like a build would); the build it was made on and
     its fingerprint, when given, are written into the manifest (the folder's and the package's) under [game], and the
@@ -625,10 +1067,13 @@ def pack(folder, out, *, build_id: str | None = None, data_revision: str | None 
     file's own name there (studio_paths_out, STUDIO_PATHS; the folder's own file stays as it is); `cleaned`, a list,
     gets each such file's path inside the package, `kinds`, a dict, {that path: the kind of place, "record", "model"
     or "import"}. A README of the modder's goes in with each folder path in it cut to its own name
-    (readme_paths_out), its kind "readme", and `cuts`, a dict, gets {its path inside the package: [(the path as
-    written, the name it became)]}. Every other file goes in byte for byte. `home_in`, a list, gets each member that
-    still names this PC's home folder (`home`, Path.home() when not given) as packed: a text the modder wrote, left
-    as he wrote it.
+    (readme_paths_out), and each path that ends at a user's own folder taken out whole (the user's name known
+    exactly from this PC's home folder: `home`, Path.home() when not given), in the text encoding it is written in,
+    its kind "readme", and `cuts`, a dict, gets {its path inside the package: [(the path as written, the name it
+    became: "" for one taken out)]}; `unread`, a list, gets each README of his whose text no encoding readme_paths_out
+    knows reads, which goes in as he wrote it. Every other file goes in byte for byte. `home_in`, a list, gets each
+    member that still names this PC's home folder (`home`, Path.home() when not given) as packed: a text the modder
+    wrote, left as he wrote it.
     A file the Studio left half written (is_work_file) never goes in; `left_out`, a list, gets each one's path in the
     mod folder, as a package would name it."""
     folder = Path(folder)
@@ -664,6 +1109,13 @@ def pack(folder, out, *, build_id: str | None = None, data_revision: str | None 
             home = Path.home()
         except RuntimeError:                              # (no home folder known: nothing to look for)
             home = None
+    mine = home
+    if mine is None:
+        try:
+            mine = Path.home()
+        except RuntimeError:
+            mine = None
+    users = tuple(u for u in (user_of(mine),) if u)       # (this PC's user's name, known exactly: paths_cut)
     work: list = []
     files = files_of(folder, work)
     if left_out is not None:
@@ -673,7 +1125,8 @@ def pack(folder, out, *, build_id: str | None = None, data_revision: str | None 
             name = f.relative_to(folder).as_posix()
             got = studio_paths_out(f, name)
             if got is None:
-                readme = readme_paths_out(f, name)   # (the owner's "cut to file name", 2026-11-13: his README only)
+                readme = readme_paths_out(f, name, users, unread)   # (the owner's "cut to file name", 2026-11-13:
+                #                                                     his README only; "take the username path out")
                 if readme is not None:
                     got = (readme[0], "readme")
                     if cuts is not None:

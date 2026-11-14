@@ -379,21 +379,20 @@ class TheBuilderAndItsIndex(unittest.TestCase):
 
     def test_the_index_given_is_the_one_its_listings_come_from(self):
         """B01 and B02 (the index argument ignored): the files are the same bytes either way on this game (the two
-        routes agree), so no test of the files can see it; the index is what saves reading the game's unit data. (The
-        listings asked for are the US rifle squad's, no other squad being given: since a8b65194 the third argument.)"""
+        routes agree), so no test of the files can see it; the index is what saves reading the game's unit data."""
         seen = []
 
         class Stop(Exception):
             pass
 
-        def listings(game, index, unit):
-            seen.append((Path(game), index, unit))
+        def listings(game, index):
+            seen.append((Path(game), index))
             raise Stop
         index = self.root / "index.sqlite"
         listings_index(index)
         with mock.patch.object(hs, "_listings", listings), self.assertRaises(Stop):
             hs.horse_squad_glbs(self.game, self.root / "out", index=index, say=lambda line: None)
-        self.assertEqual(seen, [(self.game, index, hs.UNIT)])
+        self.assertEqual(seen, [(self.game, index)])
 
     def test_an_index_that_has_them_spares_the_game_s_unit_data(self):
         index = self.root / "index.sqlite"
@@ -432,7 +431,7 @@ class TheBuilderAndItsIndex(unittest.TestCase):
             made.append(Path(real(*args, **kw)))
             return str(made[-1])
         out = self.root / "out"
-        with mock.patch.object(hs, "_listings", lambda game, index, unit: {p: LISTED_ROWS for p in hs.LISTED}), \
+        with mock.patch.object(hs, "_listings", lambda game, index: {p: LISTED_ROWS for p in hs.LISTED}), \
                 mock.patch.object(hs.tempfile, "mkdtemp", mkdtemp), \
                 self.assertRaisesRegex(hs.HorseSquadError, "Your game hasn't the model the Generic Horse is made from"):
             hs.made_from(self.game, out, say=lambda line: None)

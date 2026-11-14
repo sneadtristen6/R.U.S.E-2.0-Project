@@ -128,6 +128,16 @@ def _is_sha(text) -> bool:
     return isinstance(text, str) and len(text) == 64 and all(c in "0123456789abcdef" for c in text)
 
 
+def _inside(path, root) -> bool:
+    """Whether `path` is inside the folder `root` (any slashes, any case on Windows)."""
+    try:
+        p = os.path.normcase(os.path.abspath(str(path)))
+        r = os.path.normcase(os.path.abspath(str(root))).rstrip("\\/")
+    except (TypeError, ValueError, OSError):
+        return False
+    return p.startswith(r + os.sep)
+
+
 def parse_list(data: bytes) -> list[dict]:
     """The sections of an era-units.json, each checked: one that isn't right is left out, so one mistake never hides
     the rest. A list of a newer format is refused (the Studio is too old for it). The list's "units_per_metre" (the
@@ -349,10 +359,10 @@ def era_files(mod: Path, record: dict, lib: dict) -> tuple[str, str | None]:
     downloaded on this PC: the library can't write its credit line, so the era lines already in the mod stay (never a
     CC BY credit lost because this PC lacks the era), except a line the library names for a unit the mod hasn't (one
     deleted: the owner's check, 2026-11-13, finding 8)."""
-    from .horse_squad import BUILT, built_entry
+    from .horse_squad import BUILT
     known = {u["key"]: u for u in lib.get("units", [])}
     mine = [u for u in lib.get("units", []) if u["key"] in record and u["key"] not in BUILT]
-    mine += [built_entry(mod, key, record[key]) for key in BUILT if key in record]   # (by the country it's from)
+    mine += [entry for key, entry in BUILT.items() if key in record]
     credits = mod / CREDITS
     unnamed = [k for k in record if k not in BUILT and k not in known]
     try:
@@ -499,6 +509,23 @@ class EraUnitCalls:
                 z.unlink(missing_ok=True)
 
         return job.start(work, f"The {era} units are ready.", plain=(OSError, EraDownloadError, zipfile.BadZipFile))
+
+    def _era_changed(self, record, file) -> bool:
+        """Whether `file`, the file a new unit's model is fitted again from (Resize, Move: its model's record
+        `record`), is one of this PC's era units library's models whose bytes aren't the ones the model was made from
+        any more (the record keeps their SHA-256: horse_squad.made_sha): a newer download of its era puts the new files
+        in under the same names (install_section). The model is fitted from the file as it is, as before, and the fit
+        says so (api._era_said: the review of f1fa002c, finding 4, it changed without a word). False for any other
+        file, a record keeping no SHA-256 (one from before f1fa002c: not known), or a file that can't be read now."""
+        from .horse_squad import file_sha256, made_sha
+        sha = made_sha(record)
+        lib = library_dir(self._home) if sha is not None and file is not None else None
+        if lib is None or not _inside(file, lib):
+            return False
+        try:
+            return file_sha256(file) != sha
+        except OSError:
+            return False
 
     def _era_record(self) -> dict:
         """{era unit key: its unit's address} for the current mod, keeping only units the mod still has."""
@@ -787,14 +814,12 @@ class EraUnitCalls:
         suggested (_era_research, only the units of its group: _era_limited), "group": the group of that building's
         build list it goes in (`group` as era_unit_add takes it; groups.py): {"root" (None: a group of its own),
         "name", "count", "most", "full", "new", "choices": [{root, name, count, full}] the building's groups}, None for
-        a menu that isn't one of the board's buildings}. A unit made for RUSE 2.0 (the Horse Squad) starts from one of
-        its own units only (horse_squad.SQUADS: a country's rifle squad), the US one when `source` isn't one of them."""
+        a menu that isn't one of the board's buildings}. A unit made for RUSE 2.0 (the Horse Squad) starts from its own
+        unit only, whatever `source` says."""
         from .api import StudioError
-        from .horse_squad import SQUADS
         built = self._era_built_entry(key)
-        if built is not None:   # (its models are made for its start unit's soldiers: one of its countries' squads)
-            folder, lib, entry = None, {}, built
-            source = source if source in SQUADS else built["copies"]
+        if built is not None:   # (its models are made for its start unit's soldiers: horse_squad.py)
+            folder, lib, entry, source = None, {}, built, built["copies"]
         else:
             folder, lib, entry = self._era_entry(key)
         ix = self._open()
@@ -1047,11 +1072,12 @@ class EraUnitCalls:
         research = self._research_gone(address, researched)   # before anything goes: a refusal leaves it whole
         if "ask" in research:
             return {"removed": None, "ask": research["ask"]}
-        # Delete takes all of it, all or nothing (the owner's check, 2026-11-13): its card, its models with their
-        # animations (the Horse Squad's heavy-weapon soldier's too: <unit>@<kind>), its rows in units.toml, its clips'
-        # folder, its record line and credit line (_era_forget); a file another program holds leaves it whole, in words
-        self.delete_unit(address, "anyway")       # the units researched from it are dealt with above
-        return {"removed": address, **research}
+        # Delete takes all of it (the owner's check, 2026-11-13): its card, its models with their animations (the Horse
+        # Squad's heavy-weapon soldier's too: <unit>@<kind>), its rows in units.toml, its clips' folder, its record line
+        # and credit line (_era_forget); a list file another program holds leaves it whole, in words; a file of the unit
+        # itself another program holds waits, out of the build, and is said ("waiting": the owner's item 6, 2026-11-13)
+        done = self.delete_unit(address, "anyway")   # the units researched from it are dealt with above
+        return {"removed": address, **research, "waiting": done.get("waiting", [])}
 
     def _era_left_behind(self, key: str) -> dict | None:
         """Take it out of my mod tried again on an era unit (or the Horse Squad) the mod no longer has but its

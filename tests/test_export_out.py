@@ -13,6 +13,7 @@ of 2026-11-12 (his question dialog, as the lead quoted them):
   (Resize and Move take a model's file only by its full path).
 On the Studio tests' made-up game, the Horse Squad's builder and model import stood in for (as tests/test_horse_squad.py
 does): what's checked here is what goes into the file and comes out of it."""
+import codecs
 import json
 import tomllib
 import os
@@ -170,6 +171,189 @@ class HisReadme(unittest.TestCase):
         self.assertEqual(package.cut_shown("C:\\models\\tank.glb,", "tank.glb,"), "C:\\models\\tank.glb \u2192 tank.glb")
         self.assertEqual(package.cut_shown("C:\\a\\x.glb)", "x.glb)"), "C:\\a\\x.glb \u2192 x.glb")
         self.assertEqual(package.cut_shown("C:\\a\\tank (2).glb", "tank (2).glb"), "C:\\a\\tank (2).glb \u2192 tank (2).glb")
+
+    def test_a_path_that_ends_at_a_user_s_own_folder_goes_whole(self):
+        """The owner, 2026-11-13, to "A path that ends at the user folder, such as "C:\\Users\\Jane Doe", keeps the
+        user name. Take those paths out completely?": "Probably take the username path out". On e9a092c3 each of these
+        kept the user's name ("Made on Jane Doe by me."). Each answer is written out here by hand."""
+        for text, want, gone in (
+                ("Made on C:\\Users\\Jane Doe by me.", "Made on  by me.", "C:\\Users\\Jane Doe"),
+                ("Made on C:\\Users\\Jane Doe.", "Made on .", "C:\\Users\\Jane Doe"),
+                ("Made on C:\\Users\\jane, then more", "Made on , then more", "C:\\Users\\jane"),
+                ("D:/Users/Jane Q Doe is mine", " is mine", "D:/Users/Jane Q Doe"),
+                ("c:\\users\\JANE DOE and Bob", " and Bob", "c:\\users\\JANE DOE"),
+                ("C:\\Users\\Jane Doe\\ and more", " and more", "C:\\Users\\Jane Doe\\"),     # (its slash after it)
+                ('Set "C:\\Users\\jane doe" there', 'Set "" there', "C:\\Users\\jane doe"),    # (in quotes: to them)
+                ("[home](C:\\Users\\Jane Doe)", "[home]()", "C:\\Users\\Jane Doe"),
+                ("`C:\\Users\\jane doe`", "``", "C:\\Users\\jane doe"),
+                ("(see C:\\Users\\Jane Doe)", "(see )", "C:\\Users\\Jane Doe"),
+                ("\\\\server\\Users\\jane is shared", " is shared", "\\\\server\\Users\\jane"),   # a server's share
+                ("\\\\?\\C:\\Users\\Jane Doe", "", "\\\\?\\C:\\Users\\Jane Doe"),
+                ("file:///C:/Users/Jane%20Doe", "", "file:///C:/Users/Jane%20Doe"),
+                ("C:\\\\Users\\\\jane", "", "C:\\\\Users\\\\jane"),
+                ("C:\\Documents and Settings\\Jane Doe", "", "C:\\Documents and Settings\\Jane Doe"),
+                ("/var/home/jane", "", "/var/home/jane"), ("see /home/jane", "see ", "/home/jane"),
+                ("/usr/home/jane", "", "/usr/home/jane"), ("file:///home/jane", "", "file:///home/jane"),
+                ("file://server/Users/jane", "", "file://server/Users/jane"),
+                ("%SystemDrive%\\Users\\jane", "", "%SystemDrive%\\Users\\jane"),
+                ("D:\\Users\\Mary Ann Smith-Jones and more", " and more", "D:\\Users\\Mary Ann Smith-Jones"),
+                ("C:\\Users\\Jane!", "!", "C:\\Users\\Jane"),
+                ("C:\\Users\\jsmith.CONTOSO is mine", " is mine", "C:\\Users\\jsmith.CONTOSO"),
+                ("C:\\Users\\Иван Петров\nnext line", "\nnext line", "C:\\Users\\Иван Петров")):
+            self.assertEqual(package.paths_cut(text), (want, [(gone, "")]), text)
+        self.assertEqual(package.paths_cut("/home/jane and /Users/jane"), (" and ", [("/home/jane", ""),
+                                                                                   ("/Users/jane", "")]))
+
+    def test_a_user_s_name_known_exactly_goes_whole(self):
+        """A user's name in small letters with a space: known from this PC's own home folder (pack's), or from the same
+        text writing it with a slash after it; else only its first word is sure to be the name. Where such a name ends
+        when it isn't known (C:\\Users\\kim lee by me: "lee" or "lee by"?) is a question for the owner (the export
+        fix's report): this test says only what is sure, the first word gone."""
+        text = "Made on C:\\Users\\kim lee by me"
+        self.assertEqual(package.paths_cut(text, ("kim lee",)), ("Made on  by me", [("C:\\Users\\kim lee", "")]))
+        new, cuts = package.paths_cut(text)
+        self.assertNotIn("kim", new)
+        self.assertEqual((new[:len("Made on ")], cuts[0][0][:len("C:\\Users\\kim")], cuts[0][1]),
+                         ("Made on ", "C:\\Users\\kim", ""))
+        self.assertEqual(package.paths_cut("C:\\Users\\kim lee\\x.glb and C:\\Users\\kim lee too"),
+                         ("x.glb and  too", [("C:\\Users\\kim lee\\x.glb", "x.glb"), ("C:\\Users\\kim lee", "")]))
+        self.assertEqual(package.user_of("C:\\Users\\kim lee\\AppData\\Local\\RUSE Mod Platform"), "kim lee")
+        self.assertEqual(package.user_of("/home/kim"), "kim")
+        self.assertIsNone(package.user_of("D:\\Games\\RUSE"))
+
+    def test_every_way_a_path_is_written_to_a_user_s_own_folder_goes_whole(self):
+        """The export fix's review (2026-11-13), defects 1 and 2: Git Bash's, WSL's and Cygwin's ways to write a Windows
+        drive, a drive's own share, \\\\?\\UNC\\ and file://localhost/ kept the user's name (on 1b9853b5 and on
+        e9a092c3: "Built in jane with Git Bash."). As a class: the top of a Windows drive however a path writes it, a
+        server's share of its users' folders, and the top of a Linux or Mac disk, each in every form. Each answer is
+        written out here by hand."""
+        for text, want, gone in (
+                ("Built in /c/Users/jane with Git Bash.", "Built in  with Git Bash.", ["/c/Users/jane"]),
+                ("Built in /C/Users/Jane Doe/ then", "Built in  then", ["/C/Users/Jane Doe/"]),
+                ("WSL: /mnt/c/Users/jane is mine", "WSL:  is mine", ["/mnt/c/Users/jane"]),
+                ("Cygwin: /cygdrive/d/users/jane", "Cygwin: ", ["/cygdrive/d/users/jane"]),
+                ("Old: /c/Documents and Settings/jane here", "Old:  here", ["/c/Documents and Settings/jane"]),
+                ("Shared from \\\\MYPC\\C$\\Users\\jane today.", "Shared from  today.", ["\\\\MYPC\\C$\\Users\\jane"]),
+                ("From \\\\localhost\\d$\\Users\\jane", "From ", ["\\\\localhost\\d$\\Users\\jane"]),
+                ("Share: \\\\?\\UNC\\server\\Users\\jane", "Share: ", ["\\\\?\\UNC\\server\\Users\\jane"]),
+                ("Share: \\\\?\\UNC\\server\\C$\\Users\\jane", "Share: ", ["\\\\?\\UNC\\server\\C$\\Users\\jane"]),
+                ("Device: \\\\.\\C:\\Users\\jane here", "Device:  here", ["\\\\.\\C:\\Users\\jane"]),
+                ("Device: \\\\.\\UNC\\server\\Users\\jane", "Device: ", ["\\\\.\\UNC\\server\\Users\\jane"]),
+                ("V: \\\\?\\Volume{b75e2c83-0000-0000-0000-602f00000000}\\Users\\jane", "V: ",
+                 ["\\\\?\\Volume{b75e2c83-0000-0000-0000-602f00000000}\\Users\\jane"]),
+                ("Set file://localhost/C:/Users/jane there", "Set  there", ["file://localhost/C:/Users/jane"]),
+                ("Set file:///C|/Users/jane there", "Set  there", ["file:///C|/Users/jane"]),
+                ("Set file://localhost/home/jane there", "Set  there", ["file://localhost/home/jane"]),
+                ("Set file://server/C$/Users/jane there", "Set  there", ["file://server/C$/Users/jane"]),
+                ("Hidden: \\\\server\\Users$\\jane and \\\\server\\home$\\kim", "Hidden:  and ",
+                 ["\\\\server\\Users$\\jane", "\\\\server\\home$\\kim"]),
+                ("NAS: \\\\nas\\homes\\jane today", "NAS:  today", ["\\\\nas\\homes\\jane"]),
+                ("\\\\wsl$\\Ubuntu\\home\\jane and \\\\wsl.localhost\\Debian\\home\\kim", " and ",
+                 ["\\\\wsl$\\Ubuntu\\home\\jane", "\\\\wsl.localhost\\Debian\\home\\kim"]),
+                ("Wine: ~/.wine/drive_c/users/jane and /home/kim/.wine/drive_c/users/kim", "Wine:  and ",
+                 ["~/.wine/drive_c/users/jane", "/home/kim/.wine/drive_c/users/kim"]),
+                ("Mac: /Volumes/Macintosh HD/Users/jane and /System/Volumes/Data/Users/kim", "Mac:  and ",
+                 ["/Volumes/Macintosh HD/Users/jane", "/System/Volumes/Data/Users/kim"]),
+                ("%HomeDrive%\\Users\\jane, then %SYSTEMDRIVE%\\Users\\kim", ", then ",
+                 ["%HomeDrive%\\Users\\jane", "%SYSTEMDRIVE%\\Users\\kim"]),
+                ("<code>/home/jane</code> and <code>C:\\Users\\kim lee</code>", "<code></code> and <code></code>",
+                 ["/home/jane", "C:\\Users\\kim lee"]),
+                ("\u201c/home/jane\u201d is mine", "\u201c\u201d is mine", ["/home/jane"]),
+                ("cd \\Users\\jane then", "cd  then", ["\\Users\\jane"]),           # (the drive Windows is on)
+                ("C:\\cygwin64\\home\\jane and D:/msys64/home/kim", " and ",
+                 ["C:\\cygwin64\\home\\jane", "D:/msys64/home/kim"]),               # (Cygwin's, MSYS2's homes)
+                ("Mac: smb://nas/Users/jane", "Mac: ", ["smb://nas/Users/jane"]),
+                ("C:\\Users\\JANEDO~1 is short", " is short", ["C:\\Users\\JANEDO~1"])):
+            self.assertEqual(package.paths_cut(text), (want, [(g, "") for g in gone]), text)
+
+    def test_this_pc_s_user_is_known_exactly_in_every_way_it_is_written(self):
+        """This PC's own user's name (pack's, from its home folder) goes whole in each of those ways too; on 1b9853b5
+        "/c/Users/kim lee made it" went out as "kim lee made it" though the name was known."""
+        for text, gone in (("/c/Users/kim lee made it", "/c/Users/kim lee"),
+                           ("\\\\MYPC\\C$\\Users\\kim lee made it", "\\\\MYPC\\C$\\Users\\kim lee"),
+                           ("/mnt/c/Users/kim lee made it", "/mnt/c/Users/kim lee"),
+                           ("file://localhost/C:/Users/kim lee made it", "file://localhost/C:/Users/kim lee")):
+            self.assertEqual(package.paths_cut(text, ("kim lee",)), (" made it", [(gone, "")]), text)
+
+    def test_a_name_in_any_language_s_quotes_or_with_a_name_s_small_words_goes_whole(self):
+        """The review's defect 3, the part that is no guess: the quotes and brackets other languages write close a
+        name as straight ones do (“...”, „...“, «...», 「...」); a name's own small words between its words with a
+        capital go with them (Jan de Vries); a name the same text writes in quotes is known exactly. On 1b9853b5 each
+        kept part of the name (" de Vries made it", "“ doe” is mine")."""
+        for text, want, gone in (
+                ("C:\\Users\\Jan de Vries made it", " made it", ["C:\\Users\\Jan de Vries"]),
+                ("C:\\Users\\Ludwig van Beethoven", "", ["C:\\Users\\Ludwig van Beethoven"]),
+                ("C:\\Users\\Maria da Silva did", " did", ["C:\\Users\\Maria da Silva"]),
+                ("C:\\Users\\Juan de la Cruz did", " did", ["C:\\Users\\Juan de la Cruz"]),
+                ("C:\\Users\\Jane de", " de", ["C:\\Users\\Jane"]),            # (no word with a capital after it)
+                ("\u201cC:\\Users\\jane doe\u201d is mine", "\u201c\u201d is mine", ["C:\\Users\\jane doe"]),
+                ("\u00abC:\\Users\\Jean Dupont\u00bb est \u00e0 moi", "\u00ab\u00bb est \u00e0 moi",
+                 ["C:\\Users\\Jean Dupont"]),
+                ("\u201eC:\\Users\\hans peter\u201c ist meins", "\u201e\u201c ist meins", ["C:\\Users\\hans peter"]),
+                ("\u300cC:\\Users\\\u5c71\u7530 \u592a\u90ce\u300d\u306b\u3042\u308b", "\u300c\u300d\u306b\u3042\u308b",
+                 ["C:\\Users\\\u5c71\u7530 \u592a\u90ce"]),
+                ('Quoted once "C:\\Users\\kim lee" and then C:\\Users\\kim lee again', 'Quoted once "" and then  again',
+                 ["C:\\Users\\kim lee", "C:\\Users\\kim lee"])):
+            self.assertEqual(package.paths_cut(text), (want, [(g, "") for g in gone]), text)
+
+    def test_a_path_that_names_no_user_keeps_what_it_had_before(self):
+        """The review's defect 4: 1b9853b5 took out whole paths that name no user (D:\\Home\\Mods, C:\\Users\\Public,
+        GET /users/me), beyond the owner's answer. Each of these keeps what e9a092c3 made of it, written out here by
+        hand: Home at the top of a Windows drive, a %NAME% that isn't a drive, the system's own folders where users'
+        folders are (Windows' Public, Default, All Users, desktop.ini; a Mac's Shared), a variable in a name's place,
+        Users written in small letters on a Linux or Mac path, and the forms only a user's folder is looked for in."""
+        for text, want in (
+                ("Copy the folder to D:\\Home\\Mods and start.", "Copy the folder to Mods and start."),
+                ("Put it in E:\\home\\Projects then build.", "Put it in Projects then build."),
+                ("Shared files go in C:\\Users\\Public on every PC.", "Shared files go in Public on every PC."),
+                ("Files in C:\\Users\\desktop.ini are hidden", "Files in desktop.ini are hidden"),
+                ("New users start from C:\\Users\\Default here", "New users start from Default here"),
+                ("Old ones in C:\\Users\\All Users go", "Old ones in All Users go"),
+                ("And C:\\Users\\Default User too", "And Default User too"),
+                ("Your folder is C:\\Users\\%USERNAME% there", "Your folder is %USERNAME% there"),
+                ("Or C:\\Users\\{user} in a template", "Or {user} in a template"),
+                ("%APPDATA%\\Users\\list.txt and %APPDATA%\\home\\x", "list.txt and x"),
+                ("/c/Program Files/RUSE/x.exe", "x.exe"), ("/mnt/data/models/tank.glb", "tank.glb"),
+                ("/c/home/x", "x"), ("file://localhost/C:/models/tank.glb", "C:/models/tank.glb"),
+                ("C:\\cygwin64\\bin\\bash.exe", "bash.exe"), ("D:\\Tools\\msys64\\home\\x", "x"),
+                ("\\\\.\\C:\\models\\tank.glb", "C:\\models\\tank.glb")):
+            self.assertEqual(package.paths_cut(text)[0], want, text)
+        for text in ("Linux: /home/$USER or /home/${USER}", "Mac: /Users/Shared on every Mac",
+                     "GET /users/me returns your profile.", "\u201c/opt/models/tank.glb\u201d stays",
+                     "<code>/opt/models/tank.glb</code> stays", "\u00ab/var/models/x.glb\u00bb",
+                     "Markdown \\*stars\\* stay", "\\Windows\\System32\\x.dll", "see \\Users\\Public\\x.glb",
+                     "smb://nas/music/x.mp3"):
+            self.assertEqual(package.paths_cut(text), (text, []), text)
+
+    def test_a_path_on_past_a_user_s_folder_loses_the_name_however_it_is_written(self):
+        """A path that goes on past a user's own folder is cut to its own name, the user's name going with its folders,
+        in the ways written above too: on 1b9853b5 and e9a092c3 "file://localhost/C:/Users/jane/x.glb" went out as
+        "C:/Users/jane/x.glb", and \u201c/home/jane/mods/tank.glb\u201d as it was."""
+        for text, want in (("file://localhost/C:/Users/jane/x.glb", "x.glb"),
+                           ("\\\\.\\C:\\Users\\jane\\Desktop\\x.glb", "x.glb"),
+                           ("\u201c/home/jane/mods/tank.glb\u201d", "\u201ctank.glb\u201d"),
+                           ("\u00ab/Users/jane/x.glb\u00bb", "\u00abx.glb\u00bb"),
+                           ("<code>/home/jane/mods/</code>", "<code>mods/</code>"),
+                           ("see \\Users\\jane\\x.glb", "see x.glb"),
+                           ("smb://nas/Users/jane/mods/x.glb", "x.glb"),
+                           ("Built in /c/Users/jane/mods/cavalry, then", "Built in cavalry, then")):
+            new, _cuts = package.paths_cut(text)
+            self.assertEqual(new, want, text)
+            self.assertNotIn("jane", new, text)
+
+    def test_a_path_past_a_user_s_folder_and_what_names_no_user_stay_as_before(self):
+        """The legitimate cases that must keep working: a path that goes on past the user's folder is cut to its own
+        name (the user's name was one of its folders); a folder called users or home that isn't where a system keeps
+        its users' folders is any folder, its file's name kept ("cut to file name"); what names no folder stays."""
+        for text, want in (("C:\\Users\\Jane Doe\\Desktop\\tank.glb", "tank.glb"), ("/home/jane/mods", "mods"),
+                           ("Made on C:\\Users\\Jane Doe\\AppData\\Local\\RUSE Mod Platform\\mods\\cavalry by me.",
+                            "Made on cavalry by me."),
+                           ("D:\\Mods\\users\\list.txt", "list.txt"), ("C:\\Mods\\home\\tank.glb", "tank.glb"),
+                           ("C:\\Mods\\home\\ and", "home\\ and"), ("~/home/x.glb", "x.glb")):
+            self.assertEqual(package.paths_cut(text)[0], want, text)
+        for text in ("C:\\Users", "C:\\Users\\ is where", "/home", "the /home/ folder", "Join /r/ruse today",
+                     "/opt/x.glb", "and/or", "~/x.glb"):
+            self.assertEqual(package.paths_cut(text), (text, []), text)
 
     def test_which_files_are_his_readmes(self):
         for name in ("README.md", "readme.txt", "files/docs/README", "src/README-fr.md", "maps/X/Readme_old.TXT",
@@ -355,38 +539,134 @@ class Packing(unittest.TestCase):
         """The class of his READMEs (package.is_readme): README.md at the top and any README of his in the mod's
         folders (readme.txt, README with no ending, README-fr.md), each folder path cut to its own name, his line
         ends and a UTF-8 mark at the start kept; the same path in CHANGELOG.md, LICENSE, a note of his or a picture
-        called readme goes out byte for byte; a README that isn't UTF-8 goes out as written and is named when it names
-        his home folder; a README with no folder path in it goes out byte for byte."""
+        called readme goes out byte for byte; a README in this PC's own code page (Notepad's "ANSI") is cut the same,
+        every other byte as it was (the export fix's review, defect 5: it went out as written before); a README with
+        no folder path in it goes out byte for byte."""
         line = f"Made from {PC}\\models\\tank.glb, and docs\\turret.md tells how."
         cut = "Made from tank.glb, and docs\\turret.md tells how."
         readmes = {"README.md": (line + "\r\n").encode("utf-8"),
                    "files/notes/readme.txt": ("﻿" + line + "\n").encode("utf-8"),
                    "files/docs/README": (line + "\n").encode("utf-8"),
-                   "src/README-fr.md": ("Fait depuis /home/jane/mods/tank.glb.\n").encode("utf-8")}
+                   "src/README-fr.md": ("Fait depuis /home/jane/mods/tank.glb.\n").encode("utf-8"),
+                   "files/latin/README.TXT": f"Fait sur {PC}\\x\\\xe9t\xe9.glb\n".encode("cp1252")}
         for rel, data in readmes.items():
             self.write(rel, data)
         others = {"CHANGELOG.md": (line + "\n").encode("utf-8"), "LICENSE": (line + "\n").encode("utf-8"),
                   "files/notes/made.md": (line + "\n").encode("utf-8"), "files/notes/readme.png": b"\x89PNG " + line.encode(),
-                  "files/latin/README.TXT": f"Fait sur {PC}\\x\\\xe9t\xe9.glb\n".encode("cp1252"),
                   "files/plain/README.md": b"Nothing here names a folder: docs\\turret.md, and/or /r/ruse.\n"}
         for rel, data in others.items():
             self.write(rel, data)
         cleaned, kinds, home_in, cuts = [], {}, [], {}
-        out = package.pack(self.mod, self.root / "out", cleaned=cleaned, kinds=kinds, home_in=home_in, home=PC,
-                           cuts=cuts)
+        with mock.patch.object(package, "_ansi", lambda: "cp1252"):     # (this PC's own code page: Windows-1252)
+            out = package.pack(self.mod, self.root / "out", cleaned=cleaned, kinds=kinds, home_in=home_in, home=PC,
+                               cuts=cuts)
         got = members(out)
         self.assertEqual(got["README.md"], (cut + "\r\n").encode("utf-8"))
         self.assertEqual(got["files/notes/readme.txt"], ("﻿" + cut + "\n").encode("utf-8"))
         self.assertEqual(got["files/docs/README"], (cut + "\n").encode("utf-8"))
         self.assertEqual(got["src/README-fr.md"], "Fait depuis tank.glb.\n".encode("utf-8"))
+        self.assertEqual(got["files/latin/README.TXT"], b"Fait sur \xe9t\xe9.glb\n")
         for rel, data in others.items():
             self.assertEqual(got[rel], data, rel)
         self.assertEqual(sorted(cleaned), sorted(readmes))
         self.assertEqual({k for k, v in kinds.items() if v == "readme"}, set(readmes))
         self.assertEqual(cuts["src/README-fr.md"], [("/home/jane/mods/tank.glb.", "tank.glb.")])
-        self.assertEqual(sorted(home_in), ["CHANGELOG.md", "LICENSE", "files/latin/README.TXT", "files/notes/made.md"])
+        self.assertEqual(cuts["files/latin/README.TXT"], [(f"{PC}\\x\\\xe9t\xe9.glb", "\xe9t\xe9.glb")])
+        self.assertEqual(sorted(home_in), ["CHANGELOG.md", "LICENSE", "files/notes/made.md"])
         for rel in readmes:                                  # (his own files as he wrote them)
             self.assertEqual(self.text(rel), readmes[rel], rel)
+
+    def test_a_readme_in_another_text_encoding_is_cut_the_same_every_other_byte_as_it_was(self):
+        """The export fix's review, defect 5: a README saved as "Unicode" (UTF-16 with its mark) or in this PC's own
+        code page (Notepad's "ANSI": Windows-1252, -1251, Shift-JIS on a Japanese PC) went out with the user's path
+        whole, and Export said nothing (on 1b9853b5 and e9a092c3). Each is read in its own encoding and cut as a UTF-8
+        one is; only what goes of each path is taken out of its bytes, every other byte as it was (its mark, its line
+        ends, a Shift-JIS letter whose second byte is a backslash's: 表). Each answer is written out here by hand."""
+        line = "Fait sur C:\\Users\\J\u00e9r\u00f4me, depuis C:\\models\\tank.glb.\r\n"
+        cut = "Fait sur , depuis tank.glb.\r\n"
+        kanji = ("\u8868\u793a: C:\\Users\\\u5c71\u7530 \u592a\u90ce\\\u8868.glb \u3068 C:\\Users\\\u5c71\u7530 "
+                 "\u592a\u90ce \u3067\u4f5c\u3063\u305f\u3002\n")
+        kanji_cut = "\u8868\u793a: \u8868.glb \u3068  \u3067\u4f5c\u3063\u305f\u3002\n"
+        self.assertIn(b"\x95\x5c", kanji.encode("cp932"))       # (表: its second byte is a backslash's)
+        cases = {   # (where, its bytes, what goes out, this PC's own code page)
+            "README.md": (codecs.BOM_UTF16_LE + line.encode("utf-16-le"),
+                          codecs.BOM_UTF16_LE + cut.encode("utf-16-le"), "cp1252"),
+            "files/be/README.txt": (codecs.BOM_UTF16_BE + line.encode("utf-16-be"),
+                                    codecs.BOM_UTF16_BE + cut.encode("utf-16-be"), "cp1252"),
+            "files/w32/README.txt": (codecs.BOM_UTF32_LE + line.encode("utf-32-le"),
+                                     codecs.BOM_UTF32_LE + cut.encode("utf-32-le"), "cp1252"),
+            "files/ansi/README.txt": (line.encode("cp1252"), cut.encode("cp1252"), "cp1252"),
+            "files/ru/README.md": ("\u0421\u0434\u0435\u043b\u0430\u043d\u043e \u043d\u0430 C:\\Users\\"
+                                   "\u0418\u0432\u0430\u043d.\n".encode("cp1251"),
+                                   "\u0421\u0434\u0435\u043b\u0430\u043d\u043e \u043d\u0430 .\n".encode("cp1251"),
+                                   "cp1251"),
+            "files/jp/README.md": (kanji.encode("cp932"), kanji_cut.encode("cp932"), "cp932")}
+        for rel, (data, want, ansi) in cases.items():
+            with self.subTest(rel=rel):
+                self.write(rel, data)
+                unread = []
+                with mock.patch.object(package, "_ansi", lambda a=ansi: a):
+                    got = package.readme_paths_out(self.mod / rel, rel, (), unread)
+                self.assertIsNotNone(got)
+                self.assertEqual(got[0], want)
+                self.assertEqual(unread, [])
+                self.assertEqual(self.text(rel), data)            # (his own file as he wrote it)
+        self.assertEqual(package.readme_paths_out(self.mod / "README.md", "README.md")[1],
+                         [("C:\\Users\\J\u00e9r\u00f4me", ""), ("C:\\models\\tank.glb.", "tank.glb.")])
+
+    def test_a_readme_export_can_t_read_goes_out_as_written_and_is_named(self):
+        """A README no encoding above reads (not UTF-8, no mark, and this PC's own code page refuses a byte of it, or
+        is UTF-8 itself) goes out byte for byte, and pack's `unread` names it, so Export says so (never silent: the
+        review's defect 5); one Export reads, and one with nothing to cut, aren't named."""
+        his = "Fait sur C:\\Users\\J\u00e9r\u00f4me, merci.\n".encode("cp1252")
+        self.write("README.md", his)
+        self.write("files/odd/README.txt", b"Made on C:\\Users\\jane \x81\x8d\n")   # (two bytes Windows-1252 hasn't)
+        self.write("files/plain/README.md", b"Nothing to cut here.\n")
+        unread, home_in = [], []
+        with mock.patch.object(package, "_ansi", lambda: None):   # (a PC whose own encoding is UTF-8: Linux, a Deck)
+            out = package.pack(self.mod, self.root / "out", unread=unread, home_in=home_in, home="C:\\Users\\jane")
+        got = members(out)
+        self.assertEqual((got["README.md"], got["files/odd/README.txt"]), (his, self.text("files/odd/README.txt")))
+        self.assertEqual(sorted(unread), ["README.md", "files/odd/README.txt"])
+        self.assertEqual(home_in, ["files/odd/README.txt"])     # (and it names this PC's home folder: said too)
+        unread = []
+        with mock.patch.object(package, "_ansi", lambda: "cp1252"):
+            out = package.pack(self.mod, self.root / "out2", unread=unread)
+        self.assertEqual(unread, ["files/odd/README.txt"])
+        self.assertEqual(members(out)["README.md"], b"Fait sur , merci.\n")   # (read in this PC's own: cut)
+
+    def test_this_pc_s_home_folder_is_found_in_every_text_encoding(self):
+        """home_named (Export's line for his texts that go out as written): this PC's home folder is found in a text
+        of his in UTF-8, UTF-16 and this PC's own code page; on 1b9853b5 and e9a092c3 a name with é in it, or any name
+        in UTF-16, wasn't found, and Export said nothing (the review's defect 5)."""
+        home = "C:\\Users\\J\u00e9r\u00f4me"
+        named = f"Notes from {home}\\AppData\\x.\n"
+        self.write("CHANGELOG.md", codecs.BOM_UTF16_LE + named.encode("utf-16-le"))
+        self.write("files/notes/made.txt", named.encode("cp1252"))
+        self.write("files/notes/plain.txt", named.encode("utf-8"))
+        self.write("files/notes/other.txt", b"Notes from C:\\Users\\someone\\x.\n")
+        home_in = []
+        with mock.patch.object(package, "_ansi", lambda: "cp1252"):
+            package.pack(self.mod, self.root / "out", home_in=home_in, home=home)
+        self.assertEqual(sorted(home_in), ["CHANGELOG.md", "files/notes/made.txt", "files/notes/plain.txt"])
+
+    def test_his_readme_s_paths_to_a_user_s_own_folder_go_whole(self):
+        """pack: a README path that ends at a user's own folder goes whole (the owner, 2026-11-13: "Probably take the
+        username path out"), this PC's user's name known exactly from its home folder (`home`); `cuts` lists each, its
+        name "", beside a path cut to its name as before; his README in the mod as he wrote it."""
+        mine = "C:\\Users\\kim lee\\AppData\\Local\\RUSE Mod Platform"
+        readme = ("Made on C:\\Users\\Jane Doe by me, on C:\\Users\\kim lee too.\n"
+                  "From C:\\models\\tank.glb, and docs\\turret.md tells how.\n")
+        self.write("README.md", readme)
+        cuts = {}
+        out = package.pack(self.mod, self.root / "out", cuts=cuts, home=mine)
+        self.assertEqual(cuts, {"README.md": [("C:\\Users\\Jane Doe", ""), ("C:\\Users\\kim lee", ""),
+                                              ("C:\\models\\tank.glb,", "tank.glb,")]})
+        got = members(out)["README.md"].decode("utf-8")
+        self.assertEqual(got.splitlines(), ["Made on  by me, on  too.", "From tank.glb, and docs\\turret.md tells how."])
+        for name in ("Jane", "Doe", "kim", "lee", "Users"):
+            self.assertNotIn(name, got, name)
+        self.assertEqual(self.text("README.md").decode("utf-8").splitlines(), readme.splitlines())
 
     def test_a_record_from_any_system_names_only_its_file(self):
         """F1 of the export recheck, as a class: the record's "from" is the file's own name wherever the folder was
@@ -554,6 +834,57 @@ class OnTheMadeUpGame(WithMod):
                          ["In der exportierten Datei ist jeder Ordnerpfad in diesen README-Dateien von Ihnen auf seinen "
                           "eigenen Namen gekürzt, jedes andere Wort so, wie Sie es geschrieben haben; die Dateien in "
                           f"Ihrem Mod bleiben, wie sie sind: README.md ({PC}\\models\\tank.glb \u2192 tank.glb)."])
+
+    def test_export_says_which_paths_to_a_user_s_own_folder_it_took_out(self):
+        """Export's list of cuts says a path that ends at a user's own folder was taken out completely (a line of its
+        own), in his language; a path cut to its name keeps its own line, as before."""
+        folder = Path(self.api.new_mod("Shared")["current"])
+        readme = "Made on C:\\Users\\Jane Doe by me.\nFrom C:\\models\\tank.glb.\n"
+        (folder / "README.md").write_bytes(readme.encode("utf-8"))
+        self.api._game = lambda: None                        # (packed without a build: what's packed is checked)
+        with mock.patch("pathlib.Path.home", return_value=Path(PC)):
+            view = finished(self.api, self.api.export_mod("1.0.0", "a modder", "")["job"])
+        self.assertEqual(view["state"], "done", view.get("message"))
+        self.assertEqual(members(Path(view["result"]["path"]))["README.md"], b"Made on  by me.\nFrom tank.glb.\n")
+        said = [ln for ln in view["lines"] if ln.startswith("In the exported file, each")]
+        self.assertEqual(said, [
+            "In the exported file, each folder path in these README files of yours is cut to its own name, every other "
+            "word as you wrote it; the files in your mod stay as they are: README.md (C:\\models\\tank.glb \u2192 "
+            "tank.glb).",
+            "In the exported file, each path in these README files of yours that ends at a user's own folder, and so "
+            "names the user, is taken out completely; every other word stays as you wrote it, and the files in your "
+            "mod stay as they are: README.md (C:\\Users\\Jane Doe)."])
+        self.api.set_pref("lang", "ger")
+        lines = self.api.job(view["id"])["lines"]
+        self.assertEqual([ln for ln in lines if ln.startswith("In der exportierten Datei ist jeder Pfad")],
+                         ["In der exportierten Datei ist jeder Pfad in diesen README-Dateien von Ihnen, der am eigenen "
+                          "Ordner eines Benutzers endet und so den Benutzer nennt, ganz entfernt; jedes andere Wort "
+                          "bleibt so, wie Sie es geschrieben haben, und die Dateien in Ihrem Mod bleiben, wie sie "
+                          "sind: README.md (C:\\Users\\Jane Doe)."])
+
+    def test_export_says_which_readmes_it_can_t_read(self):
+        """A README of his that Export can't read goes out as he wrote it, and Export says so on a line of its own, in
+        his language (the export fix's review, defect 5: before, it went out with its paths whole and nothing said)."""
+        folder = Path(self.api.new_mod("Shared")["current"])
+        his = b"Made on C:\\Users\\jane \x81\x8d by me.\n"           # (neither UTF-8 nor Windows-1252)
+        (folder / "README.md").write_bytes(his)
+        self.api._game = lambda: None                        # (packed without a build: what's packed is checked)
+        with mock.patch("pathlib.Path.home", return_value=Path(PC)), \
+                mock.patch.object(package, "_ansi", lambda: "cp1252"):
+            view = finished(self.api, self.api.export_mod("1.0.0", "a modder", "")["job"])
+        self.assertEqual(view["state"], "done", view.get("message"))
+        self.assertEqual(members(Path(view["result"]["path"]))["README.md"], his)
+        said = [ln for ln in view["lines"] if ln.startswith("Export can't read")]
+        self.assertEqual(said, ["Export can't read the text of these README files of yours, so they go out as you "
+                                "wrote them, with any folder path or user's name in them; save them as UTF-8 and "
+                                "export again to have those taken out: README.md."])
+        self.api.set_pref("lang", "ger")
+        lines = self.api.job(view["id"])["lines"]
+        self.assertEqual([ln for ln in lines if ln.startswith("Der Export kann den Text")],
+                         ["Der Export kann den Text dieser README-Dateien von Ihnen nicht lesen, daher gehen sie so "
+                          "hinaus, wie Sie sie geschrieben haben, mit jedem Ordnerpfad und Benutzernamen darin; "
+                          "speichern Sie sie als UTF-8 und exportieren Sie erneut, damit diese entfernt werden: "
+                          "README.md."])
 
     def test_another_player_s_studio_knows_its_era_units_are_in_the_mod(self):
         _folder, _record, export, _view = self.exported()

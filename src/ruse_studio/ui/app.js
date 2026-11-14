@@ -2933,7 +2933,8 @@ function oneBlenderTicks(parts, before = null) {
   return { box, toggle, ticks };
 }
 
-// what the one button's Bring back kept as it was, in words (blender_back's "kept": the model's, or each soldier's)
+// what the one button's Bring back kept as it was, in words (blender_back's "kept": the model's, or each soldier's),
+// and the animations it kept the Studio's change of (differsSaid)
 function oneKeptSaid(r) {
   const w = state.words, kept = (r && r.kept) || {};
   const bones = kept.bones && typeof kept.bones === "object" ? Object.values(kept.bones) : [kept.bones];
@@ -2942,7 +2943,17 @@ function oneKeptSaid(r) {
   if (bones.includes("differ")) out.push(w.one_kept_bones_differ);
   else if (bones.includes("kept") || bones.includes("same")) out.push(w.one_kept_bones);
   if (paint.length) out.push(w.one_kept_paint);
+  const differs = differsSaid(r);
+  if (differs) out.push(differs);
   return out.join(" ");
+}
+
+// the animations a model's Bring back kept the Studio's change of (ModelBlenderCalls.model_blender_back's "differs":
+// changed in RUSE Decoy since they went out to Blender, sent back unchanged), said as RUSE Decoy's own Bring back says
+// it; "" for none
+function differsSaid(r) {
+  const names = r && Array.isArray(r.differs) ? r.differs : [];
+  return names.length ? fill(state.words.decoy_blender_differs, { names: names.join(", ") }) : "";
 }
 
 // The one Blender button on the page of a unit that isn't a squad (the Model row's More; the owner, 2026-11-13:
@@ -3131,6 +3142,9 @@ function notKeptSaid(lost) {
   if (lost.animations && lost.animations.length) said.push(fill(w.model_kept_not_anims, { names: lost.animations.join(", ") }));
   if (lost.picks && lost.picks.length) said.push(fill(w.model_kept_not_picks, { actions: lost.picks.map(action).join(", ") }));
   if (lost.record) said.push(w.model_kept_not_record);   // (its record couldn't be read: what else it held)
+  // (an era unit's model a newer download of its era replaced since it was made: fitted from the new one, said;
+  // StudioApi._era_said)
+  if (lost.file) said.push(fill(w.model_kept_not_file, { file: lost.file }));
   return said.join(" ");
 }
 
@@ -3454,8 +3468,9 @@ function modelBox(address, info, draw, changed) {
           if (r.model) {
             // (what of his the model brought back took the place of, then what it couldn't keep of its shine and side
             // colour, in the pop-up and beside the model below: both said; the final join of fix/resize and fix/notes)
-            const lost = notKeptSaid(r.model.not_kept);
-            const done = (kinds ? w.model_blender_done_kinds : w.model_blender_done) + (lost ? ` ${lost}` : "");
+            const lost = notKeptSaid(r.model.not_kept), differs = differsSaid(r);
+            const done = (kinds ? w.model_blender_done_kinds : w.model_blender_done) + (lost ? ` ${lost}` : "")
+              + (differs ? ` ${differs}` : "");
             if (alphaLostLines(r.model).length) sayBroughtBack(done, r.model);
             else say(done, lost ? "" : "ok");
             if (changed) changed();
@@ -3978,15 +3993,28 @@ function researchAsk(box, name, children, goAhead, cancel) {
 }
 
 // After a unit went: `done`, then what became of the units researched from it (re-linked to its own parent or made
-// buyable from the start; or left researched from a unit that's gone, which the check bar then lists)
+// buyable from the start; or left researched from a unit that's gone, which the check bar then lists), and the files of
+// it another program had open (waitingTold)
 function researchTold(res, done) {
   const w = state.words;
   const lines = [done, ...(res.relinked || []).map((r) => r.to ? fill(w.research_relinked, { name: r.name, to: r.to.name })
     : fill(w.research_relinked_none, { name: r.name }))];
   const left = res.left || [];
   if (left.length) lines.push(fill(w.research_left, { names: left.map((c) => c.name).join(", ") }));
+  const waiting = waitingTold(res);
+  if (waiting) lines.push(waiting);
   say(lines.join(" "), left.length ? "warn" : "ok");
   if (left.length || (res.relinked || []).length) checkMod();
+}
+
+// Delete goes through (the owner, 2026-11-13): a file of the deleted unit another program had open stays in the mod's
+// folder until the Studio takes it out by itself, out of Test in game and Export meanwhile (StudioApi.delete_unit
+// "waiting", the board's take-outs too): said in one line, or null when nothing waits
+function waitingTold(res) {
+  const w = state.words, files = (res && res.waiting) || [];
+  if (!files.length) return null;
+  return files.length === 1 ? fill(w.unit_deleted_waiting_one, { file: files[0] })
+    : fill(w.unit_deleted_waiting_many, { files: files.join(", ") });
 }
 
 // A unit's place in the upgrade chains and its research (StudioApi.upgrade, set_upgrade, set_research; LittleGroove's

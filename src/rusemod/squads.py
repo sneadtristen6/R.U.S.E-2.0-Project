@@ -90,13 +90,14 @@ def read_count(path) -> int:
     return count
 
 
-def mod_squads(folder) -> dict:
+def mod_squads(folder, skip=None) -> dict:
     """{a new squad's name: its own number of soldiers} from a mod's files/models/<the squad's name>.squad.toml (the
-    numbers as the files give them: the build says which it can't take)."""
+    numbers as the files give them: the build says which it can't take). `skip` (rusemod.holding.skip_of): a file it
+    names is left out, never read (a deleted unit's, another program had it open)."""
     root = Path(folder) / MODELS
     if not root.is_dir():
         return {}
-    return {f.name[:-len(SUFFIX)]: read_count(f) for f in sorted(root.glob(f"*{SUFFIX}"))}
+    return {f.name[:-len(SUFFIX)]: read_count(f) for f in sorted(root.glob(f"*{SUFFIX}")) if not (skip and skip(f))}
 
 
 def write_count(folder, unit: str, count: int | None) -> None:
@@ -202,13 +203,14 @@ def write_game_look(folder, unit: str, i: int) -> Path:
     return path
 
 
-def mod_game_looks(folder) -> dict:
+def mod_game_looks(folder, skip=None) -> dict:
     """{a new squad's name: [its soldiers who wear the game's look, by number]} from a mod's files/models/<unit>@<i>.json
-    records with no model beside them (write_game_look's)."""
+    records with no model beside them (write_game_look's). `skip` (rusemod.holding.skip_of): a record it names is left
+    out (a deleted unit's, another program had it open)."""
     root = Path(folder) / MODELS
     found: dict = {}
     for f in (sorted(root.glob("*@*.json")) if root.is_dir() else ()):
         s = soldier_of(f.stem)
-        if s is not None and game_record(f):
+        if s is not None and not (skip and skip(f)) and game_record(f):
             found.setdefault(s[0], []).append(s[1])
     return {unit: sorted(numbers) for unit, numbers in found.items()}

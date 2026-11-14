@@ -61,10 +61,38 @@ MOST_BONES = 64   # the longest bone list of any material the game ships (gen_5\
 INDEX_16, INDEX_32 = 1, 0   # an index buffer's kind: 1 = 16-bit (every one the game ships), else 32-bit
 MOST_ANIMATED = 64   # the most bones a model the game animates is seen to have (not tried past it: a warning, not a refusal)
 TOP_MASK, BOTTOM_MASK = 65280, 255   # the two halves' MaskUnionCode, as a soldier's own masks and the 11-09 horse's have them
+# the fitting's report: the SHA-256 of the file the model was made from (hex), which the Studio keeps in the model's
+# record, so the bytes it was made from are known again (the Generic Horse's files: ruse_studio.horse_squad). Only in
+# the report import_model returns, never in the model file it writes
+SOURCE_SHA = "file_sha256"
 
 
 class UnitModelError(ModelError):
     pass
+
+
+def file_sha256(path) -> str:
+    """The SHA-256 of the file at `path`, in hex."""
+    import hashlib
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        for block in iter(lambda: f.read(1 << 20), b""):
+            h.update(block)
+    return h.hexdigest()
+
+
+def _sha_before(model_file) -> str | None:
+    """The SHA-256 of the file a model is fitted from, read before anything is written (`out` can be that very file);
+    None when it can't be read: the fitting's own reading of it says why."""
+    try:
+        return file_sha256(model_file)
+    except OSError:
+        return None
+
+
+def _from_file(report: dict, sha: str | None) -> dict:
+    """The fitting's report with the SHA-256 of the file it was fitted from (SOURCE_SHA), when it was read."""
+    return dict(report, **{SOURCE_SHA: sha}) if sha else report
 
 
 def import_model(game: Path, source_model: str, model_file: Path, out: Path, size: float = 1.0,
@@ -91,7 +119,8 @@ def import_model(game: Path, source_model: str, model_file: Path, out: Path, siz
     their roles, facing, scale, counts, pictures, "missing": pictures not found; "stands": [x, y, z, length] the unit's own place, where the game centres its selection ring, and how long the unit it copies is).
     `own_bones` (2026-11-10, not tried in the game yet): the file's model is on bones of its own (a horse, any creature),
     whatever bones the copied unit has: _import_own_bones; `clips` (a dict, own_bones only) gets each of its animations
-    as a game clip, {its name: the clip's bytes} (own_clips), for the caller to keep as the unit's own."""
+    as a game clip, {its name: the clip's bytes} (own_clips), for the caller to keep as the unit's own. The report has
+    SOURCE_SHA: the SHA-256 of `model_file` as it was when the fitting began."""
     from .build import find_pack
     from .edat import Edat
     from .modelin import check_move, prepare, read_model, write_glb
@@ -99,11 +128,12 @@ def import_model(game: Path, source_model: str, model_file: Path, out: Path, siz
     path = find_pack(Path(game), "ZZ_Win.dat")
     if path is None:
         raise UnitModelError(f"ZZ_Win.dat isn't in {game}")
+    sha = _sha_before(model_file)
     zz = Edat.open(str(path))
     if own_bones:
         try:
-            return _import_own_bones(zz, source_model, Path(model_file), Path(out), size, side, pictures, others, move,
-                                     clips)
+            return _from_file(_import_own_bones(zz, source_model, Path(model_file), Path(out), size, side, pictures,
+                                                others, move, clips), sha)
         finally:
             zz.close()
     try:
@@ -145,7 +175,7 @@ def import_model(game: Path, source_model: str, model_file: Path, out: Path, siz
         if move:        # said, not dropped: its points lean on bones that stay where the skeleton has them
             prep.report["notes"] = list(prep.report.get("notes") or []) + ["a model rigged to the unit's own bones stays where its bones are: the move wasn't used"]
         write_glb(prep, out, src.model)
-        return dict(prep.report, like=src.model)
+        return _from_file(dict(prep.report, like=src.model), sha)
     like = dict(src.like, aircraft=aircraft, **({"facing": list(facing)} if facing else {}), **({"move": move} if move else {}))
     can_move = own_turret and TURRET in src.skeleton.names
     if can_move:
@@ -159,7 +189,7 @@ def import_model(game: Path, source_model: str, model_file: Path, out: Path, siz
     # (the unit's own place: the game's selection ring is a circle on the unit with no place of its own, TGfxDescriptorCircle "halo_unite": Radius and how it shows, no offset)
     prep.report["stands"] = [0.0, 0.0, float(src.like["ground"]), float(src.like["length"])]
     write_glb(prep, out, src.model)
-    return dict(prep.report, like=src.model)
+    return _from_file(dict(prep.report, like=src.model), sha)
 
 
 def _import_own_bones(zz, source_model: str, model_file: Path, out: Path, size: float, side: int,
@@ -242,10 +272,11 @@ def rigged_first(game: Path, model_file: Path, models: list) -> list:
     return fits + rest
 
 
-def mod_models(folder: Path) -> dict:
-    """{a new unit's name: its model file} from a mod's files/models/<the unit's name>.glb."""
+def mod_models(folder: Path, skip=None) -> dict:
+    """{a new unit's name: its model file} from a mod's files/models/<the unit's name>.glb; `skip`
+    (rusemod.holding.skip_of): a file it names is left out (a deleted unit's, another program had it open)."""
     root = Path(folder) / MODELS
-    return {f.stem: f for f in sorted(root.glob("*.glb"))} if root.is_dir() else {}
+    return {f.stem: f for f in sorted(root.glob("*.glb")) if not (skip and skip(f))} if root.is_dir() else {}
 
 
 # --- the stand-in key ---
@@ -1668,18 +1699,21 @@ def write_batch(batch: dict) -> dict:
 COPY = ".copy.toml"  # files/models/<the unit's name>.copy.toml: the unit has its own copy; its paint in files/models/<name>/
 
 
-def mod_copies(folder: Path) -> dict:
+def mod_copies(folder: Path, skip=None) -> dict:
     """{a unit's name: (the models it has copies of, as its .copy.toml's `of` lists them ([] if it names none: the
     build then copies the one its GfxDescriptor draws), its paint ({the copied models' texture in ZZ_Win.dat: (colour
     PNG, alpha PNG)}, laid out as files/replace: rusemod.unitlook.paint_in))} from a mod's
     files/models/<the unit's name>.copy.toml and files/models/<the unit's name>/. UnitModelError for a .copy.toml that
-    can't be read."""
+    can't be read. `skip` (rusemod.holding.skip_of): a .copy.toml it names is left out, never read (a deleted unit's,
+    another program had it open)."""
     import tomllib
     root = Path(folder) / MODELS
     if not root.is_dir():
         return {}
     out: dict = {}
     for f in sorted(root.glob("*" + COPY)):
+        if skip and skip(f):
+            continue
         unit = f.name[:-len(COPY)]
         try:
             of = tomllib.loads(f.read_text(encoding="utf-8")).get("of") or []
