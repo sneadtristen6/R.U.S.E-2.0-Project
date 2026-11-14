@@ -355,7 +355,8 @@ class ModEdits:
         names = self._read_names()
         if self.file.is_file():
             try:
-                ops = parse(self.file.read_text(encoding="utf-8"), file=FILE.as_posix(), mod=self.folder.name)
+                # (a BOM first, Notepad's "UTF-8 with BOM", read past as the build reads it: rusemod.build._mod_text)
+                ops = parse(self.file.read_text(encoding="utf-8-sig"), file=FILE.as_posix(), mod=self.folder.name)
             except (RndfError, UnicodeDecodeError) as exc:
                 raise EditsFileError(f"{self.file} has a mistake ({exc}). Fix it, or delete it to start over.") from exc
             for op in ops:
@@ -388,7 +389,7 @@ class ModEdits:
         if not self.names_file.is_file():
             return {}
         try:
-            rows = loc.read_csv(self.names_file.read_text(encoding="utf-8"), "baseunite", self.folder.name,
+            rows = loc.read_csv(self.names_file.read_text(encoding="utf-8-sig"), "baseunite", self.folder.name,
                                 NAMES_FILE.as_posix())
         except (loc.TextError, UnicodeDecodeError) as exc:
             raise EditsFileError(f"{self.names_file} has a mistake ({exc}). Fix it, or delete it to start over.") from exc
