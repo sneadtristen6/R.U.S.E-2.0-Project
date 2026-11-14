@@ -127,12 +127,17 @@ class WithLibrary(WithMod):
 class TheBuildersRefusals(unittest.TestCase):
     def test_each_has_its_words_marked_with_the_frame_it_goes_in(self):
         """Every refusal in the builder's code has an entry marked with the Studio's frame, and no other entry is
-        marked (test_errortext checks every language and blank of each; the frame is a Studio error of the code)."""
+        marked with it (test_errortext checks every language and blank of each; the frame is a Studio error of the
+        code). Other frames have entries of their own: why a download failed, inside the era units list's refusals
+        (the plain-words job, 2026-11-14)."""
         found, e = builder_templates(), entries()
         self.assertEqual(len(found), 28)
-        self.assertEqual(sorted(w["us"] for w in e.values() if isinstance(w, dict) and "within" in w), sorted(found))
+        self.assertEqual(sorted(w["us"] for w in e.values() if isinstance(w, dict) and w.get("within") == FRAME),
+                         sorted(found))
         self.assertEqual({e[errortext.key_of(t)]["within"] for t in found}, {FRAME})
-        self.assertEqual(list(errortext.WITHIN), [FRAME])
+        self.assertEqual(list(errortext.WITHIN)[0], FRAME)
+        self.assertNotIn(FRAME, [f for w in e.values() if isinstance(w, dict) and isinstance(w.get("within"), list)
+                                 for f in w["within"]])
         self.assertIn(FRAME, errortext.templates_in(sorted((SRC / "ruse_studio").glob("*.py"))))
 
     def test_each_is_said_wholly_in_the_studio_s_language_in_its_frame(self):

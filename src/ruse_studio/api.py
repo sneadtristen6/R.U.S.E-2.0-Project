@@ -768,7 +768,8 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         if isinstance(exc, OSError):
             plain = page_file_error(exc)
             return StudioError(self._worded(str(plain))) if plain is not None else None
-        if not isinstance(exc, StudioError):
+        from .errortext import OTHERS
+        if not isinstance(exc, StudioError) and type(exc).__name__ not in OTHERS:
             return None
         said = self._worded(str(exc))
         return StudioError(said) if said != str(exc) else None

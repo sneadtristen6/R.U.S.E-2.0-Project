@@ -26,13 +26,22 @@ FILE = Path(__file__).with_name("errors.toml")
 # words (HorseSquadError), and horse_squad.py passes its refusal on inside this frame (review 2026-11-12: the frame was
 # said in the player's language with the builder's sentence left English inside it).
 WITHIN = {"The Generic Horse can't be made from your game: {0}":
-          (Path(__file__).parents[1] / "rusemod" / "horsesquad.py", {"HorseSquadError": 0})}
+          (Path(__file__).parents[1] / "rusemod" / "horsesquad.py", {"HorseSquadError": 0}),
+          # why the era units list or one of its files couldn't be downloaded (rusemod.mod_index plain's words: the
+          # units scenarios' U-12, "[WinError 10061] No connection could be made..." inside English words)
+          "the era units list couldn't be loaded ({0})": (Path(__file__).parents[1] / "rusemod" / "mod_index.py",
+                                                          {"_why": 0}),
+          "{0} couldn't be downloaded ({1})": (Path(__file__).parents[1] / "rusemod" / "mod_index.py", {"_why": 0})}
+# the Studio's other refusals that reach the page whole, said in the player's language like a StudioError: the era
+# units list's and downloads' (era_units.py: a download job's refusal, and why the list couldn't be had)
+OTHERS = {"EraDownloadError": 0}
 
 
 def templates_in(paths) -> list[str]:
-    """Every StudioError template in these Python files, each once, in the order first met; then, for each frame of
-    WITHIN among them, every template of the messages its blank holds (said in the player's language too)."""
-    out = wordedtext.templates_in(paths, {"StudioError": 0}, min_text=0)
+    """Every StudioError template in these Python files (and of OTHERS), each once, in the order first met; then, for
+    each frame of WITHIN among them, every template of the messages its blank holds (said in the player's language
+    too)."""
+    out = wordedtext.templates_in(paths, {"StudioError": 0, **OTHERS}, min_text=0)
     for frame, (source, calls) in WITHIN.items():
         if frame in out:
             out += [t for t in wordedtext.templates_in([source], calls, min_text=0) if t not in out]
