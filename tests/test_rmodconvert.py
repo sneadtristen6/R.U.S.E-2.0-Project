@@ -1,6 +1,7 @@
 """An .rmod mod made into a mod the Studio can show and change (rusemod.rmodconvert, ruse_studio.rmodedit; the owner,
 2026-10-10): on a made-up game, its value changes become Studio changes, everything else stays a smaller .rmod, the
 build applies both, and the converted mod builds the same unit data as the original."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import json
 import struct
 import tempfile

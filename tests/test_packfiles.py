@@ -1,6 +1,7 @@
 """The Files tab (rusemod.packfiles, StudioApi.files_*; LittleGroove's Raw / Asset Editor, Browse / Files): every file of
 a made-up game's packs and of a pack inside one, each shown as what it is and saved out; nothing written into the
 game."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import base64
 import struct
 import tempfile

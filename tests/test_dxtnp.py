@@ -1,5 +1,6 @@
 """rusemod.dxtnp: many DXT1 blocks packed at once come out as dxt.encode_block packs each, byte for byte (made-up
 blocks, no game files). Skipped without numpy: the apps carry it, the plain code doesn't need it."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import random
 import unittest
 

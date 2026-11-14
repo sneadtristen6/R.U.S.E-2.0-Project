@@ -1167,25 +1167,68 @@ def _given_note(given) -> str:
     return f"{given.summary()} copied in from {' and '.join(unitcheck.NATIONS[unitpacks.TAGS.index(t)] if t in unitpacks.TAGS else t for t in given.sources)}'s packs"
 
 
-def unit_models(base, run, zz_win, result: BuildResult, into=None) -> None:
+UNIT_CARDS = "baseunite"   # the game's dictionary of its units' names on their cards (rusemod.bugwatch.CARD_NAMES)
+
+
+def _unit_cards(zz_win):
+    """card(obj) -> a unit's name on its card, in English, from ZZ_Win.dat as the mods leave it (`zz_win`), or None;
+    the dictionary read once, when first asked."""
+    from .dic import Dic, name_to_key
+    from .patch import Text
+    got: dict = {}
+
+    def card(obj):
+        if "dic" not in got:
+            got["dic"] = None
+            try:
+                e = zz_win.entry(loc.member(UNIT_CARDS, "us")) if zz_win is not None else None
+                got["dic"] = Dic(bytes(zz_win.read(e))) if e is not None else None
+            except (OSError, ValueError, KeyError, IndexError, struct.error):
+                got["dic"] = None
+        v = obj.props.get("NameInMenuToken")
+        if got["dic"] is None or not isinstance(v, Text) or v.kind != "key":
+            return None
+        try:
+            key = int(v.value, 16) if v.value.lower().startswith("0x") else name_to_key(v.value)
+        except ValueError:
+            return None
+        said = " ".join((got["dic"].text(key) or "").split())
+        return said or None
+    return card
+
+
+def _readable(name: str) -> str:
+    """A unit's name in the data as a name to read: $/GFX/Everything/Descriptor_Unit_Battleship_FR -> Battleship FR."""
+    short = re.sub(r"^(?:Descriptor_)?(?:Unit_)?", "", str(name).replace("\\", "/").rsplit("/", 1)[-1])
+    return " ".join(short.replace("_", " ").split()) or str(name)
+
+
+def unit_models(base, run, zz_win, result: BuildResult, into=None, names=None, allowed=None, who=None) -> bool:
     """New units, and units moved to another nation or given other models, whose models are only in another nation's
     skirmish mesh pack: the game loads a nation's unit models only in matches where a player has that nation
     (unitcheck). So that nation's packs (meshes, proxies, animations, skeletons, card pictures) load in every skirmish
     (FORCE_LOAD), with a note; a unit whose nation's packs no loader has is refused, saying why. What the game's own
     units already have is fine. (FORCE_LOAD off, the old way: the models are copied into the skirmish packs of the
     unit's own nation, rusemod.unitpacks; `into`, a unitpacks.Packs, gathers them for the build, else they go straight
-    into result.model_changed.)"""
-    moved = {owner for owner, path in run.trail if owner in run.game.objects and _moves_path(path)}
-    names = sorted(n for n in set(run.created) | moved if n in run.game.objects and unitcheck.is_unit(run.game.objects[n]))
-    names = [n for n in names if unitcheck.model_files(run.game.objects[n], run.game)]
+    into result.model_changed.) Returns whether a unit needed another nation's models (the game was changed for it, or
+    it was refused).
+
+    `names`, `allowed`, `who`: for the units .rmod mods make or move (rmod_unit_models), which are already in the data
+    the build reads: the units to look at (in place of the run's own new and moved ones), the (model, nation) pairs
+    the game's own units have as shipped (in place of `base`'s), and {unit: the mods that change it, said first}."""
+    if names is None:
+        moved = {owner for owner, path in run.trail if owner in run.game.objects and _moves_path(path)}
+        names = sorted(n for n in set(run.created) | moved
+                       if n in run.game.objects and unitcheck.is_unit(run.game.objects[n]))
+        names = [n for n in names if unitcheck.model_files(run.game.objects[n], run.game)]
     if not names or zz_win is None:
-        return
+        return False
     packs = skirmish_models(zz_win)
     if packs is None:
         result.findings.append(Finding("note", "ZZ_Win.dat has no skirmish mesh packs, so whether the new or moved "
                                                "units' models load for their nation wasn't checked"))
-        return
-    allowed = unitcheck.allowed_models(base)
+        return False
+    allowed = unitcheck.allowed_models(base) if allowed is None else allowed
     wanted = []  # (unit, its op, its missing models, the nations whose packs it needs)
     chosen: set = set()
     for name in names:
@@ -1206,17 +1249,41 @@ def unit_models(base, run, zz_win, result: BuildResult, into=None) -> None:
         chosen.update(need)
         wanted.append((name, op, missing, need))
     if not wanted:
-        return
+        return False
+
+    def said_at(unit, op) -> str:
+        """Where a unit's finding starts: its mod's file and line, or the .rmod mods changing it."""
+        if op:
+            return f"{op.at()}: "
+        return f"{', '.join(who[unit])}: " if who and who.get(unit) else ""
+
+    cards = _unit_cards(zz_win) if who is not None else None
+
+    def said_name(unit) -> str:
+        """A unit as its finding names it: its name, or for one a .rmod mod made with no name of its own (file#n), its
+        class's name; a unit an .rmod mod makes or moves (no mod file of ours to point at: a player reads it) by its
+        name on its card, else its name made readable (the review of 95e9b910, 2026-11-14)."""
+        obj = run.game.objects[unit]
+        cls = getattr(obj.props.get("ClassNameForDebug"), "value", None)
+        if who is None:
+            return unit
+        if cards is not None and wanted_op.get(unit) is None:
+            card = cards(obj)
+            if card:
+                return card
+            return _readable(cls if "#" in unit and isinstance(cls, str) and cls else unit)
+        return cls if "#" in unit and isinstance(cls, str) and cls else unit
+    wanted_op = {unit: op for unit, op, _missing, _need in wanted}
     if not FORCE_LOAD:
         own = into is None
         into = into or unitpacks.Packs(zz_win)
-        for name, op, missing, need in wanted:
-            obj = run.game.objects[name]
+        for unit, op, missing, need in wanted:
+            obj, name = run.game.objects[unit], said_name(unit)
             n = unitcheck.nation_of(obj)
             nation, tag = unitcheck.NATIONS[n], unitpacks.TAGS[n]
             model, where = next(iter(missing.items()))
             more = f" (and {len(missing) - 1} more)" if len(missing) > 1 else ""
-            at = f"{op.at()}: " if op else ""
+            at = said_at(unit, op)
             try:
                 given, why = into.give(sorted(unitcheck.model_files(obj, run.game)), tag,
                                        [unitpacks.TAGS[i] for i in need])
@@ -1241,7 +1308,7 @@ def unit_models(base, run, zz_win, result: BuildResult, into=None) -> None:
                                            op))
         if own:
             result.model_changed.update(into.output())
-        return
+        return True
     loaded = unitcheck.load_everywhere(run.game, chosen)
     _also_loaded(run, [n for n in chosen if loaded[n][0]], result)
     for nation, (count, maps) in sorted(loaded.items()):
@@ -1250,19 +1317,34 @@ def unit_models(base, run, zz_win, result: BuildResult, into=None) -> None:
                                                    f"in every skirmish, beside those of the nations playing, for the "
                                                    f"units of other nations that use them ({count} loaders in {maps} "
                                                    f"cluster maps; matches take a little more memory and loading time)"))
-    for name, op, missing, need in wanted:
-        obj = run.game.objects[name]
+    for unit, op, missing, need in wanted:
+        obj, name = run.game.objects[unit], said_name(unit)
         n = unitcheck.nation_of(obj)
         nation = unitcheck.NATIONS[n]
         model, where = next(iter(missing.items()))
         more = f" (and {len(missing) - 1} more)" if len(missing) > 1 else ""
-        at = f"{op.at()}: " if op else ""
+        at = said_at(unit, op)
         packs_of = " and ".join(unitcheck.NATIONS[i] for i in need)
+        plain = who is not None and op is None   # (an .rmod mod's unit: said to a player, with no code names)
         if all(loaded[i][0] for i in need):
+            if plain:
+                result.findings.append(Finding("note", f"{at}{name}, in {nation}'s army, has a model of "
+                                                       f"{' and '.join(where)}'s units: {packs_of}'s unit models now "
+                                                       f"load in every skirmish, so it shows in matches where no player "
+                                                       f"has {packs_of} too"))
+                continue
             result.findings.append(Finding("note", f"{at}{name} is in {nation}'s army (Nationalite {n}), but its model "
                                                    f"{model}{more} is in the mesh pack of {' and '.join(where)}'s units: "
                                                    f"{packs_of}'s unit models now load in every skirmish, so it shows "
                                                    f"in matches where no player has {packs_of} too", op))
+            continue
+        if plain:
+            # rule: nation-models
+            result.findings.append(Finding("error", f"{at}{name}, in {nation}'s army, has a model only "
+                                                    f"{' and '.join(where)}'s units have, and the unit data has no cluster "
+                                                    f"maps that could load {packs_of}'s models in every match: in matches "
+                                                    f"where no player has {packs_of}, this unit would have no model, or "
+                                                    f"crash the game"))
             continue
         # rule: nation-models
         result.findings.append(Finding("error", f"{at}{name} is in {nation}'s army (Nationalite {n}), but its model "
@@ -1273,6 +1355,55 @@ def unit_models(base, run, zz_win, result: BuildResult, into=None) -> None:
                                                 f"so in other matches this unit has no model, or crashes the game. "
                                                 f"Copy one of {nation}'s units instead, or leave it in {where[0]}'s "
                                                 f"army", op))
+    return True
+
+
+def rmod_unit_models(run, shipped, zz_win, result: BuildResult, rmods=(), base=None, into=None) -> bool:
+    """unit_models for the units a set of .rmod mods makes, moves to another nation or gives other models (the owner,
+    2026-11-13, item 29: "Sets made only of .rmod mods skip the unit-model check: (A) run it" -> "A"). Those mods
+    change the game's files themselves, so their units are already in the data the build reads (`run`, an engine run
+    over it): each unit is set against the game's own unit data as shipped (`shipped`, its engine model), and a unit
+    the game hasn't, or has with another nation or other models, is looked at as a mod's new or moved unit is; what the
+    game's own units have as shipped is fine. `zz_win()` gives ZZ_Win.dat as the mods leave it, opened only when a unit
+    is looked at; `rmods`: the .rmod files of the set, to say which changes a unit. Returns whether the game was
+    changed for one (or one was refused).
+
+    In a set with mods of ours too (build_pack: `base`, the unit data as the .rmod mods left it, and `run`, our mods
+    run over it; `into` as unit_models'), the .rmod mods' units are looked at the same way, and our mods' new and moved
+    units with them, each said with its mod's file and line: the game's own units as shipped are what's fine for all
+    of them, so a unit an .rmod mod made is never taken for the game's own (the review of 95e9b910, 2026-11-14: in a
+    set with any folder mod the .rmod mods' units were never looked at)."""
+    own = {n: (unitcheck.nation_of(o), frozenset(unitcheck.model_files(o, shipped)))
+           for n, o in shipped.objects.items() if unitcheck.is_unit(o)}
+    names = []
+    for n, o in run.game.objects.items():
+        if not unitcheck.is_unit(o):
+            continue
+        files = frozenset(unitcheck.model_files(o, run.game))
+        if files and own.get(n) != (unitcheck.nation_of(o), files):
+            names.append(n)
+    if not names:
+        return False
+    from .rmod import edits_of
+    who: dict = {}   # unit -> the .rmod mods whose changes name its class (his engine's name for a unit it changes)
+    edits = [e for e in (edits_of(path) for path in rmods) if e is not None]
+    for n in names:
+        cls = getattr(run.game.objects[n].props.get("ClassNameForDebug"), "value", None)
+        if not isinstance(cls, str) or not cls:
+            continue
+        mine = f"ClassNameForDebug={cls}"
+        # the mods that make it, or set its nation or its models, are the ones the finding is about; a mod that only
+        # changes its other values (every test copy's cheat mod re-prices most units) isn't named for it (the review
+        # of 95e9b910, its fault 3's kind); when none of them does (a model changed through another object, which
+        # these edits can't tell), every mod changing the unit is named, as before
+        moved = [e.name for e in edits
+                 if any(k[3] == cls for k in e.creates) or any(mine in k[3].split(";") and _moves_path(str(k[4]))
+                                                               for k in e.values)]
+        said = moved or [e.name for e in edits if any(mine in k[3].split(";") for k in e.values)]
+        if said:
+            who[n] = list(dict.fromkeys(said))
+    return unit_models(shipped if base is None else base, run, zz_win(), result, into, names=sorted(names),
+                       allowed=unitcheck.allowed_models(shipped), who=who)
 
 
 def spawn_models(run, zz_win, mods: list, order: list[str], result: BuildResult, into=None) -> None:
@@ -1452,21 +1583,33 @@ def far_upgrades(run, result: BuildResult) -> None:
                                                   f"whatever building, so it is now a research of its own"))
 
 
-def rmod_far_upgrades(arc: Edat, build_id: str, cache, result: BuildResult) -> None:
+def rmod_far_upgrades(arc: Edat, build_id: str, cache, result: BuildResult, models=None) -> None:
     """far_upgrades for a set of .rmod mods ONLY, the set most players have: those mods change the game's files
     themselves and build_pack never runs, so nothing of ours would look at the unit data they leave (the two mods
     of the owner's test were both .rmod mods). The unit data as they left it (`arc`) is read, and written again
     only when a far upgrade was cut. With none, `result` is not touched: the copy's files, its fingerprint and its
-    join code are what they were before this step existed, so players on the release before still match."""
+    join code are what they were before this step existed, so players on the release before still match.
+
+    `models` (the owner, 2026-11-13, item 29, answer A): (the unit data pack as the game ships it, zz_win() giving
+    ZZ_Win.dat as the mods leave it, the set's .rmod files): when the mods changed the unit data pack, the units they
+    make or move get the unit-model check too (rmod_unit_models). A unit that needs another nation's models has that
+    nation's packs load everywhere, as a folder mod's unit has, written with any far upgrade's cut, or it is refused;
+    with neither a cut nor such a unit, `result` is still not touched (notes aside)."""
     pack = load_pack(arc, cache)
     run = Engine(pack.base).run([])
     found = BuildResult()
     far_upgrades(run, found)
-    if not found.findings:
+    looked = False
+    if models is not None and (getattr(arc, "changed", None) or getattr(arc, "added", None)):
+        shipped, zz_win, rmod_files = models
+        looked = rmod_unit_models(run, load_pack(shipped, cache).base, zz_win, found, rmod_files)
+    if found.errors or not (looked or any(f.level == "warning" for f in found.findings)):
+        result.findings += found.findings   # (refused, or notes only: nothing to write)
         return
     notes: list = []
     try:
-        changed = save(pack.base, run.game, pack.loaded, run.created, notes)
+        changed = save(pack.base, run.game, pack.loaded, run.created, notes,
+                       **({"new_props": {(unitcheck.LOADER, unitcheck.FORCE)}} if looked else {}))
     except ModelError as exc:
         # not a game rule: the unit data these mods left can't be written again by our writer
         result.findings.append(Finding("error", str(exc)))
@@ -1474,6 +1617,7 @@ def rmod_far_upgrades(arc: Edat, build_id: str, cache, result: BuildResult) -> N
     result.findings += found.findings + [Finding("note", n) for n in notes]
     result.changed = {pack.members[p]: data for p, data in changed.items()}
     result.fingerprint = fingerprint(build_id, changed)
+    result.model_changed.update(found.model_changed)   # (FORCE_LOAD off, the old way: the models' copies)
 
 
 def fill_loc(game, keys: dict) -> list[str]:
@@ -2176,8 +2320,9 @@ def unit_own_clips(run, order: list, result: BuildResult, zz=None) -> dict:
         where = f"{', '.join(mods)}: {anim.UNITS}"
         name = by_name.get(unit) or _game_unit(run, unit)
         if name is None:
-            # not a game rule: animations for a unit nothing makes. Said with what to do, as unit_own_copies' line
+            # Said with what to do, as unit_own_copies' line.
             if mods:
+                # not a game rule: animations for a unit nothing makes
                 result.findings.append(Finding("error", f"{where}: no mod in the set makes a unit {unit}, and the "
                                                         f"game has none of that name. If {unit} was deleted from this "
                                                         f"mod, its animations were left behind: in the Studio, click "
@@ -2185,6 +2330,7 @@ def unit_own_clips(run, order: list, result: BuildResult, zz=None) -> dict:
                                                         f"log, or take [unit.{unit}] out of {anim.UNITS} and delete "
                                                         f"the folder {anim.OWN}/{unit}/"))
             for key in sorted(set(t.values())):
+                # not a game rule: a RUSE Decoy copy ticked for a unit nothing makes
                 result.findings.append(Finding("error", f"{copy_where(key)}: it is ticked for a unit {unit}, which no "
                                                         f"mod in the set makes and the game hasn't got. If {unit} was "
                                                         f"deleted from this mod, untick it under Who plays it in RUSE "
@@ -3057,10 +3203,12 @@ def _game_tab_keys(base) -> list[str]:
 
 
 def build_pack(arc: Edat, mods: list, build_id: str = "0", text_arc: Edat | None = None,
-               cache: Path | None = None) -> BuildResult:
+               cache: Path | None = None, rmod_units=None) -> BuildResult:
     """Run `mods` [(ModInfo, ops)] on the data files of `arc`, and their texts and new units' classes on
     `text_arc` (ZZ_Win.dat; needed when a mod has text/*.csv or new units). Nothing is written; see
-    BuildResult.changed / text_changed / script_changed. `cache`: load_pack's."""
+    BuildResult.changed / text_changed / script_changed. `cache`: load_pack's. `rmod_units`, for a set holding .rmod
+    mods too, whose changes `arc` already has: (the unit data pack as the game ships it, zz_win() giving ZZ_Win.dat as
+    the mods leave it, the .rmod files), so their own units get the unit-model check with ours (rmod_unit_models)."""
     order = load_order([m for m, _ in mods])
     by_id = {m.id: (m, ops) for m, ops in mods}
     result = BuildResult(order=[m.id for m in order])
@@ -3140,7 +3288,14 @@ def build_pack(arc: Edat, mods: list, build_id: str = "0", text_arc: Edat | None
         return result
     far_upgrades(run, result)
     into = unitpacks.Packs(text_arc) if text_arc is not None else None
-    unit_models(base, run, text_arc, result, into)
+    if rmod_units is not None and (getattr(arc, "changed", None) or getattr(arc, "added", None)):
+        # .rmod mods changed the unit data under ours: their own units are in `base`, so every unit is set against the
+        # game's as shipped (item 29, answer A, in every set that holds .rmod mods)
+        shipped, zz_win, rmod_files = rmod_units
+        rmod_unit_models(run, load_pack(shipped, cache).base, zz_win if text_arc is None else (lambda: text_arc),
+                         result, rmod_files, base=base, into=into)
+    else:
+        unit_models(base, run, text_arc, result, into)
     spawn_models(run, text_arc, mods, result.order, result, into)
     mission_models(run, text_arc, mods, result.order, result)
     if result.errors:
@@ -3853,28 +4008,303 @@ def patches_fingerprint(fp: bytes, patches: list) -> bytes:
     return fp
 
 
-def known_issue_findings(infos) -> list:
-    """A warning for each library mod in the set known to stop some of the game's missions on its own
-    (rusemod.knownissues: six library mods, each known by its .rmod file's bytes; the owner, 2026-11-13: "build warning
-    and a note so both"). Only warns: the set builds and plays as before, battles and multiplayer included."""
-    from .knownissues import missions_stop
-    out, seen = [], set()
-    for info in infos:
-        known = missions_stop(info.rmod) if getattr(info, "rmod", None) is not None else None
-        if known is None or known.name in seen:
+def _pack_reader(arc, *layers):
+    """read(member) -> bytes or None, any case: the first of `layers` ({member: bytes}) that has it, else the pack
+    `arc` (its own members, a new map's added ones, and those .rmod mods added: rmod.Layered.added)."""
+    lows = [{k.replace("/", "\\").lower(): v for k, v in layer.items()} for layer in layers]
+
+    def read(member: str):
+        key = member.replace("/", "\\").lower()
+        for low in lows:
+            if key in low:
+                return low[key]
+        e = arc.entry(member)
+        if e is not None:
+            return bytes(arc.read(e))
+        for a in (arc, getattr(arc, "base", None)):
+            added = getattr(a, "added", None)
+            if isinstance(added, dict):
+                hit = next((d for m, d in added.items() if m.replace("/", "\\").lower() == key), None)
+                if hit is not None:
+                    return bytes(hit)
+        return None
+    return read
+
+
+def _layout_names(raw) -> tuple[list, dict]:
+    """A layout's (.scenario bytes) named places, to know which an edit takes out or renames: ([design item k's name,
+    or None], {object of its NDF, a design item or its AddOn: the item's name}); ([], {}) when it can't be read."""
+    from .ndf import local_ref
+    from .scenario import Scenario, ScenarioError
+    try:
+        s = Scenario.read(raw)
+        names, at = [], {}
+        for it in s.items:
+            name = it.values.get("Name") if isinstance(it.values.get("Name"), str) and it.values.get("Name") else None
+            names.append(name)
+            if name is not None:
+                at[it.obj] = name
+                props = {s.ndf.prop_name(pi): v for pi, v in s.ndf.objects[it.obj].props}
+                addon = local_ref(props["AddOn"]) if "AddOn" in props else None
+                if addon is not None:
+                    at[addon] = name
+        return names, at
+    except (ScenarioError, ValueError, KeyError, IndexError, TypeError, AttributeError, struct.error, zlib.error):
+        return [], {}
+
+
+def _touched(table: dict, at, name) -> None:
+    """Note in `table` ({(pack, member): the names its edits take out or rename, or None when one isn't known}) that
+    an edit takes out or renames `name` (None: a name that can't be told) of the layout `at`."""
+    if at in table and table[at] is None:
+        return
+    table[at] = None if name is None else (table.get(at) or set()) | {name}
+
+
+def _mission_changers(rmods: list, mods: list, order: list, result, before=None, shipped=None) -> list:
+    """The set's mods, in the order the build applies them (.rmod mods first), each with what it changes of the
+    missions' files (rusemod.missionplaces), to name the mods a mission's warning is about: [(its name, whole
+    {(pack, member): its bytes, or None when the file only becomes them in the build}, names {(pack, member): the
+    names of the layout's places its edits take out or rename, or None when one can't be told}, other {(pack,
+    member)}: its other changes there)], packs and members in lower case. A .rmod mod is named as it names itself (the
+    mod list's name), any other by its id. `before` and `shipped`: DataMap_Win.dat as the build was given it (the .rmod
+    mods' changes in) and as the game ships it, member -> bytes or None: where a Studio edit's item and an .rmod edit's
+    object number are looked up for their names."""
+    from . import missionplaces as mp
+    from .scenario import NAMED_KINDS, Change, Remove, folder_of
+
+    def key(pack, path) -> tuple:
+        return str(pack).replace("\\", "/").rsplit("/", 1)[-1].lower(), str(path).replace("/", "\\").lower()
+    layouts: dict = {}
+
+    def names_of(read, member) -> tuple:
+        if (id(read), member) not in layouts:
+            raw = read(member) if read is not None else None
+            layouts[(id(read), member)] = _layout_names(raw) if raw is not None else ([], {})
+        return layouts[(id(read), member)]
+    entries: dict = {}
+    for m in rmods:
+        name, whole, names, other = m.id, {}, {}, set()
+        try:
+            from ruse_mod_engine import mod_format
+            mod = mod_format.load(str(m.rmod))
+            name = str(mod.name or mod.id or m.id)
+            for g in mod.file_patches:
+                for fp in g.files:
+                    if not fp.container:
+                        whole[key(g.dat, fp.path)] = bytes(fp.data)
+            for g in mod.scenario_patches:
+                at = key(g.dat, g.scenario)
+                for c in g.changes:
+                    if not (c.action == "delete" or "Name" in (c.set_props or {}) or "Name" in (c.del_props or ())):
+                        continue
+                    match = c.match or {}
+                    said = str(match["Name"]).strip("\"'") if "Name" in match else None
+                    if said is None and str(match.get("_index", "")).isdigit():
+                        said = names_of(shipped, at[1])[1].get(int(match["_index"]))
+                    _touched(names, at, said)
+                if at not in names:
+                    other.add(at)
+            for g in mod.patches:
+                other.add(key(g.dat, g.ndf))
+        except (OSError, ValueError, KeyError, TypeError, AttributeError):
+            pass   # (read by the build before: its changes are in; only what they are is missed here)
+        entries[m.id] = (name, whole, names, other)
+    by_id = {m.id: m for m, _ops in mods}
+    for mod_id in order:
+        m = by_id.get(mod_id)
+        if m is None:
             continue
-        seen.add(known.name)
-        if known.stops == "tutorial":
-            # rule: mission-zones
-            out.append(Finding("warning", f"{known.name} replaces the tutorial's map with one that lacks places its "
-                                          f"mission uses: with it on, the tutorial stops about a second after it "
-                                          f"starts"))
-        else:
-            # rule: mission-zones
-            out.append(Finding("warning", f"{known.name} replaces the maps of {known.count} campaign chapter(s) with "
-                                          f"ones that lack places their missions use: with it on, those chapters "
-                                          f"stop about a second after they start"))
+        name, whole, names, other = entries.get(mod_id, (mod_id, {}, {}, set()))
+        for g in getattr(m, "game_files", None) or []:
+            whole[key(g.pack, g.path)] = bytes(g.data) if g.added else None
+        for (map_, part, file) in getattr(m, "scripts", None) or {}:
+            whole[key(mp.IA, f"{mp.SCRIPT_ROOT}map\\{map_}\\{part}\\{file}")] = None
+        for pack, rows in (getattr(m, "scenario", None) or {}).items():
+            for row in rows:
+                file = getattr(row, "file", None)
+                if not file:
+                    continue
+                at = key(mp.DATA, folder_of(pack) + file)
+                if (isinstance(row, Remove) and row.kind in NAMED_KINDS) or \
+                        (isinstance(row, Change) and "name" in row.values):
+                    items = names_of(before, at[1])[0]   # (the item's name before our edits: the one it loses)
+                    _touched(names, at, items[row.item] if 0 <= row.item < len(items) else None)
+                else:
+                    other.add(at)
+        for new in getattr(m, "new_maps", None) or {}:   # a new map's own files, its own mission's script too
+            clone = next((c for n, c in result.new_maps.items() if n.lower() == new.lower()), None)
+            if clone is not None:
+                whole.update({key(mp.GLAD, k): bytes(v) for k, v in {**clone.glad, **clone.glad_changed}.items()})
+                whole.update({key(mp.DATA, k): bytes(v) for k, v in clone.data.items()})
+            whole.update({key(mp.IA, k): bytes(v) for k, v in result.mission_scripts.items()
+                          if f"\\map\\{new.lower()}\\" in k.replace("/", "\\").lower()})
+        entries[mod_id] = (name, whole, names, other)
+    return list(entries.values())
+
+
+def _mission_blame(x, changers: list, read: dict) -> tuple[list, list]:
+    """The mods a rusemod.missionplaces.Missing's warning names: (for its layout, for its scripts), as its why says.
+    For a file: the mods whose version of it is the one the build leaves (a whole file's last writer: the one whose
+    bytes it is, or whose file only becomes them in the build), and the mods whose edits take out or rename a place of
+    its layout that the mission lacks (or one that can't be told: the review of 95e9b910, 2026-11-14, found a mod
+    named that took out only a place nothing watches); when its cluster names other files than the game's does, the
+    mods changing the cluster too. When that names none (a change made some other way), every mod changing any of its
+    files, else every mod of the set. `read`: {pack lower case: read(member)}, the packs as the build leaves them."""
+    from . import missionplaces as mp
+    cluster = (mp.GLAD.lower(), x.mission.cluster)
+    lacked = set(x.zones)
+
+    def in_effect(k) -> list:
+        writers = [c for c in changers if k in c[1]]
+        later = [c for c in writers if c[1][k] is None]   # (a folder mod's: written after every .rmod mod's)
+        if later:
+            return [later[-1][0]]
+        now = read[k[0]](k[1])
+        return [c[0] for c in writers if c[1][k] == now] or [c[0] for c in writers]
+
+    def named(keys) -> list:
+        out = []
+        for k in keys:
+            out += in_effect(k) + [c[0] for c in changers if k in c[2] and (c[2][k] is None or c[2][k] & lacked)]
+        if x.repointed:
+            out += [c[0] for c in changers if cluster in c[1] or cluster in c[3]]
+        if not out:
+            every = list(keys) + [cluster]
+            out = [c[0] for c in changers if any(k in c[1] or k in c[2] or k in c[3] for k in every)]
+        return list(dict.fromkeys(out)) or [c[0] for c in changers]
+    layout = named([(mp.DATA.lower(), m) for m in x.mission.layouts]) if x.layout else []
+    script = named([(mp.IA.lower(), m) for m in x.mission.scripts]) if x.script else []
+    return layout, [n for n in script if n not in layout]
+
+
+def mission_place_findings(found, changers: list, read: dict, titles=None) -> list:
+    """The build's words on rusemod.missionplaces.check's answer `found`: for each mod it is about (in the set's order),
+    a warning for the missions it leaves without zones they watch from the start, by the menu they're in (the owner,
+    2026-11-13: "It should be warning on every version if there's an error"); and a note for each changed mission
+    script that can't be read, the mission named as the menus name it (`titles`: _menu_titles). Only warns: the set
+    builds and plays as before, battles and multiplayer included."""
+    from . import missionplaces as mp
+    counts: dict = {}   # mod name -> {(why, kind): {mission names}}
+    for x in found.missing:
+        on_layout, on_script = _mission_blame(x, changers, read)
+        for why, names in (("layout", on_layout), ("script", on_script)):
+            for name in names:
+                counts.setdefault(name, {}).setdefault((why, x.mission.kind), set()).add(x.mission.name)
+    out = []
+    order = [c[0] for c in changers]
+    for name in sorted(counts, key=lambda n: order.index(n) if n in order else len(order)):
+        for (why, kind), missions in sorted(counts[name].items(),
+                                            key=lambda kv: (kv[0][0] != "layout", mp.ORDER.index(kv[0][1]))):
+            n = len(missions)
+            if why == "layout" and kind == "tutorial":
+                # rule: mission-zones
+                out.append(Finding("warning", f"{name} replaces the tutorial's map with one that lacks places its "
+                                              f"mission uses: with it on, the tutorial stops about a second after it "
+                                              f"starts"))
+            elif why == "layout" and kind == "campaign":
+                # rule: mission-zones
+                out.append(Finding("warning", f"{name} replaces the maps of {n} campaign chapter(s) with ones that "
+                                              f"lack places their missions use: with it on, those chapters stop about "
+                                              f"a second after they start"))
+            elif why == "layout":
+                # rule: mission-zones
+                out.append(Finding("warning", f"{name} replaces the maps of {n} Operation(s) with ones that lack "
+                                              f"places their missions use: with it on, those Operations stop about a "
+                                              f"second after they start"))
+            elif kind == "tutorial":
+                # rule: mission-zones
+                out.append(Finding("warning", f"{name} replaces the tutorial's mission with one that uses places its "
+                                              f"map lacks: with it on, the tutorial stops about a second after it "
+                                              f"starts"))
+            elif kind == "campaign":
+                # rule: mission-zones
+                out.append(Finding("warning", f"{name} replaces the missions of {n} campaign chapter(s) with ones that "
+                                              f"use places their maps lack: with it on, those chapters stop about a "
+                                              f"second after they start"))
+            else:
+                # rule: mission-zones
+                out.append(Finding("warning", f"{name} replaces the missions of {n} Operation(s) with ones that use "
+                                              f"places their maps lack: with it on, those Operations stop about a "
+                                              f"second after they start"))
+    for name, why in dict.fromkeys((_mission_title(m, titles), why) for m, why in found.unread):   # (a mission in
+        out.append(Finding("note", f"{name}: a file of its mission can't be read ({why}), so whether its map holds "
+                                   f"every place the mission watches from its start wasn't checked"))   # two menus: once)
     return out
+
+
+def _mission_title(mission, titles) -> str:
+    """A mission as a player knows it: its name in the menus (`titles`: its text key -> the game's English text, or
+    None), else its name in the map list."""
+    said = titles(mission.title) if titles is not None and mission.title else None
+    return " ".join(said.split()) if isinstance(said, str) and said.strip() else mission.name
+
+
+def _menu_titles(open_texts):
+    """titles(key) -> the menus' English text of a chapter's or an Operation's name, from the game's texts as the set
+    leaves them (`open_texts()`: ZZ_Win.dat, or None), read once when first asked; None when it can't be read."""
+    from . import loc
+    from .dic import Dic
+    got: dict = {}
+
+    def titles(key: int):
+        if "dic" not in got:
+            got["dic"] = None
+            try:
+                arc = open_texts()
+                e = arc.entry(loc.member(MENU_TEXTS, "us")) if arc is not None else None
+                got["dic"] = Dic(bytes(arc.read(e))) if e is not None else None
+            except (OSError, ValueError, KeyError, IndexError, struct.error):
+                got["dic"] = None
+        return got["dic"].text(key) if got["dic"] is not None else None
+    return titles
+
+
+MENU_TEXTS = "flash_txt"   # the game's dictionary of its menus' texts: chapters' and Operations' names among them
+
+
+def mission_places(game: Path, stack, open_pack, glad, glad_changed: dict, data_packs: list, rmods: list, mods: list,
+                   result) -> list:
+    """The missions a player can pick (campaign chapters, Operations, the tutorial) that this set leaves without zones
+    they watch from their start, read in the player's own game as the set leaves it and as the game ships it
+    (rusemod.missionplaces), as the build's findings (mission_place_findings). `glad`: ZZ_GladPatchableWin.dat as the
+    build has it, with `glad_changed` ({member: bytes}) on top; `data_packs`: the build's (path, pack, {member: bytes})
+    for DataMap_Win.dat and IA_Common.dat; `open_pack`: a pack as the .rmod mods left it. None for a game without the
+    three packs (no mission to look at).
+
+    The check only warns, so nothing of it ever stops a build: whatever a set's files hold that can't be read, or
+    anything else going wrong in it, is one note and the build goes on (the review of 95e9b910, 2026-11-14: menus with
+    a list where a flag is stopped a build that had built before)."""
+    from . import missionplaces as mp
+    try:
+        paths = {name: find_pack(game, name) for name in (mp.GLAD, mp.DATA, mp.IA)}
+        if any(p is None for p in paths.values()):
+            return []
+        final, given = {}, {}
+        for name, path in paths.items():
+            if name == mp.GLAD and glad is not None:
+                final[name] = _pack_reader(glad, glad_changed)
+                continue
+            arc = next((a for p, a, _c in data_packs if p == path), None)
+            given[name] = _pack_reader(arc if arc is not None else open_pack(path))   # (as the build was given it)
+            final[name] = _pack_reader(arc if arc is not None else open_pack(path),
+                                       *[c for p, _a, c in data_packs if p == path])
+        shipped = {name: _pack_reader(stack.enter_context(Edat.open(str(path)))) for name, path in paths.items()}
+        found = mp.check(tuple(final[n] for n in (mp.GLAD, mp.DATA, mp.IA)),
+                         tuple(shipped[n] for n in (mp.GLAD, mp.DATA, mp.IA)))
+        if not (found.missing or found.unread):
+            return []
+        texts = find_pack(game, loc.PACK)
+        return mission_place_findings(found, _mission_changers(rmods, mods, result.order, result, given.get(mp.DATA),
+                                                               shipped[mp.DATA]),
+                                      {n.lower(): r for n, r in final.items()},
+                                      _menu_titles(lambda: open_pack(texts) if texts is not None else None))
+    except (OSError, *mp._READ_ERRORS) as exc:   # (the menus or a cluster as the set leaves them, unreadable)
+        return [Finding("note", f"the places the missions watch from their start couldn't be checked: the menus "
+                                f"or a mission's files can't be read ({exc})")]
+    except Exception as exc:  # noqa: BLE001 - a check that only warns never stops a build (above); a fault of
+        # this check itself, not said to be a file's
+        return [Finding("note", f"the places the missions watch from their start couldn't be checked ({exc})")]
 
 
 def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Path | None = None,
@@ -3907,7 +4337,6 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
     fair = fairplay if fairplay is not None else \
         fair_play.check_infos([m for m, _ops in mods]) if fair_play.ON else fair_play.FairPlay()
     rmods = [m for m, _ops in mods if m.rmod is not None]
-    known = known_issue_findings(rmods)  # library mods known to stop some of the game's missions (a warning each)
     mods = [(m, ops) for m, ops in mods if m.rmod is None or ops or m.texts]
     overwrites: list = []
     if len(rmods) > 1:
@@ -3982,17 +4411,24 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
 
         arc = open_pack(pack_path)
         text_arc = open_pack(text_path) if text_path else None
+        zz_path, rmod_units = find_pack(game, loc.PACK), None
+        if rmods:  # the .rmod mods' own units get the unit-model check, whatever else the set holds (item 29): the
+            # unit data as the game ships it, ZZ_Win.dat as the mods leave it (opened only when a unit is looked at),
+            # and the .rmod files, to say which changes a unit
+            rmod_units = (stack.enter_context(Edat.open(str(pack_path))),
+                          lambda: open_pack(zz_path) if zz_path is not None else None, [m.rmod for m in rmods])
         try:
             # the collector paused for the unit data's build: on two-shermans its passes over the loaded model and the
             # engine's copy of it took 2 to 4 seconds, and 5 to 9 with the model read from the cache, which it then
             # counts as new and looks through again and again (2026-10-04)
             with collector_paused():
-                result = build_pack(arc, mods, build_id, text_arc, cache) if mods else BuildResult()
-                if not mods and rmods:  # .rmod mods only: the one look our build takes at the unit data they leave
-                    rmod_far_upgrades(arc, build_id, cache, result)
+                result = build_pack(arc, mods, build_id, text_arc, cache, rmod_units) if mods else BuildResult()
+                if not mods and rmods:  # .rmod mods only: our build's looks at the unit data they leave (far
+                    rmod_far_upgrades(arc, build_id, cache, result, rmod_units)  # upgrades; the unit models)
+                if result.model_changed and text_arc is None:  # (FORCE_LOAD off, the old way: copies go there, also
+                    text_path, text_arc = zz_path, open_pack(zz_path)  # an .rmod mod's units' beside mods of ours)
         except ResolveError as exc:
             raise BuildError(f"load order: {exc}") from None
-        result.findings[:0] = known
         if run:
             first = [m.id for m in rmods]
             result.order = first + [i for i in result.order if i not in first]
@@ -4000,9 +4436,20 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
         say("load order: " + " -> ".join(result.order))
         for line in report_lines(result.findings, show_all=show_all):
             say(line)
-        counts = {lvl: sum(1 for f in result.findings if f.level == lvl) for lvl in ("error", "warning", "note")}
-        say(f"{counts['error']} error(s), {counts['warning']} warning(s), {counts['note']} note(s)")
+
+        counts_said: list = []
+
+        def counted() -> None:
+            """The report's count of the build's findings, every one: said when the build stops on errors, else once
+            the maps' and the missions' findings are in too (the review of 95e9b910, 2026-11-14: the count, said here
+            before them, missed the missions' warnings, which the six's warning used to be counted with); a build
+            that stops later on an error raised in its work (a map's BuildError) says it as it stops, as it did."""
+            counts_said.append(True)
+            counts = {lvl: sum(1 for f in result.findings if f.level == lvl) for lvl in ("error", "warning", "note")}
+            say(f"{counts['error']} error(s), {counts['warning']} warning(s), {counts['note']} note(s)")
+        stack.callback(lambda: counts_said or counted())   # (said once, whichever way the build ends from here)
         if result.errors:
+            counted()
             say("Nothing was written.")
             return result
         from .terrain import pack_file
@@ -5926,14 +6373,24 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                     return None
                 return x0, y0, x1, y1
             _start_dots(result, making, shipped_pictures, final_data, ground_bounds, say)
+        if not result.errors:  # the missions a player can pick, as the set leaves them: none without a zone it
+            # watches from its start (rusemod.missionplaces; the owner, 2026-11-13, items 31 and 32)
+            from .missionplaces import GLAD
+            placed = mission_places(game, stack, open_pack, arc if pack_path.name.lower() == GLAD.lower() else None,
+                                    result.changed, data_packs, rmods, mods, result)
+            result.findings += placed
+            for line in report_lines([f for f in placed if f.level == "note"], show_all=show_all):
+                say(line)
         late = [f for f in result.findings[reported:] if f.level == "warning" and id(f) not in said]
         for line in report_lines(late, show_all=show_all):  # the maps' warnings (a drained river's was never shown)
             say(line)
         if result.errors:
             for line in report_lines([f for f in result.findings if f.level == "error"], show_all=show_all):
                 say(line)
+            counted()
             say("Nothing was written.")
             return result
+        counted()   # (every finding is in now: the maps' and the missions' too)
         rmod_packs = run.changed_packs() if run else {}
         for path, a, changed in [(pack_path, arc, result.changed)] + data_packs:  # the members new maps add
             if getattr(a, "added", None) and hasattr(a, "added_with"):

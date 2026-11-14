@@ -3,6 +3,7 @@ ruse_studio.animmodel_calls): which actions each animation plays by its name, wh
 of the two halves, the unit's own clips and rows kept (and kept again when the model comes back), the model's file
 keeping its animations, the build pointing the figures that wear the model at its own two masks, and the Studio's
 import telling such a model from one on the game soldier's bones."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import base64
 import hashlib
 import json

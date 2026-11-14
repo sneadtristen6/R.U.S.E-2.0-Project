@@ -21,6 +21,7 @@ tests/test_recheck_words.py).
   the import's look at its bones failing on it (once swallowed, then said as another reason), its model taken out
   with a file of its animations held, and a Resize whose model record can't be written (a full disk), each in words.
   Nothing of the game's is written."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import errno
 import json
 import os

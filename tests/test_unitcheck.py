@@ -1,5 +1,6 @@
 """What the game needs of a unit beyond its data's types (rusemod.unitcheck, rusemod.unitflags.problems): the build's
 errors and warnings for ids, nations, price and menu lists, flags and salvos. Made-up units, no game files needed."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import struct
 import tempfile
 import unittest

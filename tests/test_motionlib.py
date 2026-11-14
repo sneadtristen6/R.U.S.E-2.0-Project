@@ -1,6 +1,7 @@
 """rusemod.motionlib (RUSE Decoy's motion library: the free sets' moves listed, each fetched when picked and kept only
 when it's the listed file) and its Studio calls (ruse_studio.decoy: decoy_motions / decoy_motion_open /
 decoy_motion_set_fetch)."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import hashlib
 import io
 import tempfile

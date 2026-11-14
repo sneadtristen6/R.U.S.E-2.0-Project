@@ -2,6 +2,7 @@
 menu module only when every name it reads is there; each new unit's line is the first unit of its upgrades, the group
 the mods' menu_groups.toml put it in (a game unit's too) or the unit it was copied from; the build adds it when the mods
 make new objects or put a unit in another group, beside the own-buildings tabs in one pack."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import unittest
 from types import SimpleNamespace
 

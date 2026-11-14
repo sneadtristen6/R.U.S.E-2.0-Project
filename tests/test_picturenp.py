@@ -2,6 +2,7 @@
 every filter undone (every pixel size, odd sizes, a lone row or column), whole PNG files of every kind read, a palette
 looked up, and pictures halved. The loops are the reference: whole arrays read a downloaded model's 2048 x 2048 photos
 many times sooner (2026-10-08), and their pixels must not change for it."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import contextlib
 import random
 import struct

@@ -3,6 +3,7 @@ a vehicle's from its GfxDescriptor as before, infantry's soldiers from its other
 no model, with a model part another infantry unit shares followed and the wreck the game reuses for fallen soldiers
 left out. And a new unit's own copy of the model it copies (rusemod.unitmodel.write_unit_copy; the owner: "duplicate
 that part"): the same mesh and bones, its own textures, painted or not, so a repaint changes that unit only."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import struct
 import tempfile
 import unittest

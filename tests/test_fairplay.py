@@ -1,5 +1,6 @@
 """Fair play (rusemod.fairplay): which copies are offline, our game scripts after the game's match rules, the copy's
 record and its self-check, join codes compared, and the Launcher's calls for them."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import base64
 import hashlib
 import json

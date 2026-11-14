@@ -1,4 +1,5 @@
 """The game index (PLAN.md L2) on a made-up game: every pack, file, object, reference and text, and its questions."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import os
 import struct
 import tempfile

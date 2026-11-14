@@ -1,6 +1,7 @@
 """Buildings with units of their own (rusemod.ownbuildings): the compiled templates are of their sources, the build
 fills in which tabs the mods have, joins each after the game's module only when every name it reads is there, and
 writes the build bar's entries."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import unittest
 
 from rusemod import ownbuildings as ob

@@ -18,6 +18,7 @@ files, byte for byte, as the horse-studio2 copy's own calls give with the same t
 riflemen's file, Import model of the heavy-weapon soldier's for his kind), the model records' "from" (the file each was
 made from: the platform folder's copy here) aside, and its era_units.json and credit line besides; taking it out
 removes the unit, both its models and their animations, and its credit line."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import hashlib
 import json
 import os

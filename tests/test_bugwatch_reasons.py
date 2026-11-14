@@ -9,6 +9,7 @@ and the day's report names the game's build. A crash report's script error text 
 own line. Never the words: they hold what the player typed and the names in the player's own mods.
 No network, no game.
 """
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import inspect
 import os
 import re

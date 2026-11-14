@@ -14,6 +14,7 @@ fixer's round 1. Each test is a route to a fault of reviewer 4's (tests/test_rev
 On the made-up model, skeleton and clips of test_gltf_bones and test_animglb (no game files), Blender's part played by
 test_animglb's stand-in (Blenderish) with what a real Blender sends for that edit. Real Blender 4.5 gave the same
 answers for the moved bone (scratch/animmodels/fix-door/recheck1/mine/rA_real_probe.py, mine/real_probe2.out.json)."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import json
 import re
 import unittest

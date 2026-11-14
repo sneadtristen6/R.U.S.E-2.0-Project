@@ -1,6 +1,7 @@
 """English names for the map's scenery types (rusemod.scenerynames). The owner, 2026-10-03: the Props tab's
 "Cotentin_PanierOsier ... what is that? ... They're all in French ... this has to be more detailed." Every
 type the shipped maps offer to place (tests/scenery_types.txt, read from all 32 maps) must read in English."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import unittest
 from pathlib import Path
 

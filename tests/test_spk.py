@@ -1,5 +1,6 @@
 """3D models: the mesh-pack reader (rusemod.spk), the LZ additions it needs (stored blocks, packed literals),
 transparent DXT pictures, and the model cache the Studio draws from (rusemod.models), on made-up packs."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import base64
 import json
 import struct

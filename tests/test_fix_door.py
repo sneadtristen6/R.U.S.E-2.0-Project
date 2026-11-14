@@ -6,6 +6,7 @@ halves warning where it must not be said). Each check has a legitimate case besi
 
 On the made-up model, skeleton and clips of test_gltf_bones and test_animglb (no game files), Blender's part played by
 test_animglb's stand-in (Blenderish) doing what a real Blender does for that edit."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import json
 import re
 import tomllib

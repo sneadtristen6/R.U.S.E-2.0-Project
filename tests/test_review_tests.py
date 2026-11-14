@@ -20,6 +20,7 @@ refused. With the two files the game test passed with too (RUSE_HORSE_FIXES3, el
 builder through the Units tab's Add gives the mod the files the copy's own calls give with those two files, and the
 builder's two files are those bytes (before this review the two had never run together: the Add's tests use a
 stand-in builder)."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import json
 import os
 import shutil

@@ -1,4 +1,5 @@
 """Fresh identity for copied units (MOD_FORMAT §10.5): their own id, debug name and build-menu slot."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import struct
 import unittest
 from pathlib import Path

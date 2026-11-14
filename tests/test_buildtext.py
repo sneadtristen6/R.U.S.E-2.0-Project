@@ -2,6 +2,7 @@
 "Translate the 79 build errors and warnings and the build's progress lines"): every such text in the code has its
 words in all ten languages with the same blanks, a line or a marked finding comes out in the player's language with
 its values, and both apps hand their jobs' lines to the page that way."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import tempfile
 import tomllib
 import unittest

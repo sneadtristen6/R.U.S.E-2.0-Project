@@ -1,4 +1,5 @@
 """Fingerprints and join codes (MOD_FORMAT §12)."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import unittest
 
 from fixtures import make_ndf

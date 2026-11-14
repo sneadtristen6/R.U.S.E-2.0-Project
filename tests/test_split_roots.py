@@ -2,6 +2,7 @@
 build_ents: the game reads their root as a node without looking, and a one-leaf root crashed it when a building was
 placed) and the k-d trees made again by rusemod.kdt_edit.rebuild (a zone map of four sectors whose tree was one leaf
 picked the same sector wherever the player pointed)."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import math
 import struct
 import unittest

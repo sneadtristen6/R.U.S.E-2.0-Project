@@ -1,4 +1,5 @@
 """Which placed types get a copy drawn from further away, and how its modes widen (rusemod.visibility)."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import unittest
 
 from rusemod.visibility import needs_copy, widened

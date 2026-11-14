@@ -2,6 +2,7 @@
 mods open in the Studio with everything in them. Yours opens its project; anyone else's becomes a copy of your own
 under a name of its own, never the original's, which Export and the Launcher refuse too (rusemod.package.edit_problem).
 A mod made the older way (an .rmod) can't be opened yet."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import tempfile
 import tomllib
 import unittest

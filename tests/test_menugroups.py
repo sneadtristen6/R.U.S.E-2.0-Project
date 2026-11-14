@@ -1,6 +1,7 @@
 """A build list's groups (rusemod.menugroups): a unit's group up its research chain while an upgrade, else where the
 mod put it, else the way of the unit it was copied from; counted per nation and building over the units shown; the
 mod's file read back as written."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import tempfile
 import unittest
 from pathlib import Path

@@ -1,6 +1,7 @@
 """Blank maps to start from (rusemod.presets, the Studio's Duplicate map: Blank Terrain and Blank Ocean): the files a
 preset writes read back as the build reads them, act at full strength over the whole map, and keep only the
 starting points."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import tempfile
 import unittest
 from pathlib import Path

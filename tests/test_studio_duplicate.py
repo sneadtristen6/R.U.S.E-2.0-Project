@@ -2,6 +2,7 @@
 open, written as maps/<name>/map.toml in the map project. The view shows the copy as the map it copies with the copy's
 own edits; its player count and the changes made to the map so far come along. Proven in the game: 101 new maps
 listed at once, each playing its own ground (TESTS.md T15b, T16)."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import shutil
 import tempfile
 import tomllib

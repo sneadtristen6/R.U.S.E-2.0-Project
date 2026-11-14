@@ -1,4 +1,5 @@
 """Sharing a load order as text (rusemod.loadorder): the block RUSE Mod Manager copies and reads, both ways."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import re
 import unittest
 

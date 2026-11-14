@@ -1,5 +1,6 @@
 """The Studio's map view: the game's map list, a map's ground as packed buffers, the stitched ground picture, and the
 Studio's calls for them, on a tiny made-up game folder (no game files)."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import base64
 import struct
 import tempfile

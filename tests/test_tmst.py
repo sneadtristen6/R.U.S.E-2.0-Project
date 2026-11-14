@@ -1,4 +1,5 @@
 """Terrain tile sets (.tmst_pc + .tmst_chunk_pc) and ZIPO tiles, on a tiny made-up tile set (no game files)."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import struct
 import unittest
 import zlib

@@ -1,5 +1,6 @@
 """The AI's map grid (rusemod.aigrid): a made-up mapinfo.win whose cover grid and movement a mod changes, the AI grid
 following them where they changed and kept as it was everywhere else."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import struct
 import unittest
 

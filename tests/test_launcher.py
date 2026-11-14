@@ -1,4 +1,5 @@
 """The launcher app's back end (ruse_launcher.api) on a made-up game folder; nothing starts for real."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import json
 import os
 import re

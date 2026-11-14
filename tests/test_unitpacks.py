@@ -1,6 +1,7 @@
 """Unit model packs written (rusemod.unitpacks): the name trie, mesh and skeleton packs, texture stand-in packs and
 animation packs, each written back as read and with models copied in; and a unit's models given to another nation,
 on made-up packs."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import hashlib
 import struct
 import tempfile

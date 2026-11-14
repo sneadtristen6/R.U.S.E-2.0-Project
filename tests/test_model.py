@@ -1,4 +1,5 @@
 """The bridge between game data files and the rules engine: load, run mods, write back (made-up data)."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import hashlib
 import os
 import pickle

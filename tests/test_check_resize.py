@@ -11,6 +11,7 @@ stops.
    again"; trying again names nothing. FAILS by design while that stays so.
 3. AnotherFileDiskFull: Import model of ANOTHER file stopped the same way, then Resize: what the mod holds then.
 On test_animmodel's made-up game (tests/test_refit_keeps.py's stand-ins): no game needed."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import json
 import os
 import unittest

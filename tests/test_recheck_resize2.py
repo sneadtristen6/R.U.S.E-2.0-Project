@@ -19,6 +19,7 @@ uniform the model took the place of ("copy_kept", which Take it out gives back).
 fixed, at its last check; on db2abbfb it fails earlier, the Resize itself putting the change back (the review's F2):
 not a regression, the class not closed on this route. On test_animmodel's made-up game (the round-1 recheck's
 stand-ins, tests/test_recheck_resize.py, written so they run on the code before the fix too): no game needed."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import unittest
 from pathlib import Path
 from unittest import mock

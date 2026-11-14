@@ -3,6 +3,7 @@ unit mod and map changes both had the id bridge-test, and the build stopped on "
 in the load order). The build reads the second under an id of its own (rusemod.play.read_mods), the load order says
 plainly when two of one id still meet (rusemod.resolve), and the Studio no longer gives a new one a name the other
 kind has (StudioApi.new_mod)."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import tempfile
 import unittest
 from pathlib import Path

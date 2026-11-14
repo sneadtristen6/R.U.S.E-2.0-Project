@@ -1,4 +1,5 @@
 """rusemod.sound: the game's sounds played and made, the songs and where they play, a mod's sounds in the build."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import contextlib
 import io
 import math

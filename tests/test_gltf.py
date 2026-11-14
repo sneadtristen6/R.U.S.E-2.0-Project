@@ -1,4 +1,5 @@
 """Game models to glTF (.glb), on the made-up mesh pack of test_spk (no game files)."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import json
 import struct
 import unittest

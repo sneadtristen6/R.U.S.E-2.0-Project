@@ -1,5 +1,6 @@
 """The map check (rusemod.mapcheck): each check on made-up graphs, roads and scenery, and the whole check on the real
 game's Blitz when it's installed."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import re
 import struct
 import tempfile

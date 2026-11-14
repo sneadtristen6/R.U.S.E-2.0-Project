@@ -2,6 +2,7 @@
 nearest, one rule for the page and the build), units.toml's animation, plays and ride tables (rusemod.anim), the build
 giving the figures that draw a unit's own model its model's animations and the unit a ride of its own (rusemod.build),
 the Studio's action table and a copied unit keeping its source's animations (ruse_studio.actions)."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import json
 import re
 import struct

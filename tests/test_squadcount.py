@@ -7,6 +7,7 @@ The build (rusemod.build.squad_soldiers): a squad of 7 and one of 3 get R2Behavi
 with only the number changed; soldiers with looks of their own get R2SoldierLooks; the copy gets own-squads beside
 more-buildings, in the apps' order, and the fingerprint takes each; the refusals in words; a mod from before is built
 as before. Nothing here is tried in the game."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import json
 import struct
 import tempfile

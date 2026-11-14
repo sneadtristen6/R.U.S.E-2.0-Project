@@ -10,6 +10,7 @@ the reverse of the order it makes them, and only the first is NiveauIA.Player):
     def later(): IR_13 = ...VariableCamp(Alliance = 1, CampNumber = -1, Nationalite = ...RU)   (not in the list)
     IR_99 = launcheffetmap.DescriptorLaunchEffetMap(CampList = [IR_12, IR_11, IR_10], CampaignInfo = None)
 """
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import hashlib
 import struct
 import unittest

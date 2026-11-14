@@ -4,6 +4,7 @@ his 11-10 answer: "The only way you should change animation is in Ruse Decoy"), 
 skeleton and clips of test_gltf_bones and test_animglb, Blender's part played by test_animglb's stand-in: the names
 the animations get, the clips a unit plays as the mod makes them, what goes out and is kept, and what comes back (a
 changed animation the unit's own clip for the actions that played it, the rest left alone)."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import json
 import tempfile
 import tomllib

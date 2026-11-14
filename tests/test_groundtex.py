@@ -1,6 +1,7 @@
 """Map Paint's textures (rusemod.groundtex): what names one, how a picture is made to repeat without a seam, its
 smaller copies, and the Texture brush's strokes laid on the made-up tile set of test_groundpaint (2 x 1 cells of
 1,000 map units), pixel by pixel and on whole grids alike."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import math
 import struct
 import tempfile

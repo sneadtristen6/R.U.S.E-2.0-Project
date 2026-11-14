@@ -1,5 +1,6 @@
 """A Test in game the build stopped: its mistakes, each with its fix (owner, 2026-10-02: an old team spawn on D-Day and a
 road that joined nothing blocked every test, buried in the log, with no way out but the troubleshooter)."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import tempfile
 import time
 import tomllib

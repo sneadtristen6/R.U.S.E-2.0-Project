@@ -1,5 +1,6 @@
 """The platform is two separate apps on one engine (PLAN.md decision 22): RUSE Launcher for players, RUSE Studio for
 modders. Neither app needs the other, the engine needs neither, and both agree on where the game is."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import ast
 import os
 import tempfile

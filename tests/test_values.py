@@ -1,6 +1,7 @@
 """The All values tab (rusemod.values, the Studio's value_* calls; LittleGroove's raw value editor brought over): every
 value of any object of the unit data, shown from the game's file, changed in the mod, and built, on a made-up game.
 Also the mod file's spelling of any value (rusemod.rndf.literal) and what typed input becomes (rusemod.values.typed)."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import re
 import struct
 import tempfile

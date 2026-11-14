@@ -29,7 +29,7 @@ FIELDS = ("id", "version", "download", "size", "sha256")  # an entry needs these
 CHEAT_TAG = "cheat"   # a mod tagged so is a cheat or a test tool: shown in its own group, never ticked by default
 # an entry's known problems the Launcher says in the player's language (its words.toml known_*), shown on the mod's
 # card: the list's note on the library mods that stop some of the game's missions on their own (the owner, 2026-11-13:
-# "build warning and a note so both"; the build's warning: rusemod.knownissues). A key the Launcher doesn't know is
+# "build warning and a note so both"; the build's warning: rusemod.missionplaces). A key the Launcher doesn't know is
 # left out (an older Launcher shows none: it never reads the field)
 KNOWN_ISSUES = ("campaign-chapters-stop", "tutorial-stops")
 _ID = re.compile(r"^[a-z0-9][a-z0-9-]*$")

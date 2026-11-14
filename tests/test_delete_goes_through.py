@@ -29,6 +29,7 @@ both:
     test_a_card_of_no_unit_the_record_doesnt_name_still_stops_the_build
     test_a_plain_delete_leaves_nothing_behind
 rusemod.holding is imported inside the tests, so this file runs there too."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import json
 import os
 import re

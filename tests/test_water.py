@@ -1,5 +1,6 @@
 """Water brushes (rusemod.brush), the meshes' water rules (rusemod.tms) and the water textures' depth (rusemod.water),
 on made-up meshes (tests/test_tms.py builds them)."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import unittest
 
 from rusemod.brush import BrushError, parse_strokes

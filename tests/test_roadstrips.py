@@ -2,6 +2,7 @@
 are (two models, a bridge and the road; the road's parts by case; `~` filler after the materials), and the build's
 step that writes a new road into every road file (build.draw_new_roads). These check the files' bytes and layout only:
 what the game shows from them is only known from the game (TESTS.md T12: up close, a new road still vanishes)."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import hashlib
 import math
 import struct
