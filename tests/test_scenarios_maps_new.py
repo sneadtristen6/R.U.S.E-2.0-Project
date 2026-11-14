@@ -122,8 +122,7 @@ class MapSizeOnEveryMap(unittest.TestCase):
     # FINDING F5: a blank map of one of those maps made bigger with Map size can't be built: the build stops with
     # Python's words, "OverflowError: float too large to pack with f format" (bigmap.grow_mesh, line 95), shown by
     # Test in game as "Something went wrong: OverflowError: ...". Seen on the real install: Blank Terrain of Frontline,
-    # 6 x 4 cells (dry build scen-frontline-big).
-    @unittest.expectedFailure
+    # 6 x 4 cells (dry build scen-frontline-big). (PROPOSED FIX: such a part's box is left as it is.)
     def test_f5_a_skirt_part_with_no_points_stretched(self):
         import struct
         from test_tms import make_tms
