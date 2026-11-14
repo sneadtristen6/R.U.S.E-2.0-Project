@@ -202,13 +202,17 @@ class Usual(Studio):
 class Unusual(Studio):
     """What fewer players do, and what goes wrong then (each finding in FINDINGS.md)."""
 
-    @unittest.expectedFailure
     def test_FE1_a_name_with_an_emoji(self):
-        """FE-1: new_mod("🚀 Rockets") stops with "couldn't update ...mod.toml: Escaped character is not a Unicode
-        scalar value" and leaves a folder whose mod.toml nothing can read (its name written as \\ud83d\\ude80)."""
-        folder = Path(self.api.new_mod("\U0001f680 Rockets")["current"])
-        self.assertEqual(package.info_of(folder)["name"], "\U0001f680 Rockets")
-        self.assertEqual(self.export("1.0.0")["state"], "done")
+        """FE-1: new_mod("🚀 Rockets") stopped with "couldn't update ...mod.toml: Escaped character is not a Unicode
+        scalar value" and left a folder whose mod.toml nothing could read (its name written as \\ud83d\\ude80)
+        (release adc8ecea). PROPOSED FIX: the name is written as TOML writes it (package._toml)."""
+        for name in ("\U0001f680 Rockets", "Tanks \"Heavy\" \\ Light", "\U00020000\U0001f3c6"):
+            with self.subTest(name=name):
+                folder = Path(self.api.new_mod(name)["current"])
+                self.assertEqual(package.info_of(folder)["name"], name)
+                view = self.export("1.0.0")
+                self.assertEqual(view["state"], "done", view.get("message"))
+                self.assertEqual(package.check(view["result"]["path"])["name"], name)
 
     @unittest.expectedFailure
     def test_FE3_accented_letters_stay_in_the_mod_s_id(self):
