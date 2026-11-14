@@ -121,8 +121,8 @@ for the units you pick, models with animations of their own and the Generic Hors
   every nation: its riders are always made from the G.I. squad, and in your mod it's a unit like any other, in the build
   menu you pick when you add it (the **Nations** tab moves it to another nation). Tested in the game added from the
   **Units** tab. Not yet tried in the game: in a mod someone shares with you, its Generic Horse can now be resized and
-  moved on your PC once your Studio has made the horse's files (adding it to any mod of yours makes them); and when the
-  Studio makes those files again and they come out different, they go beside the old ones, so a mod's Generic Horse
+  moved on your PC once your Studio has made the same horse files (adding it to any mod of yours makes them); and when
+  the Studio makes those files again and they come out different, they go beside the old ones, so a mod's Generic Horse
   never changes when you resize or move it (if its own files are gone or changed, **Resize** and **Move it** say so and
   leave it as it is).
 - **A folder too deep for Windows:** when the Generic Horse's **Add to my mod** is refused because the Studio's folders
