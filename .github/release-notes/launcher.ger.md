@@ -1,6 +1,8 @@
 **RUSE Launcher 0.4, für Spieler.** Er findet R.U.S.E. über Steam, und **Spielen** baut eine gemoddete Kopie des
 Spiels mit deinen Mods und startet sie. Deine Steam-Installation wird nie verändert.
 
+**0.4.8.21:** Eine Korrektur hinter den Kulissen: unsere eigenen Tests laufen wieder auf jedem System durch, auf dem GitHub sie ausführt. In der App ändert sich nichts.
+
 **0.4.8.20:** Mods mit den neuen Trupps und Animationen des Studios; ein eigener Soldat für einen Trupp, in Blender geändert (Studio); 279 weitere Meldungen in einfachen Worten, in deiner Sprache; ein Spielabsturz, den wir kennen, nennt seine Einheit; Schutz an Stellen, an denen manche Mod-Sets das Spiel anhielten; ein Upgrade aus einem anderen Gebäude behält seine Einheit; der Set-Editor sagt warum, und Spielen wartet auf die Prüfung der Mods; der Build warnt vor Missionen, denen ein Set ihre Orte nimmt, und die Einheiten von .rmod-Mods bekommen ihre Modelle; Bug Watch sagt, warum ein Build oder ein Spielen fehlschlug, und Version 4 der Vereinbarung; eine Einheit ohne Kartenbild wird beim Build abgelehnt.
 
 - **Mods mit den neuen Trupps und Animationen des Studios (Launcher):** Dieser Launcher baut die Trupps eines Mods mit eigenen Soldaten und seine Einheiten mit eigenen Animationen; so ein Mod braucht ihn, denn ein älterer Launcher kann sie ihnen nicht geben. Ein Mod, dessen Trupps eigene Soldaten haben, bekommt dafür einen kleinen Spiel-Patch: einmal heruntergeladen und nur auf deine gemoddete Kopie angewendet, nie auf das Spiel in deinem Steam-Ordner. Noch nicht aus dem Launcher im Spiel ausprobiert.

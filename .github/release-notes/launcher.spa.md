@@ -1,6 +1,8 @@
 **RUSE Launcher 0.4, para jugadores.** Encuentra R.U.S.E. a través de Steam, y **Jugar** construye una copia del juego
 con tus mods y la inicia. Tu instalación de Steam nunca se modifica.
 
+**0.4.8.21:** Un arreglo interno: nuestras propias pruebas vuelven a pasar en todos los sistemas donde GitHub las ejecuta. En la aplicación no cambia nada.
+
 **0.4.8.20:** Los mods con los nuevos pelotones y animaciones del Studio; un soldado propio para un pelotón, cambiado en Blender (Studio); 279 mensajes más en palabras sencillas, en tu idioma; un fallo del juego que conocemos nombra su unidad; protecciones donde algunos conjuntos de mods detenían el juego; una mejora hecha en otro edificio conserva su unidad; el editor de conjuntos dice por qué, y Jugar espera la comprobación de los mods; la construcción avisa de las misiones que un conjunto deja sin sus lugares, y las unidades de los mods .rmod tienen sus modelos; Bug Watch dice por qué falló una construcción o un Jugar, y la versión 4 del acuerdo; una unidad sin imagen de carta, rechazada en la construcción.
 
 - **Los mods hechos con los nuevos pelotones y animaciones del Studio (Launcher):** este Launcher construye los pelotones de un mod con sus propios soldados, y sus unidades con sus propias animaciones; un mod así lo necesita, porque un Launcher más antiguo no puede dárselos. Un mod cuyos pelotones tienen soldados propios recibe para ello un pequeño parche del juego: se descarga una vez y se aplica solo a tu copia con mods, nunca al juego de tu carpeta de Steam. Todavía no probado en el juego desde el Launcher.

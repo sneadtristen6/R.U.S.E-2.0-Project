@@ -2,6 +2,7 @@
 title: "Studio 0.9.8.20 and Launcher 0.4.8.20: your own animated models, animations for the units you pick, the Generic Horse and squads soldier by soldier"
 category: Announcements
 order: 25
+skip: never posted; 0.9.8.21, out after it, has its own announcement, which covers it
 ---
 **RUSE Studio 0.9.8.20** and **RUSE Launcher 0.4.8.20** are out:
 [Releases](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases). Both apps offer the update when they open.

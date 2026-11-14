@@ -1,6 +1,8 @@
 **RUSE Launcher 0.4, pro hráče.** Najde R.U.S.E. přes Steam a **Hrát** sestaví upravenou kopii hry s vašimi módy a
 spustí ji. Vaše instalace Steamu se nikdy nemění.
 
+**0.4.8.21:** Oprava v pozadí: naše vlastní testy znovu procházejí na každém systému, kde je GitHub spouští. V aplikaci se nic nemění.
+
 **0.4.8.20:** Módy s novými družstvy a animacemi ze Studia; vlastní voják družstva, změněný v Blenderu (Studio); dalších 279 zpráv jednoduchými slovy, ve vašem jazyce; pád hry, který známe, jmenuje svou jednotku; ochrany tam, kde některé sady módů zastavovaly hru; vylepšení vyráběné v jiné budově si nechá svou jednotku; editor sad říká proč a Hrát čeká na kontrolu módů; sestavení upozorní na mise, kterým sada vezme jejich místa, a jednotky módů .rmod dostanou své modely; Bug Watch říká, proč selhalo sestavení nebo Hrát, a verze 4 smlouvy; jednotka bez obrázku karty odmítnutá při sestavení.
 
 - **Módy udělané s novými družstvy a animacemi ze Studia (Launcher):** tento Launcher sestaví družstva modu s jejich vlastními vojáky a jeho jednotky s jejich vlastními animacemi; takový mod ho potřebuje, protože starší Launcher jim je dát nedokáže. Mod, jehož družstva mají vlastní vojáky, k tomu dostane malou záplatu hry: stáhne se jednou a použije se jen na vaši upravenou kopii, nikdy na hru ve vaší složce Steam. Z Launcheru ve hře zatím nevyzkoušeno.

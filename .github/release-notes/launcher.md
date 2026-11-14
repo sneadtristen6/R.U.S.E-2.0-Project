@@ -1,6 +1,8 @@
 **RUSE Launcher 0.4, for players.** It finds R.U.S.E. through Steam, and **Play** builds a modded copy of the game
 with your mods and starts it. Your Steam install is never changed.
 
+**0.4.8.21:** A fix behind the scenes: our own tests pass again on every system GitHub runs them on. Nothing changes in the app.
+
 **0.4.8.20:** Mods with the Studio's new squads and animations; a squad's own soldier, changed in Blender (Studio); 279 more messages in plain words, in your language; a game crash we know names its unit; guards where some mod sets stopped the game; an upgrade made in another building keeps its unit; the mod set editor says why, and Play waits for the mods' check; the build warns about missions a set leaves without their places, and .rmod mods' units get their models; Bug Watch says why a build or a Play failed, and the agreement's version 4; a unit with no card picture refused at the build.
 
 - **Mods made with the Studio's new squads and animations (Launcher):** this Launcher builds a mod's squads with soldiers of their own, and its units with animations of their own; such a mod needs it, as an older Launcher can't give them. A mod whose squads have soldiers of their own gets a small game patch for it, downloaded once and applied only to your modded copy, never to the game in your Steam folder. Not yet tried in the game from the Launcher.
