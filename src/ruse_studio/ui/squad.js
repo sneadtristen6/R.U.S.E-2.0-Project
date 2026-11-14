@@ -236,7 +236,11 @@
         // squad's, the card's redraw threw on it, found in the stand-in page's console 2026-11-13)
         if (r && r.door === "squad" && r.soldiers) S.info = r;
         opened = true;
-        say(w.squad_blender_opened, "ok");
+        // a sending of its last Blender never brought back, kept aside first (the answer's set_aside): said where, in a
+        // pop-up that waits to be closed (finding SQ-2 of the squads scenarios, 2026-11-14: never said before)
+        const aside = r && r.set_aside ? fill(w.blender_squad_set_aside, { folder: r.set_aside }) : "";
+        if (aside) stayToast(say(`${w.squad_blender_opened} ${aside}`, "warn"));
+        else say(w.squad_blender_opened, "ok");
       } catch (err) { problem(err); }
       S.busy = false;
       // (read again, so the button reads Bring my changes back: the model's Blender too, the Generic Horse's, whose
@@ -391,8 +395,14 @@
         try {
           const r = await api().soldier_remove(address, s.id);
           S.sure = null;
-          say([fill(w.squad_removed, { number: s.number != null ? s.number : s.id, n: r && r.count != null ? r.count : "" }),
-            r && r.copy_back ? w.squad_reset_uniform : ""].filter(Boolean).join(" "), "ok");
+          // his own look kept aside, and a Blender sending never brought back kept aside first, said as -1 says them
+          // (finding SQ-3 and SQ-2 of the squads scenarios, 2026-11-14)
+          const aside = r && r.set_aside ? fill(w.blender_squad_set_aside, { folder: r.set_aside }) : "";
+          const text = [fill(w.squad_removed, { number: s.number != null ? s.number : s.id, n: r && r.count != null ? r.count : "" }),
+            r && r.look_kept ? w.squad_minus_kept : "", r && r.copy_back ? w.squad_reset_uniform : "", aside]
+            .filter(Boolean).join(" ");
+          if (aside) stayToast(say(text, "warn"));
+          else say(text, "ok");
           await reload(true);
         } catch (err) { problem(err); yes.disabled = false; }
       });
@@ -427,11 +437,14 @@
       catch (err) { problem(err); }
       S.busy = false;
       if (!r) { draw(); return; }
-      const text = step > 0 ? fill(w.squad_added, { n: r.count })
+      // (a Blender sending never brought back, kept aside first: said where, finding SQ-2 of the squads scenarios)
+      const aside = r.set_aside ? fill(w.blender_squad_set_aside, { folder: r.set_aside }) : "";
+      const text = [step > 0 ? fill(w.squad_added, { n: r.count })
         : [fill(w.squad_removed, { number: r.removed, n: r.count }), r.look_kept ? w.squad_minus_kept : "",
-          r.copy_back ? w.squad_reset_uniform : ""].filter(Boolean).join(" ");
+          r.copy_back ? w.squad_reset_uniform : ""].filter(Boolean).join(" "), aside].filter(Boolean).join(" ");
       S.said = el("p", { className: "squad-result", role: "status", textContent: text });
-      say(text, "ok");
+      if (aside) stayToast(say(text, "warn"));
+      else say(text, "ok");
       await reload(true);
     };
 
@@ -530,7 +543,10 @@
         S.adding = null;
         if (r && r.soldiers) {
           S.info = r;
-          say(w.squad_add_opened, "ok");
+          // (a Blender sending never brought back, kept aside first: said where, finding SQ-2 of the squads scenarios)
+          const aside = r.set_aside ? fill(w.blender_squad_set_aside, { folder: r.set_aside }) : "";
+          if (aside) stayToast(say(`${w.squad_add_opened} ${aside}`, "warn"));
+          else say(w.squad_add_opened, "ok");
         }
       } catch (err) { problem(err); }
       S.busy = false;
