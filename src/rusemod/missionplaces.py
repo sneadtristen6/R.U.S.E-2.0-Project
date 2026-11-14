@@ -29,7 +29,8 @@ two together do.
 
 A layout our scenario reader can't take (two of the Balanced Realism Mod's have 20 bytes after their design items) is
 read up to its design items; one that can't be read even so has the zones looked for as text in its bytes (a zone
-whose name isn't anywhere in the file isn't in the layout). A changed script that can't be read is said (`unread`)."""
+whose name isn't anywhere in the file isn't in the layout). A changed script or cluster that can't be read is said
+(`unread`)."""
 from __future__ import annotations
 
 import re
@@ -64,6 +65,7 @@ class Mission:
     layouts: tuple   # the layouts its cluster names: members of DataMap_Win.dat, lower case (one for every mission
     # of the game)
     scripts: tuple   # its match scripts: members of IA_Common.dat, lower case (whether the pack has them or not)
+    problem: str = ""   # why its cluster can't be read (then it names no file here)
 
 
 @dataclass
@@ -79,7 +81,7 @@ class Missing:
 @dataclass
 class Found:
     missing: list = field(default_factory=list)   # [Missing], in the map list's order
-    unread: list = field(default_factory=list)    # [(Mission, why)]: a changed script that can't be read
+    unread: list = field(default_factory=list)    # [(Mission, why)]: a changed script or cluster that can't be read
 
 
 def _text(nd: Ndf, v) -> str | None:
@@ -125,7 +127,9 @@ def missions(read_glad) -> list[Mission]:
     """Every mission a player can pick in the menus `read_glad` gives (member -> bytes or None, ZZ_GladPatchableWin.dat
     as the set leaves it): each map-list entry whose menu entry, listed by a menu pack, is a campaign chapter, an
     Operation or the tutorial's chapter, once for each of those menus it is in, with the files its cluster names. An
-    entry whose cluster isn't there, or can't be read, has no files. [] when the menus aren't there."""
+    entry whose cluster isn't there is left out (the game can't load it either); one whose cluster can't be read names
+    no file and says why (Mission.problem). Menus that can't be read raise ValueError (or the reader's own error), for
+    the build to say so. [] when the menus aren't there."""
     m_raw, g_raw = read_glad(MAPINFO), read_glad(GLOBALS)
     if m_raw is None or g_raw is None:
         return []
@@ -154,11 +158,11 @@ def missions(read_glad) -> list[Mission]:
         if raw is None:
             continue
         try:
-            layouts, scripts = pairing(raw)
-        except _READ_ERRORS:
-            layouts, scripts = (), ()
+            layouts, scripts, problem = *pairing(raw), ""
+        except _READ_ERRORS as exc:
+            layouts, scripts, problem = (), (), str(exc) or type(exc).__name__
         for kind in sorted(kinds, key=ORDER.index):
-            out.append(Mission(kind, _text(m, p.get("Name")) or base, _member(base), layouts, scripts))
+            out.append(Mission(kind, _text(m, p.get("Name")) or base, _member(base), layouts, scripts, problem))
     return out
 
 
@@ -258,6 +262,10 @@ def check(final, shipped) -> Found:
     sg, sd, si = shipped
     found = Found()
     for mi in missions(fg):
+        if mi.problem:   # its cluster, as the set leaves it, can't be read (said, unless it's the game's own)
+            if fg(mi.cluster) != sg(mi.cluster):
+                found.unread.append((mi, mi.problem))
+            continue
         if not mi.layouts:
             continue   # (no layout to look in: every mission of the game names one)
         was = sg(mi.cluster)

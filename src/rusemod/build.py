@@ -4086,9 +4086,9 @@ def mission_place_findings(found, changers: list, read: dict) -> list:
                 out.append(Finding("warning", f"{name} replaces the missions of {n} Operation(s) with ones that use "
                                               f"places their maps lack: with it on, those Operations stop about a "
                                               f"second after they start"))
-    for mission, why in found.unread:
-        out.append(Finding("note", f"{mission.name}: its mission script can't be read ({why}), so whether its map "
-                                   f"holds every place the mission watches from its start wasn't checked"))
+    for name, why in dict.fromkeys((m.name, why) for m, why in found.unread):   # (a mission in two menus: once)
+        out.append(Finding("note", f"{name}: a file of its mission can't be read ({why}), so whether its map holds "
+                                   f"every place the mission watches from its start wasn't checked"))
     return out
 
 

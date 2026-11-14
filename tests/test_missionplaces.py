@@ -187,6 +187,14 @@ class Check(unittest.TestCase):
         self.assertEqual((found.missing, [(m.name, bool(why)) for m, why in found.unread]),
                          ([], [("M01_Leipzig", True)]))
 
+    def test_a_changed_cluster_that_cant_be_read(self):
+        found = self.check(changed(self.shipped, GLAD, cluster=b"not a cluster"))
+        self.assertEqual((found.missing, [(m.name, why) for m, why in found.unread]),
+                         ([], [("M01_Leipzig", "not an NDF binary")]))
+        # the same cluster as shipped (the game's own, were one so): not the set's doing, not said
+        broken = changed(self.shipped, GLAD, cluster=b"not a cluster")
+        self.assertEqual(mp.check(readers(broken), readers(broken)).unread, [])
+
     def test_the_tutorial_and_an_operation(self):
         entries = [LEIPZIG[:3] + ("tutorial",), ("Challenge - Alpha", GUIDS["alpha"],
                                                   "Patchable\\Scenario\\Alpha\\Scenario_BH\\ClusterMap", "operation")]
@@ -228,13 +236,24 @@ class OnlyWarns(MadeUpGame):
                       "files can't be read (no OBJE section)", [f.message for f in result.findings])
         self.assertTrue((self.root / "out" / DATA).is_file())
 
+    def test_a_cluster_that_cant_be_read_is_a_note(self):
+        """Not one mission left out without a word: the build says which it couldn't read, and goes on."""
+        mod = self.rmod("Broken.rmod", "Broken", "1.0",
+                        {(GLAD, "genglad/patchable/scenario/m01_leipzig/scenario/clustermap.cpp.gladndfbin"):
+                         b"not a cluster"})
+        result, _lines = self.build(mod)
+        self.assertEqual((result.errors, self.warnings(result)), ([], []))
+        self.assertIn("M01_Leipzig: a file of its mission can't be read (not an NDF binary), so whether its map holds "
+                      "every place the mission watches from its start wasn't checked",
+                      [f.message for f in result.findings])
+
     def test_a_script_that_cant_be_read_is_a_note(self):
         mod = self.rmod("Bad.rmod", "Bad Script", "1.0",
                         {(IA, "genpython/1000/test/map/m01_leipzig/scripting/effetmap.xyz"): b"XYZ0 not a script"})
         result, lines = self.build(mod)
         notes = [f.message for f in result.findings if f.level == "note" and "can't be read" in f.message]
         self.assertEqual(len(notes), 1, result.findings)
-        self.assertTrue(notes[0].startswith("M01_Leipzig: its mission script can't be read ("), notes)
+        self.assertTrue(notes[0].startswith("M01_Leipzig: a file of its mission can't be read ("), notes)
         self.assertTrue(any(line.startswith("  note") and "can't be read" in line for line in lines), lines)
 
 
