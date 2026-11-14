@@ -54,6 +54,27 @@ class BuildError(Exception):
     pass
 
 
+UTF8_BOM = b"\xef\xbb\xbf"
+
+
+def _mod_text(f: Path, rel: str) -> str:
+    """A mod's own text file (mod.toml, a changes file, a text file) as the build reads it: UTF-8, with or without the
+    BOM Notepad's "UTF-8 with BOM" and Excel's "CSV UTF-8" put first (the .csv reader skipped it; the .rndf reader
+    stopped on it). A file saved in another encoding (Excel's "CSV (Comma delimited)", in the PC's own code page;
+    Notepad's "Unicode") is refused in words naming it and the line, never in Python's (finding P-1 of the play
+    scenarios, 2026-11-14: "'utf-8' codec can't decode byte 0xe9 in position 56", no file named, the Studio's check
+    stopped by it)."""
+    raw = f.read_bytes()
+    data = raw[len(UTF8_BOM):] if raw.startswith(UTF8_BOM) else raw
+    try:
+        return data.decode("utf-8")
+    except UnicodeDecodeError as exc:
+        line = data.count(b"\n", 0, exc.start) + 1
+        # not a game rule: the encoding the build reads a mod's text in
+        raise BuildError(f"{rel}:{line}: isn't saved as UTF-8 text, so it can't be read. Save it as UTF-8 (in Notepad: "
+                         f"Save as, Encoding UTF-8; in Excel: Save as, CSV UTF-8 (Comma delimited)).") from None
+
+
 def load_mod(path, as_id: str | None = None) -> tuple[ModInfo, list]:
     """A mod folder (mod.toml + src/**/*.rndf, files in path order, + text/*.csv), or a single .rndf file as a quick
     mod. Text rows end up in `ModInfo.texts`. `as_id`: the id it is read under in place of its own, for a build that
@@ -70,7 +91,7 @@ def load_mod(path, as_id: str | None = None) -> tuple[ModInfo, list]:
     if path.is_file() and path.suffix.lower() == ".rndf":
         mod_id = as_id or re.sub(r"[^a-z0-9-]+", "-", path.stem.lower()).strip("-") or "mod"
         info = ModInfo(mod_id)
-        ops = parse(path.read_text(encoding="utf-8"), file=path.name, mod=mod_id)
+        ops = parse(_mod_text(path, path.name), file=path.name, mod=mod_id)
     else:
         manifest_file = path / "mod.toml"
         if not manifest_file.is_file():
@@ -87,7 +108,7 @@ def load_mod(path, as_id: str | None = None) -> tuple[ModInfo, list]:
                              f".py and .xyz). The build writes the only other script changes a mod needs itself "
                              f"(decision 23).")
         try:
-            manifest = tomllib.loads(manifest_file.read_text(encoding="utf-8"))
+            manifest = tomllib.loads(_mod_text(manifest_file, "mod.toml"))
         except tomllib.TOMLDecodeError as exc:
             raise BuildError(f"{manifest_file}: {exc}") from None
         m = manifest.get("mod", {})
@@ -116,12 +137,12 @@ def load_mod(path, as_id: str | None = None) -> tuple[ModInfo, list]:
         files = sorted(src.rglob("*.rndf"), key=lambda p: p.relative_to(src).as_posix().lower()) if src.is_dir() else []
         ops = []
         for f in files:
-            ops += parse(f.read_text(encoding="utf-8"), file=f.relative_to(path).as_posix(), mod=mod_id)
+            ops += parse(_mod_text(f, f.relative_to(path).as_posix()), file=f.relative_to(path).as_posix(), mod=mod_id)
         text_dir = path / "text"
         for f in sorted(text_dir.glob("*.csv"), key=lambda p: p.name.lower()) if text_dir.is_dir() else []:
             try:  # the dictionary is the file's name, or its last part: studio.baseunite.csv is the Studio's names
-                info.texts += loc.read_csv(f.read_text(encoding="utf-8"), f.stem.rsplit(".", 1)[-1].lower(), mod_id,
-                                           f.relative_to(path).as_posix())
+                info.texts += loc.read_csv(_mod_text(f, f.relative_to(path).as_posix()),
+                                           f.stem.rsplit(".", 1)[-1].lower(), mod_id, f.relative_to(path).as_posix())
             except loc.TextError as exc:
                 raise BuildError(str(exc)) from None
         info.terrain = read_terrain(path)

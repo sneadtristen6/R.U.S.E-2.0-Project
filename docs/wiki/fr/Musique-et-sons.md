@@ -53,6 +53,9 @@ d'internet une fois) :
   long de l'animation (ce qui y est attaché grandit avec elle).
 - **Revenir à celle du jeu** retire tous les changements qui lui ont été faits.
 
+Quelle animation une unité joue pour chaque chose qu'elle fait, un changement pour une seule unité, une copie pour les
+unités que vous choisissez, et les animations d'une nouvelle unité dans Blender : [[Animations des unités|Animations-des-unités]].
+
 ## Capture de mouvement
 
 Mettez le mouvement d'une vraie personne sur une animation, sous **Capture de mouvement** : choisissez un mouvement dans
@@ -71,8 +74,9 @@ n'importe quel programme de capture de mouvement).
 
 ## Les sons et animations d'une unité
 
-La page d'une unité a une section **Sons et animations** : ses propres répliques et sons de moteur, et ses animations.
-**Changer ses sons dans RUSE Decoy** ouvre RUSE Decoy sur ceux de cette unité. Une unité dit les répliques de sa nation
+La page d'une unité a une ligne **Sons et animations** dans **Apparence et mouvements** : ses propres répliques et sons
+de moteur, et ses animations. **Changer dans RUSE Decoy** ouvre RUSE Decoy sur ceux de cette unité (la page d'un
+bâtiment a son propre encadré **Sons et animations**). Une unité dit les répliques de sa nation
 et de son type, donc une réplique changée là s'entend chez toutes les unités qui la partagent. Ses tirs et ses impacts
 sont sous les types armes et impacts.
 

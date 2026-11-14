@@ -24,6 +24,22 @@ LINKS = {"wiki": f"{REPO_URL}/wiki", "discussions": f"{REPO_URL}/discussions",
 WIKI_HOMES = {"fr": "Manuel-de-terrain", "ger": "Feldhandbuch", "ita": "Manuale-da-campo", "spa": "Manual-de-campaña",
               "pol": "Podręcznik-polowy", "ru": "Полевое-руководство", "cz": "Polní-příručka",
               "jpn": "フィールドマニュアル", "sc": "野战手册", "fa": "راهنمای-میدانی"}
+# the wiki's page on each of the Studio's hard boxes, in each of the apps' languages, for the "Having trouble? Read the
+# guide" link beside them (ruse_studio/ui/app.js troubleLink; the owner, 2026-11-13: "maybe have like a link somewhere
+# in the thing where it's like having trouble wiki ... I don't want it to look stupid"): bones (Its two halves, Will
+# it work in the game?), animations (Its animations, RUSE Decoy's), blender (Open in Blender and Bring my changes back)
+WIKI_TOPICS = {
+    "bones": {"us": "Models-and-Bones", "fr": "Modèles-et-os", "ger": "Modelle-und-Knochen", "ita": "Modelli-e-ossa",
+              "spa": "Modelos-y-huesos", "pol": "Modele-i-kości", "ru": "Модели-и-кости", "cz": "Modely-a-kosti",
+              "jpn": "モデルとボーン", "sc": "模型与骨骼", "fa": "مدل‌ها-و-استخوان‌ها"},
+    "animations": {"us": "Unit-Animations", "fr": "Animations-des-unités", "ger": "Animationen-der-Einheiten",
+                   "ita": "Animazioni-delle-unità", "spa": "Animaciones-de-las-unidades", "pol": "Animacje-jednostek",
+                   "ru": "Анимации-юнитов", "cz": "Animace-jednotek", "jpn": "ユニットのアニメーション", "sc": "单位动画",
+                   "fa": "انیمیشن‌های-یگان‌ها"},
+    "blender": {"us": "Open-in-Blender", "fr": "Ouvrir-dans-Blender", "ger": "In-Blender-öffnen", "ita": "Apri-in-Blender",
+                "spa": "Abrir-en-Blender", "pol": "Otwórz-w-Blenderze", "ru": "Открыть-в-Blender",
+                "cz": "Otevřít-v-Blenderu", "jpn": "Blenderで開く", "sc": "在-Blender-中打开", "fa": "باز-کردن-در-Blender"},
+}
 BUG_CATEGORY = "bug-reports"      # the category's slug: .github/DISCUSSION_TEMPLATE/bug-reports.yml is its form
 APP_NAMES = {"studio": "RUSE Studio", "launcher": "RUSE Launcher"}  # as the form's "Which app?" lists them
 MESSAGE_MOST = 1500               # characters of a message that go into the link (a long URL gets refused)
@@ -68,8 +84,12 @@ def report_url(app: str, version: str, message: str = "") -> str:
     return f"{REPO_URL}/discussions/new?{urlencode(fields)}"
 
 
-def wiki_url(lang: str | None) -> str:
-    """The wiki's first page in `lang` (the apps' codes), the English wiki for English or any other."""
+def wiki_url(lang: str | None, topic: str | None = None) -> str:
+    """The wiki's first page in `lang` (the apps' codes), the English wiki for English or any other; with `topic` (one
+    of WIKI_TOPICS), that topic's page in `lang`, the English one for any other language."""
+    if topic:
+        pages = WIKI_TOPICS[topic]
+        return f"{REPO_URL}/wiki/{quote(pages.get(lang or '') or pages['us'])}"
     home = WIKI_HOMES.get(lang or "")
     return f"{REPO_URL}/wiki/{quote(home)}" if home else LINKS["wiki"]
 
@@ -88,12 +108,15 @@ class CommunityCalls:
         """The wiki's (in the player's language) and Discussions' addresses, for the window to show."""
         return dict(LINKS) | {"wiki": wiki_url(self._community_lang())}
 
-    def open_help(self, what: str) -> dict:
-        """Open the wiki ("wiki", in the player's language), Discussions ("discussions"), its Help category ("help")
-        or the supported-mods list's page ("mods") in the browser."""
+    def open_help(self, what: str, topic: str | None = None) -> dict:
+        """Open the wiki ("wiki", in the player's language; with `topic`, one of WIKI_TOPICS, that topic's page),
+        Discussions ("discussions"), its Help category ("help") or the supported-mods list's page ("mods") in the
+        browser."""
         if what not in LINKS:
             raise ValueError(f"There's no help page called {what!r}")
-        return self._community_open(wiki_url(self._community_lang()) if what == "wiki" else LINKS[what])
+        if topic is not None and (what != "wiki" or topic not in WIKI_TOPICS):
+            raise ValueError(f"There's no wiki page called {topic!r}")
+        return self._community_open(wiki_url(self._community_lang(), topic) if what == "wiki" else LINKS[what])
 
     def report_problem(self, message: str = "") -> dict:
         """Open a new bug report in the browser, the app, its version and `message` (an error the window showed)

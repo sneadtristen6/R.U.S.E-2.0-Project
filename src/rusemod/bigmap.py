@@ -92,6 +92,10 @@ def grow_mesh(raw: bytes, cx: int, cy: int, near: bool, ground: float, water: fl
     for _voff, _count, boff, _poff, nparts in t._skirt_layout():
         for p in range(nparts):   # each skirt part's box stretched to the new edge (its points are in the file's
             x0, y0, z0, x1, y1, z1 = struct.unpack_from("<6f", data, boff + 24 * p)   # steps, so they follow it)
+            if x0 > x1 or y0 > y1:
+                # a part with no points: the game's files write its box as the floats' far ends (3.4e38 .. -3.4e38),
+                # which can't stretch (16 of the 32 maps have one; Frontline grown stopped on it, 2026-11-14)
+                continue
             struct.pack_into("<6f", data, boff + 24 * p, x0 * sx, y0 * sy, z0, x1 * sx, y1 * sy, z1)
     t.skirt_data = bytes(data)
     t.grid_w, t.grid_h = cx, cy

@@ -117,8 +117,11 @@ class NationCalls:
         key = {"name": nations.lobby_key(n), "army": nations.army_key(n)}.get(which)
         if key is None:
             # not a game rule: the game's texts have no army name for Japan (no NAT_NAME_6), and nothing else is offered
-            raise nations.NationError("Japan's army has no name to change in the game." if which == "army"
-                                      else f"There's nothing called {which!r} to change.")
+            # (each refusal said as it is here, so errors.toml lists it)
+            if which == "army":
+                # not a game rule: the game's texts have no army name for Japan (no NAT_NAME_6)
+                raise nations.NationError("Japan's army has no name to change in the game.")
+            raise nations.NationError(f"There's nothing called {which!r} to change.")
         if self._mod_dir() is None:
             raise nations.NationError("Pick or make a mod first: the new name is saved in it.")
         self.value_words_set(key, {str(k): str(v or "") for k, v in (texts or {}).items()})

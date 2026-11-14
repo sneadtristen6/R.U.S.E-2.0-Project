@@ -54,6 +54,9 @@ en una unidad que la usa (arrastra para girarla, la rueda acerca; la vista 3D ne
   la animación (lo que va unido a ella crece con ella).
 - **Volver a la del juego** quita todos sus cambios.
 
+Qué animación usa una unidad para cada cosa que hace, un cambio para una sola unidad, una copia para las unidades que
+elijas, y las animaciones de una unidad nueva en Blender: [[Animaciones de las unidades|Animaciones-de-las-unidades]].
+
 ## Captura de movimiento
 
 Pon el movimiento de una persona real en una animación, bajo **Captura de movimiento**: elige un movimiento de la
@@ -72,8 +75,9 @@ programa de captura de movimiento).
 
 ## Los sonidos y animaciones de una unidad
 
-La página de una unidad tiene una sección **Sonidos y animación**: sus propias frases y sonidos de motor, y sus
-animaciones. **Cambiar sus sonidos en RUSE Decoy** abre RUSE Decoy en los de esa unidad. Una unidad dice las frases de
+La página de una unidad tiene una fila **Sonidos y animación** en **Aspecto y movimientos**: sus propias frases y sonidos
+de motor, y sus animaciones. **Cambiar en RUSE Decoy** abre RUSE Decoy en los de esa unidad (la página de un edificio
+tiene su propio recuadro **Sonidos y animación**). Una unidad dice las frases de
 su nación y de su tipo, así que una frase cambiada allí se oye en todas las unidades que la comparten. Sus disparos e
 impactos están en los tipos de armas y de impactos.
 

@@ -55,13 +55,14 @@ poslední muži. Tato tlačítka mají jen družstva, která uděláš ty: druž
 
 - **Další možnosti**, pod vojáky, řekne, kde tvůj mod ukládá model každého vojáka a tvoje soubory z Blenderu;
   **Ukázat ve složce** otevře složku.
-- Zavřel jsi Blender, než jsi přenesl změny? Malé tlačítko **Přenést moje změny** pod velkým vezme, co jsi poslal
-  naposledy.
+- Zavřel jsi Blender, než jsi přenesl změny? **Přenést moje změny** i tak vezme, co jsi poslal naposledy. Každé
+  zaškrtnutí a každá zpráva velkého tlačítka: [[Otevřít v Blenderu|Otevřít-v-Blenderu]].
 - Uniforma družstva je ve **Vzhled a pohyb**, vedle hodnot: **Vlastní uniforma** dá družstvu vlastní uniformu, kterou
   **Otevřít v Blenderu** na kartě přebarví všem vojákům najednou, když je v **Co jde do Blenderu** zaškrtnuté jen **Jeho barvy**. Družstvo nosí buď tvoje modely, nebo uniformu.
 - Ve hře ještě nevyzkoušené: družstvo s 8 nebo se 2 vojáky.
 
-Víc o modelech, kostech a animacích: [[Import modelu|Import-modelu]].
+Víc o modelech, kostech a animacích: [[Import modelu|Import-modelu]], [[Modely a kosti|Modely-a-kosti]] a
+[[Animace jednotek|Animace-jednotek]].
 
 **Další:** [[Export a sdílení|Export-a-sdílení]]
 

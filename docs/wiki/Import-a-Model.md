@@ -103,7 +103,8 @@ its squad card and a line for each of its soldiers; [[Change a squad|Change-a-Sq
 Good to know:
 - The US rifle squad's four riflemen are one figure in Blender: the game gives them one model, so what you do to it, all four wear. Its bazooka man is a figure of his own.
 - Your Blender files stay in your mod's folder: `Documents\RUSE 2.0\Mods\<your mod>\blender\<the unit's name>\squad\`. They aren't packed into your mod when you share it. **More options**, under the soldiers, says where they are, and its **Show in folder** opens the folder they're in.
-- Closed Blender before you brought your changes back? The small **Bring my changes back** under the big button takes what you sent last.
+- Closed Blender before you brought your changes back? **Bring my changes back** still takes what you sent last.
+- Every tick of **What goes to Blender**, and what **Bring my changes back** can tell you: [[Open in Blender|Open-in-Blender]].
 - If some points of your model have no bone (Blender's automatic weights miss a few), the page says how many: they move with the soldier's hips only. Paint them onto a bone in Blender's **Weight Paint**, then send again.
 - A squad with a **Custom uniform**: your model takes the uniform's place (its paint stays in your mod); once every soldier is back to the game's look (**Back to the game's look** on his line), the uniform comes back.
 - Already have a .glb made on the game soldier's bones? **Import a model…** on that soldier's line takes it as it is.
@@ -131,12 +132,14 @@ unit's page, **Its animations** shows what the unit plays for each thing it does
   keep the truck.
 
 **A copy keeps its animations:** a unit copied from one with animations of its own plays the same ones. To change one
-for it alone, click **Change in RUSE Decoy** on its **Sounds and animation** row, then **Only this unit**.
+for it alone, click **Change in RUSE Decoy** on its **Sounds and animation** row, then **Only this unit**. Every way to
+change an animation, and to get the game's back: [[Unit animations|Unit-Animations]].
 
 The Generic Horse made this way in the Studio played in the game (November 2026).
 ## A model with its own bones and animations
 
-A horse, a horse with its rider, any creature: a model on bones of its own goes on a squad with its animations.
+A horse, a horse with its rider, any creature: a model on bones of its own goes on a squad with its animations. What
+bones are, its two halves and what **Will it work in the game?** says: [[Models and bones|Models-and-Bones]].
 
 1. **Make it in Blender**: your model on an armature with bones of your own (named as you like), and an action for each animation. Name the actions for what they show: **stand** (or **idle**), **walk** and **run** at least; **death**, **fire**, **reload**, **hit**, **crouch**, **aim**, **look**, **flee** and **grenade** are known too.
 2. **Export it**: **File > Export > glTF 2.0**, format **glTF Binary (.glb)**, with **Animation** ticked.
@@ -158,7 +161,7 @@ Animations are changed in RUSE Decoy. On the unit's page, in its **Sounds and an
 1. **Pick one.** At the bottom of Blender, the Action Editor lists them: pick the one to change. **Space** plays it.
 2. **Pose the bones.** Click a bone, press **Ctrl+Tab** for Pose Mode, **R** to turn it (**G** moves it), then **I** to keep the pose at this frame. Do it at every frame you change: Blender goes from one kept pose to the next by itself.
 3. **Send it.** Click **Send to the R.U.S.E. Studio**: every animation goes, changed or not.
-4. **Bring it back.** In RUSE Decoy, click **Bring my changes back**. It says which came back changed: those are this unit's own now, and RUSE Decoy shows them under **Only this unit**. Every other unit, and every animation you didn't touch, stays the game's.
+4. **Bring it back.** In RUSE Decoy, click **Bring my changes back**. It says which came back changed: those are this unit's own now. Every other unit, and every animation you didn't touch, stays the game's. What each of its messages means: [[Unit animations|Unit-Animations]].
 
 Good to know:
 - The game plays animations at 30 frames a second, and Blender opens them so. An animation opens as long as the game plays it; make it longer or shorter in Blender and it comes back so.

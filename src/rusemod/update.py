@@ -34,6 +34,7 @@ from pathlib import Path
 
 from . import net
 from .home import save_settings, settings
+from .mod_index import plain
 
 REPO = "sneadtristen6/R.U.S.E-2.0-Project"
 API = f"https://api.github.com/repos/{REPO}/releases?per_page=40"
@@ -44,7 +45,29 @@ _ALLOWED_HOSTS = ("https://github.com/", "https://objects.githubusercontent.com/
 
 
 class UpdateError(Exception):
-    """An update that can't go ahead, with a message for the player."""
+    """An update that can't go ahead, with a message for the player. `why`, when given: why GitHub couldn't be reached,
+    in plain words (rusemod.mod_index.plain), said in the player's language inside the message (words)."""
+
+    def __init__(self, *args, why: str = ""):
+        super().__init__(*args)
+        self.why = why
+
+
+# the refusals of the calls both apps share, said in the player's language by words() (both apps' page_error)
+SHARED_REFUSALS = ("UpdateError", "BackupError", "OwnedPassError")
+
+
+def words(exc: Exception, lang: str) -> str:
+    """A refusal of the updates, a backup's or the sign-in's (UpdateError, BackupError, OwnedPassError) in `lang`, from
+    rusemod/buildtext.toml (buildtext.ENDS lists them), why GitHub couldn't be reached said in it too; as it is when
+    no entry says it (the plain-words job, 2026-11-14: "GitHub couldn't be reached to look for updates (<urlopen error
+    [WinError 10061] ...>)", English in both apps in every language)."""
+    from . import buildtext
+    said = buildtext.worded(str(exc), lang)
+    why = getattr(exc, "why", "")
+    if why and why in said:
+        said = said.replace(why, buildtext.worded(why, lang), 1)
+    return said
 
 
 @dataclass
@@ -214,7 +237,8 @@ def latest(app: str, current: str, fetch=_get_json, fetch_text=_get_text) -> Rel
         try:
             releases = feed_releases(fetch_text(FEED))
         except (OSError, ValueError):
-            raise UpdateError(f"GitHub couldn't be reached to look for updates ({exc}).") from None
+            why = plain(exc)   # (never Python's or Windows' own words)
+            raise UpdateError(f"GitHub couldn't be reached to look for updates ({why}).", why=why) from None
     tag_re = re.compile(rf"^{app}-v({TAG_VERSION})$")
     best = None
     for rel in releases if isinstance(releases, list) else []:
@@ -313,7 +337,8 @@ def download(rel: Release, folder: Path, progress=lambda done, total: None, open
         raise
     except OSError as exc:
         part.unlink(missing_ok=True)
-        raise UpdateError(f"the download stopped ({exc}).") from None
+        why = plain(exc)
+        raise UpdateError(f"the download stopped ({why}).", why=why) from None
     if h.hexdigest() != rel.sha256:
         part.unlink(missing_ok=True)
         raise UpdateError("the downloaded installer isn't the published one (its SHA-256 differs), so it was deleted.")
@@ -388,7 +413,9 @@ class UpdateCalls:
             rel = latest(self.UPDATE_APP, self.UPDATE_VERSION, fetch=self._update_fetch, fetch_text=self._update_fetch_text)
         except UpdateError as exc:
             kept = self._update_kept()
-            return {"available": False, "error": str(exc), "current": self.UPDATE_VERSION,
+            prefs = getattr(self, "prefs", None)   # (asked without a language: the window's own)
+            said_in = lang if lang not in ("", "us") or prefs is None else (prefs().get("lang") or "us")
+            return {"available": False, "error": words(exc, said_in), "current": self.UPDATE_VERSION,
                     **({"required": True, "offline": True, "version": kept} if kept else {})}
         self._update_found = rel
         self._update_keep(rel.required if rel is not None else "")

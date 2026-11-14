@@ -164,7 +164,8 @@ class ModelFitCalls:
     def _fitcheck_figures(self, address: str, report: dict, names: list, own_bones: bool) -> list:
         """bonefit.check_figure on every figure of the unit that draws its own model (the game's data for the unit it
         copies: the figures naming the model it was fitted to, or one with the same bones), each listing taken as what
-        it will play: the unit's own animation for that action (files/anim/units.toml), else the game's clip."""
+        it will play: the unit's own animation for that action (files/anim/units.toml), else, for a unit with its
+        model's own animations, the one the build gives it (_fitcheck_own_pick), else the game's clip."""
         from rusemod import anim, bonefit
         from rusemod.animlist import member_of
         try:
@@ -185,6 +186,7 @@ class ModelFitCalls:
         except anim.AnimError:
             own = {}
         actions, clips = own.get("actions") or {}, own.get("clips") or {}
+        table = self._fitcheck_own_table(unit.target.rsplit("/", 1)[-1])
         # (on the game's own bones its parts and the game's clips fit: only its own clips can't, and only they're read)
         bones_of = self._fitcheck_bones if own_bones else lambda k: self._fitcheck_bones(k) if k.startswith(OWN) else None
         out = []
@@ -192,13 +194,45 @@ class ModelFitCalls:
             plays = []
             for action, file, mask in fig.listings:
                 f = actions.get((action, fig.path)) or actions.get((action, None))
-                edit = clips.get(member_of(file)) if file else None
+                if f is None and table[0]:
+                    # (the model's own animations: every listing of a figure drawing it plays the one the build gives
+                    # it, never the game's clip; read as the game's, a squad given a model on bones of its own was said
+                    # to stop the game on every action of its riflemen while the build played its own animations: the
+                    # models scenarios' M-8, 2026-11-14)
+                    f = self._fitcheck_own_pick(table, action, file)
+                edit = clips.get(member_of(file)) if file and not table[0] else None
                 if f is None and edit and edit.get("file"):
                     f = edit["file"]
                 plays.append((action, f"{OWN}{f}" if f is not None else file, mask))
             out += bonefit.check_figure(names, bonefit.Figure(fig.path, fig.model, plays, fig.needs if own_bones else []),
                                         bones_of, lambda k: k.startswith(OWN), masks=False)
         return out
+
+    def _fitcheck_own_table(self, unit: str) -> tuple[dict, dict]:
+        """The unit's model's own animations as the build plays them (rusemod.build._own_animations): ({name: its clip
+        file}, {action: the animation the modder picked for it}); ({}, {}) for a unit with none, or a units.toml that
+        can't be read (the build says that one)."""
+        from rusemod import anim
+        mod = self._mod_dir()
+        if mod is None:
+            return {}, {}
+        try:
+            got = anim.own_animations(mod, unit)
+        except anim.AnimError:
+            return {}, {}
+        files = {n: str(Path(mod) / anim.OWN / unit / f) for n, f in (got.get("animations") or {}).items()
+                 if isinstance(n, str) and isinstance(f, str) and f}
+        return files, {a: n for a, n in (got.get("plays") or {}).items() if n in files}
+
+    @staticmethod
+    def _fitcheck_own_pick(table: tuple, action: str, file: str | None) -> str | None:
+        """The clip file of the model's own animation the build gives the listing `action` (its game clip `file`):
+        rusemod.animactions.choose on the model's animations and the modder's picks (`table`, _fitcheck_own_table's),
+        as rusemod.build._own_animations does."""
+        from rusemod import animactions
+        files, picks = table
+        pick, _how = animactions.choose(action, list(files), picks, file)
+        return files.get(pick) if pick is not None else None
 
     def _fitcheck_bones(self, key: str) -> list | None:
         """The bones of what a listing plays (_fitcheck_figures' key): the mod's own file, or the game's clip (RUSE Decoy's

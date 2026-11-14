@@ -32,6 +32,7 @@ record names, and his README in the mod stays as he wrote it.
 from __future__ import annotations
 
 import codecs
+import errno
 import json
 import locale
 import os
@@ -42,6 +43,7 @@ import tempfile
 import tomllib
 import unicodedata
 import zipfile
+import zlib
 from pathlib import Path, PurePosixPath
 
 from .build import NOT_IN_MODS, BuildError, load_mod
@@ -168,6 +170,13 @@ def set_values(text: str, table: str, values: dict) -> str:
     return "\n".join(ln for ln in lines if ln is not None) + "\n"
 
 
+# a character a TOML string can't hold as it is (a control character), or that set_values' splitlines() would read as
+# the end of a line (a vertical tab, a form feed, U+001C-U+001E, U+0085, the line and paragraph separators): written as
+# \uXXXX, so a character pasted into an author or a description never makes mod.toml unreadable (the export
+# scenarios' FE-6: "couldn't update ...mod.toml: Illegal character")
+_TOML_ESCAPE = re.compile("[\x00-\x08\x0b-\x1f\x7f\x85\u2028\u2029]")
+
+
 def _toml(v) -> str:
     if isinstance(v, bool):
         return "true" if v else "false"
@@ -175,7 +184,8 @@ def _toml(v) -> str:
         return str(v)
     if isinstance(v, (list, tuple)):
         return "[" + ", ".join(_toml(x) for x in v) + "]"
-    return '"' + str(v).replace("\\", "\\\\").replace('"', '\\"').replace("\n", " ").replace("\r", "") + '"'
+    text = str(v).replace("\\", "\\\\").replace('"', '\\"').replace("\n", " ").replace("\r", "")
+    return '"' + _TOML_ESCAPE.sub(lambda m: f"\\u{ord(m.group(0)):04x}", text) + '"'
 
 
 def update_manifest(folder, mod: dict | None = None, game: dict | None = None,
@@ -1100,6 +1110,8 @@ def pack(folder, out, *, build_id: str | None = None, data_revision: str | None 
         load_mod(folder)
     except (BuildError, RndfError) as exc:
         raise PackageError(f"Fix the mod before packing it: {exc}") from None
+    except OSError as exc:      # (a file of the mod another program holds: said with its name, named_file)
+        raise named_file(exc, files_of(folder))
     out = Path(out)
     target = out / file_name(info) if out.is_dir() or out.suffix.lower() != EXTENSION else out
     target.parent.mkdir(parents=True, exist_ok=True)
@@ -1120,35 +1132,61 @@ def pack(folder, out, *, build_id: str | None = None, data_revision: str | None 
     files = files_of(folder, work)
     if left_out is not None:
         left_out += [f.relative_to(folder).as_posix() for f in work]
-    with zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as z:
-        for f in files:
-            name = f.relative_to(folder).as_posix()
-            got = studio_paths_out(f, name)
-            if got is None:
-                readme = readme_paths_out(f, name, users, unread)   # (the owner's "cut to file name", 2026-11-13:
-                #                                                     his README only; "take the username path out")
-                if readme is not None:
-                    got = (readme[0], "readme")
-                    if cuts is not None:
-                        cuts[name] = readme[1]
-            if got is None:
-                z.write(f, name)
-                if home_in is not None and (f.suffix.lower() in TEXT_FILES or f.suffix.lower() == ".glb"
-                                            or f.name == "LICENSE") and home_named(f.read_bytes(), home):
+    try:
+        with zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as z:
+            for f in files:
+                name = f.relative_to(folder).as_posix()
+                got = studio_paths_out(f, name)
+                if got is None:
+                    readme = readme_paths_out(f, name, users, unread)   # (the owner's "cut to file name",
+                    #                                     2026-11-13: his README only; "take the username path out")
+                    if readme is not None:
+                        got = (readme[0], "readme")
+                        if cuts is not None:
+                            cuts[name] = readme[1]
+                if got is None:
+                    z.write(f, name)
+                    if home_in is not None and (f.suffix.lower() in TEXT_FILES or f.suffix.lower() == ".glb"
+                                                or f.name == "LICENSE") and home_named(f.read_bytes(), home):
+                        home_in.append(name)
+                    continue
+                data, kind = got
+                member = zipfile.ZipInfo.from_file(f, name)   # (its date and attributes, as z.write gives them)
+                member.compress_type = zipfile.ZIP_DEFLATED
+                z.writestr(member, data)
+                if cleaned is not None:
+                    cleaned.append(name)
+                if kinds is not None:
+                    kinds[name] = kind
+                if home_in is not None and home_named(data, home):
                     home_in.append(name)
-                continue
-            data, kind = got
-            member = zipfile.ZipInfo.from_file(f, name)   # (its date and attributes, as z.write gives them)
-            member.compress_type = zipfile.ZIP_DEFLATED
-            z.writestr(member, data)
-            if cleaned is not None:
-                cleaned.append(name)
-            if kinds is not None:
-                kinds[name] = kind
-            if home_in is not None and home_named(data, home):
-                home_in.append(name)
-    os.replace(tmp, target)
+    except OSError as exc:      # (nothing half made is left beside the target; the file it is about named)
+        tmp.unlink(missing_ok=True)
+        raise named_file(exc, files)
+    try:
+        os.replace(tmp, target)
+    except OSError:             # (the target held open: no .part left beside it either; the export scenarios' FE-15)
+        tmp.unlink(missing_ok=True)
+        raise
     return target
+
+
+def named_file(exc: OSError, files) -> OSError:
+    """`exc`, the OSError a file of a mod gave, with the file it is about named when it names none (a part of a file
+    another program has locked fails in the middle of a read, nameless: Python then says only "[Errno 13] Permission
+    denied"; the export scenarios' FE-13): the first of `files` that can't be read through now. A full disk names
+    none: it is about the file being written."""
+    full = exc.errno == errno.ENOSPC or getattr(exc, "winerror", None) in (39, 112)
+    if exc.filename is None and not full:
+        for f in files:
+            try:
+                with open(f, "rb") as h:
+                    while h.read(1 << 20):
+                        pass
+            except OSError:
+                exc.filename = str(f)
+                break
+    return exc
 
 
 def _check_info(info: dict) -> None:
@@ -1199,6 +1237,8 @@ def check(path, read: bool = True) -> dict:
             data = tomllib.loads(z.read(root + MANIFEST).decode("utf-8"))
         except (tomllib.TOMLDecodeError, UnicodeDecodeError) as exc:
             raise PackageError(f"{path.name}: its {MANIFEST} can't be read ({exc}).") from None
+        except DAMAGED:
+            raise _damaged(path, MANIFEST) from None
     info = manifest_info(data)
     _check_info(info)
     info |= {"files": files, "members": members, "root": root, "path": str(path)}
@@ -1236,5 +1276,20 @@ def _extract(path: Path, members: dict, into: Path) -> None:
         for rel, member in members.items():
             target = into / rel
             target.parent.mkdir(parents=True, exist_ok=True)
-            with z.open(member) as src, target.open("wb") as dst:
-                shutil.copyfileobj(src, dst)
+            try:
+                with z.open(member) as src, target.open("wb") as dst:
+                    shutil.copyfileobj(src, dst)
+            except DAMAGED:
+                raise _damaged(path, rel) from None
+
+
+# how a damaged mod file fails to unpack (a byte changed by a download gone wrong): zlib's "Error -3 while
+# decompressing data", zipfile's "Bad CRC-32 for file ...", a member cut short
+DAMAGED = (zipfile.BadZipFile, zlib.error, EOFError)
+
+
+def _damaged(path: Path, rel: str) -> PackageError:
+    """A damaged mod file said in words, never zlib's or zipfile's own (the export scenarios' FE-9, 2026-11-14: the
+    Launcher's Add stopped with "zlib.error: Error -3 while decompressing data: invalid code lengths set")."""
+    return PackageError(f"{path.name} is damaged: {rel} in it doesn't unpack whole. Get the file again (download it "
+                        f"again, or ask whoever sent it to send it again).")

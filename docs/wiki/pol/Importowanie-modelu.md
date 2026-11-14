@@ -107,7 +107,8 @@ się od karty oddziału i wiersza dla każdego z jego żołnierzy; [[Zmiana oddz
 Dobrze wiedzieć:
 - Czterej strzelcy amerykańskiego oddziału strzelców to w Blenderze jedna figura: gra daje im jeden model, więc to, co z nim zrobisz, noszą wszyscy czterej. Żołnierz z bazooką to osobna figura.
 - Twoje pliki Blendera zostają w folderze moda: `Documents\RUSE 2.0\Mods\<twój mod>\blender\<nazwa jednostki>\squad\`. Nie są pakowane do moda, gdy go udostępniasz. **Więcej opcji**, pod żołnierzami, mówi, gdzie są, a jego **Pokaż w folderze** otwiera folder, w którym leżą.
-- Zamknąłeś Blendera, zanim przeniosłeś zmiany? Mały przycisk **Przenieś moje zmiany** pod dużym bierze to, co wysłałeś ostatnio.
+- Zamknąłeś Blendera, zanim przeniosłeś zmiany? **Przenieś moje zmiany** i tak bierze to, co wysłałeś ostatnio.
+- Każde zaznaczenie w **Co trafia do Blendera** i to, co może ci powiedzieć **Przenieś moje zmiany**: [[Otwórz w Blenderze|Otwórz-w-Blenderze]].
 - Jeśli niektóre punkty modelu nie mają kości (automatyczne wagi Blendera kilka pomijają), strona powie ile: ruszają się tylko z biodrami żołnierza. Pomaluj je na kość w **Weight Paint** i wyślij ponownie.
 - Oddział z **Własny mundur**: twój model zajmuje miejsce munduru (jego malowanie zostaje w modzie); gdy każdy żołnierz wróci do wyglądu z gry (**Wróć do wyglądu z gry** w jego wierszu), mundur wraca.
 - Masz już .glb zrobiony na kościach żołnierza z gry? **Importuj model…** w wierszu tego żołnierza bierze go tak, jak jest.
@@ -135,12 +136,12 @@ jednostki **Jej animacje** pokazują, co jednostka odtwarza przy każdej czynno�
   **W swojej ciężarówce**, aby zostawić ciężarówkę.
 
 **Kopia zachowuje animacje:** jednostka skopiowana z takiej, która ma własne animacje, odtwarza te same. Aby zmienić
-którąś tylko dla niej, kliknij **Zmień w RUSE Decoy** w jej wierszu **Dźwięki i animacje**, potem **Tylko ta jednostka**.
+którąś tylko dla niej, kliknij **Zmień w RUSE Decoy** w jej wierszu **Dźwięki i animacje**, potem **Tylko ta jednostka**. Każdy sposób, by zmienić animację i wrócić do tej z gry: [[Animacje jednostek|Animacje-jednostek]].
 
 Uniwersalny oddział konny zrobiony tak w Studiu działał w grze (listopad 2026).
 ## Model z własnymi kośćmi i animacjami
 
-Koń, koń z jeźdźcem, dowolne stworzenie: model na własnych kościach trafia do oddziału razem ze swoimi animacjami.
+Koń, koń z jeźdźcem, dowolne stworzenie: model na własnych kościach trafia do oddziału razem ze swoimi animacjami. Czym są kości, jego dwie połowy i co mówi **Czy zadziała w grze?**: [[Modele i kości|Modele-i-kości]].
 
 1. **Zrób go w Blenderze**: twój model na armaturze z własnymi kośćmi (nazwanymi, jak chcesz) i akcja dla każdej animacji. Nazwij akcje tak, jak to, co pokazują: co najmniej **stand** (lub **idle**), **walk** i **run**; rozpoznawane są też **death**, **fire**, **reload**, **hit**, **crouch**, **aim**, **look**, **flee** i **grenade**.
 2. **Wyeksportuj go**: **File > Export > glTF 2.0**, format **glTF Binary (.glb)**, z zaznaczonym **Animation**.
@@ -162,7 +163,7 @@ Animacje zmienia się w RUSE Decoy. Na stronie jednostki w wierszu **Dźwięki i
 1. **Wybierz jedną.** Na dole Blendera Action Editor je wymienia: wybierz tę do zmiany. **Spacja** ją odtwarza.
 2. **Ustaw kości.** Kliknij kość, naciśnij **Ctrl+Tab** dla Pose Mode, **R** aby ją obrócić (**G** przesuwa), potem **I** aby zachować pozę w tej klatce. Zrób to w każdej klatce, którą zmieniasz: Blender sam przechodzi od jednej zachowanej pozy do następnej.
 3. **Wyślij ją.** Kliknij **Wyślij do R.U.S.E. Studio**: idą wszystkie animacje, zmienione czy nie.
-4. **Przywróć ją.** W RUSE Decoy kliknij **Przenieś moje zmiany**. Powie, które wróciły zmienione: są teraz własne tej jednostki, a RUSE Decoy pokazuje je pod **Tylko ta jednostka**. Każda inna jednostka i każda animacja, której nie ruszałeś, zostaje z gry.
+4. **Przywróć ją.** W RUSE Decoy kliknij **Przenieś moje zmiany**. Powie, które wróciły zmienione: są teraz własne tej jednostki. Każda inna jednostka i każda animacja, której nie ruszałeś, zostaje z gry. Co znaczy każdy jego komunikat: [[Animacje jednostek|Animacje-jednostek]].
 
 Warto wiedzieć:
 - Gra odtwarza animacje z prędkością 30 klatek na sekundę i Blender tak je otwiera. Animacja otwiera się tak długa, jak odtwarza ją gra; wydłuż ją lub skróć w Blenderze, a wróci taka.

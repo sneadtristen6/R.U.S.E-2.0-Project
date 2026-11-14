@@ -62,6 +62,11 @@ class Job:
     def say(self, line: str) -> None:
         self.lines.append(line)
 
+    def fail(self, message: str) -> None:
+        """End the job refused before it starts, with `message` (words for people, said in the player's language by
+        rusemod.buildtext, which lists them from the calls to this)."""
+        self.state, self.message = "failed", message
+
     def view(self, since: int = 0) -> dict:
         out = {"id": self.id, "state": self.state, "message": self.message, "lines": self.lines[since:],
                "count": len(self.lines)}
@@ -85,7 +90,7 @@ class Job:
                 self.state, self.message = "failed", str(exc)
                 failed = exc
             except Exception as exc:
-                self.state, self.message = "failed", f"Something went wrong: {type(exc).__name__}: {exc}"
+                self.state, self.message = "failed", _said(f"Something went wrong: {type(exc).__name__}: {exc}")
                 failed = exc
             watch = bugwatch.current()
             if watch is not None:
@@ -94,6 +99,12 @@ class Job:
 
         threading.Thread(target=run, daemon=True).start()
         return {"job": self.id}
+
+
+def _said(text: str) -> str:
+    """A job's words as they are: rusemod.buildtext lists them from the calls to this and says them in the player's
+    language (a job that broke: its frame said, Python's type and words kept for a report)."""
+    return text
 
 
 def job_view(jobs: dict, job_id: str, since: int = 0) -> dict:

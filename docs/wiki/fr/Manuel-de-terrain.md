@@ -50,6 +50,9 @@ lance tout seul une copie de test rapide, pour vérifier votre travail au fur et
 | Modifier une unité, en créer une nouvelle, changer ses munitions | [[Modifier les unités|Modifier-les-unités]] |
 | Donner à une nouvelle unité ou à un nouveau bâtiment un modèle 3D venu de Blender ou de n'importe quel outil 3D, ou en mettre un sur une carte | [[Importer un modèle|Importer-un-modèle]] |
 | Changer les soldats d'une escouade : toute l'escouade d'un coup dans Blender, ou un soldat depuis un fichier de modèle | [[Changer une escouade|Changer-une-escouade]] |
+| Emmener une unité dans Blender et ramener mes changements : **Ouvrir dans Blender**, **Ce qui va dans Blender**, **Ramener mes changements** | [[Ouvrir dans Blender|Ouvrir-dans-Blender]] |
+| Comprendre les os : ce qu'ils sont, les deux moitiés d'un modèle, les poids dans Blender, ce que dit **Est-ce que cela marchera en jeu ?** | [[Modèles et os|Modèles-et-os]] |
+| Changer la façon dont les unités bougent : quelle animation joue chaque action, pour une unité ou pour toutes, les copies, dans Blender | [[Animations des unités|Animations-des-unités]] |
 | Ajouter des unités de la Première Guerre mondiale à aujourd'hui (14-18, 39-45+, Guerre froide, moderne), à leur taille réelle et derrière une recherche | [[Unités des autres époques|Unités-des-autres-époques]] |
 | Donner à une des nations du jeu un nouveau nom et un nouveau drapeau (la Chine à la place de l'Italie) | [[Changer une nation en une autre|Changer-une-nation-en-une-autre]] |
 | Changer ce que construit chaque bâtiment et dans quel ordre, la recherche, ajouter mes propres bâtiments avec leur propre apparence | [[Bâtiments et menus de construction|Bâtiments-et-menus-de-construction]] |

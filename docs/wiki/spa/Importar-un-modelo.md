@@ -108,7 +108,8 @@ pelotón empieza por su tarjeta de pelotón y una línea para cada uno de sus so
 Bueno saber:
 - Los cuatro fusileros del pelotón de fusileros de EE. UU. son una sola figura en Blender: el juego les da un solo modelo, así que lo que le hagas lo llevan los cuatro. Su soldado del bazuca es una figura propia.
 - Tus archivos de Blender se quedan en la carpeta de tu mod: `Documents\RUSE 2.0\Mods\<tu mod>\blender\<nombre de la unidad>\squad\`. No se empaquetan en tu mod cuando lo compartes. **Más opciones**, debajo de los soldados, dice dónde están, y su **Mostrar en la carpeta** abre la carpeta donde están.
-- ¿Cerraste Blender antes de traer tus cambios? El pequeño **Traer mis cambios** bajo el botón grande toma lo último que enviaste.
+- ¿Cerraste Blender antes de traer tus cambios? **Traer mis cambios** toma igualmente lo último que enviaste.
+- Cada marca de **Qué va a Blender**, y lo que puede decirte **Traer mis cambios**: [[Abrir en Blender|Abrir-en-Blender]].
 - Si algunos puntos de tu modelo no tienen hueso (los pesos automáticos de Blender se saltan algunos), la página dice cuántos: se mueven solo con la cadera del soldado. Píntalos sobre un hueso en **Weight Paint** y envíalo de nuevo.
 - Un pelotón con **Uniforme personalizado**: tu modelo ocupa el lugar del uniforme (su pintura queda en tu mod); cuando cada soldado vuelve al aspecto del juego (**Volver al aspecto del juego** en su línea), el uniforme vuelve.
 - ¿Ya tienes un .glb hecho sobre los huesos del soldado del juego? **Importar un modelo…** en la línea de ese soldado lo toma tal cual.
@@ -137,12 +138,12 @@ En la página de la unidad, **Sus animaciones** muestra qué reproduce la unidad
   su camión. Elige **En su camión** para quedarte con el camión.
 
 **Una copia conserva sus animaciones:** una unidad copiada de otra con animaciones propias reproduce las mismas. Para
-cambiar una solo para ella, haz clic en **Cambiar en RUSE Decoy** en su fila **Sonidos y animación** y luego en **Solo esta unidad**.
+cambiar una solo para ella, haz clic en **Cambiar en RUSE Decoy** en su fila **Sonidos y animación** y luego en **Solo esta unidad**. Cada manera de cambiar una animación, y de recuperar la del juego: [[Animaciones de las unidades|Animaciones-de-las-unidades]].
 
 El Pelotón a caballo genérico hecho así en el Studio se jugó en el juego (noviembre de 2026).
 ## Un modelo con huesos y animaciones propios
 
-Un caballo, un caballo con su jinete, cualquier criatura: un modelo sobre sus propios huesos va en un pelotón con sus animaciones.
+Un caballo, un caballo con su jinete, cualquier criatura: un modelo sobre sus propios huesos va en un pelotón con sus animaciones. Qué son los huesos, sus dos mitades y qué dice **¿Funcionará en el juego?**: [[Modelos y huesos|Modelos-y-huesos]].
 
 1. **Hazlo en Blender**: tu modelo sobre una armadura con huesos propios (con los nombres que quieras) y una acción para cada animación. Nombra las acciones según lo que muestran: al menos **stand** (o **idle**), **walk** y **run**; también se reconocen **death**, **fire**, **reload**, **hit**, **crouch**, **aim**, **look**, **flee** y **grenade**.
 2. **Expórtalo**: **File > Export > glTF 2.0**, formato **glTF Binary (.glb)**, con **Animation** marcado.
@@ -164,7 +165,7 @@ Las animaciones se cambian en RUSE Decoy. En la página de la unidad, en la fila
 1. **Elige una.** Abajo en Blender, el Action Editor las enumera: elige la que quieres cambiar. **Espacio** la reproduce.
 2. **Coloca los huesos.** Haz clic en un hueso, pulsa **Ctrl+Tab** para el Pose Mode, **R** para girarlo (**G** lo mueve) y luego **I** para guardar la pose en este fotograma. Hazlo en cada fotograma que cambies: Blender pasa solo de una pose guardada a la siguiente.
 3. **Envíala.** Pulsa **Enviar a R.U.S.E. Studio**: van todas las animaciones, cambiadas o no.
-4. **Tráela de vuelta.** En RUSE Decoy, pulsa **Traer mis cambios**. Dice cuáles volvieron cambiadas: ahora son propias de esta unidad, y RUSE Decoy las muestra en **Solo esta unidad**. Cada otra unidad, y cada animación que no tocaste, sigue siendo la del juego.
+4. **Tráela de vuelta.** En RUSE Decoy, pulsa **Traer mis cambios**. Dice cuáles volvieron cambiadas: ahora son propias de esta unidad. Cada otra unidad, y cada animación que no tocaste, sigue siendo la del juego. Qué significa cada uno de sus mensajes: [[Animaciones de las unidades|Animaciones-de-las-unidades]].
 
 Conviene saber:
 - El juego reproduce las animaciones a 30 fotogramas por segundo, y Blender las abre así. Una animación se abre con la duración que le da el juego; alárgala o acórtala en Blender y vuelve así.

@@ -642,12 +642,12 @@ class ModelBlenderCalls:
         sending is used. Each material's alpha picture that went out goes back in by its name (rusemod.gltf.
         with_alpha), into <work>/kept/<its name>.glb, the file Import model takes in; its report says what each got
         (_alpha_said). `keep_bones`, `keep_paint` (the one Blender button with Bones or Paint unticked): the bones the
-        mod's model has, or the pictures that went out, put back (rusemod.gltf.bones_like, paint_like). A sending of a
-        Blender opened on other animations than those it would be set against (its session, which Send writes beside
-        it, isn't one of back.json's) is refused, nothing taken in. Returns model_import()'s answer with "work", "kind",
-        "kept" ({"bones": bones_like's word or None, "paint": the materials put back or None}) and "differs" (the
-        animations that came back from Blender as they went out while the Studio changed them since: the Studio's change
-        stays, _settled)."""
+        mod's model has, or the paint it has now (_paint_now), put back (rusemod.gltf.bones_like, paint_like). A
+        sending of a Blender opened on other animations than those it would be set against (its session, which Send
+        writes beside it, isn't one of back.json's) is refused, nothing taken in. Returns model_import()'s answer with
+        "work", "kind", "kept" ({"bones": bones_like's word or None, "paint": the materials put back or None}) and
+        "differs" (the animations that came back from Blender as they went out while the Studio changed them since: the
+        Studio's change stays, _settled)."""
         from rusemod import gltf, rig
         from rusemod.blender import ask_to_send
         from . import animblender
@@ -689,8 +689,12 @@ class ModelBlenderCalls:
                 # 2026-11-13, its second suspicion)
                 bones = own if own is not None and own.is_file() else start
                 raw, kept_words["bones"] = gltf.bones_like(raw, bones.read_bytes())
-            if keep_paint:   # (its unticked Paint: the pictures that went out put back)
-                raw, kept_words["paint"] = gltf.paint_like(raw, start.read_bytes())
+            if keep_paint:
+                # (its unticked Paint: the paint the mod's model has now put back, _paint_now; the first opening's
+                # file, read for it before, put a repaint brought back since back to the first picture while the page
+                # said "Its paint was kept as it was": found by the anims fixer, 2026-11-14)
+                paint = self._paint_now(work, send, own, start)
+                raw, kept_words["paint"] = gltf.paint_like(raw, paint.read_bytes())
         # (a model on bones of its own: the skeleton record and each animation that went out back in the file, which
         # Blender keeps no extras of, so the import keeps every animation that came back as it went out byte for byte,
         # and of a changed one every bone that wasn't: rusemod.rig.with_record, with_went_out, kept_clip; item 45)
@@ -744,6 +748,27 @@ class ModelBlenderCalls:
         self._alpha_said(address, kind, got, put, went)
         self._brought(work, state, sha, sent, studio, after)
         return {**got, "work": str(work), "kind": kind, "kept": kept_words, "differs": list(studio)}
+
+    @staticmethod
+    def _paint_now(work: Path, send: Path, own: Path | None, start: Path) -> Path:
+        """The file whose base colour pictures are the paint the unit's model (`own`, or a kind's) has now, under the
+        names Blender knows its materials by, for Bring back the model with Paint unticked: what the last Bring back
+        took in (<work>/kept/<its name>.glb) while the model is the one made from it (its record's "from" names that
+        file; Resize and Move fit again from it, its paint as it was), as Change the squad in Blender starts a soldier
+        from his ("kept": ruse_studio.squadblender._start_file); else the file the first opening went out with
+        (`start`: alpha.json's), which is the model's paint while nothing was brought back since. The model's own file
+        isn't read for it: Import model names each of its materials after its picture (rusemod.modelin.write_glb), and
+        paint_like puts pictures back by Blender's material names."""
+        kept = work / KEPT / send.name
+        record = read_record(own.with_suffix(".json")) if own is not None else None
+        made_from = record.get("from") if isinstance(record, dict) else None
+        try:
+            if kept.is_file() and isinstance(made_from, str) and made_from \
+                    and Path(made_from).resolve() == kept.resolve():
+                return kept
+        except (OSError, ValueError):   # (a "from" that isn't a path here: not the kept file)
+            pass
+        return start
 
     @staticmethod
     def _settled(raw: bytes, went: dict, given: dict, took: dict, work: Path, mine: dict) -> tuple[dict, dict]:

@@ -58,13 +58,14 @@ Only squads you make get these buttons: the game's own squads keep their soldier
 
 - **More options**, under the soldiers, says where your mod keeps each soldier's model and your Blender files;
   **Show in folder** opens the folder.
-- Closed Blender before you brought your changes back? The small **Bring my changes back** under the big button takes
-  what you sent last.
+- Closed Blender before you brought your changes back? **Bring my changes back** still takes what you sent last. Every
+  tick and message of the big button: [[Open in Blender|Open-in-Blender]].
 - The squad's uniform is in **Look and moves**, beside the values: **Custom uniform** gives the squad a uniform of its
   own that the card's **Open in Blender** paints for every soldier at once when only **Its paint** is ticked under
   **What goes to Blender**. A squad wears either your models or a uniform.
 - Not tried in the game yet: a squad of 8 or of 2.
 
-More about models, bones and animations: [[Import a model|Import-a-Model]].
+More about models, bones and animations: [[Import a model|Import-a-Model]], [[Models and bones|Models-and-Bones]] and
+[[Unit animations|Unit-Animations]].
 
 **Next:** [[Export and share|Export-and-Share]]

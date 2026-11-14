@@ -106,7 +106,8 @@ squadra comincia con la sua scheda della squadra e una riga per ciascuno dei suo
 Buono a sapersi:
 - I quattro fucilieri della squadra di fucilieri USA sono una sola figura in Blender: il gioco dà loro un solo modello, quindi ciò che gli fai lo indossano tutti e quattro. Il suo uomo col bazooka è una figura a sé.
 - I tuoi file di Blender restano nella cartella della tua mod: `Documents\RUSE 2.0\Mods\<la tua mod>\blender\<nome dell'unità>\squad\`. Non vengono impacchettati nella tua mod quando la condividi. **Altre opzioni**, sotto i soldati, dice dove sono, e il suo **Mostra nella cartella** apre la cartella in cui si trovano.
-- Hai chiuso Blender prima di riportare le tue modifiche? Il piccolo **Riporta le mie modifiche** sotto il pulsante grande prende ciò che hai inviato per ultimo.
+- Hai chiuso Blender prima di riportare le tue modifiche? **Riporta le mie modifiche** prende comunque ciò che hai inviato per ultimo.
+- Ogni spunta di **Cosa va in Blender**, e cosa può dirti **Riporta le mie modifiche**: [[Apri in Blender|Apri-in-Blender]].
 - Se alcuni punti del tuo modello non hanno un osso (i pesi automatici di Blender ne saltano qualcuno), la pagina dice quanti: si muovono solo con i fianchi del soldato. Dipingili su un osso in **Weight Paint** e invia di nuovo.
 - Una squadra con **Uniforme personalizzata**: il tuo modello prende il posto dell'uniforme (i suoi colori restano nella mod); quando ogni soldato è tornato all'aspetto del gioco (**Torna all'aspetto del gioco** sulla sua riga), l'uniforme torna.
 - Hai già un .glb fatto sulle ossa del soldato del gioco? **Importa un modello…** sulla riga di quel soldato lo prende così com'è.
@@ -134,12 +135,12 @@ animazioni. Nella pagina dell'unità, **Le sue animazioni** mostra cosa esegue l
   camion** per tenere il camion.
 
 **Una copia tiene le sue animazioni:** un'unità copiata da una con animazioni sue esegue le stesse. Per cambiarne una
-solo per lei, clicca **Cambia in RUSE Decoy** sulla sua riga **Suoni e animazioni**, poi **Solo questa unità**.
+solo per lei, clicca **Cambia in RUSE Decoy** sulla sua riga **Suoni e animazioni**, poi **Solo questa unità**. Ogni modo di cambiare un'animazione, e di riavere quella del gioco: [[Animazioni delle unità|Animazioni-delle-unità]].
 
 La Squadra a cavallo generica fatta così nello Studio è stata giocata (novembre 2026).
 ## Un modello con ossa e animazioni tutte sue
 
-Un cavallo, un cavallo con il suo cavaliere, qualsiasi creatura: un modello sulle sue ossa va su una squadra con le sue animazioni.
+Un cavallo, un cavallo con il suo cavaliere, qualsiasi creatura: un modello sulle sue ossa va su una squadra con le sue animazioni. Cosa sono le ossa, le sue due metà e cosa dice **Funzionerà nel gioco?**: [[Modelli e ossa|Modelli-e-ossa]].
 
 1. **Fallo in Blender**: il tuo modello su un'armatura con ossa tue (chiamate come vuoi) e un'azione per ogni animazione. Chiama le azioni come ciò che mostrano: almeno **stand** (o **idle**), **walk** e **run**; si riconoscono anche **death**, **fire**, **reload**, **hit**, **crouch**, **aim**, **look**, **flee** e **grenade**.
 2. **Esportalo**: **File > Export > glTF 2.0**, formato **glTF Binary (.glb)**, con **Animation** spuntato.
@@ -161,7 +162,7 @@ Le animazioni si cambiano in RUSE Decoy. Sulla pagina dell'unità, nella riga **
 1. **Scegline una.** In basso in Blender, l'Action Editor le elenca: scegli quella da cambiare. **Spazio** la riproduce.
 2. **Metti in posa le ossa.** Clicca un osso, premi **Ctrl+Tab** per la Pose Mode, **R** per ruotarlo (**G** lo sposta), poi **I** per tenere la posa a questo fotogramma. Fallo a ogni fotogramma che cambi: Blender passa da solo da una posa tenuta alla successiva.
 3. **Inviala.** Clicca **Invia al R.U.S.E. Studio**: partono tutte le animazioni, cambiate o no.
-4. **Riportala.** In RUSE Decoy, clicca **Riporta le mie modifiche**. Dice quali sono tornate cambiate: ora sono proprie di questa unità, e RUSE Decoy le mostra sotto **Solo questa unità**. Ogni altra unità, e ogni animazione che non hai toccato, resta quella del gioco.
+4. **Riportala.** In RUSE Decoy, clicca **Riporta le mie modifiche**. Dice quali sono tornate cambiate: ora sono proprie di questa unità. Ogni altra unità, e ogni animazione che non hai toccato, resta quella del gioco. Cosa vuol dire ognuno dei suoi messaggi: [[Animazioni delle unità|Animazioni-delle-unità]].
 
 Buono a sapersi:
 - Il gioco riproduce le animazioni a 30 fotogrammi al secondo, e Blender le apre così. Un'animazione si apre lunga quanto la riproduce il gioco; allungala o accorciala in Blender e torna così.

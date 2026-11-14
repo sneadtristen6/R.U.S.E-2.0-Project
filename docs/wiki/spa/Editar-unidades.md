@@ -82,7 +82,7 @@ unidad o para todas las unidades que la usan, un sonido para todas las unidades 
   ofrece **Conseguir Blender (gratis)** y **Elegir Blender…** para indicarle dónde está `blender.exe`). La unidad se abre con sus imágenes,
   lista para pintar sobre el modelo. Pinta y luego haz clic en **Traer mis cambios**: tu
   pintura entra en tu mod. Visto en el juego, de cerca y de lejos.
-  Una unidad de tu mod se abre entera, su modelo y su pintura marcados en **Qué va a Blender**: desmarca su modelo para solo pintar. Su modelo entero a través de Blender aún no se ha probado en el juego.
+  Una unidad de tu mod se abre entera, su modelo y su pintura marcados en **Qué va a Blender**: desmarca su modelo para solo pintar. Su modelo entero a través de Blender aún no se ha probado en el juego. Paso a paso: [[Abrir en Blender|Abrir-en-Blender]].
 - **Su tarjeta en el menú de producción:** gira y acerca el modelo 3D hasta que se vea bien dentro del marco
   discontinuo, y luego **Usar esta vista como tarjeta**. **Tarjeta del juego** la devuelve. Visto en el juego. En una
   unidad nueva, la tarjeta es suya: la unidad que copia conserva su imagen.
@@ -98,7 +98,7 @@ unidad o para todas las unidades que la usan, un sonido para todas las unidades 
 - **Un modelo propio (unidades nuevas):** **Importar modelo…** trae un modelo 3D de Blender o de cualquier herramienta
   3D. Consulta [[Importar un modelo|Importar-un-modelo]]. Una unidad del juego conserva su modelo: su página tiene **Nueva
   unidad a partir de esta…** para crear la unidad nueva en la que va el modelo.
-- **Dónde se guarda su modelo:** **Más** de la fila **Modelo** empieza por dónde guarda tu mod el modelo propio de la unidad en tu PC (o lo guardará, en cuanto tenga uno), con **Mostrar en la carpeta** para abrir esa carpeta. **Cambiarlo en Blender** de un pelotón dice dónde se guardan tus archivos de Blender, con su propio **Mostrar en la carpeta**.
+- **Dónde se guarda su modelo:** **Más** de la fila **Modelo** empieza por dónde guarda tu mod el modelo propio de la unidad en tu PC (o lo guardará, en cuanto tenga uno), con **Mostrar en la carpeta** para abrir esa carpeta. **Más opciones** de un pelotón, bajo sus soldados, dice dónde se guardan tus archivos de Blender, con su propio **Mostrar en la carpeta**.
 - **Una unidad nueva, de principio a fin:** **Nueva unidad (importar un modelo)** arriba en la pestaña Unidades, elige
   la unidad de partida (un tanque para un tanque, un pelotón para soldados o para un caballo con jinete), ponle nombre
   y haz clic en **Crear**. Luego recorre **Aspecto y movimientos** de arriba abajo: su modelo, sus soldados, sus

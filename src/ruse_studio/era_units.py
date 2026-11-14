@@ -455,6 +455,9 @@ class EraUnitCalls:
         if downloaded_only and not any(read_section(root, era) for era in ERAS):
             return {"sections": [], "message": ""}
         sections, why = self._era_list()
+        if why:   # a whole sentence in the Studio's language ("whole": the page shows it as it is, U-12)
+            return {"sections": [], "message": self._worded(f"The era units list couldn't be had: {self._worded(why)}"),
+                    "whole": True}
         out = []
         for s in sections:
             have = read_section(root, s["era"])
@@ -471,9 +474,12 @@ class EraUnitCalls:
         sections, why = self._era_list()
         section = next((s for s in sections if s["era"] == era), None)
         if section is None:
-            # not a game rule: the list doesn't offer this era (yet)
-            raise StudioError(f"No {era} units are out yet." if not why
-                              else f"The era units list couldn't be had: {why}")
+            # not a game rule: the list doesn't offer this era (yet). Each refusal said as it is here, so errors.toml
+            # lists it, why the list couldn't be had in the Studio's language already (the units scenarios' U-12:
+            # "[WinError 10061] No connection could be made..." inside English words, whatever the language)
+            if not why:
+                raise StudioError(f"No {era} units are out yet.")
+            raise StudioError(f"The era units list couldn't be had: {self._worded(why)}")
         with _LOCK:
             jobs = self.__dict__.setdefault("_era_jobs", {})
             running = jobs.get(era)
