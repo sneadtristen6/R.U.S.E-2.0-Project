@@ -156,8 +156,8 @@ def page_function(text: str, name: str) -> str:
     return text[start:text.index("\n}\n", start) + 2]
 
 
-class TheCrashNotice(Watched):
-    """A game a Play started stops at a crash we know (the crash piece, item 25): the made-up program is the game's
+class CrashingGame(Watched):
+    """A game an app started stops at a crash we know (the crash piece, item 25): the made-up program is the game's
     program file here, so the modded copy has it, and the made-up crash report is written where Bug Watch looks."""
 
     @classmethod
@@ -210,6 +210,8 @@ class TheCrashNotice(Watched):
         self.naming = naming
         return seen
 
+
+class TheCrashNotice(CrashingGame):
     def test_a_crash_we_know_tells_the_unit_and_why(self):
         """Usual: Bug Watch on under version 4; the game stops at a crash we know while making one of the game's own
         units: the page is handed the reason and the unit (named in the player's language), once."""
@@ -260,6 +262,41 @@ class TheCrashNotice(Watched):
                     if n["unit"]:
                         self.assertIn(n["unit"], said[lang][k], lang)
                     self.assertIn(words[lang][f"crash_why_{n['why']}"], said[lang][k], lang)
+
+
+class TheCrashNoticeAfterTestInGame(CrashingGame):
+    def test_the_studio_keeps_it_and_its_page_never_asks(self):
+        """Today's state, for the owner's open question left by the crash piece's join ("whether the Studio's Test in
+        game says the same"): Bug Watch on under version 4, Test in game starts the game, it stops at a crash we know:
+        the Studio's back end has the notice (its bugwatch_crash hands it over) but its page never asks for it (no
+        bugwatch_crash in the Studio's app.js), so a Studio player is told nothing; the notice goes when the next game
+        starts."""
+        from rusemod import bugwatch
+
+        class Closed:
+            def poll(self):
+                return 0
+        self.api._starter.start_game = lambda exe: self.started.append(exe) or Closed()
+        self.page.set_pref("lang", "fr")
+        self.addCleanup(self.page.set_pref, "lang", "us")
+        self.page.guard_accept_terms()
+        self.page.bugwatch_on("Nick")
+        self.a_mod()
+        dump = self.local / "Temp" / "CrashRpt_s" / "report.dmp"
+        dump.parent.mkdir(parents=True, exist_ok=True)
+        dump.write_bytes(self.report)
+        later = time.time() + 3600
+        os.utime(dump, (later, later))
+        with mock.patch.object(bugwatch, "unit_named", return_value={"name": "Panzer IV (fr)", "added": False}):
+            self.assertEqual(self.wait(self.page.test_in_game()["job"])["state"], "done")
+            end = time.time() + 30
+            seen = self.page.bugwatch_crash()
+            while seen["watching"] and seen["notice"] is None and time.time() < end:
+                time.sleep(0.05)
+                seen = self.page.bugwatch_crash()
+        self.assertEqual(seen["notice"], {"why": "made", "unit": "Panzer IV (fr)", "added": False})
+        studio_ui = Path(__file__).resolve().parents[1] / "src" / "ruse_studio" / "ui" / "app.js"
+        self.assertNotIn("bugwatch_crash", studio_ui.read_text(encoding="utf-8"))
 
 
 class ARequiredUpdate(Watched):
