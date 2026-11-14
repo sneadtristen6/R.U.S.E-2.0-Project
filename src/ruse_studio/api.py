@@ -344,6 +344,23 @@ def _whole(value, kind: str, prop: str):
     return r
 
 
+FLOAT32_MOST = 3.4028234663852886e38  # the most a 4-byte decimal number (the game's float32) holds
+
+
+def _fits(value, kind: str, prop: str):
+    """A number typed for a property of kind `kind`, as the build will store it: a whole number rounded and checked
+    (_whole); a 4-byte decimal one checked against the most it holds (past it, the build stopped with Python's
+    OverflowError: scenario U-9; the All values tab refuses it too, rusemod.values); any other as it came."""
+    if kind in INT_RANGES:
+        return _whole(value, kind, prop)
+    if kind == "float32":
+        try:
+            struct.pack("<f", value)
+        except OverflowError:
+            raise StudioError(f"{prop}: {value} doesn't fit (it must be {-FLOAT32_MOST} to {FLOAT32_MOST})") from None
+    return value
+
+
 def safe_name(name: str) -> str:
     """The part of a new unit's address made from its name: ASCII letters, digits and _ only (accents dropped, other
     letters left out), which the game's data, its Python unit list and .rndf files all accept."""
@@ -6457,8 +6474,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         elif len(values) != len(p["numbers"]):
             raise StudioError(f"{prop}: expected {len(p['numbers'])} numbers" if p["list"] else f"{prop}: one number")
         kind = types.get(prop + "[]" if p["list"] else prop, "")
-        if kind in INT_RANGES:
-            values = [_whole(v, kind, prop) for v in values]
+        values = [_fits(v, kind, prop) for v in values]
         with self._saving:
             edits = ModEdits(edits.folder)  # read again: another change may have been saved meanwhile
             before = edits.get(o["address"], prop, "shared") if how == "own" else None  # what "all of them" got
@@ -6651,7 +6667,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             if p["list"] != isinstance(value, list) or len(values) != len(p["numbers"]):
                 raise StudioError(f"{prop}: expected {len(p['numbers'])} numbers" if p["list"] else f"{prop}: one number")
             kind = types.get(prop + "[]" if p["list"] else prop, "")
-            got = [_whole(v, kind, prop) for v in values] if kind in INT_RANGES else list(values)
+            got = [_fits(v, kind, prop) for v in values]
             new[mode_] = (got if p["list"] else got[0], p["numbers"] if p["list"] else p["numbers"][0])
         with self._saving:
             edits = ModEdits(edits.folder)  # read again: another change may have been saved meanwhile
@@ -6890,7 +6906,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             if p["list"] != isinstance(value, list) or len(values) != len(p["numbers"]):
                 raise StudioError(f"{prop}: expected {len(p['numbers'])} numbers" if p["list"] else f"{prop}: one number")
             kind = ix.prop_types(found[1]["class"]).get(prop + "[]" if p["list"] else prop, "")
-            got = [_whole(v, kind, prop) for v in values] if kind in INT_RANGES else list(values)
+            got = [_fits(v, kind, prop) for v in values]
             new, game = (got, p["numbers"]) if p["list"] else (got[0], p["numbers"][0])
             with self._saving:
                 edits = ModEdits(edits.folder)  # read again: another change may have been saved meanwhile

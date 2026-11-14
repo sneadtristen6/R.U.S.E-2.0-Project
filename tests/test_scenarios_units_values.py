@@ -24,7 +24,8 @@ class Values(Player):
     GAME = "studio"
 
     def rndf(self, folder):
-        return (folder / "src" / "studio.rndf").read_text(encoding="utf-8")
+        f = folder / "src" / "studio.rndf"
+        return f.read_text(encoding="utf-8") if f.is_file() else ""   # (none yet: nothing saved)
 
     def built(self, folder):
         errors, ndf, _texts = self.build(folder)
@@ -52,9 +53,9 @@ class Values(Player):
                 got = self.built(folder).objects[4].get(11).scalar()
                 self.assertAlmostEqual(got, value, delta=abs(value) * 1e-6 + 1e-12)
 
-    # U-9: a decimal value past what the game's 4-byte number holds (the box takes 1e39 or 1e300) is saved, and the
-    # mod's build then stops with Python's words ("OverflowError: float too large to pack with f format")
-    @unittest.expectedFailure
+    # U-9 (mended by the PROPOSED FIX commit after these tests: before it, a decimal value past what the game's 4-byte
+    # number holds, 1e39 or 1e300 typed in the box, was saved, and the mod's build then stopped with Python's words,
+    # "OverflowError: float too large to pack with f format")
     def test_a_decimal_number_too_big_for_the_game_is_refused_or_builds(self):
         folder = self.mod("Too big a decimal")
         for value in (1e39, 1e300):
@@ -63,6 +64,8 @@ class Values(Player):
                     self.call("edit", M4_GUN, "TempsEntreDeuxTirs", value, "", "")
                 except Refused as r:   # refused in words: fine, and the mod still builds
                     self.assertNotIn("Overflow", r.text)
+                    said = self.refusal("edit", M4_GUN, "TempsEntreDeuxTirs", value, "", "")
+                    self.assertEqual(self.english_left(said), [], said["fr"])
                 errors, _ndf, _ = self.build(folder)
                 self.assertEqual(errors, [], self.rndf(folder)[-300:])
 
@@ -214,8 +217,8 @@ class DecimalsOfTheAITab(Player):
     edit did), on test_ai's made-up game: a profile's AttaqueTempsActivation, a 4-byte decimal number."""
     GAME = "ai"
 
-    # U-9 too: past what the game's 4-byte number holds, saved, and the build stops with Python's OverflowError
-    @unittest.expectedFailure
+    # U-9 too (mended by the same PROPOSED FIX commit: before it, past what the game's 4-byte number holds was saved,
+    # and the build stopped with Python's OverflowError)
     def test_an_ai_value_too_big_for_the_game_is_refused_or_builds(self):
         folder = self.mod("AI too big")
         try:
