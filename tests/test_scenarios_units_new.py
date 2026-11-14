@@ -237,11 +237,10 @@ class ABuildingsOwnLook(Player):
         saved = tomllib.loads((look / "building.toml").read_text(encoding="utf-8"))
         self.assertEqual((saved["author"], saved["size"], saved["two_sided"]), ("Иван 山田", 2, True))
 
-    # U-18 (U-1's kind): a credit with a character past the first 65,536 (an emoji, the 𠮷 of Japanese names: 𠮷田
-    # Yoshida) is written as JSON's two halves, which TOML refuses: the building's look can't be read again
-    # ("files/buildings/<its name>/building.toml: Escaped character is not a Unicode scalar value...") on its page or
-    # by the build
-    @unittest.expectedFailure
+    # U-18, U-1's kind (mended by the PROPOSED FIX commit after these tests: before it, a credit with a character past
+    # the first 65,536, an emoji or the 𠮷 of Japanese names, 𠮷田 Yoshida, was written as JSON's two halves, which TOML
+    # refuses, and the building's look couldn't be read again: "files/buildings/<its name>/building.toml: Escaped
+    # character is not a Unicode scalar value...")
     def test_its_credit_with_an_emoji_or_a_rare_kanji(self):
         import tomllib
         folder, address, look = self.look()

@@ -66,18 +66,23 @@ def piece_type(piece: str) -> str:
 
 def look_toml(piece: str, model: str, size: float = 1.0, two_sided: bool = False, credit: dict | None = None,
               versions: dict | None = None) -> str:
-    """A building.toml (mod_looks reads it back)."""
+    """A building.toml (mod_looks reads it back). Each text as it is (ensure_ascii=False): JSON's \\u escapes split a
+    character past the first 65,536 (an emoji, the 𠮷 of Japanese names) into two halves TOML refuses, and the look
+    then couldn't be read (the units scenarios' U-18: a credit of 𠮷田)."""
     import json
-    lines = [f"piece = {json.dumps(piece_type(piece).split('/', 1)[1])}", f"model = {json.dumps(model)}"]
+
+    def text(value) -> str:
+        return json.dumps(value, ensure_ascii=False)
+    lines = [f"piece = {text(piece_type(piece).split('/', 1)[1])}", f"model = {text(model)}"]
     if size != 1.0:
         lines.append(f"size = {size:g}")
     if two_sided:
         lines.append("two_sided = true")
     for k in ("source", "author", "licence"):
         if (credit or {}).get(k):
-            lines.append(f"{k} = {json.dumps(str(credit[k]))}")
+            lines.append(f"{k} = {text(str(credit[k]))}")
     for ring, file in (versions or {}).items():
-        lines.append(f"{ring} = {json.dumps(file)}")
+        lines.append(f"{ring} = {text(file)}")
     return "\n".join(lines) + "\n"
 
 
