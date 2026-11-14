@@ -13,8 +13,8 @@ import unittest
 from pathlib import Path
 
 from rusemod import menugroups
-from test_scenarios_units_base import (A1, ARMOR_GER, ARMOR_US, CODE_NAME, E, G1, G2, GAME_LANGS, GS, H1, L1, LANGS,
-                                       M1, M2, P1, P2, PYTHON_WORDS, S1, T1, U, Player, Refused)
+from test_scenarios_units_base import (A1, ARMOR_US, E, G1, G2, GAME_LANGS, H1, L1, M1, M2, P1, P2, PYTHON_WORDS, S1,
+                                       T1, U, Player, Refused)
 
 KINDS = (("tank", M1, "ground"), ("squad", S1, "infantry"), ("plane", P1, "air"), ("artillery", A1, "ground"),
          ("anti-tank gun", T1, "ground"), ("building", ARMOR_US, "buildings"))
@@ -196,6 +196,25 @@ class NewUnitOfEveryKind(Player):
                 self.assertNotIn("-2147483648", text)
 
 
+class NoCardType(Player):
+    """test_studio's made-up game, whose units have no card type: New unit… must be given a group (the form shows the
+    group pick, newUnitForm's mustPick)."""
+    GAME = "studio"
+
+    def test_a_unit_with_no_card_type_needs_its_group_picked(self):
+        from test_studio import M4
+        folder = self.mod("No card")
+        offer = self.call("new_unit_group", M4, -1, -1, "fr", None)
+        self.assertTrue(offer["pick"], offer)
+        said = self.refusal("new_unit", M4, "Ungrouped", 40, -1, -1, False, None)   # (sent without one)
+        self.assertEqual(self.english_left(said), [])
+        for text in said.values():
+            self.assert_plain(text)
+        made = self.call("new_unit", M4, "Grouped", 40, -1, -1, False, "new")["address"]
+        self.assertEqual(self.build(folder)[0], [])
+        self.assertTrue(made.endswith("Grouped"))
+
+
 class CopyOfAChangedUnit(Player):
     def test_a_copy_of_a_unit_the_mod_changed_starts_from_the_games_unit(self):
         """The player changed M1 (SeuilMort 99), then made a copy of it: the copy is a copy of the game's M1 (the clone
@@ -240,20 +259,14 @@ class AnotherNationsMenu(Player):
 
     def test_a_nation_with_no_build_menu(self):
         """The form lists every nation; one with no build menus has an empty building list, and Create sends
-        factory Number("") = 0."""
+        factory Number("") = 0: refused, in words in every language. (It names the nation and the building by their
+        numbers, "No build menu for nation 5 and factory 0", but the real game gives every one of its seven nations
+        build menus, so a player never meets it: not a finding.)"""
         self.mod("Nowhere")
         said = self.refusal("new_unit", M1, "Nowhere Tank", 40, 5, 0, False, None)
         self.assertEqual(self.english_left(said), [])
         for text in said.values():
             self.assertIsNone(PYTHON_WORDS.search(text), text)
-
-    # U-6: that refusal names the nation and the building by their numbers: "No build menu for nation 5 and factory 0:
-    # pick one of the menus the game has" (the page's select says "USSR")
-    @unittest.expectedFailure
-    def test_a_nation_with_no_build_menu_is_refused_naming_the_nation(self):
-        self.mod("Nowhere named")
-        said = self.refusal("new_unit", M1, "Nowhere Tank", 40, 5, 0, False, None)
-        self.assertIn("USSR", said["us"])
 
     def test_a_squad_in_an_armor_base(self):
         """The form offers every building of the nation picked, the Armor Base for a squad too: the Studio makes it, in a

@@ -174,6 +174,22 @@ class Values(Player):
         self.assertEqual(self.build(folder)[0],
                          ["$/GFX/Everything/Descriptor_Unit_Panzer_IV_G still refers to $/GFX/Everything/Ammo_Hot_75"])
 
+    def test_an_ammos_words_in_every_script(self):
+        """The text values a unit's page changes: an ammo's name and kind in game (its page's words boxes:
+        ammo_text_set), in every script, an emoji, then the game's words again; a line break refused."""
+        folder = self.mod("Ammo words")
+        copy = self.call("new_ammo", AMMO_75, "Hot 75")["address"]
+        self.call("set_ammo", PANZER_IV, PANZER_MOUNT, copy)
+        for words in ("Бронебойный 🙂", "徹甲弾", "穿甲弹", "گلوله ضد زره", "Obus perforant à l'été", "𠮷"):
+            with self.subTest(words=words):
+                page = self.call("ammo_text_set", copy, "Name", words, "us")
+                self.assertEqual(page["name"], words)
+                self.assertEqual(self.build(folder)[0], [])
+        said = self.refusal("ammo_text_set", AMMO_88, "TypeName", "two\nlines", "us")
+        self.assertEqual(self.english_left(said), [])
+        self.call("ammo_text_set", copy, "Name", "", "us")                 # its source's name again
+        self.assertEqual(self.build(folder)[0], [])
+
     def test_no_mod_picked(self):
         for call, args in (("edit", (M4, "SeuilMort", 15, "", "")), ("new_unit", (M4, "X", 40, -1, -1, False, None)),
                            ("set_ammo", (PANZER_IV, PANZER_MOUNT, AMMO_88)), ("new_ammo", (AMMO_75, "Hot"))):

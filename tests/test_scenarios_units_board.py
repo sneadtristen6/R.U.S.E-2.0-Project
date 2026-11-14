@@ -9,7 +9,7 @@ Each test marked expectedFailure shows a finding (its number in the comment abov
 it passes once the finding is mended."""
 import unittest
 
-from test_scenarios_units_base import (ARMOR_US, G1, G2, GAME_LANGS, H1, L1, M1, M2, P1, P2, S1, T1, A1, Player)
+from test_scenarios_units_base import ARMOR_US, G2, GAME_LANGS, H1, M1, M2, P1, P2, S1, Player
 from ruse_studio.edits import REMOVED, ModEdits
 
 

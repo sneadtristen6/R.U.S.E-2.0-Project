@@ -5,17 +5,16 @@ a name already taken, an emoji and a rare kanji; switching between mods and maps
 starts again, gone or renamed by hand meanwhile. After each: what the page says, the mod's files, and whether the mod
 builds (on the made-up game, as the Studio tests build) and goes out (Export, the Launcher's library).
 
-Each test marked expectedFailure shows a finding of D:/RUSE-2.0/scratch/release-0920/scenarios/units/FINDINGS.md (its
-number in the comment above it); it passes once the finding is mended."""
-import json
+Each test marked expectedFailure shows a finding (its number in the comment above it; the agent's report lists them);
+it passes once the finding is mended."""
 import shutil
 import tempfile
 import time
 import unittest
 from pathlib import Path
+from unittest import mock
 
-from test_scenarios_units_base import (LANGS, M1, P1, S1, A1, ARMOR_US, Player, Refused, TMP, CODE_NAME,
-                                       PYTHON_WORDS)
+from test_scenarios_units_base import A1, M1, P1, S1, Player
 from rusemod import package
 from ruse_launcher.api import LauncherApi
 
@@ -202,6 +201,41 @@ class SwitchingAndReopening(Player):
         for p in problems:
             self.assert_plain(p.get("problem", ""))
         self.assertEqual((folder / "mod.toml").read_text(encoding="utf-8"), broken)
+
+
+class DeleteAMod(Player):
+    """Delete a mod… (the Recycle Bin a stand-in here: no test fills the PC's bin, as test_studio_duplicate's)."""
+
+    def binned(self, call, *args):
+        gone = []
+
+        def to_bin(path):
+            gone.append(Path(path))
+            shutil.rmtree(path)
+        with mock.patch("rusemod.recycle.to_recycle_bin", side_effect=to_bin):
+            return self.call(call, *args), gone
+
+    def test_the_mod_being_edited_deleted_then_a_new_one(self):
+        folder = self.mod("Short lived")
+        self.call("new_unit", M1, "Short Tank", 40, -1, -1, False, None)
+        res, gone = self.binned("delete_mod", str(folder), False)
+        self.assertEqual((gone, res["deleted"], res["mod"]["current"]), ([folder], "Short lived", None))
+        said = self.refusal("new_unit", M1, "After", 40, -1, -1, False, None)
+        self.assertEqual(self.english_left(said), [])
+        again = self.mod("Short lived")                                    # its name and folder free again
+        self.assertEqual(again, folder)
+        self.assertEqual([u for u in self.call("units")["units"] if u["new"]], [])
+
+    def test_a_mod_named_in_russian_deleted_with_its_launcher_copy(self):
+        folder = self.mod(NAMES["ru"])
+        self.call("new_unit", M1, "Tank", 40, -1, -1, False, None)
+        j = wait(self.api, self.call("export_mod", "1.0.0", "", "")["job"])
+        self.assertEqual(j["state"], "done", j)
+        listed = {m["path"]: m for m in self.call("your_mods")["mods"]}
+        self.assertEqual((listed[str(folder)]["name"], listed[str(folder)]["launcher"]), (NAMES["ru"], NAMES["ru"]))
+        res, gone = self.binned("delete_mod", str(folder), True)
+        self.assertEqual((res["deleted"], res["launcher"], len(gone)), (NAMES["ru"], True, 2))
+        self.assertFalse((self.home / "library" / "my-mod").exists())
 
 
 class TheModGoesOut(Player):
