@@ -1162,7 +1162,11 @@ def pack(folder, out, *, build_id: str | None = None, data_revision: str | None 
     except OSError as exc:      # (nothing half made is left beside the target; the file it is about named)
         tmp.unlink(missing_ok=True)
         raise named_file(exc, files)
-    os.replace(tmp, target)
+    try:
+        os.replace(tmp, target)
+    except OSError:             # (the target held open: no .part left beside it either; the export scenarios' FE-15)
+        tmp.unlink(missing_ok=True)
+        raise
     return target
 
 

@@ -362,12 +362,12 @@ class Unusual(Studio):
         self.assertEqual(view["state"], "done", view.get("message"))
         self.assertTrue(self.said(view, "Not added to the Launcher's library"), view["lines"])
 
-    @unittest.expectedFailure
     def test_FE15_export_clicked_again_while_it_runs(self):
         """FE-15: Export started again while the first still runs (the page lets Export… open again during a long
-        build) runs both at once on one file: one ends with words for another program holding the file (it is the
-        Studio's own other export), and a half-written <id>-<version>.rusemod.part is left in Exports. Wanted: the
-        second waits for the first, or is refused at once in words; nothing half written left."""
+        build) ran both at once on one file: on the release (adc8ecea) one ended with "[WinError 5] Access is denied:
+        ...twice-1.0.0.rusemod.part -> ...twice-1.0.0.rusemod", and the half-written .part was left in Exports.
+        Wanted: the second waits for the first, or is refused at once in words; nothing half written left. PROPOSED
+        FIX: refused at once with the Studio's busy words, and pack never leaves its .part beside the target."""
         self.make("Twice")
         real = self.api._share_view
 

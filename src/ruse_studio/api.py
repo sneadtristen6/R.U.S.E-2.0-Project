@@ -10533,6 +10533,10 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         version = _ascii_digits((version or "").strip())
         if not re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", version):
             raise StudioError("The version should be three numbers, like 1.0.0.")
+        exports = self.__dict__.setdefault("_exports", [])   # (this Studio's export jobs)
+        if any(getattr(self._jobs.get(j), "state", None) == "running" for j in exports):
+            # not a game rule: two exports at once wrote one file together (the export scenarios' FE-15)
+            raise StudioError("The Studio is busy with another job: wait for it to finish, then click again.")
         problem = package.edit_problem(folder)  # not a game rule: an edit never goes out under the original's name
         if problem:
             raise StudioError(problem)
@@ -10655,6 +10659,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         job = Job()
         job.result = None  # the exported file's size, SHA-256 and list entry, for "Share your mod"
         self._jobs[job.id] = job
+        exports[:] = [j for j in exports if j in self._jobs] + [job.id]
         return job.start(work, f"Saved as {target}",
                          plain=(BuildError, RndfError, OSError, package.PackageError, StudioError))
 
