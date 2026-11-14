@@ -215,6 +215,41 @@ class NoCardType(Player):
         self.assertTrue(made.endswith("Grouped"))
 
 
+class ABuildingsOwnLook(Player):
+    """A new building's model of its own (the building page's Look: building_look_import saves files/buildings/<its
+    name>/building.toml beside the model; here written as it writes it, the made-up game having no building pieces),
+    its credit changed on the page (building_look_change: who made the model, where from)."""
+
+    def look(self):
+        folder = self.mod("Own look")
+        address = self.call("new_unit", ARMOR_US, "Workshop", 40, -1, -1, False, None)["address"]
+        look = folder / "files" / "buildings" / address.rsplit("/", 1)[-1]
+        look.mkdir(parents=True)
+        (look / "look.glb").write_bytes(b"glTF model")
+        (look / "building.toml").write_text('piece = "Usine_Char"\nmodel = "look.glb"\n', encoding="utf-8")
+        return folder, address, look
+
+    def test_its_credit_in_other_scripts(self):
+        import tomllib
+        folder, address, look = self.look()
+        self.call("building_look_change", address, None, None, "https://example.org/модель", "Иван 山田", "CC-BY")
+        self.call("building_look_change", address, 2.0, True, None, None, None)      # read back, changed again
+        saved = tomllib.loads((look / "building.toml").read_text(encoding="utf-8"))
+        self.assertEqual((saved["author"], saved["size"], saved["two_sided"]), ("Иван 山田", 2, True))
+
+    # U-18 (U-1's kind): a credit with a character past the first 65,536 (an emoji, the 𠮷 of Japanese names: 𠮷田
+    # Yoshida) is written as JSON's two halves, which TOML refuses: the building's look can't be read again
+    # ("files/buildings/<its name>/building.toml: Escaped character is not a Unicode scalar value...") on its page or
+    # by the build
+    @unittest.expectedFailure
+    def test_its_credit_with_an_emoji_or_a_rare_kanji(self):
+        import tomllib
+        folder, address, look = self.look()
+        self.call("building_look_change", address, None, None, None, "𠮷田 🙂", None)
+        self.call("building_look_change", address, 2.0, None, None, None, None)      # read back
+        self.assertEqual(tomllib.loads((look / "building.toml").read_text(encoding="utf-8"))["author"], "𠮷田 🙂")
+
+
 class CopyOfAChangedUnit(Player):
     def test_a_copy_of_a_unit_the_mod_changed_starts_from_the_games_unit(self):
         """The player changed M1 (SeuilMort 99), then made a copy of it: the copy is a copy of the game's M1 (the clone
