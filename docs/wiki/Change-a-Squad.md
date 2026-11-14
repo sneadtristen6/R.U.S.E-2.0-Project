@@ -61,7 +61,8 @@ Only squads you make get these buttons: the game's own squads keep their soldier
 - Closed Blender before you brought your changes back? The small **Bring my changes back** under the big button takes
   what you sent last.
 - The squad's uniform is in **Look and moves**, beside the values: **Custom uniform** gives the squad a uniform of its
-  own that **Repaint in Blender** paints for every soldier at once. A squad wears either your models or a uniform.
+  own that the card's **Open in Blender** paints for every soldier at once when only **Its paint** is ticked under
+  **What goes to Blender**. A squad wears either your models or a uniform.
 - Not tried in the game yet: a squad of 8 or of 2.
 
 More about models, bones and animations: [[Import a model|Import-a-Model]].

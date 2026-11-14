@@ -80,10 +80,11 @@ Geräusche und Animationen änderst du in RUSE Decoy aus der Zeile **Geräusche 
 ändern**): eine Animation nur für diese Einheit oder für alle Einheiten, die sie spielen, ein Geräusch für alle
 Einheiten, die es spielen.
 
-- **In Blender neu bemalen:** klicke auf **In Blender öffnen** (Blender ist kostenlos; findet das Studio es nicht, bietet
+- **In Blender ändern:** klicke auf **In Blender öffnen** (Blender ist kostenlos; findet das Studio es nicht, bietet
   die Seite **Blender holen (kostenlos)** und **Blender auswählen…** an, um ihm zu zeigen, wo `blender.exe` liegt). Die
-  Einheit öffnet sich mit ihren Bildern, bereit zum Bemalen des Modells. Male, dann klicke auf **Zurückholen**: deine
+  Einheit öffnet sich mit ihren Bildern, bereit zum Bemalen des Modells. Male, dann klicke auf **Meine Änderungen zurückholen**: deine
   Farbe kommt in deinen Mod. Im Spiel gesehen, aus der Nähe und von weitem.
+  Eine Einheit deines Mods öffnet sich ganz, ihr Modell und ihre Bemalung unter **Was nach Blender geht** angekreuzt: Nimm das Kreuz beim Modell weg, um nur zu bemalen. Ihr ganzes Modell durch Blender ist im Spiel noch nicht ausprobiert.
 - **Ihre Karte im Baumenü:** dreh und zoome das 3D-Modell, bis es im gestrichelten Rahmen richtig aussieht, dann
   **Diese Ansicht als Karte nehmen**. **Karte des Spiels** nimmt sie zurück. Im Spiel gesehen. Bei einer neuen Einheit
   ist die Karte ihre eigene: die Einheit, die sie kopiert, behält ihr Bild.

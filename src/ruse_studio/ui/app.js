@@ -2756,7 +2756,10 @@ function lookMovesBox(u, view, startNew, squadPage = false) {
     // never repainted here) or its own (Custom: its own copy of its soldiers), which Blender paints (the owner,
     // 2026-10-11: "have, like, default uniform, and then ... do you want a custom uniform?")
     if (squad) more.push(uniformBox(address, info, drawLook, changed));
-    if (paintable) more.push(repaintBox(address, info, drawLook, changed));
+    // a unit that isn't a squad: the one Blender button (the owner, 2026-11-13: "Tanks too"), its model and its paint
+    // in one Blender; a squad shown here without its card keeps the paint's own box
+    if (!squad) more.push(oneBlenderBox(address, info, drawLook, changed));
+    else if (paintable) more.push(repaintBox(address, info, drawLook, changed));
     if (info.painted && info.painted.length) {
       more.push(el("p", { className: paintable ? "small" : "notice warn",
         textContent: fill(paintable ? w.look_painted : w.uniform_shared_paint, { n: info.painted.length }) }));
@@ -2924,8 +2927,93 @@ function oneKeptSaid(r) {
   return out.join(" ");
 }
 
+// The one Blender button on the page of a unit that isn't a squad (the Model row's More; the owner, 2026-11-13:
+// "Tanks too"; a squad's is on its card, squad.js): Open in Blender with What goes to Blender beside it
+// (StudioApi.blender_parts: a new unit's model, its bones when they are its own, its paint; a game unit's paint alone,
+// as Repaint in Blender painted it), reading Bring my changes back while that Blender has the unit (blender_open,
+// blender_back). Without Blender on the PC, the way to get it or to show where it is
+function oneBlenderBox(address, info, draw, changed) {
+  const w = state.words;
+  const box = el("div", { className: "model-own repaint one-blender" },
+    el("h3", { textContent: w.model_blender, title: w.tip_one_open }));
+  if (!info.blender) {   // (Blender not found: get it, or show the Studio where it is)
+    const get = el("button", { type: "button", textContent: w.look_get_blender, title: w.tip_look_get_blender });
+    get.addEventListener("click", () => api().get_blender().catch(problem));
+    const choose = el("button", { type: "button", className: "ghost", textContent: w.look_choose_blender,
+      title: w.tip_look_choose_blender });
+    choose.addEventListener("click", async () => {
+      try {
+        const r = await api().choose_blender();
+        if (r.message) say(r.message, "error");
+        draw(await api().look(address));
+      } catch (err) { problem(err); }
+    });
+    box.append(el("p", { className: "small", textContent: w.look_no_blender }), el("div", { className: "actions" }, get, choose));
+    return box;
+  }
+  const body = el("div", { className: "one-blender-body" }, el("p", { className: "muted small", textContent: w.lm_reading }));
+  box.append(body);
+  let parts = null, ticks = null, busy = false;
+  const show = () => {
+    const open = Boolean(parts && parts.open);
+    const big = el("button", { type: "button", className: "primary one-big",
+      textContent: open ? w.squad_blender_back : w.look_open, title: open ? w.tip_one_back : w.tip_one_open,
+      disabled: busy || !parts || !parts.can || !state.mod });
+    big.addEventListener("click", open ? bringBack : openBlender);
+    // (the ticks when there's more than one thing to choose; kept as they were when the box is drawn again)
+    ticks = !open && parts && parts.can && parts.parts.length > 1 ? oneBlenderTicks(parts, ticks ? ticks.ticks() : null) : null;
+    const how = parts && !parts.can ? parts.why_not || "" : ((parts && (parts.door || parts.route)) === "paint"
+      ? w.one_how_paint : w.one_how_unit);
+    body.replaceChildren(el("div", { className: "actions" }, big, ...(ticks ? [ticks.toggle] : [])),
+      ...(ticks ? [ticks.box] : []), el("p", { className: "muted small", textContent: how }));
+  };
+  const reload = async () => {
+    parts = await api().blender_parts(address, state.lang).catch(() => null);
+    show();
+  };
+  const openBlender = async () => {
+    const t = ticks ? ticks.ticks() : { model: true, paint: true };   // (read before the box is drawn again)
+    busy = true;
+    show();
+    say(w.look_opening);
+    try {
+      const r = await api().blender_open(address, t, state.lang);
+      say(r && r.door === "paint" ? w.one_how_paint : w.one_how_unit, "ok");
+    } catch (err) { problem(err); }
+    busy = false;
+    await reload();
+  };
+  // what came in, said as Import model and Repaint said it: whose model it is now, what of the modder's it took the
+  // place of, what of its shine and side colour it couldn't keep, what unticked was kept; the paint's own sentence
+  const bringBack = async () => {
+    const paint = parts && parts.door === "paint";
+    busy = true;
+    show();
+    say(paint ? w.look_bringing : w.model_blender_bringing);
+    let r = null;
+    try { r = await api().blender_back(address, state.lang); } catch (err) { problem(err); }
+    busy = false;
+    if (r) {
+      const m = (r.door === "model" && r.model) || {};
+      const lost = notKeptSaid(m.not_kept);
+      const done = [r.door === "model" ? fill(w.model_done, { file: m.file || "" }) : r.message, lost, oneKeptSaid(r)]
+        .filter(Boolean).join(" ");
+      if (alphaLostLines(m).length) sayBroughtBack(done, m);
+      else say(done, lost || (r.door === "paint" && !(r.brought || []).length) ? "" : "ok");
+      draw(r.door === "model" ? r : await api().look(address).catch(() => info));   // (the row drawn again: the box too)
+      if (changed) changed();
+      return;
+    }
+    await reload();
+  };
+  reload();
+  return box;
+}
+
 // Repaint in Blender (the Model row's More; StudioApi.look_open, look_bring_back): the unit's own copy of its model
-// painted in Blender and brought back; without Blender, the way to get it or to show where it is
+// painted in Blender and brought back; without Blender, the way to get it or to show where it is. Since 2026-11-13 for
+// squads only: a game squad's Custom uniform in its Uniform row, and a squad shown without its card (a squad of this
+// mod paints through its card's one Blender button; a unit that isn't a squad has its own, oneBlenderBox)
 function repaintBox(address, info, draw, changed) {
   const w = state.words;
   const box = el("div", { className: "model-own repaint" }, el("h3", { textContent: w.unit_look, title: w.tip_unit_look }));

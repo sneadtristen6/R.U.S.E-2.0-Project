@@ -63,6 +63,24 @@ class OneBlenderCalls:
             _read(sent).get("session") == state.get("session")
         return bool(running or waiting), state.get("session")
 
+    def _door_open(self, address: str, state: dict) -> bool:
+        """Whether the Blender the one button last opened for this unit (one.json's `state`: its door and kind) is still
+        open: then Bring my changes back can take what it sends again."""
+        door = state.get("door")
+        try:
+            if door == "model":
+                work = self._model_work(address, self._blender_kind(address, state.get("kind") or None))[0]
+            elif door == "paint":
+                work = self._look_folder(address)
+            elif door == "squad":
+                work = self._squad_work(address)
+            else:
+                return False
+        except Exception:  # noqa: BLE001 - a unit gone or changed since: its Blender isn't this unit's any more
+            return False
+        proc = self._blenders.get(str(work)) if work is not None else None
+        return proc is not None and proc.poll() is None
+
     def _model_door(self, address: str, kind: str | None) -> bool:
         """Whether the model's own Blender (Change it in Blender's, for `kind` or the riflemen) has something to bring
         back: a sending, or Blender still open on it (its Bring back then asks it to send)."""
@@ -77,19 +95,30 @@ class OneBlenderCalls:
         return own is not None and own.is_file() and bonefit.skeleton_key(own) is not None
 
     def blender_parts(self, address: str, lang: str = "us") -> dict:
-        """What the one Blender button can take of this unit: {"route": "model", "squad" or "kinds", "parts": [{"id",
-        "label"}] (the ticks, all on to start), "soldiers": [{"id", "label"}] (a squad's: each its own tick), "kinds":
-        [{"id": the kind or "" for the riflemen, "label"}] (a squad on bones of its own: one at a time), "open": whether
-        its last Blender hasn't been brought back, "can": whether this unit can go to Blender, "why_not": the sentence
-        when it can't}."""
+        """What the one Blender button can take of this unit: {"route": "model", "squad", "kinds" or "paint" (a game
+        unit that isn't a squad: its paint alone), "parts": [{"id", "label"}] (the ticks, all on to start), "soldiers":
+        [{"id", "label"}] (a squad's: each its own tick), "kinds": [{"id": the kind or "" for the riflemen, "label"}] (a
+        squad on bones of its own: one at a time), "open": whether its last Blender hasn't been brought back or is still
+        open, "door": that Blender's ("model", "squad", "paint") while open, "can": whether this unit can go to Blender,
+        "why_not": the sentence when it can't}."""
         from .api import words
         w = words(lang)
         squad = self._soldiers(address)
         own = self._own_model_file(address)
         state = _read(self._one_file(address)) if self._one_file(address) is not None else {}
-        out = {"route": "model", "parts": [], "soldiers": [], "kinds": [], "open": bool(state) and not state.get("back"),
-               "can": own is not None, "why_not": None if own is not None else w["one_why_game"]}
+        # (open: brought back not yet, or its Blender still open after a bring-back, so it can bring back again)
+        out = {"route": "model", "parts": [], "soldiers": [], "kinds": [], "can": own is not None,
+               "open": bool(state) and (not state.get("back") or self._door_open(address, state)),
+               "why_not": None if own is not None else w["one_why_game"]}
+        out["door"] = state.get("door") if out["open"] else None   # (which Blender is open: model, squad or paint)
         if own is None:
+            if self._mod_dir() is None:
+                out["why_not"] = w["no_mod"]
+            elif not squad and self._look_models(address)[0]:
+                # a game unit that isn't a squad: its paint alone, as the Look box's Repaint in Blender painted it (seen
+                # in the game; its pictures go into the mod); a game squad's uniform is every squad's: copy it first
+                out.update({"route": "paint", "parts": [{"id": "paint", "label": w["one_part_paint"]}], "can": True,
+                            "why_not": None})
             return out
         parts = [{"id": "model", "label": w["one_part_model"]}]
         # Its bones only for a model on bones of its own: a squad's soldiers on the game soldier's bones come back onto
@@ -120,9 +149,12 @@ class OneBlenderCalls:
         ticks = dict(ticks or {})
         parts = self.blender_parts(address, lang)
         if not parts["can"]:
+            if self._mod_dir() is None:
+                raise StudioError("Pick or make a mod first.")
             # not a game rule: only a new unit of this mod gets a model of its own (the model door's own refusal)
             raise StudioError("Only a new unit made in this mod can get a model of its own: copy the unit first.")
-        model, paint = bool(ticks.get("model", True)), bool(ticks.get("paint", True))
+        has = {p["id"] for p in parts["parts"]}   # (a game unit has its paint alone: no model to tick)
+        model, paint = bool(ticks.get("model", True)) and "model" in has, bool(ticks.get("paint", True))
         soldiers = [str(s) for s in (ticks.get("soldiers") or [])]
         if parts["route"] == "squad" and model and not soldiers:
             soldiers = [s["id"] for s in parts["soldiers"]]

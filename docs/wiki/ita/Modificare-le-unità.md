@@ -76,10 +76,11 @@ modello, l'uniforme di una squadra e un modello tutto suo sono sulla riga **Mode
 in RUSE Decoy dalla riga **Suoni e animazioni** (**Cambia in RUSE Decoy**): un'animazione solo per questa unità o per
 tutte le unità che la usano, un suono per tutte le unità che lo usano.
 
-- **Ridipingi in Blender:** clicca su **Apri in Blender** (Blender è gratuito; se lo Studio non lo trova, la pagina propone
+- **Cambialo in Blender:** clicca su **Apri in Blender** (Blender è gratuito; se lo Studio non lo trova, la pagina propone
   **Scarica Blender (gratis)** e **Scegli Blender…** per mostrargli dove si trova `blender.exe`). L'unità si apre con le sue
-  immagini, pronta per dipingere sul modello. Dipingi, poi clicca su **Riporta**: la tua
+  immagini, pronta per dipingere sul modello. Dipingi, poi clicca su **Riporta le mie modifiche**: la tua
   pittura va nella tua mod. Visto in gioco, da vicino e da lontano.
+  Un'unità del tuo mod si apre intera, il suo modello e la sua pittura spuntati sotto **Cosa va in Blender**: togli la spunta al modello per dipingere soltanto. Il suo modello intero tramite Blender non è ancora provato nel gioco.
 - **La sua scheda nel menu di costruzione:** ruota e ingrandisci il modello 3D finché non sta bene dentro la cornice
   tratteggiata, poi **Usa questa vista come scheda**. **Scheda del gioco** la riporta indietro. Visto in gioco. Su una nuova
   unità la scheda è sua: l'unità che copia tiene la sua immagine.

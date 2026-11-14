@@ -78,10 +78,11 @@ modelu, mundur oddziału i własny model są w wierszu **Model**; dźwięki i an
 **Dźwięki i animacje** (**Zmień w RUSE Decoy**): animację tylko dla tej jednostki albo dla wszystkich jednostek, które
 jej używają, dźwięk dla wszystkich jednostek, które go używają.
 
-- **Przemaluj w Blenderze:** kliknij **Otwórz w Blenderze** (Blender jest darmowy; jeśli Studio go nie znajdzie, strona
+- **Zmień w Blenderze:** kliknij **Otwórz w Blenderze** (Blender jest darmowy; jeśli Studio go nie znajdzie, strona
   proponuje **Pobierz Blendera (za darmo)** i **Wybierz Blendera…**, by wskazać, gdzie jest `blender.exe`). Jednostka
-  otwiera się ze swoimi obrazami, gotowa do malowania na modelu. Maluj, potem kliknij **Przenieś**: twoje
+  otwiera się ze swoimi obrazami, gotowa do malowania na modelu. Maluj, potem kliknij **Przenieś moje zmiany**: twoje
   malowanie trafia do twojego moda. Widziane w grze, z bliska i z daleka.
+  Jednostka twojego moda otwiera się cała, jej model i malowanie zaznaczone w **Co trafia do Blendera**: odznacz model, żeby tylko malować. Cały jej model przez Blendera nie był jeszcze sprawdzany w grze.
 - **Jej karta w menu budowy:** obracaj i przybliżaj model 3D, aż będzie dobrze wyglądał w przerywanej ramce, potem
   kliknij **Użyj tego widoku jako karty**. **Karta z gry** przywraca poprzednią. Widziane w grze. Nowa jednostka ma
   własną kartę: jednostka, którą kopiuje, zachowuje swój obraz.

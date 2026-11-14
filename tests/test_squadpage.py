@@ -325,7 +325,9 @@ class TheWiki(unittest.TestCase):
              "fa": "fa/تغییر-جوخه"}
     BUTTONS = ("look_open", "one_parts", "squad_blender_back", "squad_import", "squad_reset", "squad_each", "squad_more",
                "where_show", "look_get_blender", "look_choose_blender", "blender_model_send", "test_in_game",
-               "model_want_button", "create", "units_tab", "uniform_custom", "unit_look", "lm_title",
+               # (Its paint, not Repaint in Blender: a squad of this mod paints its Custom uniform through its card's
+               # one Blender button since 2026-11-13; the Repaint box stays a game squad's only)
+               "model_want_button", "create", "units_tab", "uniform_custom", "one_part_paint", "lm_title",
                # (a soldier more or fewer: the owner, 2026-11-12, "Yes, update it" to the page's own update)
                "squad_plus", "squad_minus", "squad_add", "squad_add_copy", "squad_add_unit", "squad_add_file",
                "squad_remove")

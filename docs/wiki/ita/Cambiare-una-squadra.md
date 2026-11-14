@@ -62,7 +62,7 @@ ultimi uomini. Solo le squadre che crei tu hanno questi pulsanti: le squadre del
 - Hai chiuso Blender prima di riportare le tue modifiche? Il piccolo **Riporta le mie modifiche** sotto il pulsante grande
   prende ciò che hai inviato per ultimo.
 - L'uniforme della squadra è in **Aspetto e movimenti**, accanto ai valori: **Uniforme personalizzata** dà alla squadra
-  un'uniforme tutta sua, che **Ridipingi in Blender** dipinge per tutti i soldati insieme. Una squadra indossa o i tuoi
+  un'uniforme tutta sua, che **Apri in Blender** sulla scheda dipinge per tutti i soldati insieme quando sotto **Cosa va in Blender** è spuntata solo **La sua pittura**. Una squadra indossa o i tuoi
   modelli o un'uniforme.
 - Non ancora provato in gioco: una squadra di 8 o di 2.
 

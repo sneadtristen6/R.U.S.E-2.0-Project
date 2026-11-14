@@ -78,10 +78,11 @@ modelo, el uniforme de un pelotón y un modelo propio están en la fila **Modelo
 cambian en RUSE Decoy desde la fila **Sonidos y animación** (**Cambiar en RUSE Decoy**): una animación solo para esta
 unidad o para todas las unidades que la usan, un sonido para todas las unidades que lo usan.
 
-- **Repintar en Blender:** haz clic en **Abrir en Blender** (Blender es gratis; si el Studio no lo encuentra, la página
+- **Cambiarlo en Blender:** haz clic en **Abrir en Blender** (Blender es gratis; si el Studio no lo encuentra, la página
   ofrece **Conseguir Blender (gratis)** y **Elegir Blender…** para indicarle dónde está `blender.exe`). La unidad se abre con sus imágenes,
-  lista para pintar sobre el modelo. Pinta y luego haz clic en **Traer**: tu
+  lista para pintar sobre el modelo. Pinta y luego haz clic en **Traer mis cambios**: tu
   pintura entra en tu mod. Visto en el juego, de cerca y de lejos.
+  Una unidad de tu mod se abre entera, su modelo y su pintura marcados en **Qué va a Blender**: desmarca su modelo para solo pintar. Su modelo entero a través de Blender aún no se ha probado en el juego.
 - **Su tarjeta en el menú de producción:** gira y acerca el modelo 3D hasta que se vea bien dentro del marco
   discontinuo, y luego **Usar esta vista como tarjeta**. **Tarjeta del juego** la devuelve. Visto en el juego. En una
   unidad nueva, la tarjeta es suya: la unidad que copia conserva su imagen.

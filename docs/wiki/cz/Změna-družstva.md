@@ -58,7 +58,7 @@ poslední muži. Tato tlačítka mají jen družstva, která uděláš ty: druž
 - Zavřel jsi Blender, než jsi přenesl změny? Malé tlačítko **Přenést moje změny** pod velkým vezme, co jsi poslal
   naposledy.
 - Uniforma družstva je ve **Vzhled a pohyb**, vedle hodnot: **Vlastní uniforma** dá družstvu vlastní uniformu, kterou
-  **Přebarvit v Blenderu** přebarví všem vojákům najednou. Družstvo nosí buď tvoje modely, nebo uniformu.
+  **Otevřít v Blenderu** na kartě přebarví všem vojákům najednou, když je v **Co jde do Blenderu** zaškrtnuté jen **Jeho barvy**. Družstvo nosí buď tvoje modely, nebo uniformu.
 - Ve hře ještě nevyzkoušené: družstvo s 8 nebo se 2 vojáky.
 
 Víc o modelech, kostech a animacích: [[Import modelu|Import-modelu]].

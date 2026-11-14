@@ -74,10 +74,12 @@ no folder to pick. Repainting, its own copy of the model, a squad's uniform and 
 **Model** row; sounds and animations are changed in RUSE Decoy from the **Sounds and animation** row (**Change in RUSE
 Decoy**): an animation for this unit only or for every unit that plays it, a sound for every unit that plays it.
 
-- **Repaint in Blender:** click **Open in Blender** (Blender is free; if the Studio doesn't find it, the page offers
+- **Change it in Blender:** click **Open in Blender** (Blender is free; if the Studio doesn't find it, the page offers
   **Get Blender (free)** and **Choose Blender…** to show it where `blender.exe` is). The unit opens with its pictures,
-  ready to paint on the model. Paint, then click **Bring back**: your
+  ready to paint on the model. Paint, then click **Bring my changes back**: your
   paint goes into your mod. Seen in the game, up close and from far.
+  A unit of your mod opens whole, its model and its paint ticked under **What goes to Blender**: untick its model to
+  paint only. Its whole model through Blender is not tried in the game yet.
 - **Its card in the build menu:** turn and zoom the 3D model until it looks right inside the dashed frame, then
   **Use this view as the card**. **Game's card** takes it back. Seen in the game. On a new unit, the card is its own:
   the unit it copies keeps its picture.

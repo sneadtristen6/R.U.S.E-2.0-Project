@@ -2360,6 +2360,9 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
   Object.assign(words.us, {"eras_size": "Size", "tip_eras_size": "How big its model is: 1 is as long as the unit it starts from. The suggestion gives it its real size beside the game's own units (its real width; a plane's, its wingspan).", "eras_size_help": "1 = as long as the start unit; the suggestion is its real size.", "eras_size_real_width": "Suggested: its real width, {m} m.", "eras_size_real_span": "Suggested: its real wingspan, {m} m.", "eras_size_clamped": "Its real size would need {raw}, but sizes go from 0.05 to 20: {size} is the nearest.", "eras_size_unknown": "Its real size isn't in the library yet, so 1: as long as the start unit.", "eras_size_unread": "Its real size couldn't be worked out, so 1: as long as the start unit.", "eras_research_from": "Researched from", "tip_eras_research_from": "The unit it's researched from: it can be built only after that research (a unit in the same nation's build menu; your mod's new units too). None: buyable from the start. Change it later in its page's Upgrade and research box.", "eras_research_none": "None: buyable from the start", "eras_research_why_start": "Suggested: the unit it starts from.", "eras_research_why_in_place_of": "Suggested: the unit it stands in for.", "eras_research_why_dearest": "Suggested: the dearest unit of this build menu, so an advanced unit comes after research.", "eras_research_price": "Research price", "tip_eras_research_price": "What its research costs.", "eras_research_time": "Research time", "tip_eras_research_time": "How long its research takes, in the seconds or minutes picked beside it (50 seconds to start, as in the Upgrade and research box; that the game counts seconds isn't timed in the game yet).", "tip_eras_research_locked": "Nothing to research: it's buyable from the start. Pick a unit it's researched from first.", "tip_eras_research_off": "Units of this kind have no research in the game's files."});
   // the Horse Squad among the era units (words.toml eras_horse_*, tip_eras_horse_*), word for word
   // the one Blender button (ruse_studio.oneblender)
+  Object.assign(words.us, {"one_how_unit": "Blender opens with what's ticked. Change it there and click Send to the R.U.S.E. Studio at the top of Blender, then click Bring my changes back here.", "one_how_paint": "Blender opens with this unit's model and its pictures. Paint on it there, then click Bring my changes back here: your paint goes into your mod."});
+  Object.assign(words.fr, {"one_how_unit": "Blender s'ouvre avec ce qui est coché. Modifiez-le là-bas et cliquez sur Envoyer au R.U.S.E. Studio en haut de Blender, puis cliquez ici sur Ramener mes changements.", "one_how_paint": "Blender s'ouvre avec le modèle de cette unité et ses images. Peignez dessus là-bas, puis cliquez ici sur Ramener mes changements : votre peinture va dans votre mod."});
+  Object.assign(words.sc, {"one_how_unit": "Blender 会打开已勾选的内容。在那里修改，点击 Blender 顶部的“发送到 R.U.S.E. Studio”，然后在这里点击“带回我的修改”。", "one_how_paint": "Blender 会打开这个单位的模型及其图片。在那里绘制，然后在这里点击“带回我的修改”：你的涂装会进入你的模组。"});
   Object.assign(words.us, {"one_how_squad": "Blender opens with the soldiers ticked, side by side. Change any of them: only the one you change changes.", "one_how_model": "Blender opens with the model picked, with its bones and its animations. Change it there and send it from Blender, then click Bring my changes back here. Its animations are changed in RUSE Decoy."});
   Object.assign(words.fr, {"one_how_squad": "Blender s'ouvre avec les soldats cochés, côte à côte. Modifiez-en un : seul celui que vous modifiez change.", "one_how_model": "Blender s'ouvre avec le modèle choisi, avec ses os et ses animations. Modifiez-le là-bas et envoyez-le depuis Blender, puis cliquez sur Ramener mes changements ici. Ses animations se modifient dans RUSE Decoy."});
   Object.assign(words.sc, {"one_how_squad": "Blender 会打开已勾选的士兵，并排摆放。修改其中任何一个：只有你修改的那个会改变。", "one_how_model": "Blender 会打开所选模型及其骨骼和动画。在那里修改并从 Blender 发送，然后在这里点击“带回我的修改”。它的动画在 RUSE Decoy 中修改。"});
@@ -4116,16 +4119,26 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
         // them whatever Blender did, so the Studio gives it no Bones tick)
         const parts = [{ id: "model", label: w.one_part_model || "Its model" }, ...(horse
           ? [{ id: "bones", label: w.one_part_bones || "Its bones" }] : []), { id: "paint", label: w.one_part_paint || "Its paint" }];
-        return { route: info ? (horse ? "kinds" : "squad") : "model", parts: own ? parts : [], can: own,
-          why_not: own ? null : (w.one_why_game || "One of the game's own units: copy it first, then open the copy in Blender."),
+        // (a game unit that isn't a squad: its paint alone, as Repaint in Blender painted it; a game squad: none)
+        const paintOnly = !own && !info;
+        const one = fakeOneOpen.get(address);
+        return { route: info ? (horse ? "kinds" : "squad") : paintOnly ? "paint" : "model",
+          parts: own ? parts : paintOnly ? [{ id: "paint", label: w.one_part_paint || "Its paint" }] : [],
+          can: own || paintOnly,
+          why_not: own || paintOnly ? null : (w.one_why_game || "One of the game's own units: copy it first, then open the copy in Blender."),
           soldiers: info && !horse ? info.soldiers.map((s) => ({ id: s.id, label: `${s.label} ${s.number}` })) : [],
           kinds: horse ? [{ id: "", label: w.one_kind_riflemen || "The riflemen's model" },
             { id: "bazooka", label: w.one_kind_other || "The heavy-weapon soldier's model" }] : [],
-          open: fakeOneOpen.has(address) };
+          open: Boolean(one), door: one ? one.door : null };
       },
       blender_open: async (address, ticks, lang = "us") => {
-        const t = ticks || {};
+        const t = { ...(ticks || {}) };
         const squad = fakeSquad(address) && mode !== "horse";
+        // (a game unit has its paint alone: no model to tick, as StudioApi.blender_open takes it)
+        const parts = await window.pywebview.api.blender_parts(address, lang);
+        if (!parts.can) throw new Error("Only a new unit made in this mod can get a model of its own: copy the unit first.");
+        t.model = t.model !== false && parts.parts.some((p) => p.id === "model");
+        t.paint = t.paint !== false;
         let r, door;
         if (!t.model && t.paint) { r = await window.pywebview.api.look_open(address); door = "paint"; }
         else if (!t.model) throw new Error("Tick what goes to Blender first: the model, its bones or its paint.");

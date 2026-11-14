@@ -66,7 +66,7 @@ Spiel behalten ihre Soldaten.
 - Blender geschlossen, bevor du deine Änderungen zurückgeholt hast? Das kleine **Meine Änderungen zurückholen** unter der
   großen Schaltfläche nimmt, was du zuletzt gesendet hast.
 - Die Uniform des Trupps ist in **Aussehen und Bewegung**, neben den Werten: **Eigene Uniform** gibt dem Trupp eine eigene
-  Uniform, die **In Blender neu bemalen** für alle Soldaten auf einmal bemalt. Ein Trupp trägt entweder deine Modelle
+  Uniform, die **In Blender öffnen** auf der Karte für alle Soldaten auf einmal bemalt, wenn unter **Was nach Blender geht** nur **Seine Bemalung** angekreuzt ist. Ein Trupp trägt entweder deine Modelle
   oder eine Uniform.
 - Im Spiel noch nicht ausprobiert: ein Trupp mit 8 oder mit 2 Soldaten.
 

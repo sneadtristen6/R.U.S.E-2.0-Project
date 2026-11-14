@@ -64,7 +64,7 @@ soldats.
 - Vous avez fermé Blender avant de ramener vos changements ? Le petit **Ramener mes changements** sous le grand bouton
   prend ce que vous avez envoyé en dernier.
 - L'uniforme de l'escouade est dans **Apparence et mouvements**, à côté des valeurs : **Uniforme personnalisé** donne à
-  l'escouade un uniforme à elle, que **Repeindre dans Blender** peint pour tous les soldats à la fois. Une escouade porte
+  l'escouade un uniforme à elle, que **Ouvrir dans Blender** sur la carte peint pour tous les soldats à la fois quand seule **Sa peinture** est cochée sous **Ce qui va dans Blender**. Une escouade porte
   soit vos modèles, soit un uniforme.
 - Pas encore essayé en jeu : une escouade de 8 ou de 2.
 

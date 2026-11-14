@@ -82,10 +82,11 @@ choisir. Repeindre, sa propre copie du modèle, l'uniforme d'une escouade et un 
 dans RUSE Decoy**) : une animation pour cette unité seulement ou pour toutes les unités qui la jouent, un son pour
 toutes les unités qui le jouent.
 
-- **Repeindre dans Blender :** cliquez sur **Ouvrir dans Blender** (Blender est gratuit ; si le Studio ne le trouve pas,
+- **Changer dans Blender :** cliquez sur **Ouvrir dans Blender** (Blender est gratuit ; si le Studio ne le trouve pas,
   la page propose **Obtenir Blender (gratuit)** et **Choisir Blender…** pour lui montrer où est `blender.exe`). L'unité
-  s'ouvre avec ses images, prête à être peinte sur le modèle. Peignez, puis cliquez sur **Récupérer** : votre
+  s'ouvre avec ses images, prête à être peinte sur le modèle. Peignez, puis cliquez sur **Ramener mes changements** : votre
   peinture va dans votre mod. Vu en jeu, de près et de loin.
+  Une unité de votre mod s'ouvre entière, son modèle et sa peinture cochés sous **Ce qui va dans Blender** : décochez son modèle pour seulement peindre. Son modèle entier dans Blender n'est pas encore essayé en jeu.
 - **Sa carte dans le menu de construction :** tournez et zoomez le modèle 3D jusqu'à ce qu'il rende bien dans le cadre
   en pointillés, puis **Utiliser cette vue comme carte**. **Carte du jeu** la reprend. Vu en jeu. Sur une nouvelle unité,
   la carte est la sienne : l'unité qu'elle copie garde son image.

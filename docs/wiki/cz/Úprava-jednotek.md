@@ -74,10 +74,11 @@ věc; **Více** ukáže přímo tam zbytek možností řádku. Vše, co změnít
 zvuky a animace se mění v RUSE Decoy z řádku **Zvuky a animace** (**Změnit v RUSE Decoy**): animace jen pro tuto
 jednotku, nebo pro všechny jednotky, které ji hrají, zvuk pro všechny jednotky, které ho hrají.
 
-- **Přebarvení v Blenderu:** klikněte na **Otevřít v Blenderu** (Blender je zdarma; pokud ho Studio nenajde, stránka
+- **Změnit v Blenderu:** klikněte na **Otevřít v Blenderu** (Blender je zdarma; pokud ho Studio nenajde, stránka
   nabídne **Získat Blender (zdarma)** a **Vybrat Blender…**, kterým mu ukážete, kde je `blender.exe`). Jednotka se
-  otevře se svými obrázky, připravená k malování na model. Malujte, pak klikněte na **Přenést zpět**: vaše
+  otevře se svými obrázky, připravená k malování na model. Malujte, pak klikněte na **Přenést moje změny**: vaše
   malba přejde do vašeho modu. Viděno ve hře, zblízka i zdálky.
+  Jednotka tvého modu se otevře celá, její model a barvy zaškrtnuté v **Co jde do Blenderu**: odškrtni model, abys jen maloval. Celý její model přes Blender ještě nebyl vyzkoušen ve hře.
 - **Její karta v nabídce stavby:** otáčejte a přibližujte 3D model, dokud uvnitř čárkovaného rámečku nevypadá správně,
   pak **Použít tento pohled jako kartu**. **Karta ze hry** ji vrátí. Viděno ve hře. Nová jednotka má vlastní kartu:
   jednotka, kterou kopíruje, si ponechá svůj obrázek.

@@ -5,11 +5,14 @@ Blender its ticks open and which bring-back it then calls, with the doors themse
 test_modelblender, test_squadblender; the keepers' are test_modelblender BonesKept and PaintKept)."""
 import json
 import tempfile
+import tomllib
 import unittest
 from pathlib import Path
 
 from ruse_studio.api import StudioError
 from ruse_studio.oneblender import ONE, OneBlenderCalls
+
+SRC = Path(__file__).resolve().parents[1] / "src" / "ruse_studio"
 
 E = "$/GFX/Everything/"
 
@@ -22,6 +25,7 @@ class Stand(OneBlenderCalls):
         self.calls = []
         self.door = (False, None)   # the squad's own Blender: (something to bring back, its opening's session)
         self.model_sent = True      # the model's own Blender: something sent, or Blender open on it
+        self.running = False        # the last Blender still open after its bring-back
 
     def _mod_dir(self):
         return self.root / "mod"
@@ -31,6 +35,12 @@ class Stand(OneBlenderCalls):
 
     def _model_door(self, address, kind):
         return self.model_sent
+
+    def _door_open(self, address, state):
+        return self.running   # (its Blender still open after a bring-back)
+
+    def _look_models(self, address):
+        return (["unit_model"], [])
 
     def _soldiers(self, address):
         return self.squad
@@ -145,8 +155,8 @@ class OneButton(unittest.TestCase):
         self.assertEqual(s.calls, [("model_blender", "bazooka"), ("model_blender", None)])
         self.assertNotIn("squad_blender", [c[0] for c in s.calls])
 
-    def test_a_game_unit_cant_go_and_bring_back_before_open_is_refused(self):
-        s = Stand(self.root, game_unit=True)
+    def test_a_game_squad_cant_go_and_bring_back_before_open_is_refused(self):
+        s = Stand(self.root, squad=True, game_unit=True)   # (its uniform is every squad's: copy it first)
         self.assertFalse(s.blender_parts(E + "Descriptor_Unit_Soldat_US_Leger")["can"])
         with self.assertRaises(StudioError):
             s.blender_open(E + "Descriptor_Unit_Soldat_US_Leger", {"model": True})
@@ -154,6 +164,41 @@ class OneButton(unittest.TestCase):
         with self.assertRaises(StudioError):
             t.blender_back(E + "Descriptor_Unit_Tank")
         self.assertEqual(s.calls + t.calls, [])
+
+    def test_a_game_tank_goes_with_its_paint_alone(self):
+        """A game unit that isn't a squad keeps what the Look box's Repaint in Blender gave it (seen in the game): its
+        paint; the owner, 2026-11-13, "Tanks too" to the one button on its page."""
+        s = Stand(self.root, game_unit=True)
+        parts = s.blender_parts(E + "Descriptor_Unit_M4_Sherman")
+        self.assertEqual((parts["route"], [p["id"] for p in parts["parts"]], parts["can"]), ("paint", ["paint"], True))
+        s.blender_open(E + "Descriptor_Unit_M4_Sherman", {"model": True, "paint": True})   # (no model to tick: paint)
+        s.blender_back(E + "Descriptor_Unit_M4_Sherman")
+        self.assertEqual(s.calls, [("look_open",), ("look_bring_back",)])
+
+    def test_a_new_tank_goes_whole_and_comes_back_whole(self):
+        """A new unit of this mod that isn't a squad: its whole model to Blender (the owner, 2026-11-13: "Tanks too")."""
+        s = Stand(self.root)
+        parts = s.blender_parts(E + "Descriptor_Unit_My_Sherman")
+        self.assertEqual([p["id"] for p in parts["parts"]], ["model", "paint"])
+        s.blender_open(E + "Descriptor_Unit_My_Sherman", {"model": True, "paint": False})
+        s.blender_back(E + "Descriptor_Unit_My_Sherman")
+        self.assertEqual(s.calls, [("model_blender", None), ("model_blender_back", None, False, True)])
+
+    def test_no_mod_says_so(self):
+        s = Stand(self.root, game_unit=True)
+        s._mod_dir = lambda: None
+        parts = s.blender_parts(E + "Descriptor_Unit_M4_Sherman")
+        self.assertFalse(parts["can"])
+        with self.assertRaisesRegex(StudioError, "Pick or make a mod first"):
+            s.blender_open(E + "Descriptor_Unit_M4_Sherman", {"paint": True})
+
+    def test_still_open_after_a_bring_back_reads_bring_back(self):
+        s = Stand(self.root)
+        s.blender_open(E + "Descriptor_Unit_My_Sherman", {"model": True})
+        s.blender_back(E + "Descriptor_Unit_My_Sherman")
+        self.assertFalse(s.blender_parts(E + "Descriptor_Unit_My_Sherman")["open"])
+        s.running = True   # (Blender still open on it: it can send again)
+        self.assertTrue(s.blender_parts(E + "Descriptor_Unit_My_Sherman")["open"])
 
     def test_what_was_opened_is_remembered_beside_the_units_blender_files(self):
         s = Stand(self.root)
@@ -229,6 +274,65 @@ class OtherOpeners(unittest.TestCase):
         with self.assertRaisesRegex(StudioError, "then Bring my changes back here"):
             s.blender_back(E + "Descriptor_Unit_Generic_Horse")
         self.assertEqual(s.calls, [("model_blender", None)])
+
+
+class TheUnitPage(unittest.TestCase):
+    """The one Blender button on the page of a unit that isn't a squad (the owner, 2026-11-13: "Tanks too"): app.js
+    oneBlenderBox in the Model row's More, in the place of the paint's own box; its words in 11 languages naming the
+    buttons as the page does; the field manual's Edit Units and Change a Squad naming them as the page does."""
+
+    def setUp(self):
+        from test_lookmoves import function_text, read
+        self.app, self.fake = read("app.js"), read("fake-api.js")
+        self.look = function_text(self.app, "lookMovesBox")
+        self.box = function_text(self.app, "oneBlenderBox")
+        self.words = tomllib.loads((SRC / "words.toml").read_text(encoding="utf-8"))
+
+    def test_a_unit_that_isnt_a_squad_has_the_one_button_in_its_model_row(self):
+        self.assertIn("if (!squad) more.push(oneBlenderBox(address, info, drawLook, changed));", self.look)
+        self.assertIn("else if (paintable) more.push(repaintBox(address, info, drawLook, changed));", self.look)
+        for call in ("api().blender_parts(address, state.lang)", "api().blender_open(address, t, state.lang)",
+                     "api().blender_back(address, state.lang)"):
+            self.assertIn(call, self.box)
+        self.assertIn("textContent: open ? w.squad_blender_back : w.look_open, title: open ? w.tip_one_back : "
+                      "w.tip_one_open", self.box)
+        opening = self.box[self.box.index("const openBlender"):self.box.index("const bringBack")]
+        self.assertLess(opening.index("ticks.ticks()"), opening.index("show();"))   # (read before drawn again)
+        self.assertNotIn("look_back", self.box)   # (one Bring my changes back, not the paint's own Bring back)
+
+    def test_its_words_in_eleven_languages_name_the_buttons_as_the_page_does(self):
+        from test_lookmoves import LANGS
+        for key, labels in (("one_how_unit", ("blender_model_send", "squad_blender_back")),
+                            ("one_how_paint", ("squad_blender_back",))):
+            self.assertEqual(set(self.words[key]), set(LANGS), key)
+            for lang in LANGS:
+                for label in labels:
+                    with self.subTest(key=key, lang=lang, label=label):
+                        self.assertIn(self.words[label][lang], self.words[key][lang])
+            for lang in ("us", "fr", "sc"):   # (word for word on the stand-in page)
+                self.assertIn(f'"{key}": {json.dumps(self.words[key][lang], ensure_ascii=False)}', self.fake)
+
+    def test_the_field_manual_names_them_as_the_page_does(self):
+        from test_lookmoves import LANGS
+        wiki = SRC.parents[1] / "docs" / "wiki"
+        edit = {"us": "Edit-Units", "fr": "fr/Modifier-les-unités", "ger": "ger/Einheiten-bearbeiten",
+                "ita": "ita/Modificare-le-unità", "spa": "spa/Editar-unidades", "pol": "pol/Edycja-jednostek",
+                "ru": "ru/Редактирование-юнитов", "cz": "cz/Úprava-jednotek", "jpn": "jpn/ユニットの編集",
+                "sc": "sc/编辑单位", "fa": "fa/ویرایش-یگان‌ها"}
+        squad = {"us": "Change-a-Squad", "fr": "fr/Changer-une-escouade", "ger": "ger/Einen-Trupp-ändern",
+                 "ita": "ita/Cambiare-una-squadra", "spa": "spa/Cambiar-un-pelotón", "pol": "pol/Zmiana-oddziału",
+                 "ru": "ru/Изменение-отряда", "cz": "cz/Změna-družstva", "jpn": "jpn/分隊の変更", "sc": "sc/修改小队",
+                 "fa": "fa/تغییر-جوخه"}
+        self.assertEqual(set(edit), set(LANGS))
+        for lang in LANGS:
+            text = (wiki / f"{edit[lang]}.md").read_text(encoding="utf-8")
+            for key in ("model_blender", "look_open", "squad_blender_back", "one_parts"):
+                with self.subTest(page=edit[lang], key=key):
+                    self.assertIn(f"**{self.words[key][lang]}", text)
+            text = (wiki / f"{squad[lang]}.md").read_text(encoding="utf-8")
+            with self.subTest(page=squad[lang]):   # (a squad of the mod has no Repaint in Blender box any more)
+                self.assertNotIn(f"**{self.words['unit_look'][lang]}**", text)
+                self.assertIn(f"**{self.words['one_part_paint'][lang]}**", text)
 
 
 if __name__ == "__main__":
