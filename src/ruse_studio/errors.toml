@@ -6105,6 +6105,20 @@ cz = "{0} je příliš hluboko: tam by cesta, která byla příliš dlouhá, byl
 jpn = "{0} は深すぎます。そこでも、長すぎたパスはまだ Windows が受け付けるより {1} 文字長くなります。ドライブの上の方にあるフォルダーを選ぶか、Mod かユニットに短い名前を付けてください。"
 sc = "{0} 太深了：在那里，原本太长的路径仍会比 Windows 接受的长 {1} 个字符。请选择更靠近驱动器顶层的文件夹，或给模组或单位起个更短的名字。"
 fa = "{0} بیش از حد عمیق است: آنجا، مسیری که بیش از حد طولانی بود هنوز {1} نویسه از آنچه Windows می‌پذیرد بلندتر می‌شد. پوشه‌ای نزدیک‌تر به بالای یک درایو انتخاب کنید، یا نام کوتاه‌تری به ماد یا یگان بدهید."
+# Piece 7's fix (review v2, item 40): the quick fix refused when the path that was too long is in none of the folders it
+# copies (a mod opened from elsewhere), as no folder would make it shorter (ruse_studio.homemove.target_checked)
+[e6d2aa6bfce]
+us = "{0} isn't in the folders that get copied, so copying everything to a shorter folder can't make that path shorter: give the mod or the unit a shorter name, or move it nearer the top of a drive yourself."
+fr = "{0} n'est pas dans les dossiers qui sont copiés, donc tout copier dans un dossier plus court ne peut pas raccourcir ce chemin : donnez un nom plus court au mod ou à l'unité, ou déplacez-le vous-même plus près de la racine d'un disque."
+ger = "{0} liegt in keinem der Ordner, die kopiert werden, daher kann das Kopieren in einen kürzeren Ordner diesen Pfad nicht kürzer machen: Geben Sie dem Mod oder der Einheit einen kürzeren Namen, oder verschieben Sie ihn selbst näher an die oberste Ebene eines Laufwerks."
+ita = "{0} non è nelle cartelle che vengono copiate, quindi copiare tutto in una cartella più corta non può accorciare quel percorso: dai alla mod o all'unità un nome più corto, o spostalo tu più vicino alla radice di un'unità."
+spa = "{0} no está en las carpetas que se copian, así que copiarlo todo en una carpeta más corta no puede acortar esa ruta: pon un nombre más corto al mod o a la unidad, o muévelo tú más cerca de la raíz de una unidad."
+pol = "{0} nie jest w folderach, które są kopiowane, więc skopiowanie wszystkiego do krótszego folderu nie skróci tej ścieżki: nadaj modowi lub jednostce krótszą nazwę albo sam przenieś go bliżej głównego katalogu dysku."
+ru = "{0} не входит в папки, которые копируются, поэтому копирование всего в более короткую папку не сократит этот путь: дайте моду или юниту более короткое имя или сами перенесите его ближе к корню диска."
+cz = "{0} není ve složkách, které se kopírují, takže zkopírování všeho do kratší složky tu cestu nezkrátí: dejte modu či jednotce kratší jméno, nebo ho sami přesuňte blíž kořeni disku."
+jpn = "{0} はコピーされるフォルダーの中にないので、すべてを短いフォルダーにコピーしてもそのパスは短くなりません。Mod かユニットに短い名前を付けるか、自分でドライブの上の方へ移してください。"
+sc = "{0} 不在会被复制的文件夹里，所以把所有内容复制到更短的文件夹也无法缩短这个路径：请给模组或单位起个更短的名字，或者自己把它移到更靠近驱动器顶层的地方。"
+fa = "{0} در پوشه‌هایی که کپی می‌شوند نیست، پس کپی کردن همه چیز در پوشه‌ای کوتاه‌تر نمی‌تواند آن مسیر را کوتاه‌تر کند: نام کوتاه‌تری به ماد یا یگان بدهید، یا خودتان آن را به نزدیک بالای یک درایو ببرید."
 # The Generic Horse's country: the rifle squads its riders are made from (horse_squad.SQUADS, rusemod.horsesquad.SQUADS;
 # the owner, 2026-11-13: "people can change what countmry its from")
 [eaacc45c47b]

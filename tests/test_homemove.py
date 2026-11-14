@@ -16,8 +16,9 @@ stood in for (StudioApi._home_set_env, _home_restart: never the real user variab
   than Windows takes) is what the page offers the move beside (home_move_offer's "needed");
 - the short folder the Studio picks, or one the modder chooses with Choose another folder… (the owner, 2026-11-13: "It
   can be selected automatically, but the modder should be able to choose"), each checked the same way before anything
-  is copied: on a drive of this PC, empty or new, outside what gets copied and the game's folder, short enough; an
-  empty folder he chose is left there when a copy fails;
+  is copied: on a drive of this PC (no network share), empty or new, outside what gets copied and the game's folder
+  (through junctions too), short enough (a path the move doesn't copy refused as such); an empty folder he chose is
+  left there when a copy fails, and the folders the move made above a new one go with it;
 - the words the page shows, in the 11 languages."""
 import json
 import os
@@ -365,8 +366,8 @@ class TheChosenFolder(unittest.TestCase):
         self.assertEqual(homemove.still_over(self.to, self.home, self.work, needed), 7)
         needed["over"] = shorter
         self.assertEqual(homemove.still_over(self.to, self.home, self.work, needed), 0)
-        elsewhere = {"what": "mod", "folder": "D:\\elsewhere\\mod", "over": 50}   # (not a folder the move copies)
-        self.assertEqual(homemove.still_over(self.to, self.home, self.work, elsewhere), 0)
+        elsewhere = {"what": "mod", "folder": "D:\\elsewhere\\mod", "over": 50}   # (not a folder the move copies: no
+        self.assertEqual(homemove.still_over(self.to, self.home, self.work, elsewhere), 50)   # shorter anywhere)
         self.api.__dict__["_too_deep"] = {"what": "mod", "folder": str(mod), "over": fits}
         view = finished(self.api, self.api.home_move()["job"])     # (and one that fits is moved)
         self.assertEqual(view["state"], "done", view.get("message"))
@@ -377,6 +378,126 @@ class TheChosenFolder(unittest.TestCase):
         with self.assertRaisesRegex(StudioError, "isn't an empty folder"):
             self.api.home_move()
         self.assertEqual(sorted(p.name for p in self.to.iterdir()), ["someone else's.txt"])
+
+    def test_a_network_share_is_refused_and_nothing_on_the_network_is_asked(self):
+        """The export fix's review, defect 6: \\\\localhost\\C$\\... was taken (its top found with os.path.isdir, which
+        asks the share), though the words say "a drive of this PC". A share in each way it is written, and a drive
+        letter Windows has for a share (a mapped drive), is refused in those words, told from the path and the drive's
+        kind alone; a drive's folder in Windows' long form is taken as the folder window writes it."""
+        asked, real_isdir = [], os.path.isdir
+
+        def network(p: str) -> bool:        # (\\server\..., \\?\UNC\..., //server/...; not \\?\D:\..., a drive's)
+            return p.startswith("//") or p.upper().startswith(("\\\\?\\UNC\\", "\\\\.\\UNC\\")) \
+                or (p.startswith("\\\\") and p[2:3] not in ("?", "."))
+
+        def isdir(p):                       # (a share is never really asked here: the made-up ones aren't there)
+            asked.append(str(p))
+            return False if network(str(p)) else real_isdir(p)
+        with mock.patch.object(homemove.os.path, "isdir", isdir):
+            for share in ("\\\\server\\share\\R2", "\\\\?\\UNC\\server\\share\\R2", "//server/share/R2",
+                          "\\\\localhost\\C$\\R2"):
+                with self.subTest(share=share):
+                    with self.assertRaises(StudioError) as caught:
+                        self.chooses(share)
+                    self.assertTrue(str(caught.exception).endswith(
+                        "isn't on a drive of this PC: choose a folder on one of its drives."), str(caught.exception))
+                    with self.assertRaisesRegex(StudioError, "isn't on a drive of this PC"):
+                        self.api.home_move(share)
+        self.assertEqual([p for p in asked if network(p)], [])
+        local = Path(self.tmp.name) / "R2"
+        with mock.patch.object(homemove, "_drive_type",
+                               lambda anchor: homemove.DRIVE_REMOTE if anchor == local.anchor else 3):
+            with self.assertRaisesRegex(StudioError, "isn't on a drive of this PC"):
+                self.chooses(local)                                # (its drive letter a share's: a mapped drive)
+        self.assertEqual(self.chooses("\\\\?\\" + str(local))[0], {"to": str(local)})
+        self.assertEqual(self.chooses(local)[0], {"to": str(local)})          # (a drive of this PC: taken)
+        self.assertEqual((self.set, self.restarted, self.api._jobs), ([], [], {}))
+
+    def test_a_folder_through_a_junction_into_what_gets_copied_or_the_game_is_refused(self):
+        """The review's defect 7: a folder reached through a junction into the platform folder was taken, the check
+        going by its spelling only; everything would then have been copied inside what it copies, which the words then
+        tell him to delete. Each folder is checked as written and through every junction on its way; a junction to a
+        folder outside them leads to any folder."""
+        if sys.platform != "win32":
+            self.skipTest("Windows' junctions")
+        import _winapi
+        root = Path(self.tmp.name)
+        game = root / "Steam" / "R.U.S.E"
+        game.mkdir(parents=True)
+        self.api._game_dir = game
+        elsewhere = root / "Elsewhere"
+        elsewhere.mkdir()
+        links = {"to-home": self.home, "to-work": self.work, "to-game": game, "to-elsewhere": elsewhere}
+        for name, target in links.items():
+            _winapi.CreateJunction(str(target), str(root / name))
+        try:
+            for name, said in (("to-home", f"is inside {self.home}, which is what gets copied"),
+                               ("to-work", f"is inside {self.work}, which is what gets copied"),
+                               ("to-game", f"is inside the R.U.S.E. folder ({game})")):
+                with self.subTest(link=name):
+                    with self.assertRaises(StudioError) as caught:
+                        self.chooses(root / name / "R2")
+                    self.assertIn(said, str(caught.exception))
+                    with self.assertRaises(StudioError):
+                        self.api.home_move(str(root / name / "R2"))
+            self.assertEqual(self.chooses(root / "to-elsewhere" / "R2")[0], {"to": str(root / "to-elsewhere" / "R2")})
+        finally:
+            for name in links:                            # (a junction goes with rmdir; what it leads to stays)
+                os.rmdir(root / name)
+        self.assertEqual((self.set, self.restarted, self.api._jobs), ([], [], {}))
+        self.assertFalse((self.home / "R2").exists())
+        self.assertEqual(tree(self.home), self.before["home"])
+
+    def test_the_folders_a_failed_copy_made_above_a_new_folder_go_with_it(self):
+        """Suspicion 2 of the review: a copy that failed into a new folder whose folders above weren't there either
+        (D:\\Games\\New\\RUSE2) took away RUSE2 only, leaving Games\\New behind, empty. The folders the move made go
+        with it; a folder above that was there stays as it was."""
+        root = Path(self.tmp.name)
+        mine = root / "Mine"
+        mine.mkdir()
+        (mine / "his.txt").write_text("his", encoding="utf-8")
+        real = homemove._same
+
+        def differs(src, dst):
+            return False if src.endswith("studio.log") else real(src, dst)
+        for chosen, gone in ((root / "Games" / "New" / "R2", root / "Games"), (mine / "New" / "R2", mine / "New")):
+            with self.subTest(chosen=str(chosen)):
+                self.assertEqual(self.chooses(chosen)[0], {"to": str(chosen)})
+                with mock.patch.object(homemove, "_same", differs):
+                    view = finished(self.api, self.api.home_move(str(chosen))["job"])
+                self.assertEqual(view["state"], "failed")
+                self.assertIn("nothing was switched and the copy was taken away again", view["message"])
+                self.assertFalse(gone.exists())
+        self.assertEqual(sorted(p.name for p in mine.iterdir()), ["his.txt"])
+        self.assertEqual((self.set, self.restarted), ([], []))
+
+    def test_a_path_the_move_doesn_t_copy_is_refused_before_anything_is_copied(self):
+        """Suspicion 3 of the review: a refusal of a folder the move doesn't copy (a mod opened from elsewhere) counted
+        as short enough anywhere, so everything would be copied, switched and started again for nothing. That path is
+        no shorter in any folder: still_over says all its characters, and the move is refused at once in words; one
+        the move copies is moved as before."""
+        elsewhere = Path(self.tmp.name) / "Elsewhere" / "mod"
+        self.api.__dict__["_too_deep"] = {"what": "mod", "folder": str(elsewhere), "over": 5}
+        said = (f"{elsewhere} isn't in the folders that get copied, so copying everything to a shorter folder can't "
+                f"make that path shorter: give the mod or the unit a shorter name, or move it nearer the top of a "
+                f"drive yourself.")
+        try:
+            started = self.api.home_move()
+        except StudioError as exc:
+            self.assertEqual(str(exc), said)
+        else:                                   # (moved for nothing: waited for, so the copy is done before the end)
+            self.fail(f"moved for nothing: {finished(self.api, started['job'])['state']}")
+        with self.assertRaises(StudioError) as again:
+            self.chooses(Path(self.tmp.name) / "R2")
+        self.assertEqual(str(again.exception), said)
+        self.assertEqual(homemove.still_over(self.to, self.home, self.work, self.api.__dict__["_too_deep"]), 5)
+        self.assertFalse(self.to.exists())
+        self.assertEqual((self.set, self.restarted, self.api._jobs), ([], [], {}))
+        from ruse_studio import errortext
+        self.assertNotEqual(errortext.worded(said, "fr"), said)    # (in the modder's language)
+        self.api.__dict__["_too_deep"] = {"what": "mod", "folder": str(self.work / "Mods" / "cavalry"), "over": 1}
+        view = finished(self.api, self.api.home_move()["job"])
+        self.assertEqual(view["state"], "done", view.get("message"))
 
 
 class TheShortFolder(unittest.TestCase):

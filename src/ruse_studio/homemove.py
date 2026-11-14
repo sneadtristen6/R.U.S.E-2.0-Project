@@ -15,8 +15,10 @@ What the move does (home_move, a job):
    RUSE2-3...: the first that doesn't exist yet), or the folder the modder chose instead (home_move_choose: the owner,
    2026-11-13, to "The short folder, such as C:\\RUSE2, is picked automatically. OK, or should the modder choose?": "It
    can be selected automatically, but the modder should be able to choose"). Either is checked before anything is
-   copied, the same way (target_checked): on a drive of this PC, an empty folder or a new one, outside the folders it
-   copies and the game's, and short enough for what was refused. Everything: the platform folder (rusemod.home:
+   copied, the same way (target_checked): on a drive of this PC (no network share), an empty folder or a new one,
+   outside the folders it copies and the game's (as written and through any junction), and short enough for what was
+   refused (a path the move doesn't copy, a mod opened from elsewhere, is refused: no folder makes it shorter).
+   Everything: the platform folder (rusemod.home:
    settings, the Launcher's library and mod sets, caches, the Generic Horse's files...) but the window's own folder
    (LEAVE: webview, which the window holds open while the Studio runs and makes again at its next start), and the
    mods, maps, exported files and backups the modder keeps in Documents\\RUSE 2.0 (rusemod.yourfiles), under the names
@@ -32,9 +34,9 @@ What the move does (home_move, a job):
    from it (restart), so nothing changed after the copy is left in the old place.
 Nothing is deleted: the old folders stay as they were, for the modder to delete himself once he has checked his mods in
 the new place (the words say where they are). A copy that fails or doesn't check out is taken away again (the new
-folder only, which the move made; a folder the modder chose that was there, empty, is left there empty), nothing is
-switched, and the words say why. Windows only: elsewhere a path has no such limit (long_paths_on), so nothing is
-offered."""
+folder only, which the move made, and the folders above it the move made for it; a folder the modder chose that was
+there, empty, is left there empty), nothing is switched, and the words say why. Windows only: elsewhere a path has no
+such limit (long_paths_on), so nothing is offered."""
 from __future__ import annotations
 
 import filecmp
@@ -49,6 +51,7 @@ ENV = "RUSE_PLATFORM_HOME"   # rusemod.home's: the platform folder set by hand
 SHORT = "RUSE2"              # the short folder's name, at the top of the platform folder's drive
 LEAVE = {"webview"}          # the window's own folder (rusemod.webui's storage_path): held open, made again at a start
 QUIT_AFTER = 3.0             # seconds the page has to show the move's last line before the Studio starts again
+DRIVE_REMOTE = 4             # Windows' kind of drive (GetDriveTypeW) for a drive letter that is a network share's
 
 
 def short_target(home: Path) -> Path:
@@ -197,33 +200,88 @@ def moved_path(path: str, roots: list) -> str | None:
     return None
 
 
+def _measured(needed) -> bool:
+    """Whether `needed` (home_move_offer's) says a path that was too long: {"what", "folder", "over" > 0}."""
+    return isinstance(needed, dict) and isinstance(needed.get("over"), int) and needed["over"] > 0 \
+        and isinstance(needed.get("folder"), str) and bool(needed["folder"])
+
+
+def _not_moved(to: Path, home: Path, work: Path | None, needed) -> bool:
+    """Whether the path a refusal measured (`needed`) is in none of the folders the move copies (a mod opened from
+    elsewhere): then the move can't make it shorter, wherever it copies to."""
+    return _measured(needed) and needed.get("what") != "platform" \
+        and moved_path(needed["folder"], list(plan(home, work, to)) + [(home, to)]) is None
+
+
 def still_over(to: Path, home: Path, work: Path | None, needed) -> int:
     """How many characters the path a refusal measured (`needed`, home_move_offer's: {"what", "folder", "over"}) would
     still be longer than Windows takes once everything is in `to`: the platform folder is `to` itself, a mod's folder
     or a file moves with the folder it is in (plan). 0 when it fits there, and when nothing says how long it is (no
-    refusal, or one of a folder the move doesn't copy: a mod opened from elsewhere)."""
-    if not isinstance(needed, dict) or not isinstance(needed.get("over"), int) or needed["over"] <= 0 \
-            or not isinstance(needed.get("folder"), str) or not needed["folder"]:
+    refusal); all its characters too many for a path the move doesn't copy (_not_moved: no shorter anywhere)."""
+    if not _measured(needed):
         return 0
     if needed.get("what") == "platform":
         new = str(to)
     else:
         new = moved_path(needed["folder"], list(plan(home, work, to)) + [(home, to)])
         if new is None:
-            return 0
+            return needed["over"]
     return max(0, needed["over"] - (len(needed["folder"]) - len(new)))
+
+
+def _plain(raw: str) -> str:
+    """A folder of a drive written in Windows' long or device form (\\\\?\\D:\\x, \\\\.\\D:\\x) as the folder window
+    writes it (D:\\x); any other as it is."""
+    if len(raw) >= 6 and raw[:4] in ("\\\\?\\", "\\\\.\\") and raw[4].isalpha() and raw[5] == ":":
+        return raw[4:]
+    return raw
+
+
+def _drive_type(anchor: str) -> int:
+    """Windows' kind of drive for a drive's top (GetDriveTypeW: DRIVE_REMOTE for a network share's letter)."""
+    import ctypes
+    return int(ctypes.windll.kernel32.GetDriveTypeW(str(anchor)))
+
+
+def _on_a_share(path: Path) -> bool:
+    """Whether `path` is on a network share, not on a drive of this PC: \\\\server\\share\\..., \\\\?\\UNC\\...,
+    another \\\\-form, or a drive letter Windows has for a share (a mapped drive). Told from the path and the drive's
+    kind only: nothing on the network is asked."""
+    if str(path).startswith(("\\\\", "//")):
+        return True
+    if sys.platform != "win32":
+        return False
+    try:
+        return _drive_type(path.anchor) == DRIVE_REMOTE
+    except (OSError, AttributeError, ValueError):
+        return False
+
+
+def _real(path) -> str:
+    """`path` with every junction or link on its way followed (os.path.realpath), as the modder knows it (_shown)."""
+    try:
+        return _shown(os.path.realpath(str(path)))
+    except (OSError, ValueError):
+        return os.path.abspath(str(path))
+
+
+def _inside(path: Path, root) -> bool:
+    """Whether `path` is `root` or inside it, as written or once every junction or link on the way of each is followed
+    (a folder through a junction into the platform folder is inside it: the export fix's review, 2026-11-13)."""
+    return _under(str(path), Path(root)) is not None or _under(_real(path), Path(_real(root))) is not None
 
 
 def target_checked(to, home: Path, work: Path | None, game: Path | None, needed=None) -> Path:
     """`to`, the folder the move copies everything to (short_target, or the one the modder chose), once it's checked,
-    as a full path; else a StudioError in words: it must be on a drive of this PC, an empty folder or a new one (the
-    move never mixes his files with others, nor copies over them), outside the platform folder and the modder's own
-    folder (`home`, `work`: what gets copied, and what the words then tell him to delete), outside the game's folder
-    (`game`), and short enough for what was refused (`needed`: still_over)."""
+    as a full path; else a StudioError in words: it must be on a drive of this PC (not a network share: _on_a_share),
+    an empty folder or a new one (the move never mixes his files with others, nor copies over them), outside the
+    platform folder and the modder's own folder (`home`, `work`: what gets copied, and what the words then tell him to
+    delete), outside the game's folder (`game`), each as written and through any junction (_inside), and short enough
+    for what was refused (`needed`: still_over; a path the move doesn't copy is refused as such: _not_moved)."""
     from .api import StudioError
-    raw = str(to or "").strip()
+    raw = _plain(str(to or "").strip())
     path = Path(os.path.abspath(raw)) if raw and Path(raw).is_absolute() else None
-    if path is None or not os.path.isdir(path.anchor):
+    if path is None or _on_a_share(path) or not os.path.isdir(path.anchor):
         # not a game rule: a folder the Studio can write to on this PC
         raise StudioError(f"{raw or to} isn't on a drive of this PC: choose a folder on one of its drives.")
     try:
@@ -238,13 +296,18 @@ def target_checked(to, home: Path, work: Path | None, game: Path | None, needed=
         raise StudioError(f"{path} isn't an empty folder: choose an empty folder, or make a new one in the folder "
                           f"window.")
     for mine in [home] + ([work] if work is not None else []):
-        if _under(str(path), Path(mine)) is not None:
+        if _inside(path, mine):
             # not a game rule: what gets copied, which the modder deletes himself once he has checked the copy
             raise StudioError(f"{path} is inside {mine}, which is what gets copied: choose a folder outside it.")
-    if game is not None and _under(str(path), Path(game)) is not None:
+    if game is not None and _inside(path, game):
         # not a game rule: we never write into the game folder
         raise StudioError(f"{path} is inside the R.U.S.E. folder ({game}): the Studio's files can't go there. Choose a "
                           f"folder outside the game.")
+    if _not_moved(path, Path(home), work, needed):
+        # not a game rule: Windows' longest path; the move makes shorter only what it copies
+        raise StudioError(f"{needed['folder']} isn't in the folders that get copied, so copying everything to a "
+                          f"shorter folder can't make that path shorter: give the mod or the unit a shorter name, or "
+                          f"move it nearer the top of a drive yourself.")
     over = still_over(path, Path(home), work, needed)
     if over:
         # not a game rule: Windows' longest path, the one reason to move the Studio's folders
@@ -254,11 +317,26 @@ def target_checked(to, home: Path, work: Path | None, game: Path | None, needed=
     return path
 
 
-def _take_away(to: Path, existed: bool) -> None:
-    """A copy that failed taken away again: the folder the move made, or, when it was a folder the modder chose that
-    was there already (empty: target_checked), only what the move put in it."""
+def _made_for(to: Path) -> list[Path]:
+    """The folders above `to` that aren't there yet, nearest first: the ones a copy into it makes (copy_checked)."""
+    out, up = [], Path(to).parent
+    while up != up.parent and not os.path.isdir(_long(up)):
+        out.append(up)
+        up = up.parent
+    return out
+
+
+def _take_away(to: Path, existed: bool, made=()) -> None:
+    """A copy that failed taken away again: the folder the move made, and the folders above it it made (`made`,
+    _made_for's: each only while empty), or, when it was a folder the modder chose that was there already (empty:
+    target_checked), only what the move put in it."""
     if not existed:
         shutil.rmtree(_long(to), ignore_errors=True)
+        for up in made:                          # (D:\Games\New\RUSE2: New and Games too, when the move made them)
+            try:
+                os.rmdir(_long(up))
+            except OSError:
+                break
         return
     try:
         entries = list(os.scandir(_long(to)))
@@ -418,6 +496,7 @@ class HomeMoveCalls:
         to = target_checked(to if to else short_target(home), home, work, self._game(),
                             self.__dict__.get("_too_deep"))
         existed = os.path.isdir(_long(to))   # (a chosen folder that was there, empty: left there if the copy fails)
+        made = [] if existed else _made_for(to)   # (the folders above it the copy makes: taken away with it then)
         job = Job()
         job.result = None
         self._jobs[job.id] = job
@@ -435,13 +514,13 @@ class HomeMoveCalls:
             try:
                 copied = copy_checked(files, folders, say)
             except CopyMismatch as exc:
-                _take_away(to, existed)
+                _take_away(to, existed, made)
                 # not a game rule: every file checked against the one it came from before anything is switched
                 raise StudioError(f"{exc.src} didn't arrive in {to} as it is, so nothing was switched and the copy was "
                                   f"taken away again. Close the Launcher if it's open, then click again; if it happens "
                                   f"again, please report this.") from None
             except OSError as exc:
-                _take_away(to, existed)
+                _take_away(to, existed, made)
                 from .api import file_error
                 raise file_error(exc, to) from exc
             from rusemod import yourfiles
@@ -451,7 +530,7 @@ class HomeMoveCalls:
                          and Path(dst).name in yourfiles.OLD_NAMES.values() for e in sorted(Path(src).iterdir())]
                 yourfiles._follow(to, moved)
             except OSError as exc:      # (said in words, never in Python's own; nothing switched, the copy taken away)
-                _take_away(to, existed)
+                _take_away(to, existed, made)
                 from .api import file_error
                 raise file_error(exc, to) from exc
             say(f"Every file arrived as it is ({len(files)} files). The records in the copy name its own places "
