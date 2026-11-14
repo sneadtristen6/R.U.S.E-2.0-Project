@@ -223,15 +223,18 @@ class Unusual(Studio):
             with self.subTest(name=name):
                 self.assertEqual(Path(self.api.new_mod(name)["current"]).name, want)
 
-    @unittest.expectedFailure
     def test_FE4_a_long_name(self):
-        """FE-4: a name of 300 letters makes a folder name Windows refuses: new_mod raises Windows' own
-        "[WinError 3] The system cannot find the path specified" (an OSError, no words of the Studio's)."""
-        try:
-            folder = Path(self.api.new_mod("Panzer " * 43)["current"])
-        except StudioError:
-            return                                                       # (refused in words: fine too)
-        self.assertTrue((folder / "mod.toml").is_file())
+        """FE-4: a name of 300 letters made a folder name Windows refuses: new_mod raised Windows' own "[WinError 3]
+        The system cannot find the path specified" (an OSError, no words of the Studio's; release adc8ecea). PROPOSED
+        FIX: the id (the folder's and the file's name) is at most api.ID_MOST letters, cut at a word; the name stays
+        whole in mod.toml, and the mod goes out."""
+        name = ("Panzer " * 43).strip()
+        folder = Path(self.api.new_mod(name)["current"])
+        self.assertEqual(folder.name, "panzer-panzer-panzer-panzer-panzer")
+        self.assertEqual(package.info_of(folder)["name"], name)
+        self.assertEqual(Path(self.api.new_mod("x" * 300)["current"]).name, "x" * 40)
+        view = self.export("1.0.0")
+        self.assertEqual(view["state"], "done", view.get("message"))
 
     def test_FE5_a_version_typed_in_other_digits(self):
         """FE-5: a version typed with full-width digits (a Japanese or Chinese keyboard's) or Persian ones is taken as

@@ -344,6 +344,10 @@ def _whole(value, kind: str, prop: str):
     return r
 
 
+ID_MOST = 40   # a new mod's id (its folder's and file's name) at most, from a name of any length (as a RUSE Decoy copy's id:
+#               rusemod.anim, "at most 40"): room left in Windows' 259 characters for the mod's own folders
+
+
 def _ascii_digits(text: str) -> str:
     """`text` with full-width letters and signs as the plain ones they stand for (NFKC: a Japanese or Chinese keyboard's
     １．０．０), and each digit of another script (Persian ۱, Arabic ١...) as 0-9: a version typed so is the version
@@ -6002,7 +6006,12 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         # (its letters without their accents first, as a unit's address keeps them, safe_name: "Équipe de char" was
         # quipe-de-char, the é dropped; the export scenarios' FE-3)
         plain = unicodedata.normalize("NFKD", name).encode("ascii", "ignore").decode()
-        slug = re.sub(r"[^a-z0-9]+", "-", plain.lower()).strip("-") or ("my-map" if kind == "map" else "my-mod")
+        slug = re.sub(r"[^a-z0-9]+", "-", plain.lower()).strip("-")
+        if len(slug) > ID_MOST:   # (a long name's folder Windows refused: "[WinError 3] The system cannot find the path
+            #                       specified", the export scenarios' FE-4; the name itself stays whole in mod.toml)
+            cut = slug[:ID_MOST]
+            slug = (cut.rsplit("-", 1)[0] if "-" in cut else cut).strip("-")
+        slug = slug or ("my-map" if kind == "map" else "my-mod")
         base = self._folders()[self.KINDS[kind][0]]
         # a name the other kind has is taken too: its folder name is its id, and Test in game builds the unit mod and
         # the map changes together (two of one id stopped a tester's build, 2026-10-30); the other kind's folders are
