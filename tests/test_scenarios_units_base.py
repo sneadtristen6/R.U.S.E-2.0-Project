@@ -16,6 +16,7 @@ OnTheStudio.build_errors).
 
 Checked our_tools.json: none of its tools is for this; this file reads no program: the made-up game gets a two-byte
 stand-in RUSE.exe, as tests/test_studio.py's does."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import os
 import re
 import struct

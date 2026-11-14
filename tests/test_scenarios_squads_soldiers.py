@@ -5,6 +5,7 @@ Each ends with what the page says in every language, the mod's files, its build 
 check of it. The base, its made-up game and its stand-ins: tests/test_scenarios_squads_base.py.
 
 FOR: the squads scenarios (release 0.9.8.20, overnight 2026-11-13/14). USED-BY: the scenarios' run and report."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import unittest
 
 from test_scenarios_squads_base import (GAME_SQUAD, LANGS, SQUAD, STEM, SquadScenario)

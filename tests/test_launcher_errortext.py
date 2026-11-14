@@ -5,6 +5,7 @@ has its words in errors.toml in all eleven languages with the same blanks, and a
 Launcher's language with its values filled in, a file Windows held in words (FE-14), why a download failed in plain
 words inside it (never "[WinError 10061] No connection could be made..."). The controls: English stays English, a
 text no entry makes stays as it came, and what isn't refused still works."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import socket
 import tempfile
 import tomllib

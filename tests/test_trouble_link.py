@@ -7,6 +7,7 @@ Checks of the code and the wiki (no browser here): every topic's page is in the 
 the link opens the page in the player's language (English for English and any language without one), a topic that
 isn't one is refused, every topic the page code asks for is one, and the link's words and tooltips are in the eleven
 languages and on the stand-in page."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import re
 import tomllib
 import unittest

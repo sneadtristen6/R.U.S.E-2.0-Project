@@ -3,6 +3,7 @@ way and the unusual ones, on the made-up game of test_scenarios_maps_base. Each 
 map's files, and that the map still builds (Test in game).
 
 FOR: the overnight scenario tests of map mods (owner, 2026-11-13). USED-BY: the release check of 0.9.8.20."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import tomllib
 import unittest
 

@@ -16,6 +16,7 @@ runs, the game only pretends to start).
 
 FOR: the overnight scenario tests of making map mods in the Studio (owner, 2026-11-13: "Usual and unusual situations
 [a] player can find themselves in when making new mods in our apps"). USED-BY: tests/test_scenarios_maps*.py."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import os
 import struct
 import time

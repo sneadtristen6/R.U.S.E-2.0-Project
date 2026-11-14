@@ -11,6 +11,7 @@ language, filled in as app.js fill does); where the question is whether the page
 the page's own code for it (page_part), as no browser runs here.
 
 FOR: the squads scenarios (release 0.9.8.20, overnight 2026-11-13/14). USED-BY: the scenarios' run and report."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import re
 import unittest
 from pathlib import Path

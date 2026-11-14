@@ -5,6 +5,7 @@ On test_studio's made-up game (its WithMod: a game folder and its index, a fresh
 starts for real; never the PC's own game). Export builds the mod on it to record the game's data and the mod's
 fingerprint, as on a player's PC. A finding (FE-n, the scenario report's FINDINGS) is kept as
 @unittest.expectedFailure, its docstring naming it."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import os
 import sys
 import time

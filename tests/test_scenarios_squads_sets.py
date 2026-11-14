@@ -7,6 +7,7 @@ its made-up game and its stand-ins: tests/test_scenarios_squads_base.py. (The Ge
 game: the dry builds of the scenarios' finished mods, scratch/release-0920/scenarios/squads.)
 
 FOR: the squads scenarios (release 0.9.8.20, overnight 2026-11-13/14). USED-BY: the scenarios' run and report."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import json
 import tempfile
 import unittest

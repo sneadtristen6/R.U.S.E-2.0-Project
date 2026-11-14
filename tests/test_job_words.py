@@ -4,6 +4,7 @@ before it starts were English in every language; the owner, 2026-11-14: "There s
 relying too heavily on them to understand things."): every job's done words, its refusals before it starts, the words
 of a job that broke and Play's own refusals are in buildtext.toml (test_buildtext checks them all), and the apps hand
 them to the page in the player's language. The controls: English is said as before, word for word."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import tempfile
 import time
 import unittest

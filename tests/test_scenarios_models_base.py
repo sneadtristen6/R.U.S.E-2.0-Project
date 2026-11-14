@@ -20,6 +20,7 @@ Studio's language as the page shows it), the mod's files, and the mod's build on
 FOR: the models and Blender scenarios (release 0.9.8.20, overnight 2026-11-14,
 D:/RUSE-2.0/scratch/release-0920/scenarios/models).
 USED-BY: tests/test_scenarios_models_*.py."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import hashlib
 import json
 import struct

@@ -9,6 +9,7 @@ src/studio.rndf, and the mod built on the made-up game.
 
 Each test marked expectedFailure shows a finding (its number in the comment above it; the agent's report lists them);
 it passes once the finding is mended."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import struct
 import unittest
 

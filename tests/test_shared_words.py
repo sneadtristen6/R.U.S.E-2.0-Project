@@ -3,6 +3,7 @@ the plain-words job, 2026-11-14: they were English in both apps in every languag
 GitHub couldn't be reached in Python's and Windows' words, "<urlopen error [WinError 10061] No connection could be
 made because the target machine actively refused it>", met on every start without the internet): the update check
 and a backup's refusal, in the Launcher and the Studio, each with its English control."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import tempfile
 import unittest
 import urllib.error

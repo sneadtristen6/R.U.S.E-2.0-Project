@@ -7,6 +7,7 @@ Blender is never started. A finding is kept as an expected failure naming it (M-
 
 FOR: the models and Blender scenarios (release 0.9.8.20, overnight 2026-11-14).
 USED-BY: the scenarios' runs (gentle.py, -m unittest)."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import shutil
 import tempfile
 import unittest

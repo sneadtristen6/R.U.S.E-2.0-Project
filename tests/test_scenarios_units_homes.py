@@ -4,6 +4,7 @@ and Persian players' user folders carry their names (C:\\Users\\Иван, C:\\Us
 apostrophes and ampersands. The Studio's and the Launcher's platform folder (their mods, exports, library and copies)
 is under it. A mod made there, a unit in it, its build, Export, the Launcher's library and Play (on the made-up game:
 nothing starts), and the Studio started again. The made-up game comes from test_scenarios_units_base."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import tempfile
 import time
 import unittest

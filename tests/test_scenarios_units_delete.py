@@ -11,6 +11,7 @@ Delete with a file held: the owner's answer of 2026-11-13 (item 6), whole: "Why 
 just meet if someone clicks it should through so fix number six". The code this branch started from (10340ec1)
 refuses and puts everything back; the work that makes it go through (work/0920b-delete) wasn't joined then. The test
 takes either: refused in words in every language with the mod as it was, or gone with the waiting file said."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import json
 import os
 import tempfile

@@ -7,6 +7,7 @@ On test_launcher's made-up game (its Base: a game folder, a platform folder, not
 on the same platform folder (they share the library, as on a player's PC) and no game for the Studio (Export packs
 without a build). A finding (FE-n, D:/RUSE-2.0/scratch/release-0920/scenarios/export/FINDINGS.md) is kept as
 @unittest.expectedFailure, its docstring naming it: it starts to pass once mended."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import sys
 import time
 import unittest

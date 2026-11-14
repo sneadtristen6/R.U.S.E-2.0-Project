@@ -10,6 +10,7 @@ and the scenarios report); the rest pass on release/0.9.8.20-anim 0d5564eb.
 
 FOR: the models and Blender scenarios (release 0.9.8.20, overnight 2026-11-14).
 USED-BY: the scenarios' runs (gentle.py, -m unittest)."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import unittest
 
 import test_bonefit   # (the module, not its test classes: those run in test_bonefit once)

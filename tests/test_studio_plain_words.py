@@ -8,6 +8,7 @@ works or is said as before.
 - The era units list with no connection (the units scenarios' U-12: "The era units list couldn't be had: the era
   units list couldn't be loaded ([WinError 10061] No connection could be made because the target machine actively
   refused it)", English in every language): the Era units screen's notice and its download's refusal."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import os
 import socket
 import tempfile

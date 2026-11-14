@@ -7,6 +7,7 @@ page's answer and words in every language, the mod's files, and the mod built on
 
 Each test marked expectedFailure shows a finding (its number in the comment above it; the agent's report lists them);
 it passes once the finding is mended."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import unittest
 
 from test_scenarios_units_base import ARMOR_US, G2, GAME_LANGS, H1, M1, M2, P1, P2, S1, Player

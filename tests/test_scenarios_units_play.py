@@ -6,6 +6,7 @@ that doesn't build (a value file broken by hand). The made-up game comes from te
 
 Each test marked expectedFailure shows a finding (its number in the comment above it; the agent's report lists them);
 it passes once the finding is mended."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import time
 import unittest
 

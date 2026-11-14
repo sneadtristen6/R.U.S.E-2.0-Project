@@ -7,6 +7,7 @@ The made-up map: ground 3000 x 3000 map units (its scenery grid reaches 81,920),
 at (5000, 0), (5100, 0), (5000, 9000), (5100, 9000), one road along y 2000 from x 0 to 12,000.
 
 FOR: the overnight scenario tests of map mods (owner, 2026-11-13). USED-BY: the release check of 0.9.8.20."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import tomllib
 import unittest
 from collections import Counter

@@ -9,6 +9,7 @@ researched from; two mods filling one group past six.
 Each test marked expectedFailure shows a finding (its number in the comment above it; the agent's report lists them);
 it passes once the finding is mended. The made-up game, its stand-in program file included, comes from
 test_scenarios_units_base."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import time
 import unittest
 

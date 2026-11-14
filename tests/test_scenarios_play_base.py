@@ -14,6 +14,7 @@ looks only at the made-up reports a test writes there.
 
 FOR: the Test in game and Play scenarios (release 0.9.8.20, overnight 2026-11-14,
 D:/RUSE-2.0/scratch/release-0920/scenarios/play). USED-BY: tests/test_scenarios_play_*.py."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import os
 import tempfile
 import time

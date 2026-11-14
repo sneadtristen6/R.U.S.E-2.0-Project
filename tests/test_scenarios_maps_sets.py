@@ -3,6 +3,7 @@ mod sets), opened again after the Studio starts again, and deleted (Delete map, 
 test_scenarios_maps_base. Each checks what the page is told, the files, and whether the map still builds.
 
 FOR: the overnight scenario tests of map mods (owner, 2026-11-13). USED-BY: the release check of 0.9.8.20."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import shutil
 import tomllib
 import unittest

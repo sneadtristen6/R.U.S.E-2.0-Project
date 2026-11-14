@@ -11,6 +11,7 @@ tests' own (test_bugwatch KnownCrashes: laid out by rusemod.crashplaces' table, 
 
 FOR: the Test in game and Play scenarios (release 0.9.8.20, overnight 2026-11-14). USED-BY: the scenarios' run and
 report."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import json
 import os
 import shutil

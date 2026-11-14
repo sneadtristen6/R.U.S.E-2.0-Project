@@ -9,6 +9,7 @@ is mended, and then its mark comes off. Made-up mods and names only, a Studio on
 own, no game (Export packs without a build then, as when R.U.S.E. isn't found), the Recycle Bin stood in for (a folder
 of the test's: never the PC's). The Launcher's library side is tests/test_scenarios_export_library.py. Not repeated
 here: two mods in one set and the units a player makes (work/0920c-scen-units)."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import os
 import sys
 import tempfile
