@@ -203,6 +203,36 @@ where = "rusemod.anim:_model_tables"
 kind = "raise"
 us = "{0}: {1}: {2} plays {3}, which isn't one of its animations"
 
+[cc7e3def3cc]
+check = "anim.mod_copies"
+where = "rusemod.anim:mod_copies"
+kind = "raise"
+us = "{0}: [copy.<its id>] tables, one a copy"
+
+[c8121ce97e9]
+check = "anim.mod_copies-2"
+where = "rusemod.anim:mod_copies"
+kind = "raise"
+us = "{0}: [copy.{1}]: a copy's id (lower case letters, digits and _, at most 40), then its name, clip, speed, from, file, bone and units"
+
+[c3cb7e2ec93]
+check = "anim.mod_copies-3"
+where = "rusemod.anim:mod_copies"
+kind = "raise"
+us = "{0}: clip names the game's clip it is a copy of, by its path in the game's packs, ending .baf"
+
+[cb79b89464a]
+check = "anim.mod_copies-4"
+where = "rusemod.anim:mod_copies"
+kind = "raise"
+us = "{0}: file names a .baf file in {1}/ (letters, digits, _ and -)"
+
+[c8296883ee1]
+check = "anim.mod_copies-5"
+where = "rusemod.anim:mod_copies"
+kind = "raise"
+us = "{0}: units: {1} = [the paths of its figures that play the copy], [] for every one, each once"
+
 [c3480834aee]
 check = "anim.own_clip_files"
 where = "rusemod.anim:own_clip_files"
@@ -527,17 +557,17 @@ where = "rusemod.build:unit_models"
 kind = "mistake"
 us = "{0}{1} is in {2}'s army (Nationalite {3}), but its model {4}{5} is in the mesh pack of {6}'s units only, and it can't be copied into {7}'s skirmish packs: {8}{9}. The game loads a nation's unit models only in matches where a player has that nation, so in other matches this unit would have no model, or crash the game. Copy one of {10}'s units instead, or leave it in {11}'s army"
 
-[c7fbcaa5e4e]
-check = "nation-models"
-where = "rusemod.build:unit_models"
-kind = "mistake"
-us = "{0}{1} is in {2}'s army (Nationalite {3}), but its model {4}{5} is in the mesh pack of {6}'s units only, and the unit data has no cluster maps that could load {7}'s models in every match: the game loads a nation's unit models only in matches where a player has that nation, so in other matches this unit has no model, or crashes the game. Copy one of {8}'s units instead, or leave it in {9}'s army"
-
 [cc80568d68f]
 check = "nation-models"
 where = "rusemod.build:unit_models"
 kind = "mistake"
 us = "{0}{1}, in {2}'s army, has a model only {3}'s units have, and the unit data has no cluster maps that could load {4}'s models in every match: in matches where no player has {5}, this unit would have no model, or crash the game"
+
+[c7fbcaa5e4e]
+check = "nation-models"
+where = "rusemod.build:unit_models"
+kind = "mistake"
+us = "{0}{1} is in {2}'s army (Nationalite {3}), but its model {4}{5} is in the mesh pack of {6}'s units only, and the unit data has no cluster maps that could load {7}'s models in every match: the game loads a nation's unit models only in matches where a player has that nation, so in other matches this unit has no model, or crashes the game. Copy one of {8}'s units instead, or leave it in {9}'s army"
 
 [c455b473de2]
 check = "spawn-models"
@@ -700,6 +730,12 @@ check = "build.unit_own_clips-2"
 where = "rusemod.build:unit_own_clips"
 kind = "mistake"
 us = "{0}: no mod in the set makes a unit {1}, and the game has none of that name. If {2} was deleted from this mod, its animations were left behind: in the Studio, click Take out what it left under this mistake in Test in game's log, or take [unit.{3}] out of {4} and delete the folder {5}/{6}/"
+
+[c02acf24b3f]
+check = "build.unit_own_clips-3"
+where = "rusemod.build:unit_own_clips"
+kind = "mistake"
+us = "{0}: it is ticked for a unit {1}, which no mod in the set makes and the game hasn't got. If {2} was deleted from this mod, untick it under Who plays it in RUSE Decoy (Your copies), or take {3} out of [copy.{4}.units] in {5}"
 
 [cb4e2a7f510]
 check = "build.unit_own_rides"
@@ -1774,6 +1810,30 @@ check = "modelin._own_animations"
 where = "rusemod.modelin:_own_animations"
 kind = "raise"
 us = "the animation {0} is on other bones than the model's"
+
+[c8236d99451]
+check = "modelin._blender_animations"
+where = "rusemod.modelin:_blender_animations"
+kind = "raise"
+us = "the animation {0} is on other bones than the model's"
+
+[c5f33524894]
+check = "modelin.own_animations_into"
+where = "rusemod.modelin:own_animations_into"
+kind = "raise"
+us = "no bones in it for its animations"
+
+[cac11c4823e]
+check = "modelin.own_animations_into-2"
+where = "rusemod.modelin:own_animations_into"
+kind = "raise"
+us = "the animation {0} is on other bones than the model's"
+
+[c968c251359]
+check = "modelin.own_animations_into-3"
+where = "rusemod.modelin:own_animations_into"
+kind = "raise"
+us = "its animations move bones the file hasn't got: {0}"
 
 [c4d2a8e041b]
 check = "nav.read"
