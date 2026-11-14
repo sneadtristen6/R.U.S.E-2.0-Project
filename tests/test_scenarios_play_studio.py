@@ -299,25 +299,31 @@ class ModFilesSavedElsewhere(PlayScenario):
         for bad in PYTHON_WORDS + ("UnicodeDecodeError", "codec"):
             self.assertNotIn(bad, j["message"])
 
-    @unittest.expectedFailure    # finding P-1: a mod's text in another encoding: Python's words, no file named
     def test_a_text_file_saved_by_excel(self):
+        """Finding P-1, its PROPOSED FIX: Excel's "CSV (Comma delimited)" with an accented letter. Before, the check
+        stopped on Python's UnicodeDecodeError (no problem listed, no Set aside) and Test in game said "Something went
+        wrong: UnicodeDecodeError: 'utf-8' codec can't decode byte 0xe9 in position 56", no file named. Now both name
+        the file and its line and say how to save it as UTF-8; the check offers Set aside."""
         checked, j = self.said("text/names.csv", CSV.encode("cp1252"))
         self.assert_named("text/names.csv", checked, j)
+        self.assertIn("text/names.csv:2:", j["message"])
+        self.assertEqual([f["fix"] for p in checked for f in p["fixes"]], ["set_aside"])
 
-    @unittest.expectedFailure    # finding P-1
     def test_a_changes_file_saved_as_unicode(self):
+        """Finding P-1, its PROPOSED FIX: Notepad's "Unicode" (UTF-16): named, never Python's words."""
         checked, j = self.said("src/studio.rndf", lambda text: text.encode("utf-16"))
         self.assert_named("src/studio.rndf", checked, j)
 
-    @unittest.expectedFailure    # finding P-2: a changes file with a BOM: refused, and Set aside takes every change
     def test_a_changes_file_saved_as_utf8_with_a_bom(self):
-        """Notepad's "UTF-8 with BOM": the text is UTF-8 all the same (the mod's .csv files are read past a BOM), but
-        the changes file is refused (its first character, the BOM, can't be read), and the check's only fix, Set aside,
-        takes the Studio's changes file, every change of the mod, out of it."""
+        """Finding P-2, its PROPOSED FIX: Notepad's "UTF-8 with BOM" is UTF-8 all the same (the mod's .csv files were
+        read past a BOM already). Before, the changes file was refused ("src/studio.rndf:1:1: can't read '\\ufeff// Made
+        by '"), and the check's only fix, Set aside, took the Studio's changes file, every change of the mod, out of
+        it. Now it builds, and the Studio reads its own changes as before."""
         checked, j = self.said("src/studio.rndf", lambda text: b"\xef\xbb\xbf" + text.encode("utf-8"))
         print("\nP-2 check:", checked, "| Test in game:", j["message"])
         self.assertEqual((checked, j["state"]), ([], "done"))
         self.assertEqual(value_in(self.copy()), 15)
+        self.assertEqual(self.page.edited(), [M4])    # (the Studio's own reading of its changes: the M4's)
 
 
 if __name__ == "__main__":

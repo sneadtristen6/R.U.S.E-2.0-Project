@@ -86,10 +86,11 @@ class PlayASet(Sets):
 
 
 class AModsTextSavedByExcel(Sets):
-    @unittest.expectedFailure    # finding P-1 (the Launcher's side): Python's words, no file named
     def test_added_to_the_library(self):
-        """Unusual: a mod whose text file was saved by Excel as "CSV (Comma delimited)" (the PC's ANSI code page, an
-        accented letter in it) added to the library: refused, its words naming the file, never Python's."""
+        """Unusual (finding P-1, the Launcher's side, its PROPOSED FIX): a mod whose text file was saved by Excel as "CSV
+        (Comma delimited)" (the PC's ANSI code page, an accented letter in it) added to the library: refused, its words
+        naming the file, never Python's. Before: "This mod couldn't be read ('utf-8' codec can't decode byte 0xe9 in
+        position 56: invalid continuation byte).\""""
         from test_scenarios_play_base import PYTHON_WORDS
         from test_scenarios_play_studio import CSV
         folder = self.a_mod()
