@@ -72,6 +72,17 @@ class Usual(Library):
         self.assertTrue(friend.add_mod(str(second))["replaced"])
         self.assertEqual(self.shown(friend), {"tank-test": ("Tank Test", "1.1.0", "Jane Doe")})
 
+    def test_a_rusemod_renamed_zip_or_with_its_ending_in_capitals(self):
+        self.made("Tank Test")
+        out = self.exported("1.0.0")
+        friend = self.api(home=Path(self.tmp.name) / "friend")
+        for name in ("tank-test-1.0.0.zip", "TANK-TEST-1.0.0.RUSEMOD"):
+            with self.subTest(name=name):
+                copy = Path(self.tmp.name) / "dl" / name
+                copy.parent.mkdir(exist_ok=True)
+                copy.write_bytes(out.read_bytes())
+                self.assertEqual(friend.add_mod(str(copy))["mod"]["id"], "tank-test")
+
     def test_a_mod_a_newer_studio_exported_in_this_format(self):
         """A newer Studio's version in [made_with], the mod format the same: added, no word about it."""
         folder = self.made("Tank Test")
@@ -189,6 +200,25 @@ class Unusual(Library):
             with self.assertRaises(LauncherError) as caught:
                 friend.add_mod(str(second))
         self.assertIn("mod.toml", str(caught.exception))
+
+
+    @unittest.expectedFailure
+    def test_FE17_a_zip_of_two_mods(self):
+        """FE-17: a .zip holding two mod folders (a player zipping his whole Mods folder to share it) adds the first
+        and says nothing of the second: package.check takes the shortest of the folders holding a mod.toml. Wanted:
+        refused in words naming what it holds, or each added."""
+        two = Path(self.tmp.name) / "two-mods.zip"
+        with zipfile.ZipFile(two, "w") as z:
+            for mod_id in ("aaa-first", "bbb-second"):
+                z.writestr(f"{mod_id}/mod.toml", f'[mod]\nid = "{mod_id}"\nversion = "1.0.0"\n')
+                z.writestr(f"{mod_id}/src/x.rndf", PATCH)
+        friend = self.api(home=Path(self.tmp.name) / "friend")
+        try:
+            friend.add_mod(str(two))
+        except LauncherError as exc:
+            self.assertIn("bbb-second", str(exc))
+            return
+        self.assertEqual(sorted(self.shown(friend)), ["aaa-first", "bbb-second"])
 
 
 if __name__ == "__main__":

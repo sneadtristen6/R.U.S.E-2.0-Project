@@ -190,6 +190,21 @@ class Usual(Studio):
         self.assertEqual(self.said(view, "In the Launcher's mod library"),
                          ["In the Launcher's mod library as Remake 1.0.0: tick it in a mod set and press Play."])
 
+    def test_save_as_a_name_without_its_ending_and_a_map_from_the_maps_tab(self):
+        chosen = self.root / "chosen" / "My Mod"                          # (a folder not there yet, no ending typed)
+        self.api._pick_save = lambda suggested: str(chosen)
+        self.make("Picked")
+        view = self.export("1.0.0", "Jane Doe")
+        self.assertEqual((view["state"], view["result"]["path"]), ("done", str(chosen) + ".rusemod"))
+        self.api._pick_save = None
+        Path(self.api.new_mod("Beach Map", kind="map")["current"])
+        job = self.api.export_mod("1.0.0", "Jane Doe", "", kind="map")["job"]
+        end = time.monotonic() + 60
+        while self.api.job(job)["state"] == "running" and time.monotonic() < end:
+            time.sleep(0.02)
+        self.assertEqual(self.api.job(job)["result"]["path"], str(self.home / "exports" / "beach-map-1.0.0.rusemod"))
+        self.assertIn("beach-map", self.library())
+
     def test_a_version_he_types_with_spaces_or_leading_zeros(self):
         self.make("Versions")
         self.assertEqual(self.export(" 1.2.3 ")["result"]["path"], str(self.home / "exports" / "versions-1.2.3.rusemod"))
@@ -330,6 +345,49 @@ class Unusual(Studio):
                                           f"Windows didn't allow it. Close that program, then try again.")
         self.assertEqual(list((self.home / "exports").iterdir()), [])     # (nothing half made left)
         self.assertEqual(self.export("1.0.0")["state"], "done")           # (and once it's let go, it goes out)
+
+
+    @unittest.skipUnless(sys.platform == "win32", "Windows keeps a folder with an open file in it in its place")
+    @unittest.expectedFailure
+    def test_FE14_the_library_copy_held_while_export_adds_the_new_version(self):
+        """FE-14, the Studio's side: a file of the mod's copy in the Launcher's library open in another program while
+        he exports a new version: the file is saved, but the job ends "failed" with Windows' own words, "[WinError 5]
+        Access is denied: '...library\\held' -> '...library\\.old-held'", and no line about the library. Wanted: the
+        export done, and a line saying the library's copy couldn't be replaced, and what to close."""
+        self.make("Held")
+        self.assertEqual(self.export("1.0.0")["state"], "done")
+        with open(self.home / "library" / "held" / "mod.toml", "rb"):
+            view = self.export("1.1.0")
+        self.assertTrue((self.home / "exports" / "held-1.1.0.rusemod").is_file())
+        self.assertEqual(view["state"], "done", view.get("message"))
+        self.assertTrue(self.said(view, "Not added to the Launcher's library"), view["lines"])
+
+    @unittest.expectedFailure
+    def test_FE15_export_clicked_again_while_it_runs(self):
+        """FE-15: Export started again while the first still runs (the page lets Export… open again during a long
+        build) runs both at once on one file: one ends with words for another program holding the file (it is the
+        Studio's own other export), and a half-written <id>-<version>.rusemod.part is left in Exports. Wanted: the
+        second waits for the first, or is refused at once in words; nothing half written left."""
+        self.make("Twice")
+        real = self.api._share_view
+
+        def reading(path):                   # (the first export still reading its file when the second packs: as a
+            with open(path, "rb"):           # big mod's SHA-256 takes a moment; made long here, so it always meets)
+                time.sleep(3)
+            return real(path)
+        self.api._share_view = reading
+        jobs = []
+        for _ in range(2):
+            try:
+                jobs.append(self.api.export_mod("1.0.0", "Jane Doe", "")["job"])
+            except StudioError as exc:                                   # (refused at once in words: fine)
+                self.assertNotIn("another program", str(exc))
+        end = time.monotonic() + 120
+        while any(self.api.job(j)["state"] == "running" for j in jobs) and time.monotonic() < end:
+            time.sleep(0.05)
+        for j in jobs:
+            self.assertNotIn("another program", self.api.job(j).get("message") or "")
+        self.assertEqual(sorted(p.name for p in (self.home / "exports").iterdir()), ["twice-1.0.0.rusemod"])
 
 
 if __name__ == "__main__":
