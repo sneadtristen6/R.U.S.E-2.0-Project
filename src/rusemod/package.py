@@ -511,7 +511,8 @@ def _roots(before: str, more: str = "") -> re.Pattern:
 _ROOT = _roots(_BEFORE)
 # (where a path to a user's own folder is looked for, _spans: those starts, and \ alone, a path from the top of the
 # drive Windows is on, \Users\jane)
-_USER_ROOT = _roots(_BEFORE_USER, rf"|(?P<rooted>{_BEFORE_USER}\\(?![\\\s]))")
+_USER_ROOT = _roots(_BEFORE_USER, rf"|(?P<rooted>{_BEFORE_USER}\\(?![\\\s]))"
+                                  r"|(?P<smb>(?<![A-Za-z0-9])smb://(?=[^/\s]))")   # (and a share's smb:// address)
 _FOLDER_RUN = re.compile(rf"({_NAME_LETTERS}+)([\\/]+)")
 _LAST_NAME = re.compile(r"[^\s\\/:*?\"<>|`\x00-\x1f]+")
 _WORDS_NOT_A_NAME = re.compile(r"[,;!?.]\s|[^\s.]\.[A-Za-z][A-Za-z0-9]{0,7}\s")
@@ -527,9 +528,10 @@ _WORDS_NOT_A_NAME = re.compile(r"[,;!?.]\s|[^\s.]\.[A-Za-z][A-Za-z0-9]{0,7}\s")
 #   \\?\C:\ and \\.\C:\ (Windows' long and device forms),
 #   \\?\Volume{...}\ (a drive by its volume's name), %SystemDrive%\ and %HomeDrive%\, file:///C:/, file://localhost/C:/
 #   and file:///C|/, a drive's own share (\\server\C$\, file://server/C$/), and as Git Bash (/c/), WSL (/mnt/c/), Cygwin
-#   (/cygdrive/c/) and Wine (drive_c/, anywhere in a path) write a Windows drive;
+#   (/cygdrive/c/) and Wine (drive_c/, anywhere in a path) write a Windows drive; and the home of Cygwin and MSYS2 where
+#   they install, at the top of a drive (C:\cygwin64\home\, C:\msys64\home\: UNIX_ON_WINDOWS);
 # - a server's share of its users' folders (SHARE_USERS, a hidden share's $ too): \\server\Users\,
-#   \\?\UNC\server\Users\, \\.\UNC\server\Users\, file://server/Users/, a NAS's \\nas\homes\;
+#   \\?\UNC\server\Users\, \\.\UNC\server\Users\, file://server/Users/, smb://server/Users/, a NAS's \\nas\homes\;
 # - Linux's home and a Mac's Users (UNIX_USERS, written as those systems write them: so a web address's /users/me is no
 #   user's folder), and /var/home, /usr/home, /export/home (USERS_UNDER), at the top of a Linux or Mac disk: /,
 #   file:///, file://localhost/, \\wsl$\<its Linux>\ and \\wsl.localhost\<its Linux>\ (WSL's), a Mac's
@@ -554,6 +556,8 @@ USERS_FOLDERS = frozenset({"users", "home", "documents and settings"})   # (user
 WINDOWS_USERS = frozenset({"users", "documents and settings"})          # (at the top of a Windows drive, casefold)
 UNIX_USERS = frozenset({"home", "Users"})          # (at the top of a Linux or Mac disk: as Linux and a Mac write them)
 USERS_UNDER = frozenset({"var", "usr", "export"})   # (a Linux or Unix disk's /var/home, /usr/home, /export/home)
+UNIX_ON_WINDOWS = frozenset({"cygwin", "cygwin64", "msys32", "msys64"})   # (Cygwin's, MSYS2's own folders, casefold,
+#                                                     at the top of a drive where they install: their users' home)
 SHARE_USERS = frozenset({"users", "home", "homes", "documents and settings"})   # (a server's share of them, casefold)
 NOT_A_USER = frozenset({"public", "default", "default user", "all users", "desktop.ini", "shared", ".localized",
                         "lost+found"})              # (a system's own folders there, casefold: no user's)
@@ -696,7 +700,7 @@ def _path_at(text: str, m) -> tuple[list, int]:
     """The folders of the path whose root `m` (_ROOT) found (_folders_from)."""
     # (a path of unix, home and file kinds is written with / only: a \ after "/Iinclude share" says it is a switch and
     # words; a server's name, \\server\, has no space in it)
-    return _folders_from(text, m.end(), m.lastgroup in ("unix", "home", "file"), m.group(0) == "\\\\")
+    return _folders_from(text, m.end(), m.lastgroup in ("unix", "home", "file", "smb"), m.group(0) == "\\\\")
 
 
 def _users_places(kind: str, root: str, folders: list) -> set:
@@ -727,6 +731,8 @@ def _users_places(kind: str, root: str, folders: list) -> set:
             unix.append(1)
         else:
             server = 0
+    elif kind == "smb":                                             # smb://server/share/: a Mac's or Linux's way
+        server = 0
     elif kind == "unc":
         if root == "\\\\":
             if low[:1] == ["."]:                                    # \\.\UNC\server\share\ (\\.\C:\: _DRIVE_AFTER)
@@ -747,7 +753,11 @@ def _users_places(kind: str, root: str, folders: list) -> set:
         elif share.rstrip("$") in SHARE_USERS:
             places.add(server + 1)                                  # \\server\Users\, \\server\users$\, \\nas\homes\
     win += [k + 1 for k, n in enumerate(low) if _WINE_DRIVE.fullmatch(n)]   # .../drive_c/: Wine's C: drive
-    places.update(t for t in win if t < len(low) and low[t] in WINDOWS_USERS)
+    for t in win:
+        if t < len(low) and low[t] in WINDOWS_USERS:
+            places.add(t)
+        elif t + 1 < len(low) and low[t] in UNIX_ON_WINDOWS and low[t + 1] == "home":
+            places.add(t + 1)                                       # C:\cygwin64\home\, C:\msys64\home\
     for t in unix:
         if t < len(names) and names[t] in UNIX_USERS:
             places.add(t)

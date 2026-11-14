@@ -260,6 +260,9 @@ class HisReadme(unittest.TestCase):
                  ["/home/jane", "C:\\Users\\kim lee"]),
                 ("\u201c/home/jane\u201d is mine", "\u201c\u201d is mine", ["/home/jane"]),
                 ("cd \\Users\\jane then", "cd  then", ["\\Users\\jane"]),           # (the drive Windows is on)
+                ("C:\\cygwin64\\home\\jane and D:/msys64/home/kim", " and ",
+                 ["C:\\cygwin64\\home\\jane", "D:/msys64/home/kim"]),               # (Cygwin's, MSYS2's homes)
+                ("Mac: smb://nas/Users/jane", "Mac: ", ["smb://nas/Users/jane"]),
                 ("C:\\Users\\JANEDO~1 is short", " is short", ["C:\\Users\\JANEDO~1"])):
             self.assertEqual(package.paths_cut(text), (want, [(g, "") for g in gone]), text)
 
@@ -312,12 +315,14 @@ class HisReadme(unittest.TestCase):
                 ("%APPDATA%\\Users\\list.txt and %APPDATA%\\home\\x", "list.txt and x"),
                 ("/c/Program Files/RUSE/x.exe", "x.exe"), ("/mnt/data/models/tank.glb", "tank.glb"),
                 ("/c/home/x", "x"), ("file://localhost/C:/models/tank.glb", "C:/models/tank.glb"),
+                ("C:\\cygwin64\\bin\\bash.exe", "bash.exe"), ("D:\\Tools\\msys64\\home\\x", "x"),
                 ("\\\\.\\C:\\models\\tank.glb", "C:\\models\\tank.glb")):
             self.assertEqual(package.paths_cut(text)[0], want, text)
         for text in ("Linux: /home/$USER or /home/${USER}", "Mac: /Users/Shared on every Mac",
                      "GET /users/me returns your profile.", "\u201c/opt/models/tank.glb\u201d stays",
                      "<code>/opt/models/tank.glb</code> stays", "\u00ab/var/models/x.glb\u00bb",
-                     "Markdown \\*stars\\* stay", "\\Windows\\System32\\x.dll", "see \\Users\\Public\\x.glb"):
+                     "Markdown \\*stars\\* stay", "\\Windows\\System32\\x.dll", "see \\Users\\Public\\x.glb",
+                     "smb://nas/music/x.mp3"):
             self.assertEqual(package.paths_cut(text), (text, []), text)
 
     def test_a_path_on_past_a_user_s_folder_loses_the_name_however_it_is_written(self):
@@ -330,6 +335,7 @@ class HisReadme(unittest.TestCase):
                            ("\u00ab/Users/jane/x.glb\u00bb", "\u00abx.glb\u00bb"),
                            ("<code>/home/jane/mods/</code>", "<code>mods/</code>"),
                            ("see \\Users\\jane\\x.glb", "see x.glb"),
+                           ("smb://nas/Users/jane/mods/x.glb", "x.glb"),
                            ("Built in /c/Users/jane/mods/cavalry, then", "Built in cavalry, then")):
             new, _cuts = package.paths_cut(text)
             self.assertEqual(new, want, text)
