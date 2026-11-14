@@ -306,11 +306,11 @@ class Unusual(Studio):
         self.assertNotIn("unpack", view["message"])
 
     @unittest.skipUnless(sys.platform == "win32", "Windows' file locks")
-    @unittest.expectedFailure
     def test_FE13_a_file_another_program_holds(self):
-        """FE-13: a file of the mod another program holds (Excel keeps a .csv it has open locked) stops Export with
-        "[Errno 13] Permission denied": Python's words, no file named. Wanted: the Studio's own words, naming the file
-        and saying to close the program (api.file_error)."""
+        """FE-13: a file of the mod another program holds (Excel keeps a .csv it has open locked) stopped Export with
+        "[Errno 13] Permission denied": Python's words, no file named (release adc8ecea). Wanted: the Studio's own
+        words, naming the file and saying to close the program (api.file_error). PROPOSED FIX: pack names the file
+        that can't be read (package.named_file) and Export says it in the Studio's words; nothing half made is left."""
         import msvcrt
         folder = self.make("Held")
         held = folder / "text" / "units.csv"
@@ -323,8 +323,10 @@ class Unusual(Studio):
             finally:
                 msvcrt.locking(f.fileno(), msvcrt.LK_UNLCK, 8)
         self.assertEqual(view["state"], "failed")
-        self.assertIn("units.csv", view["message"])
-        self.assertIn("another program has it open", view["message"])
+        self.assertEqual(view["message"], f"{held} couldn't be read or written, because another program has it open or "
+                                          f"Windows didn't allow it. Close that program, then try again.")
+        self.assertEqual(list((self.home / "exports").iterdir()), [])     # (nothing half made left)
+        self.assertEqual(self.export("1.0.0")["state"], "done")           # (and once it's let go, it goes out)
 
 
 if __name__ == "__main__":

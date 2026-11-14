@@ -32,6 +32,7 @@ record names, and his README in the mod stays as he wrote it.
 from __future__ import annotations
 
 import codecs
+import errno
 import json
 import locale
 import os
@@ -1108,6 +1109,8 @@ def pack(folder, out, *, build_id: str | None = None, data_revision: str | None 
         load_mod(folder)
     except (BuildError, RndfError) as exc:
         raise PackageError(f"Fix the mod before packing it: {exc}") from None
+    except OSError as exc:      # (a file of the mod another program holds: said with its name, named_file)
+        raise named_file(exc, files_of(folder))
     out = Path(out)
     target = out / file_name(info) if out.is_dir() or out.suffix.lower() != EXTENSION else out
     target.parent.mkdir(parents=True, exist_ok=True)
@@ -1128,35 +1131,57 @@ def pack(folder, out, *, build_id: str | None = None, data_revision: str | None 
     files = files_of(folder, work)
     if left_out is not None:
         left_out += [f.relative_to(folder).as_posix() for f in work]
-    with zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as z:
-        for f in files:
-            name = f.relative_to(folder).as_posix()
-            got = studio_paths_out(f, name)
-            if got is None:
-                readme = readme_paths_out(f, name, users, unread)   # (the owner's "cut to file name", 2026-11-13:
-                #                                                     his README only; "take the username path out")
-                if readme is not None:
-                    got = (readme[0], "readme")
-                    if cuts is not None:
-                        cuts[name] = readme[1]
-            if got is None:
-                z.write(f, name)
-                if home_in is not None and (f.suffix.lower() in TEXT_FILES or f.suffix.lower() == ".glb"
-                                            or f.name == "LICENSE") and home_named(f.read_bytes(), home):
+    try:
+        with zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as z:
+            for f in files:
+                name = f.relative_to(folder).as_posix()
+                got = studio_paths_out(f, name)
+                if got is None:
+                    readme = readme_paths_out(f, name, users, unread)   # (the owner's "cut to file name",
+                    #                                     2026-11-13: his README only; "take the username path out")
+                    if readme is not None:
+                        got = (readme[0], "readme")
+                        if cuts is not None:
+                            cuts[name] = readme[1]
+                if got is None:
+                    z.write(f, name)
+                    if home_in is not None and (f.suffix.lower() in TEXT_FILES or f.suffix.lower() == ".glb"
+                                                or f.name == "LICENSE") and home_named(f.read_bytes(), home):
+                        home_in.append(name)
+                    continue
+                data, kind = got
+                member = zipfile.ZipInfo.from_file(f, name)   # (its date and attributes, as z.write gives them)
+                member.compress_type = zipfile.ZIP_DEFLATED
+                z.writestr(member, data)
+                if cleaned is not None:
+                    cleaned.append(name)
+                if kinds is not None:
+                    kinds[name] = kind
+                if home_in is not None and home_named(data, home):
                     home_in.append(name)
-                continue
-            data, kind = got
-            member = zipfile.ZipInfo.from_file(f, name)   # (its date and attributes, as z.write gives them)
-            member.compress_type = zipfile.ZIP_DEFLATED
-            z.writestr(member, data)
-            if cleaned is not None:
-                cleaned.append(name)
-            if kinds is not None:
-                kinds[name] = kind
-            if home_in is not None and home_named(data, home):
-                home_in.append(name)
+    except OSError as exc:      # (nothing half made is left beside the target; the file it is about named)
+        tmp.unlink(missing_ok=True)
+        raise named_file(exc, files)
     os.replace(tmp, target)
     return target
+
+
+def named_file(exc: OSError, files) -> OSError:
+    """`exc`, the OSError a file of a mod gave, with the file it is about named when it names none (a part of a file
+    another program has locked fails in the middle of a read, nameless: Python then says only "[Errno 13] Permission
+    denied"; the export scenarios' FE-13): the first of `files` that can't be read through now. A full disk names
+    none: it is about the file being written."""
+    full = exc.errno == errno.ENOSPC or getattr(exc, "winerror", None) in (39, 112)
+    if exc.filename is None and not full:
+        for f in files:
+            try:
+                with open(f, "rb") as h:
+                    while h.read(1 << 20):
+                        pass
+            except OSError:
+                exc.filename = str(f)
+                break
+    return exc
 
 
 def _check_info(info: dict) -> None:

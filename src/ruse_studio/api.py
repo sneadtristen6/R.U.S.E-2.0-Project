@@ -10553,8 +10553,11 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                 say("R.U.S.E. wasn't found, so the file carries no game build or fingerprint.")
             else:
                 say("Building the mod on the game, to record the game build and the fingerprint…")
-                result = build_and_write(game, [load_mod(folder)], say=lambda line: say("  " + line),
-                                         cache=build_cache())
+                try:
+                    mod = load_mod(folder)
+                except OSError as exc:   # (a file another program holds: said in words, naming it; FE-13)
+                    raise file_error(package.named_file(exc, package.files_of(folder)), target) from exc
+                result = build_and_write(game, [mod], say=lambda line: say("  " + line), cache=build_cache())
                 if result.errors:
                     raise BuildError("Fix the mod first: the build above has errors, so nothing was exported.")
                 build_id = build_of(game)
@@ -10576,9 +10579,12 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                 if stale:
                     say(f"The era units' record and credits named units no longer in the mod; their lines were taken "
                         f"out: {', '.join(stale)}.")
-                path = package.pack(folder, target, build_id=build_id, data_revision=revision, fingerprint=fingerprint,
-                                    solved=answers, made_with=self.MADE_WITH, kinds=kinds, home_in=home_in,
-                                    left_out=left_out, cuts=cuts, unread=unread)
+                try:
+                    path = package.pack(folder, target, build_id=build_id, data_revision=revision,
+                                        fingerprint=fingerprint, solved=answers, made_with=self.MADE_WITH, kinds=kinds,
+                                        home_in=home_in, left_out=left_out, cuts=cuts, unread=unread)
+                except OSError as exc:   # (a file another program holds, named by pack, or a full disk: in words)
+                    raise file_error(exc, target) from exc
             if left_out:
                 say(f"Left out of the exported file: {', '.join(left_out)}. These are files the Studio left half "
                     f"written when it was stopped while writing them (their names end in .part, .partial or .tmp); "
@@ -10637,7 +10643,8 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         job = Job()
         job.result = None  # the exported file's size, SHA-256 and list entry, for "Share your mod"
         self._jobs[job.id] = job
-        return job.start(work, f"Saved as {target}", plain=(BuildError, RndfError, OSError, package.PackageError))
+        return job.start(work, f"Saved as {target}",
+                         plain=(BuildError, RndfError, OSError, package.PackageError, StudioError))
 
     # --- Share your mod: how an exported mod gets onto the supported-mods list (MOD_FORMAT §15) ---
     @staticmethod
