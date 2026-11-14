@@ -12,6 +12,7 @@ FOR: the models and Blender scenarios (release 0.9.8.20, overnight 2026-11-14).
 USED-BY: the scenarios' runs (gentle.py, -m unittest)."""
 import unittest
 
+import test_bonefit   # (the module, not its test classes: those run in test_bonefit once)
 from rusemod import modelin, unitmodel
 from test_ownrig import little_glb, turn_about
 from test_scenarios_models_base import LANGS, STEM, ModelScenario
@@ -195,6 +196,44 @@ class Broken(ModelScenario):
         self.assertEqual(got["model"]["vertices"], 24)
         result, written, stopped = self.built()
         self.assertEqual((self.build_errors(result), stopped), ([], []))
+
+
+class WillItWork(unittest.TestCase):
+    """Will it work in the game? on a squad's model on bones of its own (test_bonefit's ThePage stand-ins: a horse and
+    rider of 14 bones, the game's rifleman playing Fusilier stand of 41), its model's own animations in the mod as
+    Import model keeps them: the build gives every listing of a figure drawing the model one of them
+    (rusemod.build._own_animations, rusemod.animactions.choose)."""
+    setUp, tearDown = test_bonefit.ThePage.setUp, test_bonefit.ThePage.tearDown
+    UNIT = test_bonefit.UNIT
+
+    def own(self, **picks):
+        from rusemod import anim
+        clip = test_bonefit.clip_on(self.names, self.parents)
+        anim.set_animations(self.mod, self.UNIT, {"hr_t_stand": clip, "hr_b_stand": clip})
+        for action, name in picks.items():
+            anim.set_pick(self.mod, self.UNIT, action, name)
+
+    def problems(self) -> list:
+        return sorted((p["kind"], p["figure_kind"]) for p in self.api.model_fit(test_bonefit.E + self.UNIT)["problems"])
+
+    def test_control_with_no_animations_of_its_own_the_game_s_clip_is_what_s_checked(self):
+        self.assertEqual(self.problems(), [("bone", "far"), ("clip", "rifle")])
+
+    def test_m8_its_own_animations_are_what_s_checked(self):
+        """M-8 (PROPOSED FIX in this branch): with the model's own animations the rifleman's stand plays hr_t_stand /
+        hr_b_stand, on its bones: no clip problem (0d5564eb said the game's 41-bone clip would stop the game); the far
+        figure's missing weapon bone is still said."""
+        self.own()
+        self.assertEqual(self.problems(), [("bone", "far")])
+
+    def test_an_animation_of_other_bones_picked_is_still_said(self):
+        """A pick the build plays: one of other bones than the model's (a clip of the game soldier's 41 kept as the
+        model's own animation) is still said, for the action it's picked for."""
+        from rusemod import anim
+        self.own()
+        anim.set_animations(self.mod, self.UNIT, {"hr_t_stand": test_bonefit.clip_on(test_bonefit.SOLDIER,
+                                                                                     test_bonefit.SOLDIER_PARENTS)})
+        self.assertIn(("clip", "rifle"), self.problems())
 
 
 class WhatTheImportReads(unittest.TestCase):

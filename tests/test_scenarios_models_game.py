@@ -117,14 +117,12 @@ class OwnBonesOnASquad(OnTheGame):
             "GfxDescriptorFusilier": ("descriptor_unit_my_riderslod0.ase2ndfbin", 70, 0),
             "GfxDescriptorIconeCadavre": ("descriptor_unit_my_riderslod0.ase2ndfbin", 2, 0)})
 
-    @unittest.expectedFailure
     def test_m8_will_it_work_in_the_game_says_what_the_build_plays(self):
-        """M-8: Will it work in the game? says its riflemen (every one of their 70 actions) and its fallen soldier play
-        the game's clips of 41 bones on the model's 62, "This can stop the game: it did in a test", while the build
-        plays the model's own animations for every one of them (the test above): the check reads only RUSE Decoy's
-        Only this unit rows (files/anim/units.toml's clips and actions: modelfit._fitcheck_figures), not the model's
-        own animations and the action table that plays them. What should happen: no such problem for a listing the
-        build gives one of the model's own animations."""
+        """M-8 (PROPOSED FIX in this branch): on 0d5564eb Will it work in the game? said its riflemen (every one of
+        their 70 actions) and its fallen soldier play the game's clips of 41 bones on the model's 62, "This can stop
+        the game: it did in a test", while the build plays the model's own animations for every one of them (the test
+        above): the check read only RUSE Decoy's Only this unit rows (files/anim/units.toml's clips and actions), not
+        the model's own animations and the action table that plays them. Now no such problem."""
         self.page.model_import(self.unit, str(RIFLE))
         self.assertEqual([(p["figure_kind"], p["level"]) for p in self.page.model_fit(self.unit)["problems"]], [])
 
