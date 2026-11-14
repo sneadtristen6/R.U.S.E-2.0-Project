@@ -265,6 +265,10 @@
   // hand, and this box beside them does it in one click (StudioApi.home_move_offer, home_move; ruse_studio.homemove;
   // the owner, 2026-11-13: "tell the modder, provide a quick fix that auto does it if they dont want to do it
   // manually"): everything copied to a short folder, checked, switched to, the Studio started again, nothing deleted.
+  // The Studio picks the short folder; Choose another folder… beside the button picks another, checked the same way
+  // (StudioApi.home_move_choose; the owner, 2026-11-13: "It can be selected automatically, but the modder should be
+  // able to choose"), and the box's words and button then name that one.
+  let moveChosen = null;  // the folder chosen with Choose another folder… (null: the one the Studio picks)
   async function moveFix() {
     const w = W();
     let o;
@@ -272,36 +276,67 @@
     const old = $("detail").querySelector("[data-home-move]");
     if (old) old.remove();
     if (!o.needed || !o.can) return;
+    const target = () => moveChosen || o.to;
     const status = el("p", { className: "small", textContent: "" });
-    const go = el("button", { type: "button", className: "primary", textContent: fill(w.home_move_button, { to: o.to }),
-      title: fill(w.tip_home_move, { to: o.to }) });
+    const go = el("button", { type: "button", className: "primary",
+      textContent: fill(w.home_move_button, { to: target() }), title: fill(w.tip_home_move, { to: target() }) });
+    const pick = el("button", { type: "button", textContent: w.home_move_choose,
+      title: fill(w.tip_home_move_choose, { to: o.to }) });
+    const what = el("p", { className: "small" });
+    const files = o.files ? el("p", { className: "small" }) : null;
+    const show = () => {  // (the folder the move copies to, in each line that names it)
+      go.textContent = fill(w.home_move_button, { to: target() });
+      go.title = fill(w.tip_home_move, { to: target() });
+      what.textContent = fill(w.home_move_what, { from: o.from, to: target(), n: o.count, size: o.size_text });
+      if (files) files.textContent = fill(w.home_move_files, { files: o.files, to: target() });
+    };
+    show();
     const box = el("div", { className: "notice warn" },
       el("h3", { textContent: w.home_move_title }),
       el("p", { textContent: w.home_move_why }),
-      el("p", { className: "small", textContent: fill(w.home_move_what, { from: o.from, to: o.to, n: o.count,
-        size: o.size_text }) }),
-      ...(o.files ? [el("p", { className: "small", textContent: fill(w.home_move_files, { files: o.files, to: o.to }) })] : []),
+      what,
+      ...(files ? [files] : []),
       el("p", { className: "small", textContent: w.home_move_close_launcher }),
-      el("div", { className: "actions" }, go), status);
+      el("div", { className: "actions" }, go, pick), status);
+    pick.addEventListener("click", async () => {
+      pick.disabled = true;
+      try {
+        const r = await api().home_move_choose();
+        if (r && r.to) { moveChosen = r.to; show(); }
+      } catch (err) { problem(err); }  // (refused in words: the folder shown stays)
+      pick.disabled = false;
+    });
     go.addEventListener("click", async () => {
       go.disabled = true;
+      pick.disabled = true;
       let job;
-      try { job = (await api().home_move()).job; } catch (err) { problem(err); go.disabled = false; return; }
+      try { job = (await api().home_move(moveChosen)).job; } catch (err) {
+        problem(err);
+        go.disabled = false;
+        pick.disabled = false;
+        return;
+      }
       let seen = 0;
       for (;;) {
         let j;
-        try { j = await api().job(job, seen); } catch (err) { problem(err); go.disabled = false; return; }
+        try { j = await api().job(job, seen); } catch (err) {
+          problem(err);
+          go.disabled = false;
+          pick.disabled = false;
+          return;
+        }
         seen = j.count;
         if (j.lines.length) status.textContent = j.lines[j.lines.length - 1];
         if (j.state === "running") { await new Promise((r) => setTimeout(r, 500)); continue; }
         if (j.state === "done") {
           const r = j.result || {};
           say(fill(r.restarting ? w.home_move_done : w.home_move_done_start_again,
-            { to: r.to || o.to, old: (r.old || []).join(", ") }), "ok");
+            { to: r.to || target(), old: (r.old || []).join(", ") }), "ok");
           return;
         }
         say(j.message, "error");  // nothing switched: the words say why, the copy taken away
         go.disabled = false;
+        pick.disabled = false;
         return;
       }
     });

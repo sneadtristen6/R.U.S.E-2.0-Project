@@ -50688,6 +50688,34 @@ jpn = "すべて {to} に入れて確かめました。Studio を閉じてもう
 sc = "所有内容都已在 {to} 并检查过。请关闭 Studio 再重新启动：之后它会使用 {to}。你的旧文件夹仍在原处：{old}。"
 fa = "همه چیز در {to} است و بررسی شد. Studio را ببندید و دوباره باز کنید: آن‌وقت از {to} استفاده می‌کند. پوشه‌های قدیمی شما هنوز همان‌جا هستند: {old}."
 
+# Piece 7, Export's paths and the short folder (item 40): Choose another folder… beside the quick fix's button
+# (ruse_studio.homemove home_move_choose, eraunits.js moveFix; the owner, 2026-11-13: "It can be selected
+# automatically, but the modder should be able to choose")
+[home_move_choose]
+us = "Choose another folder…"
+fr = "Choisir un autre dossier…"
+ger = "Anderen Ordner wählen…"
+ita = "Scegli un'altra cartella…"
+spa = "Elegir otra carpeta…"
+pol = "Wybierz inny folder…"
+ru = "Выбрать другую папку…"
+cz = "Vybrat jinou složku…"
+jpn = "別のフォルダーを選ぶ…"
+sc = "选择其他文件夹…"
+fa = "انتخاب پوشهٔ دیگر…"
+[tip_home_move_choose]
+us = "Pick another folder for everything the Studio keeps, instead of {to}: an empty folder, or a new one you make in the folder window, near the top of a drive of this PC. The Studio checks it at once; nothing is copied until you click the copy button beside it."
+fr = "Choisissez un autre dossier pour tout ce que garde le Studio, au lieu de {to} : un dossier vide, ou un nouveau que vous créez dans la fenêtre des dossiers, près de la racine d'un disque de ce PC. Le Studio le vérifie aussitôt ; rien n'est copié avant que vous cliquiez sur le bouton de copie à côté."
+ger = "Wählen Sie statt {to} einen anderen Ordner für alles, was das Studio aufbewahrt: einen leeren Ordner oder einen neuen, den Sie im Ordnerfenster anlegen, nah an der obersten Ebene eines Laufwerks dieses PCs. Das Studio prüft ihn sofort; kopiert wird erst, wenn Sie auf die Kopier-Schaltfläche daneben klicken."
+ita = "Scegli un'altra cartella per tutto ciò che lo Studio conserva, invece di {to}: una cartella vuota, o una nuova che crei nella finestra delle cartelle, vicino alla radice di un'unità di questo PC. Lo Studio la controlla subito; non viene copiato nulla finché non clicchi il pulsante di copia lì accanto."
+spa = "Elige otra carpeta para todo lo que guarda el Studio, en lugar de {to}: una carpeta vacía, o una nueva que crees en la ventana de carpetas, cerca de la raíz de una unidad de este PC. El Studio la comprueba enseguida; no se copia nada hasta que pulses el botón de copiar de al lado."
+pol = "Wybierz inny folder na wszystko, co trzyma Studio, zamiast {to}: pusty folder albo nowy, który utworzysz w oknie folderów, blisko głównego katalogu dysku tego komputera. Studio od razu go sprawdzi; nic nie jest kopiowane, dopóki nie klikniesz przycisku kopiowania obok."
+ru = "Выберите другую папку для всего, что хранит Studio, вместо {to}: пустую папку или новую, созданную в окне выбора папок, ближе к корню диска этого ПК. Studio сразу её проверит; ничего не копируется, пока вы не нажмёте кнопку копирования рядом."
+cz = "Vyberte místo {to} jinou složku pro všechno, co Studio uchovává: prázdnou složku nebo novou, kterou vytvoříte v okně složek, blízko kořene disku tohoto PC. Studio ji hned zkontroluje; nic se nekopíruje, dokud nekliknete na tlačítko kopírování vedle."
+jpn = "Studio が保存しているものすべての置き場所として、{to} の代わりに別のフォルダーを選びます。空のフォルダーか、フォルダーのウィンドウで新しく作ったフォルダーで、この PC のドライブの上の方にあるものにしてください。Studio はすぐにそれを確かめます。隣のコピーのボタンを押すまで、何もコピーしません。"
+sc = "为 Studio 保存的所有内容选择另一个文件夹，代替 {to}：一个空文件夹，或你在文件夹窗口里新建的文件夹，位置靠近这台电脑某个驱动器的顶层。Studio 会立即检查它；在你点击旁边的复制按钮之前，不会复制任何东西。"
+fa = "به جای {to}، پوشهٔ دیگری برای همهٔ چیزهایی که Studio نگه می‌دارد انتخاب کنید: یک پوشهٔ خالی، یا پوشهٔ تازه‌ای که در پنجرهٔ پوشه‌ها می‌سازید، نزدیک بالای یکی از درایوهای این رایانه. Studio فوراً آن را بررسی می‌کند؛ تا روی دکمهٔ کپی کنارش کلیک نکنید، چیزی کپی نمی‌شود."
+
 # The one Blender button of a unit's page (ruse_studio.oneblender; the owner, 2026-11-13: "this. release")
 [one_parts]
 us = "What goes to Blender"

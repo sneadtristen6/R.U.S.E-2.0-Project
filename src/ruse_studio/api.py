@@ -10560,6 +10560,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             left_out: list = []   # (files the Studio left half written: package.is_work_file, the one check's 13)
             cuts: dict = {}       # (his README's folder paths cut to their names: the owner, 2026-11-13, "cut to file
             #                       name"; package.readme_paths_out)
+            unread: list = []     # (a README of his whose text Export can't read: it goes out as he wrote it)
             with self._saving:
                 stale = self._era_tidy(folder)   # (no record or credit line of a unit the mod no longer has goes out)
                 if stale:
@@ -10567,7 +10568,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                         f"out: {', '.join(stale)}.")
                 path = package.pack(folder, target, build_id=build_id, data_revision=revision, fingerprint=fingerprint,
                                     solved=answers, made_with=self.MADE_WITH, kinds=kinds, home_in=home_in,
-                                    left_out=left_out, cuts=cuts)
+                                    left_out=left_out, cuts=cuts, unread=unread)
             if left_out:
                 say(f"Left out of the exported file: {', '.join(left_out)}. These are files the Studio left half "
                     f"written when it was stopped while writing them (their names end in .part, .partial or .tmp); "
@@ -10588,11 +10589,24 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             if imports:
                 say(f"In the exported file, these map import records name only the folders each map was made from, not "
                     f"where they are on your PC; nothing else in them changed: {', '.join(imports)}.")
-            if cuts:
+            named = {member: [(p, n) for p, n in pairs if n] for member, pairs in cuts.items()}
+            if any(named.values()):
                 said = "; ".join(f"{member} ({', '.join(package.cut_shown(p, n) for p, n in pairs)})"
-                                 for member, pairs in cuts.items())
+                                 for member, pairs in named.items() if pairs)
                 say(f"In the exported file, each folder path in these README files of yours is cut to its own name, "
                     f"every other word as you wrote it; the files in your mod stay as they are: {said}.")
+            # (a path that ends at a user's own folder, taken out whole: the owner, 2026-11-13, "Probably take the
+            # username path out"; package.paths_cut gives it the name "")
+            gone = {member: [p for p, n in pairs if not n] for member, pairs in cuts.items()}
+            if any(gone.values()):
+                said = "; ".join(f"{member} ({', '.join(paths)})" for member, paths in gone.items() if paths)
+                say(f"In the exported file, each path in these README files of yours that ends at a user's own folder, "
+                    f"and so names the user, is taken out completely; every other word stays as you wrote it, and the "
+                    f"files in your mod stay as they are: {said}.")
+            if unread:    # (its folder paths and users' names couldn't be taken out: said, never silent)
+                say(f"Export can't read the text of these README files of yours, so they go out as you wrote them, "
+                    f"with any folder path or user's name in them; save them as UTF-8 and export again to have those "
+                    f"taken out: {', '.join(unread)}.")
             if home_in:
                 say(f"These files of the mod name your PC's home folder ({package.home_shown()}) and go out as they are, "
                     f"since Export never changes what you wrote: change them in the mod if that shouldn't be shared: "

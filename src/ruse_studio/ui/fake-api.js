@@ -5085,6 +5085,8 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
         files: "C:\\Users\\you\\Documents\\RUSE 2.0", to: "C:\\RUSE2", count: 0, size: 0, size_text: "1 KB",
         leave: ["webview"] }),
       home_move: async () => { throw new Error("Windows takes long paths for the Studio on this PC, so its folders don't need to move."); },
+      // Choose another folder… (StudioApi.home_move_choose): the preview has no folder window, so nothing is chosen
+      home_move_choose: async () => ({ to: null }),
       // in `group` of that building ("new": a group of its own; null: its research parent's, else its kind's, the
       // library card), refused, nothing made, when that has no room
       era_unit_add: async (key, nation, factory, source, name, price, size, researchFrom, researchPrice, researchTime,

@@ -3271,6 +3271,34 @@ cz = "V exportovaném souboru je každá cesta ke složce v těchto vašich soub
 jpn = "エクスポートしたファイルでは、あなたのこれらの README ファイルにあるフォルダーのパスをそれぞれ名前だけにしました。ほかの言葉は書いたとおりです。Mod の中のファイルはそのままです：{0}。"
 sc = "在导出的文件里，你的这些 README 文件中的每个文件夹路径都只留下它自己的名字，其他字句都和你写的一样；模组里的文件保持原样：{0}。"
 fa = "در فایل خروجی، هر مسیر پوشه در این فایل‌های README شما به نام خودش کوتاه شده است و هر کلمهٔ دیگر همان‌طور است که نوشتید؛ فایل‌های داخل ماد شما همان‌طور که هستند می‌مانند: {0}."
+# Piece 7, Export's paths and the short folder (item 35): Export's line for a README path that ends at a user's own
+# folder, taken out whole (the owner, 2026-11-13: "Probably take the username path out"; rusemod.package.paths_cut)
+[ee80f5b97bf]
+us = "In the exported file, each path in these README files of yours that ends at a user's own folder, and so names the user, is taken out completely; every other word stays as you wrote it, and the files in your mod stay as they are: {0}."
+fr = "Dans le fichier exporté, chaque chemin de ces fichiers README à vous qui se termine au dossier personnel d'un utilisateur, et nomme donc cet utilisateur, est entièrement retiré ; tous les autres mots restent tels que vous les avez écrits, et les fichiers de votre mod restent tels quels : {0}."
+ger = "In der exportierten Datei ist jeder Pfad in diesen README-Dateien von Ihnen, der am eigenen Ordner eines Benutzers endet und so den Benutzer nennt, ganz entfernt; jedes andere Wort bleibt so, wie Sie es geschrieben haben, und die Dateien in Ihrem Mod bleiben, wie sie sind: {0}."
+ita = "Nel file esportato, ogni percorso in questi tuoi file README che finisce nella cartella personale di un utente, e quindi nomina l'utente, è tolto del tutto; ogni altra parola resta come l'hai scritta, e i file nella tua mod restano come sono: {0}."
+spa = "En el archivo exportado, cada ruta de estos archivos README tuyos que termina en la carpeta personal de un usuario, y por eso nombra al usuario, se quita por completo; cada otra palabra se queda tal como la escribiste, y los archivos de tu mod se quedan como están: {0}."
+pol = "W wyeksportowanym pliku każda ścieżka w tych twoich plikach README, która kończy się na folderze użytkownika, a więc podaje jego nazwę, jest całkowicie usunięta; każde inne słowo zostaje tak, jak je napisałeś, a pliki w twoim modzie zostają bez zmian: {0}."
+ru = "В экспортированном файле каждый путь в этих ваших файлах README, который заканчивается на собственной папке пользователя и потому называет пользователя, убран целиком; все остальные слова остаются такими, как вы их написали, а файлы в вашем моде остаются как есть: {0}."
+cz = "V exportovaném souboru je každá cesta v těchto vašich souborech README, která končí ve vlastní složce uživatele, a tak uživatele jmenuje, úplně odebrána; každé jiné slovo zůstává tak, jak jste ho napsali, a soubory ve vašem modu zůstávají tak, jak jsou: {0}."
+jpn = "エクスポートしたファイルでは、あなたのこれらの README ファイルにあるパスのうち、ユーザー自身のフォルダーで終わり、そのユーザーの名前が書かれているものを丸ごと取り除きました。ほかの言葉は書いたとおりです。Mod の中のファイルはそのままです：{0}。"
+sc = "在导出的文件里，你的这些 README 文件中以某个用户自己的文件夹结尾、因而写出了该用户名字的路径都已整个移除；其他字句都和你写的一样，模组里的文件保持原样：{0}。"
+fa = "در فایل خروجی، هر مسیری در این فایل‌های README شما که به پوشهٔ خود یک کاربر ختم می‌شود و از این رو نام کاربر را می‌آورد، به‌طور کامل برداشته شده است؛ هر کلمهٔ دیگر همان‌طور می‌ماند که نوشتید، و فایل‌های داخل ماد شما همان‌طور که هستند می‌مانند: {0}."
+# Piece 7's fix (review v2, item 35): Export's line for a README of his whose text it can't read, which goes out as he
+# wrote it (rusemod.package.readme_paths_out's `unread`; never silent: the export fix's review, 2026-11-13)
+[eb4461d0781]
+us = "Export can't read the text of these README files of yours, so they go out as you wrote them, with any folder path or user's name in them; save them as UTF-8 and export again to have those taken out: {0}."
+fr = "L'export ne peut pas lire le texte de ces fichiers README à vous : ils partent tels que vous les avez écrits, avec tout chemin de dossier ou nom d'utilisateur qu'ils contiennent ; enregistrez-les en UTF-8 et exportez à nouveau pour que ceux-ci soient retirés : {0}."
+ger = "Der Export kann den Text dieser README-Dateien von Ihnen nicht lesen, daher gehen sie so hinaus, wie Sie sie geschrieben haben, mit jedem Ordnerpfad und Benutzernamen darin; speichern Sie sie als UTF-8 und exportieren Sie erneut, damit diese entfernt werden: {0}."
+ita = "L'esportazione non riesce a leggere il testo di questi tuoi file README, quindi escono come li hai scritti, con ogni percorso di cartella o nome utente che contengono; salvali in UTF-8 ed esporta di nuovo perché vengano tolti: {0}."
+spa = "La exportación no puede leer el texto de estos archivos README tuyos, así que salen tal como los escribiste, con cualquier ruta de carpeta o nombre de usuario que tengan; guárdalos en UTF-8 y vuelve a exportar para que se quiten: {0}."
+pol = "Eksport nie może odczytać tekstu tych twoich plików README, więc wychodzą tak, jak je napisałeś, z każdą ścieżką folderu i nazwą użytkownika, które w nich są; zapisz je w UTF-8 i wyeksportuj ponownie, aby zostały usunięte: {0}."
+ru = "Экспорт не может прочитать текст этих ваших файлов README, поэтому они уходят такими, как вы их написали, со всеми путями к папкам и именами пользователей в них; сохраните их в UTF-8 и экспортируйте снова, чтобы они были убраны: {0}."
+cz = "Export nedokáže přečíst text těchto vašich souborů README, takže odcházejí tak, jak jste je napsali, se všemi cestami ke složkám a jmény uživatelů v nich; uložte je jako UTF-8 a exportujte znovu, aby byly odebrány: {0}."
+jpn = "あなたのこれらの README ファイルの文字をエクスポートが読めないので、中にあるフォルダーのパスやユーザー名ごと、書いたとおりのまま出ていきます。それらを取り除くには、UTF-8 で保存してもう一度エクスポートしてください：{0}。"
+sc = "导出无法读取你的这些 README 文件的文字，所以它们会按你写的原样导出，其中的文件夹路径和用户名都会保留；把它们存为 UTF-8 后再导出一次，就能移除这些内容：{0}。"
+fa = "خروجی نمی‌تواند متن این فایل‌های README شما را بخواند، پس همان‌طور که نوشتید بیرون می‌روند، با هر مسیر پوشه یا نام کاربری که در آن‌هاست؛ آن‌ها را با UTF-8 ذخیره کنید و دوباره خروجی بگیرید تا این‌ها برداشته شوند: {0}."
 # The Studio's folders copied to a short path (ruse_studio.homemove; the owner, 2026-11-13, answer 8: "tell the
 # modder, provide a quick fix that auto does it if they dont want to do it manually")
 [e139faf5cd7]
