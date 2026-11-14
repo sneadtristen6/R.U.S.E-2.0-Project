@@ -349,10 +349,10 @@ def era_files(mod: Path, record: dict, lib: dict) -> tuple[str, str | None]:
     downloaded on this PC: the library can't write its credit line, so the era lines already in the mod stay (never a
     CC BY credit lost because this PC lacks the era), except a line the library names for a unit the mod hasn't (one
     deleted: the owner's check, 2026-11-13, finding 8)."""
-    from .horse_squad import BUILT, built_entry
+    from .horse_squad import BUILT
     known = {u["key"]: u for u in lib.get("units", [])}
     mine = [u for u in lib.get("units", []) if u["key"] in record and u["key"] not in BUILT]
-    mine += [built_entry(mod, key, record[key]) for key in BUILT if key in record]   # (by the country it's from)
+    mine += [entry for key, entry in BUILT.items() if key in record]
     credits = mod / CREDITS
     unnamed = [k for k in record if k not in BUILT and k not in known]
     try:
@@ -787,14 +787,12 @@ class EraUnitCalls:
         suggested (_era_research, only the units of its group: _era_limited), "group": the group of that building's
         build list it goes in (`group` as era_unit_add takes it; groups.py): {"root" (None: a group of its own),
         "name", "count", "most", "full", "new", "choices": [{root, name, count, full}] the building's groups}, None for
-        a menu that isn't one of the board's buildings}. A unit made for RUSE 2.0 (the Horse Squad) starts from one of
-        its own units only (horse_squad.SQUADS: a country's rifle squad), the US one when `source` isn't one of them."""
+        a menu that isn't one of the board's buildings}. A unit made for RUSE 2.0 (the Horse Squad) starts from its own
+        unit only, whatever `source` says."""
         from .api import StudioError
-        from .horse_squad import SQUADS
         built = self._era_built_entry(key)
-        if built is not None:   # (its models are made for its start unit's soldiers: one of its countries' squads)
-            folder, lib, entry = None, {}, built
-            source = source if source in SQUADS else built["copies"]
+        if built is not None:   # (its models are made for its start unit's soldiers: horse_squad.py)
+            folder, lib, entry, source = None, {}, built, built["copies"]
         else:
             folder, lib, entry = self._era_entry(key)
         ix = self._open()

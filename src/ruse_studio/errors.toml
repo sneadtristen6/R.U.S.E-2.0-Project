@@ -6042,46 +6042,6 @@ cz = "Všechno je zkopírováno do {0} a zkontrolováno, ale nastavení Windows 
 jpn = "すべて {0} にコピーして確かめましたが、Windows の設定 {1} を設定できませんでした。自分で {2} に設定してから（Windows：アカウントの環境変数を編集）、Studio を起動し直してください。"
 sc = "所有内容都已复制到 {0} 并检查过，但 Windows 设置 {1} 没能设置。请自己把它设为 {2}（Windows：编辑账户的环境变量），然后重新启动 Studio。"
 fa = "همه چیز در {0} کپی و بررسی شد، اما تنظیم Windows به نام {1} گذاشته نشد. خودتان آن را روی {2} بگذارید (Windows: ویرایش متغیرهای محیطی حساب خود)، سپس Studio را دوباره باز کنید."
-# The Generic Horse's country: the rifle squads its riders are made from (horse_squad.SQUADS, rusemod.horsesquad.SQUADS;
-# the owner, 2026-11-13: "people can change what countmry its from")
-[eaacc45c47b]
-us = "The Generic Horse's riders are made from one of these rifle squads: {0}. {1} isn't one of them."
-fr = "Les cavaliers de l'Escouade à cheval générique sont faits à partir de l'une de ces escouades de fusiliers : {0}. {1} n'en fait pas partie."
-ger = "Die Reiter des Generischen Reitertrupps werden aus einem dieser Schützentrupps gemacht: {0}. {1} gehört nicht dazu."
-ita = "I cavalieri della Squadra a cavallo generica sono fatti da una di queste squadre di fucilieri: {0}. {1} non è una di queste."
-spa = "Los jinetes del Pelotón a caballo genérico se hacen con uno de estos pelotones de fusileros: {0}. {1} no es uno de ellos."
-pol = "Jeźdźcy Uniwersalnego oddziału konnego są robieni z jednego z tych oddziałów strzelców: {0}. {1} nie jest jednym z nich."
-ru = "Всадники Универсального конного отряда делаются из одного из этих стрелковых отрядов: {0}. {1} не из их числа."
-cz = "Jezdci Univerzálního jízdního družstva se dělají z jednoho z těchto střeleckých družstev: {0}. {1} mezi ně nepatří."
-jpn = "汎用騎馬分隊の騎手は次の小銃分隊のどれかから作られます：{0}。{1} はそのどれでもありません。"
-sc = "通用骑兵小队的骑手由以下步枪小队之一制作：{0}。{1} 不在其中。"
-fa = "سواران جوخهٔ سوارهٔ عمومی از یکی از این جوخه‌های تفنگدار ساخته می‌شوند: {0}. {1} یکی از آن‌ها نیست."
-[e8774f7ddc6]
-us = "The Generic Horse's riders can't be made from {0}: it isn't one of the rifle squads they are made from."
-fr = "Les cavaliers de l'Escouade à cheval générique ne peuvent pas être faits à partir de {0} : ce n'est pas l'une des escouades de fusiliers dont ils sont faits."
-ger = "Die Reiter des Generischen Reitertrupps können nicht aus {0} gemacht werden: Das ist keiner der Schützentrupps, aus denen sie gemacht werden."
-ita = "I cavalieri della Squadra a cavallo generica non possono essere fatti da {0}: non è una delle squadre di fucilieri da cui sono fatti."
-spa = "Los jinetes del Pelotón a caballo genérico no se pueden hacer con {0}: no es uno de los pelotones de fusileros con los que se hacen."
-pol = "Jeźdźców Uniwersalnego oddziału konnego nie da się zrobić z {0}: to nie jest jeden z oddziałów strzelców, z których są robieni."
-ru = "Всадников Универсального конного отряда нельзя сделать из {0}: это не один из стрелковых отрядов, из которых они делаются."
-cz = "Jezdce Univerzálního jízdního družstva nelze udělat z {0}: není to jedno ze střeleckých družstev, ze kterých se dělají."
-jpn = "汎用騎馬分隊の騎手は {0} からは作れません。騎手の元になる小銃分隊のどれでもありません。"
-sc = "通用骑兵小队的骑手不能由 {0} 制作：它不是骑手所用的步枪小队之一。"
-fa = "سواران جوخهٔ سوارهٔ عمومی را نمی‌شود از {0} ساخت: این یکی از جوخه‌های تفنگداری نیست که سواران از آن‌ها ساخته می‌شوند."
-within = "The Generic Horse can't be made from your game: {0}"
-[e8999123264]
-us = "Your game's rifle squad {0} hasn't the animations the Generic Horse's riders play."
-fr = "L'escouade de fusiliers {0} de votre jeu n'a pas les animations que jouent les cavaliers de l'Escouade à cheval générique."
-ger = "Dem Schützentrupp {0} deines Spiels fehlen die Animationen, die die Reiter des Generischen Reitertrupps abspielen."
-ita = "La squadra di fucilieri {0} del tuo gioco non ha le animazioni che usano i cavalieri della Squadra a cavallo generica."
-spa = "El pelotón de fusileros {0} de tu juego no tiene las animaciones que usan los jinetes del Pelotón a caballo genérico."
-pol = "Oddział strzelców {0} w twojej grze nie ma animacji, które odgrywają jeźdźcy Uniwersalnego oddziału konnego."
-ru = "У стрелкового отряда {0} в вашей игре нет анимаций, которые играют всадники Универсального конного отряда."
-cz = "Střelecké družstvo {0} ve tvé hře nemá animace, které hrají jezdci Univerzálního jízdního družstva."
-jpn = "あなたのゲームの小銃分隊 {0} に、汎用騎馬分隊の騎手が使うアニメーションがありません。"
-sc = "你的游戏中的步枪小队 {0} 没有通用骑兵小队骑手播放的动画。"
-fa = "جوخهٔ تفنگداران {0} در بازی شما انیمیشن‌هایی را که سواران جوخهٔ سوارهٔ عمومی اجرا می‌کنند ندارد."
-within = "The Generic Horse can't be made from your game: {0}"
 
 # The one Blender button's refusals (ruse_studio.oneblender)
 [e7c29760256]
