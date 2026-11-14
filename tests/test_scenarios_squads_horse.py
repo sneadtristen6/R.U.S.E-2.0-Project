@@ -28,6 +28,7 @@ from ruse_studio import era_units, horse_squad
 
 KEY = horse_squad.KEY
 TMP_ROOT = Path(os.environ.get("RUSE_TEST_TMP") or "D:/RUSE-2.0/scratch/release-0920/scenarios/squads/tmp")
+PATCHES_HERE = "D:/RUSE-2.0/scratch/animmodels/squadpatch/release/"   # (the game patches' release files, kept here)
 
 
 def fill(word: str, **values) -> str:
@@ -114,11 +115,15 @@ class HorseScenario(unittest.TestCase):
 
     def built_on_the_game(self, *mods: Path):
         """The mods built on the game into a folder of this run (Test in game's build, its output never the game's
-        folder): the build's result."""
+        folder): the build's result. The own-squads game patch a squad of its own number needs is read from
+        RUSE_GAME_PATCHES_URL, by default the release's patch files kept on this PC (PATCHES_HERE), checked by their
+        SHA-256 as the build checks a download."""
         from rusemod.build import DEFAULT_PACK, build_and_write, find_pack, load_mod
         out = Path(tempfile.mkdtemp(prefix="built-", dir=self.tmp))
-        return build_and_write(GAME, [load_mod(m) for m in mods], pack=str(find_pack(GAME, DEFAULT_PACK)),
-                               out=out / "out", cache=out / "cache", say=lambda _s: None)
+        patches = os.environ.get("RUSE_GAME_PATCHES_URL") or (PATCHES_HERE if Path(PATCHES_HERE).is_dir() else "")
+        with mock.patch.dict(os.environ, {"RUSE_GAME_PATCHES_URL": patches} if patches else {}):
+            return build_and_write(GAME, [load_mod(m) for m in mods], pack=str(find_pack(GAME, DEFAULT_PACK)),
+                                   out=out / "out", cache=out / "cache", say=lambda _s: None)
 
 
 class AddedTakenOutAddedAgain(HorseScenario):
@@ -240,6 +245,47 @@ class TakenOutWhileItsFileIsOpen(HorseScenario):
             held.close()
         page.choose_mod(str(mod))
         self.assertEqual([n for n in tree(mod) if tail in n and not n.startswith("blender/")], [])
+
+
+class InASet(HorseScenario):
+    def test_a_squad_mod_and_a_horse_mod_together(self):
+        """Usual: a mod with a squad of its own number and a soldier's look (+1, Import a model... on soldier 2's line
+        from the game's soldier as the Studio exports him) and a mod with the Generic Horse, built together on the
+        game: no error, the own-squads patch named, the squad's look and the horse's models among its own models."""
+        api, page = self.studio("pc")
+        horse_mod, horse = self.added(api, page, "Cavalry")
+        squad_mod = Path(page.new_mod("Riflemen")["current"])
+        squad = page.new_unit(horse_squad.SQUAD, "Scen Riflemen", 50)["address"]
+        page.soldier_plus(squad)
+        from rusemod import gltf, models
+        lib = models.Library(GAME)
+        try:
+            soldier = next(m for m in api._look_models(squad)[0] if "bazooka" not in m.lower() and "_dest" not in m)
+            glb, _pictures, _summary = gltf.model_glb(lib, soldier, rest_bones=True)
+        finally:
+            lib.close()
+        his = self.tmp / "his models" / "soldier.glb"
+        his.parent.mkdir(parents=True)
+        his.write_bytes(glb)
+        page.soldier_import(squad, "2", str(his))
+        result = self.built_on_the_game(squad_mod, horse_mod)
+        self.assertEqual([f.message for f in result.errors], [])
+        self.assertEqual(result.game_patch, ["own-squads"])
+        tail, stem = horse.rsplit("/", 1)[-1], squad.rsplit("/", 1)[-1]
+        self.assertEqual(sorted(str(k) for k in result.own_models), sorted([tail, f"{tail}@bazooka", f"{stem}@2"]))
+
+    @unittest.expectedFailure    # finding SQ-12: two mods each with the Generic Horse can't be played together
+    def test_two_mods_each_with_the_generic_horse_together(self):
+        """Unusual: two mods each with the Generic Horse (the one Generic Horse: the same unit name in each, its files
+        the same bytes), built together, as a Launcher set of a player's own cavalry mod and a shared one would be:
+        the build stops, the second mod "creates ... Descriptor_Unit_Generic_Horse, but" the first "already has an
+        object with that name", and nothing is written."""
+        api, page = self.studio("pc")
+        first, _horse = self.added(api, page, "Cavalry A")
+        second, _same = self.added(api, page, "Cavalry B")
+        result = self.built_on_the_game(first, second)
+        print("\nSQ-12:", [f.message for f in result.errors])
+        self.assertEqual([f.message for f in result.errors], [])
 
 
 class BlenderThenAddedAgain(HorseScenario):
