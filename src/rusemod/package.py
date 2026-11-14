@@ -206,8 +206,11 @@ def files_of(folder, left_out: list | None = None) -> list[Path]:
     credits and record among them, a record naming no unit left out), the .rmod a community mod's mod.toml names
     ([rmod] file: the mod itself), and everything under src/, text/, files/, maps/ and scripts/ (never caches, hidden
     files, build output, or a file the Studio left half written: is_work_file; `left_out`, a list, gets each of
-    those)."""
+    those). A deleted unit's file another program had open, which the Studio takes out later (rusemod.holding), never
+    goes either: the build leaves it out too."""
+    from .holding import skip_of
     folder = Path(folder)
+    skip = skip_of(folder)
     out = [folder / f for f in TOP_FILES if (folder / f).is_file() and (f != ERA_RECORD or _names_a_unit(folder / f))]
     try:
         named = tomllib.loads((folder / MANIFEST).read_text(encoding="utf-8")).get("rmod", {}).get("file")
@@ -221,7 +224,7 @@ def files_of(folder, left_out: list | None = None) -> list[Path]:
             for root, dirs, names in os.walk(folder / sub):
                 dirs[:] = sorted(d for d in dirs if d not in SKIP and not d.startswith("."))
                 for n in sorted(names):
-                    if n.startswith("."):
+                    if n.startswith(".") or (skip is not None and skip(Path(root) / n)):
                         continue
                     if is_work_file(n):
                         if left_out is not None:

@@ -86,6 +86,8 @@
       if (note.unlinked && note.unlinked.length) more.push(fill(w.board_unlinked, { list: note.unlinked.join(", ") }));
       if (note.dates) more.push(w.board_dates_narrowed);
       if (res.relinked && res.relinked.length) more.push(fill(w.board_relinked, { list: res.relinked.join(", ") }));
+      const waiting = waitingTold(res);   // (a file of a unit taken out that another program had open: app.js)
+      if (waiting) more.push(waiting);
       if (said) say([said, ...more].join(" "), "ok");
       draw();
       pictures();

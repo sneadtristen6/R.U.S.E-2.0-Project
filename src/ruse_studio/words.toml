@@ -50917,3 +50917,33 @@ cz = "Blender se otevře s modelem této jednotky a jeho obrázky. Pomaluj ho ta
 jpn = "このユニットのモデルと画像がBlenderで開きます。そこで塗り、ここで「変更を戻す」を押すと、塗装がMODに入ります。"
 sc = "Blender 会打开这个单位的模型及其图片。在那里绘制，然后在这里点击“带回我的修改”：你的涂装会进入你的模组。"
 fa = "Blender با مدل این یگان و تصاویرش باز می‌شود. همان‌جا رنگش کنید، بعد اینجا روی «بازگرداندن تغییراتم» کلیک کنید: رنگ شما به ماد شما می‌رود."
+
+# --- Delete always goes through (the owner's item 6, 2026-11-13: "Why would deleting a unit stop? ... if someone
+# clicks it should through"): a file of the deleted unit another program had open stays in the mod's folder, out of
+# Test in game and Export, until the Studio takes it out by itself (rusemod.holding). Said after Delete, Take it out and
+# the board's take-outs (app.js waitingTold; StudioApi.delete_unit "waiting"), naming test_in_game and export_mod ---
+[unit_deleted_waiting_one]
+us = "The file {file} is open in another program, so it stays in the mod's folder for now. Test in game and Export mod… leave it out, and the Studio removes it by itself later, once that program lets go of it."
+fr = "Le fichier {file} est ouvert dans un autre programme : il reste donc pour l'instant dans le dossier du mod. Tester en jeu et Exporter le mod… le laissent de côté, et le Studio le supprime de lui-même plus tard, dès que ce programme le libère."
+ger = "Die Datei {file} ist in einem anderen Programm geöffnet und bleibt deshalb vorerst im Ordner der Mod. Im Spiel testen und Mod exportieren… lassen sie weg, und das Studio entfernt sie später von selbst, sobald das Programm sie freigibt."
+ita = "Il file {file} è aperto in un altro programma, quindi per ora resta nella cartella della mod. Prova in gioco ed Esporta mod… lo lasciano fuori, e lo Studio lo elimina da solo più tardi, appena quel programma lo rilascia."
+spa = "El archivo {file} está abierto en otro programa, así que de momento se queda en la carpeta del mod. Probar en el juego y Exportar mod… lo dejan fuera, y el Studio lo quita por sí solo más tarde, en cuanto ese programa lo suelte."
+pol = "Plik {file} jest otwarty w innym programie, więc na razie zostaje w folderze moda. Testuj w grze i Eksportuj mod… go pomijają, a Studio samo go usunie później, gdy ten program go zwolni."
+ru = "Файл {file} открыт в другой программе, поэтому пока остаётся в папке мода. «Проверить в игре» и «Экспортировать мод…» его не берут, а Studio само удалит его позже, когда та программа его отпустит."
+cz = "Soubor {file} je otevřený v jiném programu, a proto zatím zůstává ve složce módu. Vyzkoušet ve hře a Exportovat mód… ho vynechají a Studio ho později samo odstraní, jakmile ho ten program pustí."
+jpn = "ファイル {file} は別のプログラムで開かれているため、しばらくMODのフォルダーに残ります。「ゲームでテスト」と「MODを書き出す…」はこれを含めず、そのプログラムが手放したあとでStudioが自動で消します。"
+sc = "文件 {file} 正被另一个程序打开，所以暂时留在模组文件夹中。“在游戏中测试”和“导出模组…”不会包含它；等那个程序放开它之后，Studio 会自行将其删除。"
+fa = "فایل {file} در برنامهٔ دیگری باز است، پس فعلاً در پوشهٔ ماد می‌ماند. «آزمایش در بازی» و «خروجی گرفتن از ماد…» آن را کنار می‌گذارند، و Studio بعداً، وقتی آن برنامه رهایش کرد، خودش آن را پاک می‌کند."
+
+[unit_deleted_waiting_many]
+us = "These files are open in another program, so they stay in the mod's folder for now: {files}. Test in game and Export mod… leave them out, and the Studio removes them by itself later, once that program lets go of them."
+fr = "Ces fichiers sont ouverts dans un autre programme et restent donc pour l'instant dans le dossier du mod : {files}. Tester en jeu et Exporter le mod… les laissent de côté, et le Studio les supprime de lui-même plus tard, dès que ce programme les libère."
+ger = "Diese Dateien sind in einem anderen Programm geöffnet und bleiben deshalb vorerst im Ordner der Mod: {files}. Im Spiel testen und Mod exportieren… lassen sie weg, und das Studio entfernt sie später von selbst, sobald das Programm sie freigibt."
+ita = "Questi file sono aperti in un altro programma, quindi per ora restano nella cartella della mod: {files}. Prova in gioco ed Esporta mod… li lasciano fuori, e lo Studio li elimina da solo più tardi, appena quel programma li rilascia."
+spa = "Estos archivos están abiertos en otro programa, así que de momento se quedan en la carpeta del mod: {files}. Probar en el juego y Exportar mod… los dejan fuera, y el Studio los quita por sí solo más tarde, en cuanto ese programa los suelte."
+pol = "Te pliki są otwarte w innym programie, więc na razie zostają w folderze moda: {files}. Testuj w grze i Eksportuj mod… je pomijają, a Studio samo je usunie później, gdy ten program je zwolni."
+ru = "Эти файлы открыты в другой программе, поэтому пока остаются в папке мода: {files}. «Проверить в игре» и «Экспортировать мод…» их не берут, а Studio само удалит их позже, когда та программа их отпустит."
+cz = "Tyto soubory jsou otevřené v jiném programu, a proto zatím zůstávají ve složce módu: {files}. Vyzkoušet ve hře a Exportovat mód… je vynechají a Studio je později samo odstraní, jakmile je ten program pustí."
+jpn = "これらのファイルは別のプログラムで開かれているため、しばらくMODのフォルダーに残ります：{files}。「ゲームでテスト」と「MODを書き出す…」はこれらを含めず、そのプログラムが手放したあとでStudioが自動で消します。"
+sc = "这些文件正被另一个程序打开，所以暂时留在模组文件夹中：{files}。“在游戏中测试”和“导出模组…”不会包含它们；等那个程序放开它们之后，Studio 会自行将其删除。"
+fa = "این فایل‌ها در برنامهٔ دیگری باز هستند، پس فعلاً در پوشهٔ ماد می‌مانند: {files}. «آزمایش در بازی» و «خروجی گرفتن از ماد…» آن‌ها را کنار می‌گذارند، و Studio بعداً، وقتی آن برنامه رهایشان کرد، خودش آن‌ها را پاک می‌کند."
