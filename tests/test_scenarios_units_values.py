@@ -228,6 +228,46 @@ class Values(Player):
         self.assertEqual(self.english_left(notices), [], notices["fr"])
 
 
+class TheStudiosOwnFilesBrokenByHand(Player):
+    """The Studio's other files of a mod changed by hand into something it can't read: the animations' list
+    (files/anim/units.toml) and the build lists' groups (menu_groups.toml). New unit… is refused; the mod check (the
+    page's bar, shown when the mod is picked and before Test in game) names the file."""
+    GAME = "studio"
+
+    def broken(self, rel: str) -> tuple[dict, list]:
+        folder = self.mod("Broken " + rel.rsplit("/", 1)[-1])
+        self.call("new_unit", M4, "Before", 40, -1, -1, False, "new")
+        path = folder / rel
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("[[[ not toml\n", encoding="utf-8")
+        said = self.refusal("new_unit", M4, "After", 40, -1, -1, False, "new")
+        problems = self.call("check_mod", lang="fr")["problems"]
+        print(f"\n{rel} broken: new_unit says (fr) {said['fr']!r} | check bar: "
+              f"{[(p.get('problem'), p.get('plain'), p.get('set_aside')) for p in problems]}")
+        return said, problems
+
+    def test_the_animations_list_broken_by_hand(self):
+        said, problems = self.broken("files/anim/units.toml")
+        self.assertTrue(problems, "the check bar names nothing")
+
+    def test_the_groups_file_broken_by_hand(self):
+        said, problems = self.broken("menu_groups.toml")
+        self.assertTrue(problems, "the check bar names nothing")
+
+    # U-17: those two files broken by hand are said in Python's TOML reader's words, English in every language: the
+    # check bar's line ("...menu_groups.toml: Invalid initial character for a key part (at line 1, column 3)": its
+    # plain kind "other", so the page shows it as it is, with no Set aside button) and New unit…'s refusal (menu_groups:
+    # the whole of it; units.toml: inside the French frame)
+    @unittest.expectedFailure
+    def test_the_studios_own_files_broken_by_hand_are_said_in_plain_words(self):
+        for rel in ("files/anim/units.toml", "menu_groups.toml"):
+            with self.subTest(rel=rel):
+                said, problems = self.broken(rel)
+                for text in [said["fr"]] + [p.get("problem", "") for p in problems if p.get("plain", {}).get("kind")
+                                            == "other"]:
+                    self.assertNotIn("Invalid initial character", text)
+
+
 class DecimalsOfTheAITab(Player):
     """U-9's kind of value in the AI and player settings tab (ai_edit takes a decimal as it comes, as the Units tab's
     edit did), on test_ai's made-up game: a profile's AttaqueTempsActivation, a 4-byte decimal number."""
