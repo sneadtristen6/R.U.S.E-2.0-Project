@@ -271,8 +271,10 @@ class Closed:
 class OnTheGame(unittest.TestCase):
     """The Generic Horse added through the Studio's own Add (its builder standing in with the passed copy's two files),
     its riflemen's model taken through the one Blender button (everything ticked) and Blender's stand-in, then Bring my
-    changes back: the mod's animation files (files/anim/own/<unit>/, units.toml) judged byte for byte. Each of these
-    failed on e9a092c3 (every one of its 25 files rewritten, units.toml in another order)."""
+    changes back: the mod's animation files (files/anim/own/<unit>/, units.toml) judged byte for byte. The untouched
+    trip, the control, the Resize and the RUSE Decoy change going out failed on e9a092c3's code (every one of its 25
+    files rewritten, units.toml in another order, the change undone); the second trip and the change never named lost
+    failed on a87ddb70's (this piece's first commit)."""
 
     def setUp(self):
         from ruse_studio.api import StudioApi
@@ -291,15 +293,20 @@ class OnTheGame(unittest.TestCase):
         base = self.mod / "files" / "anim"
         return {p.relative_to(base).as_posix(): p.read_bytes() for p in sorted(base.rglob("*")) if p.is_file()}
 
-    def trip(self, change=None) -> dict:
+    def trip(self, change=None, noise: bool = False) -> dict:
         """Open in Blender (the riflemen with their horse, everything ticked), Blender's stand-in sending it back with
-        its animations in another order (`change`: test_animglb's Blenderish.send's), Bring my changes back."""
+        its animations in another order (`change`: test_animglb's Blenderish.send's; `noise`: one bone's rest moved
+        by 0.6 of what rusemod.rig counts as float noise, as Blender's floats move it), Bring my changes back."""
         handed = {}
         with mock.patch("rusemod.blender.open_model_to_change",
                         lambda b, model, send, words: handed.update(model=Path(model), send=Path(send)) or Closed()):
             self.api.blender_open(self.address, {"model": True, "kind": "", "bones": True, "paint": True}, "us")
         doc, binary = modelin.glb_document(Blenderish(handed["model"].read_bytes()).send(change=change))
         doc["animations"].sort(key=lambda a: a["name"])        # (Blender 4.5 sends them so)
+        if noise:   # (a bone with no bone under it: only its own rest moves)
+            joints = doc["skins"][0]["joints"]
+            leaf = next(j for j in joints if not set(doc["nodes"][j].get("children", [])) & set(joints))
+            doc["nodes"][leaf]["translation"][0] += 0.6 * rig.NEAR_MOVE * gltf.SCALE
         handed["send"].write_bytes(gltf_bytes(doc, binary))
         return self.api.blender_back(self.address, "us")
 
@@ -326,6 +333,38 @@ class OnTheGame(unittest.TestCase):
         self.assertEqual((mine.duration, mine.frames, mine.skeleton), (theirs.duration, theirs.frames, theirs.skeleton))
         got, was = tracks_of(after[run]), tracks_of(before[run])
         self.assertEqual([b for b in was if got[b] != was[b]], [HORSE_SPINE])
+
+    def test_a_ruse_decoy_change_then_one_made_in_blender_is_never_named_lost(self):
+        """The run changed in RUSE Decoy (its spine2 turned), then in Blender (its spine1 turned on top of that, as
+        Blender showed it): the run comes back with both, every track but spine1's as it was (spine2's turn too), and
+        the Bring back never says the RUSE Decoy change wasn't kept (a87ddb70 said so: not_kept named the run, real
+        Blender 4.5.14)."""
+        own = anim.own_animations(self.mod, self.tail)["animations"]
+        folder = self.mod / anim.OWN / self.tail
+        mine = {n: (folder / f).read_bytes() for n, f in own.items()}
+        mine[RUN] = baf.build(baf.with_bone(baf.parse(mine[RUN]), "horse spine2", turn=("x", 25.0)))
+        anim.set_animations(self.mod, self.tail, mine)
+        before = self.animation_files()
+        back = self.trip(change=(RUN, HORSE_SPINE, baf.axis_angle("x", 10.0)))
+        self.assertIsNone((back.get("model") or {}).get("not_kept"))
+        after = self.animation_files()
+        run = f"own/{self.tail}/{RUN}.baf"
+        self.assertEqual([k for k in before if after[k] != before[k]], [run])
+        got, was = tracks_of(after[run]), tracks_of(before[run])
+        self.assertEqual([b for b in was if got[b] != was[b]], [HORSE_SPINE])
+
+    def test_opened_again_blender_s_float_noise_on_its_bones_doesnt_add_up(self):
+        """Opened again, Blender starts from its last sending: a bone's rest moved each trip by a little float noise
+        (here 0.6 of what rusemod.rig counts as noise) went out again so moved, and the second trip's came back past
+        it (1.2), its clips on a skeleton worked out anew: all 25 files rewritten (real Blender 4.5.14 so, the Generic
+        Horse's upper arms, 2026-11-13). The sending goes out again on the mod's own bones while they're its within
+        that noise (ModelBlenderCalls._again), so the second trip keeps them too."""
+        before = self.animation_files()
+        self.trip(noise=True)
+        self.assertEqual([k for k in before if self.animation_files()[k] != before[k]], [])
+        self.trip(noise=True)
+        after = self.animation_files()
+        self.assertEqual([k for k in before if after[k] != before[k]], [])
 
     def test_a_resize_after_the_trip_keeps_them(self):
         """Resize fits the model again from the file the Bring back made it from: the animations stay as they came

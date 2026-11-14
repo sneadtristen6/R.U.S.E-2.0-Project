@@ -409,15 +409,23 @@ class ModelBlenderCalls:
     @staticmethod
     def _again(send: Path, work: Path, own: Path, given: dict) -> Path:
         """What a Blender opened again starts from: its last sending (`send`) with the animations the mod plays now
-        (`given`: _going_out's, as Blender is given them) in place of the ones it sent, as <work>/<the model's
-        name>_again.glb, the sending itself left as Blender wrote it; the sending as it is when those aren't on its
-        bones (a bone renamed, added or taken away in Blender: what comes back is then taken in as Blender sends it)."""
+        (`given`: _going_out's, as Blender is given them) in place of the ones it sent, and, while its bones are the
+        mod's within float noise (rusemod.rig.bones_of), the mod's own bones exactly (rusemod.gltf.bones_like from the
+        unit's model file `own`): Blender's floats moved them a little each trip, and two trips moved the Generic
+        Horse's upper arms past that noise (real Blender 4.5.14, 2026-11-13), so the clips of the second came back on a
+        skeleton worked out anew, all 25 files rewritten. As <work>/<the model's name>_again.glb, the sending itself
+        left as Blender wrote it; the sending as it is when the animations aren't on its bones (a bone renamed, added
+        or taken away in Blender: what comes back is then taken in as Blender sends it)."""
         import struct as _struct
+        from rusemod import baf, gltf, rig
         from rusemod.modelin import ModelError, own_animations_glb
         from .api import file_error
         from .squadblender import _put
         try:
-            data = own_animations_glb(send.read_bytes(), given, blender=True)
+            raw = send.read_bytes()
+            if given and rig.bones_of(raw, baf.parse(next(iter(given.values()))).skeleton):
+                raw, _word = gltf.bones_like(raw, own.read_bytes())    # (Blender's float noise only: the mod's own)
+            data = own_animations_glb(raw, given, blender=True)
         except (ModelError, ValueError, KeyError, IndexError, TypeError, _struct.error):
             return send
         except OSError as exc:              # (said in words, never in Python's own)

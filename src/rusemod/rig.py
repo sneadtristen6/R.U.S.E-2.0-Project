@@ -1156,20 +1156,27 @@ def with_went_out(raw: bytes, went: dict, given: dict | None = None) -> bytes:
     return pack_glb(doc, views)
 
 
+def bones_of(raw: bytes, record: bytes) -> bool:
+    """Whether a .glb's bones are the skeleton record `record`'s, within float noise (the same names and parents, every
+    rest matrix within NEAR_*: _kept_record's measure); False for one that can't be read so."""
+    try:
+        doc, binary = glb_document(raw)
+        doc["animations"] = []          # (its bones alone: the animations aren't read for this)
+        return _kept_record(skeleton_extra(record), rig_of(doc, binary)) is not None
+    except (ModelError, ValueError, KeyError, IndexError, TypeError, struct.error):
+        return False
+
+
 def with_record(raw: bytes, record: bytes) -> bytes:
     """A .glb Blender sent back (it keeps no extras) with the skeleton record that went out (`record`) in its skins'
-    extras again (SKELETON_EXTRA), when its bones still match it (the same names and parents, every rest matrix within
-    float noise: _kept_record), so rig_of keeps that record byte for byte and every clip made on it keeps its
-    skeleton part. As it is when they don't (a bone moved, added or renamed in Blender: its record is worked out again
-    from its bones, as before), when it carries a record already, or when it can't be read so."""
+    extras again (SKELETON_EXTRA), when its bones still match it (bones_of), so rig_of keeps that record byte for byte
+    and every clip made on it keeps its skeleton part. As it is when they don't (a bone moved, added or renamed in
+    Blender: its record is worked out again from its bones, as before), when it carries a record already, or when it
+    can't be read so."""
     from .gltf import glb_views, pack_glb
     try:
         doc, views = glb_views(raw)
-        if _carried(doc) is not None:
-            return raw
-        bones_doc, binary = glb_document(raw)
-        bones_doc["animations"] = []     # (its bones alone: the animations aren't read for this)
-        if _kept_record(skeleton_extra(record), rig_of(bones_doc, binary)) is None:
+        if _carried(doc) is not None or not bones_of(raw, record):
             return raw
     except (ModelError, ValueError, KeyError, IndexError, TypeError, struct.error):
         return raw
@@ -1228,7 +1235,8 @@ def _same_frames(a: list, b: list, parent: list | None) -> bool:
     return True
 
 
-def kept_clip(made: bytes, went: bytes, given: bytes | None = None, poses: list | None = None) -> tuple[bytes, list | None]:
+def kept_clip(made: bytes, went: bytes, given: bytes | None = None,
+              poses: list | None = None) -> tuple[bytes, list | None]:
     """An animation taken in from a file back from Blender (`made`: the clip rusemod.unitmodel.own_clips made of it,
     from `poses`: Rig.poses' each bone's (moves, turns, sizes) at each frame, as the file has them) set against what
     went out to Blender under its name, as RUSE Decoy's Blender button sets its clips (_settle): `went`, the clip as the

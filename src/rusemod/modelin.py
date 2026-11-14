@@ -1538,7 +1538,8 @@ def _drop_animations(doc: dict, views: list) -> None:
         if i not in gone:
             new_of[i] = len(new_of)
     their_views = {acc[i].get("bufferView") for i in gone} | {
-        ((acc[i].get("sparse") or {}).get(part) or {}).get("bufferView") for i in gone for part in ("indices", "values")}
+        ((acc[i].get("sparse") or {}).get(part) or {}).get("bufferView")
+        for i in gone for part in ("indices", "values")}
     doc["accessors"] = [a for i, a in enumerate(acc) if i not in gone]
     for mesh in doc.get("meshes") or []:
         for prim in mesh.get("primitives") or []:
@@ -1582,11 +1583,11 @@ def _blender_animations(g, sk: dict, animations: dict, nodes: list) -> None:
     """Each clip of `animations` ({name: its bytes}, on the record `sk`) as Blender is given it (own_animations_into's
     `blender`): every bone's pose at each of the clip's frames as the game plays it (rusemod.baf.sample, onto `nodes`:
     each bone's node in the record's order), keyed where Blender's straight lines between keys need a key to give that
-    frame back (rusemod.animglb.blender_keys: Blender draws a turn between two keys along a straight line through its
-    four numbers, the game along the arc; given only the clip's own keys, an untouched trip came back off by more than
-    rusemod.rig.TOL_BACK_* on 18 of the Generic Horse's 25 clips, real Blender 4.5.14, 2026-11-13), each key at its
-    frame of the game's 30 a second (a clip of other timing: its frames spread over its length), as RUSE Decoy's
-    Blender button gives Blender a unit's clips (rusemod.animglb.add_animations). A clip of one frame: one key."""
+    frame back (_blender_frames, rusemod.animglb's measure: Blender draws a turn between two keys along a straight line
+    through its four numbers, the game along the arc; given only the clip's own keys, an untouched trip came back off
+    by more than rusemod.rig.TOL_BACK_* on 18 of the Generic Horse's 25 clips, real Blender 4.5.14, 2026-11-13), each
+    key at its frame of the game's 30 a second (a clip of other timing: its frames spread over its length), as RUSE
+    Decoy's Blender button gives Blender a unit's clips (rusemod.animglb.add_animations). A clip of one frame: one key."""
     from . import baf
     from .animglb import blender_keys
     from .gltf import FLOAT
@@ -1620,7 +1621,8 @@ def _blender_animations(g, sk: dict, animations: dict, nodes: list) -> None:
                 samplers.append({"input": times(kept), "output": g.accessor([tuple(conv(vals[k])) for k in kept],
                                                                              kind, FLOAT, target=None),
                                  "interpolation": "LINEAR"})
-                channels.append({"sampler": len(samplers) - 1, "target": {"node": nodes[csk["index"][u]], "path": path}})
+                channels.append({"sampler": len(samplers) - 1,
+                                 "target": {"node": nodes[csk["index"][u]], "path": path}})
         out.append({"name": name, "samplers": samplers, "channels": channels})
 
 

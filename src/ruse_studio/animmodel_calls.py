@@ -440,9 +440,11 @@ class AnimModelCalls:
                 raise file_error(cause, target, target) from cause
             raise StudioError(f"{Path(file).name}: {exc}") from None
         try:
-            from rusemod.rig import read_rig
+            from rusemod.rig import clips_out, read_rig
             rig = read_rig(file)
-            said, halves = animmodel.file_says(animmodel.file_document(file), [a.name for a in rig.animations])
+            doc = animmodel.file_document(file)
+            said, halves = animmodel.file_says(doc, [a.name for a in rig.animations])
+            went = clips_out(doc)   # (a file back from Blender: each clip that went out to it, as the mod had it)
         except (animmodel.AnimModelError, ValueError, OSError) as exc:
             cause = oserror_of(exc)
             if cause is not None:   # (the file imported, read: in words, never Python's own)
@@ -502,8 +504,12 @@ class AnimModelCalls:
                     raise file_error(cause, own) from cause
                 raise StudioError(f"{Path(file).name}: its animations can't be kept: {exc}") from None
         # what of the modder's own this fit couldn't keep: his animations' changes, and the picks made on the page
-        # (with a record from before FROM_FILE, every pick the action table showed)
-        lost = [name for name in changed if kept.get(name) != mine[name]]
+        # (with a record from before FROM_FILE, every pick the action table showed). One that went out to Blender as
+        # the mod had it, his RUSE Decoy change and all, and came back (as it went, or changed there on top of it) is
+        # still his: never named (item 45; a87ddb70 named decoy-blender2's run so after one bone of it was moved in
+        # Blender, real Blender 4.5.14, 2026-11-13); one changed in the mod after it went out is
+        lost = [name for name in changed if kept.get(name) != mine[name]
+                and (went.get(name) or (None,))[0] != mine[name]]
         chosen = set(picks) if last_plays is None else \
             {a for a in set(picks) | set(last_plays) if picks.get(a) != last_plays.get(a)}
         moved = sorted(a for a in chosen if after.get(a) != picks.get(a))
