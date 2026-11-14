@@ -110,6 +110,31 @@ class Deleting(Player):
         self.assertNotIn(address, [u["address"] for u in self.call("units")["units"]])
         self.assertEqual(self.build(folder)[0], [])
 
+    @unittest.skipUnless(WINDOWS, "a file another program holds: Windows")
+    def test_deleted_with_its_card_held_then_made_again_under_the_same_name(self):
+        """The card open in a picture program while Delete is pressed, the program closed, the unit made again under
+        the same name before the mod is opened again or tested: the new unit gets none of the old one's files (the old
+        card no longer waiting is taken out, rusemod.holding)."""
+        folder = self.mod("Held again")
+        address = self.new(H1, "Held Twice")
+        files = self.own_files(folder, address)
+        held = open(files["card"], "rb")
+        with mock.patch("ruse_studio.edits.HOLD_WAIT", 0.3, create=True):
+            try:
+                got = self.call("delete_unit", address, None)
+            except Refused as r:
+                got = r
+        held.close()
+        if isinstance(got, Refused):
+            self.call("delete_unit", address, None)
+        again = self.new(H1, "Held Twice")
+        self.assertEqual(again, address)
+        print(f"\nDeleted with its card held, made again: the old card {'is' if files['card'].exists() else 'is not'} "
+              f"the new unit's (Delete {'refused first' if isinstance(got, Refused) else 'went through'})")
+        self.assertFalse(files["card"].exists())
+        self.assertNotIn(tail(again), anim.read_units(folder))              # its old animations' row: gone
+        self.assertFalse(files["clips"].exists())
+
     def test_deleted_then_made_again_under_the_same_name(self):
         folder = self.mod("Again")
         address = self.new(H1, "Phoenix", 70)
