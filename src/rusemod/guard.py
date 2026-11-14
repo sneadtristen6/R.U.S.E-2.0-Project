@@ -52,7 +52,7 @@ MATCH_LOG = "ruse_guard_match.txt"                    # what the in-game record 
 TERMS_VERSION = 4                                     # the agreement's version; raised when its text changes, so the
 #                                                       apps show it again (2: the final text of 2026-10-31; 3, 2026-11-02:
 #                                                       a game crash report's chain and memory place listed; 4, 2026-11-13:
-#                                                       Bug Watch's map, game mode and unit at a game crash, what a
+#                                                       Bug Watch's map and unit at a game crash, what a
 #                                                       player's own mods hold by kind and count, and the version accepted:
 #                                                       rusemod.bugwatch.AGREEMENT_V4)
 BUNDLE_LIMIT = 20_000_000                             # the most a bundle may weigh (the replay is most of it)

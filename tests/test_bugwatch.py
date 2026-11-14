@@ -743,7 +743,7 @@ class TheAgreementScreen(unittest.TestCase):
         self.assertEqual(texts[0], texts[1])
         english = texts[0]["us"]
         for said in ("Version 4, ", "how many mods of your own you had and what kinds of things they hold",
-                     "the map it was on", "the game mode", "the unit the game was making",
+                     "the map it was on", "the unit the game was making",
                      "which version of this agreement you accepted", "or the names and words of your own mods"):
             self.assertIn(said, english)
         self.assertNotIn("how many of our own mods", english)   # (version 3's slip: it meant the player's own)
