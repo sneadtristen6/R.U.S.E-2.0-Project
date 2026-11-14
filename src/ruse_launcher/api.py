@@ -196,15 +196,21 @@ class LauncherApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedC
             return self._game_dir, {}
         return find_game_dir(self._home, self._find)
 
-    def status(self) -> dict:
-        """Where the game is, which build, and a sentence for the screen."""
+    def _say(self, text: str, lang: str = "") -> str:
+        """A sentence for the screen in `lang` (the Launcher's own when none is given), from errors.toml, which lists
+        such sentences from the calls to this (the plain-words job, 2026-11-14: the status line at the top was English
+        in every language)."""
+        return errortext.worded(text, lang or self._lang())
+
+    def status(self, lang: str = "") -> dict:
+        """Where the game is, which build, and a sentence for the screen (in `lang`: the page's language)."""
         game, found = self._game()
         if game is None or not game.is_dir():
-            return {"found": False, "message": "We couldn't find R.U.S.E. Is it installed through Steam?"}
+            return {"found": False, "message": self._say("We couldn't find R.U.S.E. Is it installed through Steam?", lang)}
         build = found.get("build_id") or build_of(game) or "?"
         drive = game.drive or game.anchor
         return {"found": True, "game_dir": str(game), "build": build, "branch": found.get("branch", ""),
-                "drive": drive, "message": f"Found R.U.S.E. on {drive} (build {build})"}
+                "drive": drive, "message": self._say(f"Found R.U.S.E. on {drive} (build {build})", lang)}
 
     def choose_game_folder(self) -> dict:
         """Ask for the game folder (when Steam can't tell us). It must hold RUSE.exe."""

@@ -137,6 +137,35 @@ class ThePageGetsIt(unittest.TestCase):
         self.assertIsNone(self.api.page_error(LauncherError("Nobody's words")))  # nothing to say differently
 
 
+class TheStatusLine(unittest.TestCase):
+    """The line at the top of the Launcher, on every start: "We couldn't find R.U.S.E. Is it installed through Steam?"
+    or "Found R.U.S.E. on D: (build ...)", English in every language. Now in the page's language (status(lang), the
+    page asking again when its language changes), or the Launcher's own when asked without one; the control: English."""
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.tmp = Path(self._tmp.name)
+
+    def tearDown(self):
+        self._tmp.cleanup()
+
+    def test_no_game_found_in_the_page_s_language(self):
+        api = LauncherApi(home=self.tmp / "home", game_dir=self.tmp / "nowhere")
+        self.assertEqual(page_api(api).status("ru")["message"], "R.U.S.E. не найдена. Она установлена через Steam?")
+        api.set_pref("lang", "jpn")
+        self.assertEqual(api.status()["message"], "R.U.S.E. が見つかりませんでした。Steam でインストールされていますか？")
+
+    def test_the_game_found_in_the_page_s_language(self):
+        game = self.tmp / "game"
+        game.mkdir()
+        view = page_api(LauncherApi(home=self.tmp / "home", game_dir=game)).status("fr")
+        self.assertEqual(view["message"], f"R.U.S.E. trouvé sur {view['drive']} (version {view['build']})")
+
+    def test_control_in_english(self):
+        api = LauncherApi(home=self.tmp / "home", game_dir=self.tmp / "nowhere")
+        self.assertEqual(api.status("us")["message"], "We couldn't find R.U.S.E. Is it installed through Steam?")
+
+
 class ADamagedModFile(unittest.TestCase):
     """The export scenarios' FE-9: a mod file with one byte changed (a download gone wrong) stopped the Launcher's Add
     with zlib's or zipfile's own words ("Error -3 while decompressing data: invalid code lengths set", "Bad CRC-32 for

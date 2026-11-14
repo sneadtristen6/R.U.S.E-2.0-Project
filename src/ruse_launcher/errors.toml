@@ -1013,3 +1013,31 @@ cz = "tento počítač se nedostal k serveru: není připojení k internetu, neb
 jpn = "この PC はサーバーにつながりませんでした。インターネットに接続されていないか、途中の何か（ファイアウォール、ウイルス対策ソフト、サーバー自身）が接続を断りました"
 sc = "这台电脑连不上服务器：没有网络连接，或者路上的某样东西（防火墙、杀毒软件、服务器本身）拒绝了连接"
 fa = "این رایانه به سرور نرسید: اتصال اینترنت نیست، یا چیزی سر راه (دیوار آتش، آنتی‌ویروس، خودِ سرور) اتصال را رد کرد"
+
+# Sentences for the screen (LauncherApi._say): the status line at the top.
+
+[e2eef347753]
+us = "Found R.U.S.E. on {0} (build {1})"
+fr = "R.U.S.E. trouvé sur {0} (version {1})"
+ger = "R.U.S.E. auf {0} gefunden (Build {1})"
+ita = "R.U.S.E. trovato su {0} (build {1})"
+spa = "R.U.S.E. encontrado en {0} (versión {1})"
+pol = "Znaleziono R.U.S.E. na {0} (wersja {1})"
+ru = "R.U.S.E. найдена на {0} (сборка {1})"
+cz = "R.U.S.E. nalezen na {0} (sestavení {1})"
+jpn = "{0} に R.U.S.E. が見つかりました（ビルド {1}）"
+sc = "在 {0} 上找到了 R.U.S.E.（版本 {1}）"
+fa = "R.U.S.E. روی {0} پیدا شد (نسخهٔ {1})"
+
+[eeab4054dcc]
+us = "We couldn't find R.U.S.E. Is it installed through Steam?"
+fr = "R.U.S.E. est introuvable. Est-il installé via Steam ?"
+ger = "R.U.S.E. wurde nicht gefunden. Ist es über Steam installiert?"
+ita = "Non abbiamo trovato R.U.S.E. È installato tramite Steam?"
+spa = "No encontramos R.U.S.E. ¿Está instalado con Steam?"
+pol = "Nie znaleźliśmy R.U.S.E. Czy jest zainstalowany przez Steam?"
+ru = "R.U.S.E. не найдена. Она установлена через Steam?"
+cz = "R.U.S.E. jsme nenašli. Je nainstalovaný přes Steam?"
+jpn = "R.U.S.E. が見つかりませんでした。Steam でインストールされていますか？"
+sc = "找不到 R.U.S.E.。它是通过 Steam 安装的吗？"
+fa = "R.U.S.E. پیدا نشد. آیا از راه Steam نصب شده است؟"

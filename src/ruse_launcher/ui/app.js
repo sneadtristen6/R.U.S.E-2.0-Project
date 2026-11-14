@@ -76,6 +76,7 @@ async function setLanguage(lang) {
   state.words = await api().strings(lang);
   renderUpdate();
   recheckUpdate();
+  if (state.status) api().status(lang).then(renderStatus).catch(() => {});  // its line in the new language too
   const w = state.words;
   text($("lang-name"), (state.languages.find((l) => l.code === lang) || {}).name || "");
   $("lang-open").title = w.tip_lang_open;
@@ -561,7 +562,7 @@ function useLists(res) {
 
 async function refresh() {
   try {
-    renderStatus(await api().status());
+    renderStatus(await api().status(state.lang));
     useLists({ sets: await api().mod_sets(), library: await api().library() });
   } catch (err) { problem(err); }
 }
