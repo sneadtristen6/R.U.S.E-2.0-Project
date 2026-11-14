@@ -572,6 +572,24 @@ class ResizeAndMoveWithItsFilesGone(WithLibrary):
                                 "skipped\tTiger\tno real-life size known", lang)
 
 
+class TheEraModelChangedSince(unittest.TestCase):
+    """The review of f1fa002c, finding 4: after a Resize or Move of an era unit whose era units' model a newer download
+    of its era replaced since it was made, fitted from the new one as before, the page now says so
+    (StudioApi._era_said's not_kept "file", app.js notKeptSaid): words.toml model_kept_not_file, in every language with
+    its {file}."""
+
+    def test_its_words_in_every_language_and_the_page_says_them(self):
+        w = words()["model_kept_not_file"]
+        self.assertEqual(sorted(w), sorted(errortext.LANGS))
+        for lang in errortext.LANGS:
+            with self.subTest(lang=lang):
+                self.assertEqual(re.findall(r"\{(\w+)\}", w[lang]), ["file"])
+                if lang != "us":
+                    self.assertNotEqual(w[lang], w["us"])
+        js = (UI / "app.js").read_text(encoding="utf-8")
+        body = re.search(r"function notKeptSaid\(lost\) \{(.*?)\n\}", js, re.S).group(1)
+        self.assertIn("if (lost.file) said.push(fill(w.model_kept_not_file, { file: lost.file }));", body)
+
 
 if __name__ == "__main__":
     unittest.main()

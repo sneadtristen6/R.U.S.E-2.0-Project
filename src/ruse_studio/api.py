@@ -8838,6 +8838,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             self._horse_gone(address, record, False)   # (a model made from the Generic Horse's files: their words)
             raise StudioError(f"The file this model was made from isn't there any more ({file}): import it again "
                               f"to change its size.")
+        changed = self._era_changed(record, made)   # (an era unit's model a newer download replaced: said)
         aircraft = record["aircraft"] if "aircraft" in record else self._unit_kind(address) == "air"
         others = self._kinds_ready(address, False)   # (a squad's other kinds' models: the same size)
 
@@ -8851,7 +8852,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                                 refit=True, hold=hold)
             return report
         report = self._fitted_together(fits, cut_off)
-        return {"model": report, "copy_out": False, **self.look(address)}
+        return {"model": self._era_said(report, made, changed), "copy_out": False, **self.look(address)}
 
     def _fitted_together(self, fits, cut_off: bool = False) -> dict:
         """`fits(hold)` (a Resize's or a Move's: the unit's model, then a squad's other kinds', one size and place for
@@ -8887,6 +8888,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             self._horse_gone(address, record, True)   # (a model made from the Generic Horse's files: their words)
             raise StudioError(f"The file this model was made from isn't there any more ({file}): import it again "
                               f"to move it.")
+        changed = self._era_changed(record, made)   # (an era unit's model a newer download replaced: said)
         aircraft = record["aircraft"] if "aircraft" in record else self._unit_kind(address) == "air"
         others = self._kinds_ready(address, True)   # (a squad's other kinds' models: moved with it)
         # (what the modder made of its animations since stays, as model_resize's; all of the squad moved or none)
@@ -8900,7 +8902,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                                 hold=hold)
             return report
         report = self._fitted_together(fits, cut_off)
-        return {"model": report, "copy_out": False, **self.look(address)}
+        return {"model": self._era_said(report, made, changed), "copy_out": False, **self.look(address)}
 
     def _made_from(self, record: dict) -> Path | None:
         """The file a new unit's model (its record `record`) was made from, when it's on this PC; None when it isn't:
@@ -8909,6 +8911,16 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         unit). An exported mod's records name only the file's own name (rusemod.package: no folder of the maker's PC
         goes out), which is never looked for in the folder the Studio happens to run in."""
         return self._fit_from(record)
+
+    @staticmethod
+    def _era_said(report, made, changed: bool):
+        """A Resize's or Move's report (`report`), with the era units' model it was fitted from (`made`) said in its
+        NOT_KEPT ("file") when a newer download replaced it since the model was made (`changed`,
+        era_units._era_changed): fitted from it as it is now, as before, never without a word (the review of f1fa002c,
+        finding 4). Whether such a unit should stay as it was instead is the owner's to say."""
+        if changed and isinstance(report, dict):
+            report.setdefault(NOT_KEPT, {"animations": [], "picks": []})["file"] = str(made)
+        return report
 
     @staticmethod
     def _pinned_facing(record: dict) -> list | None:

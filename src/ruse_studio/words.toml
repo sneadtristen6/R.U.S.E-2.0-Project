@@ -50577,6 +50577,22 @@ jpn = "このモデルの前回のインポート・サイズ変更・移動は�
 sc = "这个模型上一次的导入、调整大小或移动在完成前就停止了（Studio 被关闭或电脑停止了），因此先把它已经改动的内容恢复了原样。"
 fa = "آخرین وارد کردن، تغییر اندازه یا جابه‌جایی این مدل پیش از تمام شدن متوقف شد (استودیو بسته شد یا رایانه خاموش شد)، پس اول آنچه از پیش تغییر داده بود به حال قبل برگردانده شد."
 
+# genhorse (the fixer, after the review of f1fa002c, finding 4): after a Resize or Move of an era unit whose era
+# units' model a newer download of its era replaced since it was made, fitted from the new one as before, now said
+# (StudioApi._era_said's not_kept "file", app.js notKeptSaid; whether it should stay as it was is the owner's)
+[model_kept_not_file]
+us = "The era units' model it was made from has changed since (newer ones came out): it is made from the new one now ({file})."
+fr = "Le modèle des unités d'époque dont elle a été faite a changé depuis (de nouvelles sont sorties) : elle est maintenant faite à partir du nouveau ({file})."
+ger = "Das Modell der Epocheneinheiten, aus dem sie gemacht wurde, hat sich seitdem geändert (neuere sind erschienen): Sie ist jetzt aus dem neuen gemacht ({file})."
+ita = "Il modello delle unità d'epoca da cui è stata fatta è cambiato da allora (ne sono uscite di più recenti): ora è fatta da quello nuovo ({file})."
+spa = "El modelo de las unidades de época del que se hizo ha cambiado desde entonces (han salido otras más nuevas): ahora está hecha del nuevo ({file})."
+pol = "Model jednostek z epok, z którego powstała, od tamtej pory się zmienił (wyszły nowsze): teraz jest zrobiona z nowego ({file})."
+ru = "Модель юнитов эпох, из которой он сделан, с тех пор изменилась (вышли новые): теперь он сделан из новой ({file})."
+cz = "Model jednotek z období, ze kterého vznikla, se od té doby změnil (vyšly novější): teď je vyrobená z nového ({file})."
+jpn = "元にした時代ユニットのモデルがその後変わりました（新しいものが出ました）。いまは新しいモデルから作られています（{file}）。"
+sc = "制作它所用的时代单位模型此后已更改（有更新的版本）：现在它由新的模型制作（{file}）。"
+fa = "مدل یگان‌های دوره‌ای که از آن ساخته شده از آن زمان تغییر کرده است (نسخه‌های تازه‌تر آمده‌اند): اکنون از مدل تازه ساخته شده است ({file})."
+
 # The quick fix beside a refusal of a folder too deep for Windows (ruse_studio.homemove, eraunits.js moveFix; the
 # owner, 2026-11-13: "tell the modder, provide a quick fix that auto does it if they dont want to do it manually")
 [home_move_title]

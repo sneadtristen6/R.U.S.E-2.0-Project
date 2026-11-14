@@ -128,6 +128,16 @@ def _is_sha(text) -> bool:
     return isinstance(text, str) and len(text) == 64 and all(c in "0123456789abcdef" for c in text)
 
 
+def _inside(path, root) -> bool:
+    """Whether `path` is inside the folder `root` (any slashes, any case on Windows)."""
+    try:
+        p = os.path.normcase(os.path.abspath(str(path)))
+        r = os.path.normcase(os.path.abspath(str(root))).rstrip("\\/")
+    except (TypeError, ValueError, OSError):
+        return False
+    return p.startswith(r + os.sep)
+
+
 def parse_list(data: bytes) -> list[dict]:
     """The sections of an era-units.json, each checked: one that isn't right is left out, so one mistake never hides
     the rest. A list of a newer format is refused (the Studio is too old for it). The list's "units_per_metre" (the
@@ -499,6 +509,23 @@ class EraUnitCalls:
                 z.unlink(missing_ok=True)
 
         return job.start(work, f"The {era} units are ready.", plain=(OSError, EraDownloadError, zipfile.BadZipFile))
+
+    def _era_changed(self, record, file) -> bool:
+        """Whether `file`, the file a new unit's model is fitted again from (Resize, Move: its model's record
+        `record`), is one of this PC's era units library's models whose bytes aren't the ones the model was made from
+        any more (the record keeps their SHA-256: horse_squad.made_sha): a newer download of its era puts the new files
+        in under the same names (install_section). The model is fitted from the file as it is, as before, and the fit
+        says so (api._era_said: the review of f1fa002c, finding 4, it changed without a word). False for any other
+        file, a record keeping no SHA-256 (one from before f1fa002c: not known), or a file that can't be read now."""
+        from .horse_squad import file_sha256, made_sha
+        sha = made_sha(record)
+        lib = library_dir(self._home) if sha is not None and file is not None else None
+        if lib is None or not _inside(file, lib):
+            return False
+        try:
+            return file_sha256(file) != sha
+        except OSError:
+            return False
 
     def _era_record(self) -> dict:
         """{era unit key: its unit's address} for the current mod, keeping only units the mod still has."""

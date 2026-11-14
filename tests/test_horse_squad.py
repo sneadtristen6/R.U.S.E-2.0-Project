@@ -685,6 +685,39 @@ class OnTheMadeUpGame(WithMod):
             self.assertEqual(self.api._last_fit({"from": str(mine)}, found, clips, None),
                              [({"hr_walk": b"what mine.glb gives"}, False)])
 
+    def test_an_era_unit_s_model_a_newer_download_replaced_is_said(self):
+        """Finding 4 (an era unit's library model replaced by a newer download of its era): Resize and Move fit it from
+        the model as it is now, as before, and say so (its report's not_kept "file", which the page says: words.toml
+        model_kept_not_file), also in every ground unit at once; whether it should stay as it was is the owner's.
+        Unchanged, nothing is said."""
+        Path(self.api.new_mod("Era")["current"])
+        lib = Path(os.environ[era_units.LIBRARY_ENV])
+        model = lib / "ww1" / "liberty.glb"
+        model.parent.mkdir(parents=True, exist_ok=True)
+        model.write_bytes(b"liberty as first downloaded")
+        made = self.api.era_unit_add("WWI|USA|Mark VIII Liberty", 0, 10)["address"]
+        self.modelled(made, self.made_from(str(model), b"liberty as first downloaded"))
+
+        def report(call):
+            got = {}
+
+            def fit(api, address, file, size, aircraft, facing, own_turret, own_propellers, move, kind=None, **kw):
+                return {"file": Path(file).name}
+            with mock.patch.object(StudioApi, "_fit_model", fit):
+                got = call()
+            return got["model"]
+        for call in (lambda: self.api.model_resize(made, 1.2), lambda: self.api.model_place(made, [5, 0, 0])):
+            self.assertNotIn("not_kept", report(call))                     # (the control: unchanged)
+        model.write_bytes(b"liberty of a newer download")
+        self.assertTrue(self.api.model_sizes(made, "us")["resizable"])
+        for call in (lambda: self.api.model_resize(made, 1.2), lambda: self.api.model_place(made, [5, 0, 0])):
+            self.assertEqual(report(call)["not_kept"], {"animations": [], "picks": [], "file": str(model)})
+        with mock.patch.object(StudioApi, "_fit_model", lambda api, *a, **kw: {}):
+            view = finished(self.api, self.api.models_resize_all("ground", "game")["job"])
+        self.assertEqual(view["state"], "done", view.get("message"))
+        self.assertIn(f"not_kept\tMark VIII Liberty\t{json.dumps({'animations': [], 'picks': [], 'file': str(model)})}",
+                      view["lines"])
+
     def test_a_second_ask_follows_the_first(self):
         self.api.new_mod("Twice")
         go = threading.Event()
