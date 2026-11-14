@@ -191,6 +191,21 @@ class ACustomUniform(SquadScenario):
         self.assertEqual(self.errors(result), [])
         self.assertEqual(self.problems(), [])
 
+    @unittest.expectedFailure    # finding SQ-11: Custom uniform and Back to the default uniform said in English only
+    def test_the_uniform_s_words_in_every_language(self):
+        """The Uniform row's two buttons (app.js uniformBox) say the call's own "message" (say(r.message)): model_copy's
+        and model_copy_remove's are English sentences in the code (api.model_copy), with no entry in the words, so the
+        page says them in English in every language."""
+        said, back = {}, {}
+        for lang in LANGS:
+            self.api.set_pref("lang", lang)
+            said[lang] = self.page.model_copy(SQUAD)["message"]
+            back[lang] = self.page.model_copy_remove(SQUAD)["message"]
+        self.api.set_pref("lang", "us")
+        print("\nSQ-11:", said["us"], "|", said["fr"])
+        self.assert_worded(said)
+        self.assert_worded(back)
+
     @unittest.expectedFailure    # finding SQ-1: a soldier's own look, then Custom uniform: the mod no longer builds
     def test_a_soldier_s_own_look_then_a_uniform(self):
         """Unusual: Import a model… on soldier 2's line first, then Custom uniform on the squad: the Studio takes it
@@ -199,11 +214,14 @@ class ACustomUniform(SquadScenario):
         unit), its words naming files/models/<unit>.glb, a file the mod hasn't got. Either the uniform is refused in
         words, as it is over the squad's own model, or the mod builds."""
         self.page.soldier_import(SQUAD, "2", str(self.model_file("marine.glb", b"glTF marine")))
+        # (the page's Custom uniform button is off only while look() has the squad's own model: app.js uniformBox)
+        button_on = not self.page.look(SQUAD).get("own_model")
         said = self.refused("model_copy", SQUAD)
         made = (self.models / f"{STEM}.copy.toml").is_file()
         result, _loaded = self.built()
-        print("\nSQ-1 model_copy after a soldier's look:", "refused: " + str(said["us"]) if said["us"] else
-              "taken", "| build:", self.errors(result), "| check:", self.problems())
+        print("\nSQ-1 model_copy after a soldier's look: button on", button_on, "|",
+              "refused: " + str(said["us"]) if said["us"] else "taken", "| build:", self.errors(result), "| check:",
+              self.problems())
         self.assertTrue(said["us"] is not None or not self.errors(result), (made, self.errors(result)))
 
 
