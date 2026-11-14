@@ -3354,6 +3354,7 @@ jpn = "{0} 個のモデルを合わせ直し、{1} 個を飛ばしました。"
 sc = "已适配 {0} 个模型，跳过 {1} 个。"
 fa = "{0} مدل جا انداخته شد، {1} مدل رد شد."
 # a mod leaving missions without places they watch from their start (rusemod.missionplaces; build.mission_place_findings)
+# (the campaign chapters' one also build.known_issue_findings, for the two mods rusemod.knownissues knows by their files)
 [e554591a383]
 us = "{0} replaces the tutorial's map with one that lacks places its mission uses: with it on, the tutorial stops about a second after it starts"
 fr = "{0} remplace la carte du tutoriel par une carte à laquelle manquent des lieux qu'utilise sa mission : avec ce mod, le tutoriel s'arrête environ une seconde après son début"

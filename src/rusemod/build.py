@@ -4303,12 +4303,14 @@ def _mission_blame(x, changers: list, read: dict) -> tuple[list, list]:
     return layout, [n for n in script if n not in layout]
 
 
-def mission_place_findings(found, changers: list, read: dict, titles=None) -> list:
+def mission_place_findings(found, changers: list, read: dict, titles=None, besides=()) -> list:
     """The build's words on rusemod.missionplaces.check's answer `found`: for each mod it is about (in the set's order),
     a warning for the missions it leaves without zones they watch from the start, by the menu they're in (the owner,
     2026-11-13: "It should be warning on every version if there's an error"); and a note for each changed mission
     script that can't be read, the mission named as the menus name it (`titles`: _menu_titles). Only warns: the set
-    builds and plays as before, battles and multiplayer included."""
+    builds and plays as before, battles and multiplayer included. `besides`: the names of the mods the build already
+    warns about for their campaign chapters, by their files (known_issue_findings): nothing more is said of their
+    campaign chapters here, so no mod gets two warnings for them."""
     from . import missionplaces as mp
     counts: dict = {}   # mod name -> {(why, kind): {mission names}}
     for x in found.missing:
@@ -4321,6 +4323,8 @@ def mission_place_findings(found, changers: list, read: dict, titles=None) -> li
     for name in sorted(counts, key=lambda n: order.index(n) if n in order else len(order)):
         for (why, kind), missions in sorted(counts[name].items(),
                                             key=lambda kv: (kv[0][0] != "layout", mp.ORDER.index(kv[0][1]))):
+            if kind == "campaign" and name in besides:   # (its file's warning says it: known_issue_findings)
+                continue
             n = len(missions)
             if why == "layout" and kind == "tutorial":
                 # rule: mission-zones
@@ -4395,12 +4399,14 @@ def mission_places(game: Path, stack, open_pack, glad, glad_changed: dict, data_
     (rusemod.missionplaces), as the build's findings (mission_place_findings). `glad`: ZZ_GladPatchableWin.dat as the
     build has it, with `glad_changed` ({member: bytes}) on top; `data_packs`: the build's (path, pack, {member: bytes})
     for DataMap_Win.dat and IA_Common.dat; `open_pack`: a pack as the .rmod mods left it. None for a game without the
-    three packs (no mission to look at).
+    three packs (no mission to look at). Of the campaign chapters of an .rmod mod the build warns about by its file
+    (rusemod.knownissues: known_issue_findings, said with the build's first findings) nothing more is said here.
 
     The check only warns, so nothing of it ever stops a build: whatever a set's files hold that can't be read, or
     anything else going wrong in it, is one note and the build goes on (the review of 95e9b910, 2026-11-14: menus with
     a list where a flag is stopped a build that had built before)."""
     from . import missionplaces as mp
+    from .knownissues import missions_stop
     try:
         paths = {name: find_pack(game, name) for name in (mp.GLAD, mp.DATA, mp.IA)}
         if any(p is None for p in paths.values()):
@@ -4420,16 +4426,36 @@ def mission_places(game: Path, stack, open_pack, glad, glad_changed: dict, data_
         if not (found.missing or found.unread):
             return []
         texts = find_pack(game, loc.PACK)
+        listed = {k.name for k in (missions_stop(m.rmod) for m in rmods) if k is not None}
         return mission_place_findings(found, _mission_changers(rmods, mods, result.order, result, given.get(mp.DATA),
                                                                shipped[mp.DATA]),
                                       {n.lower(): r for n, r in final.items()},
-                                      _menu_titles(lambda: open_pack(texts) if texts is not None else None))
+                                      _menu_titles(lambda: open_pack(texts) if texts is not None else None), listed)
     except (OSError, *mp._READ_ERRORS) as exc:   # (the menus or a cluster as the set leaves them, unreadable)
         return [Finding("note", f"the places the missions watch from their start couldn't be checked: the menus "
                                 f"or a mission's files can't be read ({exc})")]
     except Exception as exc:  # noqa: BLE001 - a check that only warns never stops a build (above); a fault of
         # this check itself, not said to be a file's
         return [Finding("note", f"the places the missions watch from their start couldn't be checked ({exc})")]
+
+
+def known_issue_findings(infos) -> list:
+    """A warning for each library mod in the set that rusemod.knownissues knows by its .rmod file's bytes: 1 VS 7 AI and
+    1 VS 15 AI, which the missions check (mission_places) doesn't find, until the campaign chapter they change is tried
+    in the game with them on (the owner, 2026-11-14: "Just keep a warning about 1v7 and 1v15."). Only warns: the set
+    builds and plays as before, battles and multiplayer included."""
+    from .knownissues import missions_stop
+    out, seen = [], set()
+    for info in infos:
+        known = missions_stop(info.rmod) if getattr(info, "rmod", None) is not None else None
+        if known is None or known.name in seen:
+            continue
+        seen.add(known.name)
+        # rule: mission-zones
+        out.append(Finding("warning", f"{known.name} replaces the maps of {known.count} campaign chapter(s) with ones "
+                                      f"that lack places their missions use: with it on, those chapters stop about a "
+                                      f"second after they start"))
+    return out
 
 
 def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Path | None = None,
@@ -4462,6 +4488,7 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
     fair = fairplay if fairplay is not None else \
         fair_play.check_infos([m for m, _ops in mods]) if fair_play.ON else fair_play.FairPlay()
     rmods = [m for m, _ops in mods if m.rmod is not None]
+    known = known_issue_findings(rmods)  # 1 VS 7 AI and 1 VS 15 AI, known by their files (knownissues): a warning each
     mods = [(m, ops) for m, ops in mods if m.rmod is None or ops or m.texts]
     overwrites: list = []
     if len(rmods) > 1:
@@ -4559,6 +4586,7 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                     text_path, text_arc = zz_path, open_pack(zz_path)  # an .rmod mod's units' beside mods of ours)
         except ResolveError as exc:
             raise BuildError(f"load order: {exc}") from None
+        result.findings[:0] = known
         if run:
             first = [m.id for m in rmods]
             result.order = first + [i for i in result.order if i not in first]

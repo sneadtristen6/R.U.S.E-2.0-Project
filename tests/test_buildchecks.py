@@ -297,6 +297,51 @@ class MissionWarnings(MadeUpGame):
             "Script Mod replaces the missions of 1 campaign chapter(s) with ones that use places their maps lack: with "
             "it on, those chapters stop about a second after they start"])
 
+    def test_a_mod_the_build_knows_by_its_file_is_warned_about_once(self):
+        """rusemod.knownissues (the owner, 2026-11-14: "Just keep a warning about 1v7 and 1v15."): a mod the build warns
+        about by its file's bytes gets no second warning for its campaign chapters from this check, whose count may
+        differ (here 3 said by the list, 1 found); the same file the list doesn't know gets this check's, as before."""
+        import hashlib
+        from unittest import mock
+        from rusemod import knownissues
+        mod = self.rmod("Maps.rmod", "Map Pack", "1.0", {(DATA, "test/map/m01_leipzig/leveldesign.scenario"):
+                                                         layout("A_battle_place")})
+        data = Path(mod[0].rmod).read_bytes()
+        known = {hashlib.sha256(data).hexdigest(): knownissues.MissionsStop("Map Pack", "map-pack@1.0", 3)}
+        with mock.patch.object(knownissues, "KNOWN", known), mock.patch.object(knownissues, "SIZES", {len(data)}):
+            result, lines = self.build(mod, out="known")
+        self.assertEqual(result.errors, [])
+        self.assertEqual(self.warnings(result), [
+            "Map Pack replaces the maps of 3 campaign chapter(s) with ones that lack places their missions use: with "
+            "it on, those chapters stop about a second after they start"])
+        self.assertEqual(len([line for line in lines if "about a second" in line]), 1, lines)
+        result, _lines = self.build(mod, out="unknown")
+        self.assertEqual(self.warnings(result), [
+            "Map Pack replaces the maps of 1 campaign chapter(s) with ones that lack places their missions use: with "
+            "it on, those chapters stop about a second after they start"])
+
+    def test_only_the_campaign_chapters_of_a_mod_known_by_its_file_go_unsaid(self):
+        """build.mission_place_findings' `besides`: of a mod the build warns about by its file, its campaign chapters
+        are not said again; its other missions, and every other mod, are said as before."""
+        from rusemod import missionplaces as mp
+        from rusemod.build import mission_place_findings
+        alpha = BS.join(["test", "map", "alpha", "leveldesign_bh.scenario"])
+        changers = [("Known", {(DATA.lower(), LAYOUT): b"chapter", (DATA.lower(), alpha): b"operation"}, {}, set()),
+                    ("Other", {(DATA.lower(), LAYOUT): b"chapter"}, {}, set())]
+        found = mp.Found([mp.Missing(mp.Mission("campaign", "M01_Leipzig", CLUSTER.lower(), (LAYOUT,), ()),
+                                     ["Zone_A"], True, False, False),
+                          mp.Missing(mp.Mission("operation", "Alpha", OTHER_CLUSTER.lower(), (alpha,), ()),
+                                     ["Zone_A"], True, False, False)])
+        read = {DATA.lower(): {LAYOUT: b"chapter", alpha: b"operation"}.get}
+        said = [f.message.split(" with ones")[0] for f in mission_place_findings(found, changers, read)]
+        self.assertEqual(said, ["Known replaces the maps of 1 campaign chapter(s)",
+                                "Known replaces the maps of 1 Operation(s)",
+                                "Other replaces the maps of 1 campaign chapter(s)"])
+        said = [f.message.split(" with ones")[0] for f in mission_place_findings(found, changers, read,
+                                                                                 besides={"Known"})]
+        self.assertEqual(said, ["Known replaces the maps of 1 Operation(s)",
+                                "Other replaces the maps of 1 campaign chapter(s)"])
+
 
 # --- item 29: a set made only of .rmod mods -------------------------------------------------------------------------
 def army_ndf(card=None) -> bytes:

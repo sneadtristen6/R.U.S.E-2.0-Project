@@ -128,7 +128,8 @@ RULES: dict[str, Rule] = {
         "A mission whose script watches, from its start, a zone its map's layout doesn't hold (a units-in-zone "
         "condition on its start-up list, the zone found by its name) stops about a second after it starts; the build "
         "reads every mission a player can pick that the set changes, in the player's own game, and warns about the "
-        "mods that leave one so (rusemod.missionplaces).",
+        "mods that leave one so (rusemod.missionplaces), and about 1 VS 7 AI and 1 VS 15 AI, known by their files, "
+        "until a game test (rusemod.knownissues).",
         "studied", "A player's crash report (Bug Watch, 2026-11-06): a mission's place check failed (the game's "
                    "script error), with the Pinnacle Map Pack among twelve library mods on. Why: the "
                    "mission's script looks for named places, and the mod's layout for that chapter holds none (the "
@@ -136,7 +137,9 @@ RULES: dict[str, Rule] = {
                    "project's private notes). 2026-11-13 the build's own check read every library mod alone with the "
                    "game: four do it (the Pinnacle Map Pack, the Balanced Realism Mod, Monte Cassino Demo MP, RSCBM2); "
                    "1 VS 7 AI and 1 VS 15 AI, named before, give that chapter a script of their own that watches no "
-                   "zone. Not tried in the game: only the one player's crash was seen"),
+                   "zone. So the build keeps warning about those two, known by their files' bytes, until chapter 16, "
+                   "WACHT AM RHEIN, is tried in the game with them on (the owner, 2026-11-14: \"Just keep a warning "
+                   "about 1v7 and 1v15.\"). Not tried in the game: only the one player's crash was seen"),
     "unit-far-upgrade": Rule(
         "A unit leaves its build list the moment ANY upgrade of it is researched, in whatever building that upgrade "
         "is made; so an upgrade (IsUpgrade 1) of a unit made in another building is made a research of its own "
