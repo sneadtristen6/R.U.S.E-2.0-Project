@@ -257,6 +257,23 @@ class TheModGoesOut(Player):
         self.assertEqual(j["state"], "done", j)
         return j
 
+    def test_exported_with_an_author_and_description_in_every_script(self):
+        """Export…'s boxes: an author and a description in other scripts, an emoji, quotes and a line break; the file,
+        the Launcher's library and the list entry ("Share your mod") read them back."""
+        from rusemod import mod_index
+        self.mod("Words out")
+        self.call("new_unit", M1, "Tank", 40, -1, -1, False, None)
+        author, about = 'Иван "Ваня" 山田 🙂', "Танки сильнее.\nTanks 🙂 are \"tougher\" & 𠮷."
+        j = wait(self.api, self.call("export_mod", "1.0.0", author, about)["job"])
+        self.assertEqual(j["state"], "done", j)
+        info = package.check(j["result"]["path"])
+        self.assertEqual(info["authors"], [author])
+        self.assertIn("Танки сильнее.", info["description"])
+        listed, problems = mod_index.parse("format = 1\n" + j["result"]["entry"].replace('download = ""',
+                                                                                        'download = "https://x/t"'))
+        self.assertEqual((problems, listed[0]["author"]), ([], author))
+        self.assertEqual(self.call("mod_info")["author"], author)            # kept for the next Export
+
     def test_exported_and_in_the_launchers_library(self):
         for lang in ("us", "ru", "jpn"):
             with self.subTest(lang=lang):
