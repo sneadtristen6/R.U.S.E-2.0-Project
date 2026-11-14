@@ -6316,7 +6316,8 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                       .decode().lower()).strip("-") or "my-edit"
         ids = {m.get("id") for m in self._library().mods()}
         new_id, n = slug, 2
-        while new_id in ids or any((root / new_id).exists() for root in self._roots("map")):
+        while new_id in ids or new_id.upper() in _WIN_RESERVED or any((root / new_id).exists()
+                                                                      for root in self._roots("map")):
             new_id, n = f"{slug}-{n}", n + 1
         target = base / new_id
         part = base / f".copying-{new_id}"

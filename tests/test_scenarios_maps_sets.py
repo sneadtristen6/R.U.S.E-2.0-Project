@@ -154,8 +154,8 @@ class DownloadedMap(MapGame):
         self.assertBuilds()
 
     # FINDING F1, on Edit an installed mod: the copy's folder is made from the name typed for it, so a copy called
-    # "Nul" stops with "<home>\maps\nul couldn't be read or written (error 183). Please report this."
-    @unittest.expectedFailure
+    # "Nul" stops with "<home>\maps\nul couldn't be read or written (error 183). Please report this." (PROPOSED FIX:
+    # the folder nul-2.)
     def test_f1_a_downloaded_map_mod_copied_under_the_name_nul(self):
         from test_build import write_mod
         mod = write_mod(self.home / "elsewhere", "their-maps", {})
