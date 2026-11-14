@@ -181,5 +181,85 @@ class MapGame(WithMod):
         self.api.set_pref("lang", lang)
 
 
+MISSION_FOLDER = "scripting_challenge"   # the copied Operation's script folder, as Anzio's is called
+MISSION_MEMBER = "genpython\\1000\\test\\map\\supercrossroads4\\scripting_challenge\\effetmap.xyz"
+NAMED = "datadir:\\test\\map\\supercrossroads4\\scripting_challenge\\effetmap.py"
+
+
+def copied_mission() -> bytes:
+    """The made-up Operation's own mission script (.xyz, as the game keeps it in IA_Common.dat), written with the
+    Studio's own script writer (rusemod.missionscript): two sides, side 0 played by a person (the US), side 1 by the
+    computer (Germany), and a wait as its whole mission."""
+    import hashlib
+    from rusemod.missionscript import Attr, Ref, assemble, call, source
+    from rusemod.pyscript import Xyz, write_xyz
+    e = "_enum_for_game_play"
+    imports = [e, "leveldesign.camps", "leveldesign.descriptor", "leveldesign.launcheffetmap"]
+    defs = [("P", call("leveldesign.camps.VariableCamp", Alliance=1, NiveauIA=Attr(f"{e}.NiveauIA.Player"),
+                       Nationalite=Attr(f"{e}.Nationalite.EU"), CampNumber=-1)),
+            ("C", call("leveldesign.camps.VariableCamp", Alliance=2, NiveauIA=Attr(f"{e}.NiveauIA.Scripted"),
+                       Nationalite=Attr(f"{e}.Nationalite.Allemagne"), CampNumber=-1)),
+            ("W", call("leveldesign.descriptor.DescriptorWaitDuree", Duree=2.5)),
+            ("ER", call("leveldesign.launcheffetmap.DescriptorLaunchEffetMap", CampList=[Ref("P"), Ref("C")],
+                        CampaignInfo=None, EffetMap=Ref("W"), GameRules=None, MapChapterPos=None, PostInit=[],
+                        TagList=[], UnitToSpawnList=[], GameMode=Attr(f"{e}.TGameTimerMode.Clock")))]
+    text = source(imports, defs, "ER")
+    return write_xyz(Xyz(hashlib.md5(text.encode("latin-1")).digest(), assemble(imports, defs, "ER", NAMED)))
+
+
+def operation_globals() -> bytes:
+    """test_newmap.menu_globals' Operation menu (Blitz's entry and another in a TChallengePack's ChallengeList), with
+    what the game's own has round it: the pack's PackGUID and the TChallengePackManager listing the pack (a mission
+    of the mod's own goes in a pack of its own there: rusemod.missionbuild.own_packs)."""
+    from fixtures import make_ndf, val
+    from test_newmap import GUID_BLITZ, GUID_OTHER, i32, key, ref, s
+    return make_ndf(
+        objects=[(0, [(0, key("M_D_01")), (1, val(0x1A, GUID_BLITZ)), (2, s(0)), (3, i32(1))]),
+                 (0, [(0, key("M_D_08")), (1, val(0x1A, GUID_OTHER)), (2, s(1)), (3, i32(1))]),
+                 (1, [(4, val(0x11, struct.pack("<I", 2) + ref(0, 0) + ref(1, 0))), (5, val(0x1A, bytes(range(48, 64))))]),
+                 (2, [(6, val(0x11, struct.pack("<I", 1) + ref(2, 1)))])],
+        classes=["TChallengeMapInfo", "TChallengePack", "TChallengePackManager"],
+        props=[("Description", 0), ("GUID", 0), ("TrackingId", 0), ("CategoryId", 0), ("ChallengeList", 1),
+               ("PackGUID", 1), ("ChallengePackList", 2)],
+        strings=["CH26", "X99"], topo=[2, 3], compress=True)
+
+
+class OperationGame(MapGame):
+    """MapGame with Blitz offered as an Operation instead of a BATTLES map (operation_globals), its mission there to
+    copy: the scenario cluster names the mission's folder and text file, IA_Common.dat holds its script
+    (copied_mission), ZZ_Win.dat its text files in English and French. The Scenario side's Mission trays work on a
+    copy of it."""
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        from test_newmap import SCENARIO_CLUSTER
+        from rusemod.ndf import Ndf
+        from rusemod.players import GLOBALS
+        rev = cls.game / "Data" / "PC" / "190852"
+        glad = members(rev / "ZZ_GladPatchableWin.dat")
+        glad[GLOBALS] = operation_globals()
+        cluster = Ndf(glad[SCENARIO_CLUSTER])
+        cluster.add_string("DataDir:\\Test\\map\\SuperCrossRoads4\\" + MISSION_FOLDER)
+        cluster.add_string("SuperCrossRoads4\\" + MISSION_FOLDER + "\\Localization.csv")
+        glad[SCENARIO_CLUSTER] = cluster.to_member(compress=True)
+        (rev / "ZZ_GladPatchableWin.dat").write_bytes(flat_pack(glad))
+        (rev / "IA_Common.dat").write_bytes(flat_pack({MISSION_MEMBER: copied_mission()}))
+        texts = {f"genlocalisation\\ww2\\localisation\\translations\\{lang}\\map\\supercrossroads4\\{MISSION_FOLDER}"
+                 f"\\localization.dic": make_dic([(name_to_key("SIDE_NAME"), f"Side ({lang})")]) for lang in ("us", "fr")}
+        (rev / "ZZ_Win.dat").write_bytes(flat_pack({**members(rev / "ZZ_Win.dat"), **texts}))
+        cls.game_files = {p.relative_to(cls.game).as_posix(): p.read_bytes() for p in cls.game.rglob("*") if p.is_file()}
+        cls.index = build_index(cls.game, Path(cls.tmp.name, "op-index.sqlite"), say=lambda line: None)
+
+    def setUp(self):
+        super().setUp()
+        # RUSE Guard's scripts switched off, as test_fairplay's Off does: with IA_Common.dat in it, the build would add
+        # them after the game's own Battles launcher, which this made-up game hasn't got
+        from rusemod import fairplay
+        off = mock.patch.object(fairplay, "ON", False)
+        off.start()
+        self.addCleanup(off.stop)
+
+
 if __name__ == "__main__":
     unittest.main()
