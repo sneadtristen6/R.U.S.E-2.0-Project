@@ -64,6 +64,7 @@ from rusemod.players import PlayersError
 from rusemod.roadnet import RoadNetError
 from rusemod.terrain import LODS, ground_png, map_list, pack_file, terrain
 from rusemod.webui import Job, job_view, pick_file, pick_folder, pick_save
+from ruse_mod_engine.mod_project import _WIN_RESERVED   # names Windows keeps for its devices (CON, NUL, COM1...)
 
 from .edits import REMOVED, EditsFileError, Link, Literal, ModEdits, NewUnit, glob_safe, plain_name
 from .music import MusicCalls
@@ -645,7 +646,7 @@ def _pack_name(name: str, taken: set) -> str:
         base = "NewMap" + base
     base = base[:36]
     out, n = base, 2
-    while out.lower() in taken:
+    while out.lower() in taken or out.upper() in _WIN_RESERVED:   # (a folder called Nul can't be made on Windows)
         out, n = f"{base}{n}", n + 1
     return out
 
@@ -2277,21 +2278,27 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                                                 + scenery.parse_own(data.get("own", []), "scenery.toml"))}
         with self._saving:
             target.mkdir(parents=True)
-            for fname, text in files.items():  # a blank start: the preset's files, each checked as the build reads it
-                _save_checked(target / fname, text, checks[fname])
-            for fname, data in pictures.items():  # its own menu pictures (map.toml picture, wide_picture)
-                (target / fname).write_bytes(data)
-            for f in sorted(src_dir.iterdir()) if src_dir.is_dir() and not files else []:  # the changes made so far
-                if f.is_file() and f.name in MAP_FILES and f.name != "map.toml":
-                    (target / f.name).write_bytes(f.read_bytes())
-            _save_checked(target / "map.toml", newmap.map_toml(spec, players.count if players else None, header),
-                          lambda data: newmap.parse(data, "map.toml", new))
-            if own_mission:  # Blank Terrain on an Operation or a chapter: its own mission from the start (Scenario side)
-                from rusemod import mission
-                (target / "mission.toml").write_text(mission.to_toml(mission.Mission(), (
-                    f"The mission of {new}, a new {kind_of.get(entry)} started on Blank Terrain: the copied mission "
-                    f"needs the map's own items, so this one is its own (MOD_FORMAT §8, mission.toml), saved by RUSE "
-                    f"Studio.")), encoding="utf-8")
+            try:
+                for fname, text in files.items():  # a blank start: the preset's files, each checked as the build reads it
+                    _save_checked(target / fname, text, checks[fname])
+                for fname, data in pictures.items():  # its own menu pictures (map.toml picture, wide_picture)
+                    (target / fname).write_bytes(data)
+                for f in sorted(src_dir.iterdir()) if src_dir.is_dir() and not files else []:  # the changes so far
+                    if f.is_file() and f.name in MAP_FILES and f.name != "map.toml":
+                        (target / f.name).write_bytes(f.read_bytes())
+                _save_checked(target / "map.toml", newmap.map_toml(spec, players.count if players else None, header),
+                              lambda data: newmap.parse(data, "map.toml", new))
+                if own_mission:  # Blank Terrain on an Operation or a chapter: its own mission from the start
+                    from rusemod import mission
+                    (target / "mission.toml").write_text(mission.to_toml(mission.Mission(), (
+                        f"The mission of {new}, a new {kind_of.get(entry)} started on Blank Terrain: the copied mission "
+                        f"needs the map's own items, so this one is its own (MOD_FORMAT §8, mission.toml), saved by "
+                        f"RUSE Studio.")), encoding="utf-8")
+            except BaseException:
+                # the folder this call made goes with what it got so far: a half-made map (no map.toml) stopped every
+                # later build of the map changes, named after a map the Maps list doesn't show (2026-11-14, F12)
+                shutil.rmtree(target, ignore_errors=True)
+                raise
         return {"pack": new, "maps": self.maps()["maps"]}
 
     # --- a map's own pictures in the game's menus (map.toml picture, wide_picture, start_dots; rusemod.menupicture,
@@ -4021,7 +4028,14 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             else:   # after what was there, so Undo brings it back
                 paints.append(row)
             self._save_sectors(pack, _replace(now, paints=tuple(paints)))
-        return self.sector_view(pack, file)
+        try:
+            return self.sector_view(pack, file)
+        except sectors.SectorError as exc:
+            # sectors that can't be made (more than a scenario holds) aren't kept: the sectors as they were, and the
+            # refusal said as the Studio's own (it was saved, and the Sectors view then failed on every look, F14)
+            with self._saving:
+                self._save_sectors(pack, now)
+            raise StudioError(f"Those sectors can't be made ({exc}).") from None
 
     SECTOR_AREAS_MOST = 64   # sectors one shape edit may change (a corner shared by a few, a deleted one)
 
@@ -6051,7 +6065,10 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         # where they go now and where they were before (_roots)
         others = self._roots(next(k for k in self.KINDS if k != kind))
         folder, n = base / slug, 2
-        while folder.exists() or any((root / folder.name).exists() for root in others):
+        # (a name Windows keeps for its devices, like nul, is never a folder: before the mods folder is made, exists()
+        # can't tell)
+        while folder.exists() or folder.name.upper() in _WIN_RESERVED or \
+                any((root / folder.name).exists() for root in others):
             folder, n = base / f"{slug}-{n}", n + 1
         (folder / ("maps" if kind == "map" else "src")).mkdir(parents=True)
         made = "A map made in the RUSE Studio." if kind == "map" else "Made in the RUSE Studio."
@@ -6369,7 +6386,8 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                       .decode().lower()).strip("-") or "my-edit"
         ids = {m.get("id") for m in self._library().mods()}
         new_id, n = slug, 2
-        while new_id in ids or any((root / new_id).exists() for root in self._roots("map")):
+        while new_id in ids or new_id.upper() in _WIN_RESERVED or any((root / new_id).exists()
+                                                                      for root in self._roots("map")):
             new_id, n = f"{slug}-{n}", n + 1
         target = base / new_id
         part = base / f".copying-{new_id}"
