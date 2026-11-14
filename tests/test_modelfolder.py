@@ -34,7 +34,9 @@ NEW_WORDS = ("model_kept", "model_kept_later", "model_kept_copy", "model_kept_un
              "tip_model_folder_none", "model_blender_kept", "model_blender_kept_later", "tip_model_blender_folder",
              "tip_model_blender_folder_none")
 NO_MODEL = "This unit has no model of its own in your mod yet: click Import model… to give it one."
-NO_BLENDER = "There are no Blender files for this unit yet: click Change it in Blender first."
+# (it names no button since the one Blender button, 0.9.8.20: the squad card's Blender folder says it too, where the
+# button reads Open in Blender, and a squad shown without its card, where it reads Change it in Blender)
+NO_BLENDER = "There are no Blender files for this unit yet: open it in Blender first."
 
 
 def tail(address: str) -> str:
@@ -258,11 +260,16 @@ class TheCall(unittest.TestCase):
     def test_its_refusals_said_in_the_studio_s_language_naming_the_page_s_buttons(self):
         words = tomllib.loads(WORDS.read_text(encoding="utf-8"))
         entries = tomllib.loads(errortext.FILE.read_text(encoding="utf-8"))
-        for text, label in ((NO_MODEL, "model_import"), (NO_BLENDER, "model_blender")):
-            entry = entries[errortext.key_of(text)]
-            for lang in LANGS:
-                with self.subTest(text=text[:20], lang=lang):
-                    self.assertIn(words[label][lang], entry[lang])
+        entry = entries[errortext.key_of(NO_MODEL)]
+        for lang in LANGS:
+            with self.subTest(text=NO_MODEL[:20], lang=lang):
+                self.assertIn(words["model_import"][lang], entry[lang])
+        # the Blender folder's refusal is said on two pages whose button differs (the squad card's Open in Blender, the
+        # card-less squad's Change it in Blender): it says open it in Blender, never the button the card hasn't got
+        entry = entries[errortext.key_of(NO_BLENDER)]
+        for lang in LANGS:
+            with self.subTest(text=NO_BLENDER[:20], lang=lang):
+                self.assertNotIn(words["model_blender"][lang], entry[lang])
         self.api.set_pref("lang", "fr")
         self.assertEqual(str(self.api.page_error(StudioError(NO_MODEL))), entries[errortext.key_of(NO_MODEL)]["fr"])
 
