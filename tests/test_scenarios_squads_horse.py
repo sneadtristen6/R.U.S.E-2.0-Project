@@ -2,7 +2,8 @@
 game folder read, never written): added to a mod from the Units tab (WWII+), taken out, added again; in two mods, one
 taken out; in a mod shared to another PC (Export, the Launcher's library, Edit an installed mod), Resize and Move
 there, with and without the Generic Horse's files on that PC; taken out while one of its files is open in another
-program; and opened in Blender before it was taken out and added again. Each ends with what the page says in every
+program; in a set with a squad mod, and with another mod that has the Generic Horse too; and opened in Blender before
+it was taken out and added again. Each ends with what the page says in every
 language, the mod's files, the Studio's check, and, where the case turns on what the build takes, the mod built on the
 game into a folder of this run (rusemod.build.build_and_write, as Test in game builds, the game's files read only).
 
