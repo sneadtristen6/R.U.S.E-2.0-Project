@@ -196,6 +196,26 @@ class NewUnitOfEveryKind(Player):
                 self.assertNotIn("-2147483648", text)
 
 
+class CopyOfAChangedUnit(Player):
+    def test_a_copy_of_a_unit_the_mod_changed_starts_from_the_games_unit(self):
+        """The player changed M1 (SeuilMort 99), then made a copy of it: the copy is a copy of the game's M1 (the clone
+        comes before the mod's changes in its file), and its page says so: the game's 12, no change. The form's price
+        box starts at M1's changed price."""
+        folder = self.mod("Changed then copied")
+        self.call("edit", M1, "SeuilMort", 99, "", "")
+        self.call("edit", M1, "ProductionPrice", [70] * 5, "", "")
+        price = {r["prop"]: r for g in self.call("unit", M1, "us")["groups"] for r in g["rows"]}["ProductionPrice"]
+        self.assertEqual(price["edited"], [70] * 5)                  # what newUnitForm puts in its price box
+        copy = self.call("new_unit", M1, "Copy of mine", price["edited"][0], -1, -1, False, None)["address"]
+        rows = {r["prop"]: r for g in self.call("unit", copy, "us")["groups"] for r in g["rows"]}
+        self.assertEqual((rows["SeuilMort"]["values"], rows["SeuilMort"]["edited"]), (["12"], None))
+        errors, ndf, _ = self.build(folder)
+        self.assertEqual(errors, [])
+        self.assertEqual((self.value(ndf, copy, "SeuilMort").scalar(), self.value(ndf, M1, "SeuilMort").scalar()),
+                         (12, 99))
+        self.assertEqual(self.value(ndf, copy, "ProductionPrice").int_list(), [70] * 5)
+
+
 class AnotherNationsMenu(Player):
     """New unit…'s "another nation's build menu": the nation and building picked (the form's selects)."""
 
