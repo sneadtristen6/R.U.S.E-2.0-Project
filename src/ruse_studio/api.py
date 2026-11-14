@@ -370,7 +370,8 @@ def _fits(value, kind: str, prop: str):
         try:
             struct.pack("<f", value)
         except OverflowError:
-            raise StudioError(f"{prop}: {value} doesn't fit (it must be {-FLOAT32_MOST} to {FLOAT32_MOST})") from None
+            raise StudioError(f"{prop}: {value} doesn't fit (it must be {-FLOAT32_MOST} to {FLOAT32_MOST})",
+                              prop=prop) from None   # (the page says the value by its label: as _whole does)
     return value
 
 
@@ -10067,9 +10068,14 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                     target, n = f"{namespace}/{prefix}{stem}_{n}", n + 1
                 if taken(target):
                     # the unit there named by its name in the Studio's language, never its address (the units
-                    # scenarios' U-4: "There's already a unit called Descriptor_Unit_Tiger_II (from 'Tiger II')")
-                    other = self._names(ix, [target], self.prefs().get("lang") or schema.BASE,
-                                        edits.new_units)[target]
+                    # scenarios' U-4: "There's already a unit called Descriptor_Unit_Tiger_II (from 'Tiger II')");
+                    # taken but for its capitals (U-8), the unit is the one whose address that is, not `target`
+                    # (morning tank beside Morning Tank named Descriptor_Unit_morning_tank: the review of 11-14)
+                    addresses = [*edits.new_units, *(u["address"] for u in all_units)]
+                    there = target if target in addresses else \
+                        next((a for a in addresses if a.lower() == target.lower()), target)
+                    other = self._names(ix, [there], self.prefs().get("lang") or schema.BASE,
+                                        edits.new_units)[there]
                     if other.strip().casefold() == name.strip().casefold():
                         raise StudioError(f"There's already a unit called {other}. Pick another name.")
                     # not a game rule: two names that would give the same files (the Studio's own file names)
