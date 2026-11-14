@@ -45,13 +45,15 @@ TANK_PARTS = [("Hull", (-1.5, 0.3, -3.25), (1.5, 1.5, 3.25)), ("Turret", (-1.0, 
 
 
 def tank_glb(parts=None, materials=None, part_material=None, scale: float = 1.0, root_scale=None, names=None,
-             image_names=None, big_index: bool = False, mode: int | None = None, generator: str = "Khronos glTF Blender I/O") -> bytes:
+             image_names=None, big_index: bool = False, mode: int | None = None,
+             generator: str = "Khronos glTF Blender I/O", turret_turns: bool = False) -> bytes:
     """A static model (no bones) as Blender's glTF export writes one: each part a node with a mesh, materials with a
     base colour picture each. `parts` [(name, lo, hi)] (TANK_PARTS); `materials` [(name, png)] (one, "Paint");
     `part_material` [index of each part's material] (all 0); `scale`: every point that many times bigger (a file in
     centimetres: 100); `root_scale`: an empty above them all with that scale (Blender's "Apply scale" not done);
     `names` {part name: the node's and mesh's name}; `image_names` [each picture's name]; `big_index`: 32-bit indices;
-    `mode`: the draw's mode (4 triangles when None; 0 points, 1 lines)."""
+    `mode`: the draw's mode (4 triangles when None; 0 points, 1 lines); `turret_turns`: the second part's node turns
+    half round over two seconds in an animation called TurretTurn (no bones: a node animation)."""
     parts = parts or TANK_PARTS
     materials = materials or [("Paint", picture())]
     part_material = part_material or [0] * len(parts)
@@ -76,6 +78,15 @@ def tank_glb(parts=None, materials=None, part_material=None, scale: float = 1.0,
         g.doc["meshes"].append({"name": shown, "primitives": [prim]})
         g.doc["nodes"].append({"name": shown, "mesh": len(g.doc["meshes"]) - 1})
         nodes.append(len(g.doc["nodes"]) - 1)
+    if turret_turns and len(nodes) > 1:
+        times = g.accessor([0.0, 1.0, 2.0], "SCALAR", FLOAT, target=None)
+        g.doc["accessors"][times]["min"], g.doc["accessors"][times]["max"] = [0.0], [2.0]
+        half = math.sqrt(0.5)
+        turns = g.accessor([(0.0, 0.0, 0.0, 1.0), (0.0, half, 0.0, half), (0.0, 1.0, 0.0, 0.0)], "VEC4", FLOAT,
+                           target=None)
+        g.doc["animations"] = [{"name": "TurretTurn", "samplers": [{"input": times, "output": turns,
+                                                                    "interpolation": "LINEAR"}],
+                                "channels": [{"sampler": 0, "target": {"node": nodes[1], "path": "rotation"}}]}]
     if root_scale is not None:
         g.doc["nodes"].append({"name": "Empty", "children": nodes, "scale": [root_scale] * 3})
         nodes = [len(g.doc["nodes"]) - 1]
@@ -112,6 +123,31 @@ def grid_glb(side: int, picture_side: int = 8) -> bytes:
     g.doc["scenes"] = [{"nodes": [0]}]
     g.doc["scene"] = 0
     return g.to_bytes()
+
+
+def tank_gltf(folder, with_bin: bool = True, with_png: bool = True, turret_turns: bool = False):
+    """tank_glb() written as Blender's "glTF Separate" export writes it: tank.gltf, tank.bin beside it and its picture
+    paint.png (`with_bin`, `with_png`: those files left out, as when a player moves the .gltf alone). Returns the
+    .gltf's path. `turret_turns`: the turret node turns half round in an animation of its own (a still model's
+    animation, as a modeller makes to show a turret)."""
+    from pathlib import Path
+    from rusemod import gltf
+    folder = Path(folder)
+    folder.mkdir(parents=True, exist_ok=True)
+    raw = tank_glb(turret_turns=turret_turns)
+    doc, views = gltf.glb_views(raw)
+    png = views[doc["images"][0]["bufferView"]]
+    doc["images"][0] = {"uri": "paint.png", "name": doc["images"][0].get("name", "Paint")}
+    # (the picture's bytes out of the buffer: the rest packed as one .bin, the views renumbered)
+    data = gltf.pack_glb(doc, views)
+    doc2, binary = __import__("rusemod.modelin", fromlist=["glb_document"]).glb_document(data)
+    doc2["buffers"] = [{"byteLength": len(binary), "uri": "tank.bin"}]
+    (folder / "tank.gltf").write_text(json.dumps(doc2), encoding="utf-8")
+    if with_bin:
+        (folder / "tank.bin").write_bytes(binary)
+    if with_png:
+        (folder / "paint.png").write_bytes(png)
+    return folder / "tank.gltf"
 
 
 def repaint(send, colours: dict) -> None:

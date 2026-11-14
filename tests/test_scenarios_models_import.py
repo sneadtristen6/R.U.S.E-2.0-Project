@@ -16,7 +16,7 @@ import test_bonefit   # (the module, not its test classes: those run in test_bon
 from rusemod import modelin, unitmodel
 from test_ownrig import little_glb, turn_about
 from test_scenarios_models_base import LANGS, STEM, ModelScenario
-from test_scenarios_models_files import broken_files, grid_glb, picture, tank_glb
+from test_scenarios_models_files import broken_files, grid_glb, picture, tank_glb, tank_gltf
 
 RUN = [("Run", [(2, "rotation", (0.0, 0.5, 1.0), [(0, 0, 0, 1), turn_about("x", 30.0), (0, 0, 0, 1)], "LINEAR")])]
 
@@ -146,6 +146,16 @@ class BonesAndAnimations(ModelScenario):
         said = " ".join(got["model"].get("notes") or []) + " " + str(got["model"].get("not_kept") or "")
         self.assertIn("Run", said)
 
+    @unittest.expectedFailure
+    def test_m2_a_still_model_s_own_animation_left_out_is_said(self):
+        """M-2's kind, on a still model: a tank whose turret turns in an animation of its own (TurretTurn, a node
+        animation: no bones) comes in with its hull, turret and gun found, the animation not in the mod and nothing
+        said (notes [])."""
+        got = self.page.model_import(self.unit, str(self.his_file("turret.glb", tank_glb(turret_turns=True))))
+        self.assertEqual(got["model"]["parts"], {"Hull": "hull", "Turret": "turret", "Gun": "gun"})
+        said = " ".join(got["model"].get("notes") or []) + " " + str(got["model"].get("not_kept") or "")
+        self.assertIn("TurretTurn", said)
+
     def test_names_in_other_scripts_on_its_bones_and_animation(self):
         """Its bones and its animation named in Russian, Chinese and Persian: it comes in as above, and builds."""
         anims = [("Бег", RUN[0][1])]
@@ -154,6 +164,35 @@ class BonesAndAnimations(ModelScenario):
         self.assertEqual(got["model"]["file"], "существо.glb")
         result, written, stopped = self.built()
         self.assertEqual((self.build_errors(result), stopped), ([], []))
+
+
+class GltfApart(ModelScenario):
+    """A .gltf as Blender's "glTF Separate" export writes it: tank.gltf, tank.bin and paint.png beside it; a player who
+    moves the .gltf alone leaves the others behind."""
+
+    def test_with_its_files_it_comes_in_and_builds(self):
+        got = self.page.model_import(self.unit, str(tank_gltf(self.home / "whole")))["model"]
+        self.assertEqual((got["file"], got["vertices"], [tuple(p) for p in got["pictures"]]),
+                         ("tank.gltf", 24, [("paint.png", 8, 8)]))
+        result, written, stopped = self.built()
+        self.assertEqual((self.build_errors(result), stopped, len(written[STEM].added)), ([], [], 1))
+
+    def test_without_its_bin_or_picture_it_is_refused_and_the_model_stays(self):
+        self.page.model_import(self.unit, str(tank_gltf(self.home / "whole")))
+        before = self.files()
+        for what, kw in (("no picture", {"with_png": False}), ("no bin", {"with_bin": False})):
+            with self.subTest(what=what):
+                said = self.refusal("model_import", self.unit, str(tank_gltf(self.home / what.replace(" ", "_"), **kw)))
+                self.assertEqual(said, "tank.gltf: the file it names isn't beside it: "
+                                       + ("paint.png" if what == "no picture" else "tank.bin"))
+                self.assertEqual(self.files(), before)
+
+    @unittest.expectedFailure
+    def test_m1_its_refusal_in_every_language(self):
+        """M-1's kind: "tank.gltf: the file it names isn't beside it: tank.bin" is English in every language."""
+        f = tank_gltf(self.home / "no_bin", with_bin=False)
+        said = self.said("model_import", self.unit, str(f))
+        self.assert_worded(said, "tank.gltf: the file it names isn't beside it: tank.bin")
 
 
 class Broken(ModelScenario):
