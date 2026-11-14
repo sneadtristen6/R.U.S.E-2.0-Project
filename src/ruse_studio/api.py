@@ -412,6 +412,16 @@ def file_error(exc: OSError, writing, reading=None) -> StudioError:
     return StudioError(f"{path} couldn't be read or written (error {code}). Please report this.")
 
 
+def _held_in_place(exc: OSError, source: Path) -> StudioError:
+    """A rename of a mod's file or folder to a new name (the check's Set aside and Rename) that Windows refused, said
+    in words naming the one being renamed: the error names both, and the one another program holds is the first, where
+    file_named takes the second, as for a new file put in another's place (finding P-5 of the play scenarios,
+    2026-11-14: "...extra.rndf.broken couldn't be read or written, because another program has it open", a file that
+    isn't there)."""
+    exc.filename2 = None
+    return file_error(exc, source)
+
+
 def page_file_error(exc: OSError) -> StudioError | None:
     """An OSError a page call raised as it came (Take it out of my mod, Delete, Remove model: a file of the mod that
     couldn't be read or written, Python's own words, English in every language) said in words (file_error): one naming a
@@ -5858,7 +5868,10 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         with self._saving:
             if target.exists() and target.resolve() != source.resolve():
                 raise StudioError(f"maps/{to} already exists: move the files from maps/{name} into it by hand")
-            source.rename(target)
+            try:
+                source.rename(target)
+            except OSError as exc:
+                raise _held_in_place(exc, source) from exc
         return self.check_mod()
 
     def set_aside(self, file: str, where: str = "mod") -> dict:
@@ -5874,7 +5887,10 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         if not (map_file or unit_file or text_file) or not path.is_file():
             raise StudioError(f"{file} isn't one of this mod's files")
         with self._saving:
-            kept = _aside(path)
+            try:
+                kept = _aside(path)
+            except OSError as exc:
+                raise _held_in_place(exc, path) from exc
         return self.check_mod() | {"kept": str(kept)}
 
     # --- the mod being edited ---

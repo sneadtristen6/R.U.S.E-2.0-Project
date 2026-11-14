@@ -225,19 +225,18 @@ class TheChecksFixes(PlayScenario):
         self.assert_worded(said)
         self.assertTrue(Path(self.page.fix_problem({"fix": "set_aside", "file": "src/extra.rndf"})["kept"]).is_file())
 
-    @unittest.expectedFailure    # finding P-5: the refusal names a file that isn't there (<name>.broken)
     def test_the_held_file_is_the_one_named(self):
-        """The refusal names the file Set aside would have made (extra.rndf.broken: api.file_named takes the second file
-        of a rename, as for a file put in another's place), not the one another program holds (extra.rndf)."""
+        """Finding P-5, its PROPOSED FIX: the refusal named the file Set aside would have made (extra.rndf.broken:
+        api.file_named takes the second file of a rename, as for a file put in another's place), not the one another
+        program holds (extra.rndf). Now the held one."""
         bad, said = self.held_and_set_aside()
         self.assertNotIn(".broken", said["us"])
         self.assertIn(str(bad), said["us"])
 
-    @unittest.expectedFailure    # finding P-5, the same for the check's other renaming fix
     def test_the_held_folder_is_the_one_named(self):
-        """The check's Rename fix (a map folder named after the map's title, rename_map_folder) on a folder with a file
-        another program has open: the refusal names the folder it would have made (maps/SuperCrossRoads4), not the one
-        held (maps/Blitz)."""
+        """Finding P-5's class, its PROPOSED FIX: the check's Rename fix (a map folder named after the map's title,
+        rename_map_folder) on a folder with a file another program has open named the folder it would have made
+        (maps/SuperCrossRoads4), not the one held (maps/Blitz). Now the held one."""
         folder = self.a_mod()
         source = folder / "maps" / "Blitz"
         source.mkdir(parents=True)
