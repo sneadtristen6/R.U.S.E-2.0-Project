@@ -32,6 +32,7 @@ Bueno saber:
 - «Sin código: estos mods no cambian cómo se juega, cualquiera puede jugar contigo.»
 - Un conjunto con un mod de trampas o una herramienta de prueba juega en multijugador y cooperativo solo con jugadores
   que tienen el mismo código, y deja cualquier otra partida a los pocos segundos.
+- **Aún sin soporte completo:** lo probamos en el juego con un solo jugador que alojaba una partida multijugador contra el ordenador, y fuera del juego con 20 partidas simuladas de hasta cuatro jugadores. Nadie lo ha jugado todavía entre dos personas en una partida real, así que puede tener fallos: úsalo en multijugador bajo tu propia responsabilidad. Pruébalo y cuéntanos qué pasó en Discord o GitHub: qué mensaje de RUSE Guard viste y si la partida siguió.
 - **Comprobar cada archivo de la copia** comprueba que tu copia con mods está exactamente como se compiló.
 
 ---

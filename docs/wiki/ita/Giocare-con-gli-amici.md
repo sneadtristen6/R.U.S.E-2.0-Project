@@ -31,6 +31,7 @@ Buono a sapersi:
 - «Nessun codice: questi mod non cambiano il gioco, chiunque può giocare con te.»
 - Un set con una mod di trucchi o uno strumento di prova gioca in multigiocatore e cooperativa solo con giocatori che
   hanno lo stesso codice, e lascia ogni altra partita dopo pochi secondi.
+- **Non ancora del tutto supportato:** l'abbiamo provato nel gioco con un solo giocatore che ospitava una partita multigiocatore contro il computer, e fuori dal gioco con 20 partite simulate fino a quattro giocatori. Nessuno l'ha ancora giocato in due in una partita vera, quindi può avere ancora bug: usalo in multigiocatore a tua discrezione. Provalo e dicci cosa è successo su Discord o GitHub: quale messaggio di RUSE Guard hai visto e se la partita è continuata.
 - **Controlla ogni file della copia** controlla che la tua copia moddata sia esattamente come è stata costruita.
 
 ---

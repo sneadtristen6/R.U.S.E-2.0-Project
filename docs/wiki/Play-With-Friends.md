@@ -30,4 +30,5 @@ Good to know:
 - "No join code: these mods don't change how the game plays, so anyone can play with you."
 - A set with a cheat or a test tool plays multiplayer and co-op only with players whose join code is the same, and
   leaves any other match a few seconds in.
+- **Not fully supported yet:** we tested it in the game with one player hosting a multiplayer match alone against the computer, and outside the game with 20 simulated matches of up to four players. Nobody has played it with two people in a real match yet, so it may still be buggy: use it in multiplayer at your own discretion. Try it and tell us what happened on Discord or GitHub: which RUSE Guard message you saw, and whether the match went on.
 - **Check every file of the copy** checks that your modded copy is exactly as it was built.

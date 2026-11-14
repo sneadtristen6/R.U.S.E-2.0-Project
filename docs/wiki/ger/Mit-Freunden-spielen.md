@@ -31,6 +31,7 @@ Gut zu wissen:
 - „Kein Code: Diese Mods ändern das Spiel nicht, jeder kann mit Ihnen spielen.“
 - Ein Set mit einem Cheat-Mod oder einem Testwerkzeug spielt Mehrspieler und Koop nur mit Spielern, die denselben Code
   haben, und verlässt jede andere Partie nach ein paar Sekunden.
+- **Noch nicht voll unterstützt:** Wir haben es im Spiel mit einem Spieler getestet, der allein ein Mehrspieler-Gefecht gegen den Computer gehostet hat, und außerhalb des Spiels mit 20 simulierten Gefechten mit bis zu vier Spielern. Zu zweit in einem echten Gefecht hat es noch niemand gespielt, es kann also noch Fehler haben: Nutze es im Mehrspieler auf eigene Verantwortung. Probier es aus und sag uns auf Discord oder GitHub, was passiert ist: welche RUSE-Guard-Meldung du gesehen hast und ob das Gefecht weiterging.
 - **Jede Datei der Kopie prüfen** prüft, ob deine gemoddete Kopie genau so ist, wie sie erstellt wurde.
 
 ---

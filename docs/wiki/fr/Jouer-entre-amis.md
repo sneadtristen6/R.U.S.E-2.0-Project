@@ -33,6 +33,7 @@ Bon à savoir :
 - « Pas de code : ces mods ne changent pas le jeu, n'importe qui peut jouer avec vous. »
 - Un ensemble avec un mod de triche ou un outil de test ne joue en multijoueur et en coopération qu'avec des joueurs qui
   ont le même code, et quitte toute autre partie au bout de quelques secondes.
+- **Pas encore entièrement pris en charge :** nous l'avons testé dans le jeu avec un seul joueur hébergeant une partie multijoueur contre l'ordinateur, et hors du jeu avec 20 parties simulées de quatre joueurs au plus. Personne n'y a encore joué à deux dans une vraie partie : il peut donc rester des bogues, et vous l'utilisez en multijoueur à vos risques. Essayez-le et dites-nous ce qui s'est passé sur Discord ou GitHub : quel message de RUSE Guard vous avez vu, et si la partie a continué.
 - **Vérifier chaque fichier de la copie** vérifie que votre copie moddée est exactement telle qu'elle a été construite.
 
 ---

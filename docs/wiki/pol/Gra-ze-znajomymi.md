@@ -30,6 +30,7 @@ Dobrze wiedzieć:
 - „Brak kodu: te mody nie zmieniają rozgrywki, każdy może z tobą zagrać.”
 - Zestaw z modem z kodami albo narzędziem testowym gra w trybie wieloosobowym i kooperacji tylko z graczami, którzy
   mają ten sam kod, i opuszcza każdy inny mecz po kilku sekundach.
+- **Jeszcze nie w pełni obsługiwane:** przetestowaliśmy to w grze z jednym graczem, który sam hostował grę wieloosobową przeciw komputerowi, oraz poza grą w 20 symulowanych grach do czterech graczy. Nikt jeszcze nie zagrał w to we dwóch w prawdziwej grze, więc mogą być błędy: w grach wieloosobowych używasz tego na własną odpowiedzialność. Wypróbuj i daj nam znać na Discordzie lub GitHubie, co się stało: jaki komunikat RUSE Guard zobaczyłeś i czy gra toczyła się dalej.
 - **Sprawdź każdy plik kopii** sprawdza, czy twoja zmodowana kopia jest dokładnie taka, jaka została zbudowana.
 
 ---

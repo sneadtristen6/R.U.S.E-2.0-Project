@@ -30,6 +30,7 @@ Dobré vědět:
 - „Kód není: tyto módy nemění hratelnost, hrát s vámi může kdokoli.“
 - Sada s cheatovým modem nebo testovacím nástrojem hraje multiplayer a kooperaci jen s hráči, kteří mají stejný kód, a
   každý jiný zápas po pár sekundách opustí.
+- **Zatím není plně podporováno:** vyzkoušeli jsme to ve hře s jedním hráčem, který sám hostoval hru více hráčů proti počítači, a mimo hru na 20 simulovaných hrách až se čtyřmi hráči. Ve dvou ve skutečné hře to zatím nikdo nehrál, takže to může mít chyby: ve hře více hráčů to používáte na vlastní uvážení. Vyzkoušejte to a napište nám na Discord nebo GitHub, co se stalo: jakou zprávu RUSE Guard jste viděli a jestli hra pokračovala.
 - **Zkontrolovat každý soubor kopie** ověří, že tvoje upravená kopie je přesně taková, jak byla sestavena.
 
 ---
