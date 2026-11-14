@@ -119,6 +119,7 @@ class NationCalls:
             # not a game rule: the game's texts have no army name for Japan (no NAT_NAME_6), and nothing else is offered
             # (each refusal said as it is here, so errors.toml lists it)
             if which == "army":
+                # not a game rule: the game's texts have no army name for Japan (no NAT_NAME_6)
                 raise nations.NationError("Japan's army has no name to change in the game.")
             raise nations.NationError(f"There's nothing called {which!r} to change.")
         if self._mod_dir() is None:

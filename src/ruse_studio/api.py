@@ -9691,10 +9691,11 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                               "then Give it its own copy of the model.")
         if own is not None and self._soldiers(address) and own.parent.is_dir() and any(
                 f.suffix.lower() == ".glb" for f in own.parent.glob(f"{glob_safe(own.stem)}@*")):
-            # not a game rule: one model per unit, a soldier's own look counted as the squad's model too (rusemod.build.
-            # unit_own_copies, whose words then named <unit>.glb, a file the mod hasn't got: finding SQ-1 of the squads
-            # scenarios, 2026-11-14). Refused, as over the squad's own model, rather than taking his look out (it would
-            # be lost), where Import a model... on his line over a uniform keeps the uniform waiting (squad_copy_out)
+            # One model per unit, a soldier's own look counted as the squad's model too (rusemod.build.unit_own_copies,
+            # whose words then named <unit>.glb, a file the mod hasn't got: finding SQ-1 of the squads scenarios,
+            # 2026-11-14). Refused, as over the squad's own model, rather than taking his look out (it would be lost),
+            # where Import a model... on his line over a uniform keeps the uniform waiting (squad_copy_out).
+            # not a game rule: one model per unit, a soldier's own look counted as the squad's model too
             raise StudioError("Soldiers of this squad wear models you imported, and a squad can't wear your models and "
                               "a uniform at once. To give it a uniform, click Back to the game's look on each soldier "
                               "who wears your model first, then Custom uniform.")
@@ -10071,6 +10072,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                                         edits.new_units)[target]
                     if other.strip().casefold() == name.strip().casefold():
                         raise StudioError(f"There's already a unit called {other}. Pick another name.")
+                    # not a game rule: two names that would give the same files (the Studio's own file names)
                     raise StudioError(f"{name} is too close to the name of {other}, a unit already in the game or "
                                       f"your mod: the two would get the same files. Pick another name.")
             else:  # a name without letters or digits A-Z (Japanese, say): the address gets a number instead
