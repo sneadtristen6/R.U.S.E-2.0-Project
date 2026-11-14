@@ -23,6 +23,7 @@ On the made-up model, skeleton and clips of test_gltf_bones and test_animglb, Bl
 stand-in (Blenderish); the paratroopers' test on the game's own unit, the index and the Horse Squad's two files (as
 test_horse_squad.OnTheGame), Blenderish standing in for Blender. Real Blender 4.5 and a dry-run build gave the same for
 the paratroopers (scratch/animmodels/fix-door/recheck2/walks/p-ride.json)."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import json
 import os
 import shutil

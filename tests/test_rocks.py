@@ -1,6 +1,7 @@
 """The game's own 3D rocks over painted rock (rusemod.rocks): laid only where a palette rock shows on top, from
 the map's own rock types by its own mix, square to the ground's slope (a tilted full transform) and sunk into it, the
 same every build; the tilted transform (scenery.NewObject.up); the stroke's `rocks` switch."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import math
 import unittest
 from unittest import mock

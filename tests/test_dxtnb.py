@@ -1,6 +1,7 @@
 """dxtnb: dxtnp's heavy sums compiled with Numba give every block the same bytes as numpy's (and so as dxt's own
 one-block encoder): noise, ramps, two colours, nearly flat, and a colour axis square to (1, 1, 1); the quick
 encoder too."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import unittest
 
 from rusemod import dxt, dxtnb

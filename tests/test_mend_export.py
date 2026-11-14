@@ -13,6 +13,7 @@ short (rusemod.horsesquad.WORK_PREFIX, WORK_PARTS: 64 characters under the platf
 as before), and before the long part the Add works out the longest path it is going to write, in the platform folder and
 in the mod, and refuses in words saying which folder is too deep, by how many characters, and what to change
 (ruse_studio.horse_squad._horse_room), unless this program may write longer paths (long_paths_on)."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import json
 import os
 import shutil

@@ -6,6 +6,7 @@ refusal on the set's own page, which it hides while it is open. So nothing seeme
 again. These read the screen's own code (ui/app.js): the editor's part of it, between `function renderEditor` and the
 next function. And the set's Play, which waits for the clash check (PlayWaitsForTheClashCheck, 2026-11-13).
 """
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import re
 import unittest
 from pathlib import Path

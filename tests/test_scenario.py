@@ -1,5 +1,6 @@
 """A map's scenario file (rusemod.scenario): its zones and design items, on a made-up file laid out like the game's
 (the real ones are checked by tools, on all 102 the game ships)."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import struct
 import unittest
 

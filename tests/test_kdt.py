@@ -1,5 +1,6 @@
 """Gameplay ground (.kdt): chunk codecs, container round trip and part replacement on a tiny made-up two-subtree
 file (no game files). The file is laid out by hand, independently of the writer."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import math
 import struct
 import unittest

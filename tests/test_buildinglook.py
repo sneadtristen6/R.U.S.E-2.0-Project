@@ -1,6 +1,7 @@
 """A new building's look of its own (rusemod.buildinglook) on made-up files: its look (a symbol of the base-building
 scenery file) copied with one piece swapped, its model standing where that piece stands, the piece's scenery type
 copied with our models, the mod's files/buildings, and the build pointing the new building at its own look."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import struct
 import tempfile
 import unittest

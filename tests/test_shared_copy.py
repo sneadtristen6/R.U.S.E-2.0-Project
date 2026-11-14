@@ -2,6 +2,7 @@
 (patch.lazy_copy, Game.own): the caller's game must come out of a build exactly as it went in, because the build
 compares the two to write only what changed (model.save) and reads the game as shipped after (build.unit_classes,
 build.unit_models). Made-up data, no game files needed."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import unittest
 from decimal import Decimal
 

@@ -21,6 +21,7 @@ his own PC from his own game when added, "your name, sneadtristen6, in that mod'
   - the exported models carry the game's own textures, pixel for pixel, though the Horse Squad is made on each
     player's PC because the game's files can't go in a download (ruse_studio/horse_squad.py);
   - a refusal of the builder is said in English inside the Studio's translated words."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import json
 import os
 import shutil

@@ -3,6 +3,7 @@ start a modded game through.
 
 Checked our_tools.json: its tools study the game's code; these tests only hash made-up files and read a signature.
 """
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import shutil
 import tempfile
 import unittest

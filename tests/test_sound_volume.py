@@ -1,5 +1,6 @@
 """rusemod.sound's per-sound volume (files/sound/volume.toml): read, made again louder or quieter, and put in by the
 build with its description updated in every bank."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import contextlib
 import io
 import os

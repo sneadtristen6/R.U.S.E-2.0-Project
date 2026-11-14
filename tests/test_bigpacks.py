@@ -2,6 +2,7 @@
 units' own models stopped at 4 GiB): nothing changes while every pack fits; once one doesn't, every pack of 2 GiB or
 more in the copy is written wide and the copy gets the big-packs game patch; past what even a wide pack holds, the
 build stops with what to do. Sizes are stand-ins that only say their length (nothing that big is made)."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import shutil
 import tempfile
 import unittest

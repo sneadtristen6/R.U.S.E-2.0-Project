@@ -2,6 +2,7 @@
 zone map made by the module itself from a one-part template (no game files). Checked: every place of the map ends up
 in a sector, the sectors' own ground keeps its number, the open map goes to the nearest one, the zones keep the rules
 every shipped zone keeps, and the zone map says the same as the drawn sectors."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import math
 import struct
 import unittest

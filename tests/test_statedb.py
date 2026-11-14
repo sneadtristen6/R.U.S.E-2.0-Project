@@ -1,6 +1,7 @@
 """The level-build state database's water bit (rusemod.statedb), on made-up meshes (tests/test_groundgen.py's way) and
 a made-up SDB: drained ground made land, new water made water, Eugen's own marks left where the ground didn't change.
 Skipped without numpy: the apps carry it, and without it the build leaves the file as it is and says so."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import struct
 import unittest
 

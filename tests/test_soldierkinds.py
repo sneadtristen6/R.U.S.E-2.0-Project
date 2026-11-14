@@ -10,6 +10,7 @@ Checked: the build (rusemod.build.unit_own_models, _own_model_part, _on_main_bon
 its kind, a mod made by an older Studio (its file naming every soldier model) builds as before, a kind's own
 animations follow its bones; the Studio (ruse_studio.api: _soldier_kinds, model_import and model_import_remove with a
 kind, look's "kinds", Resize keeping a kept Custom uniform) and the page's words and calls."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import json
 import re
 import struct

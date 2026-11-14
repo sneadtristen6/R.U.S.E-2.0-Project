@@ -4,6 +4,7 @@ worker-made token), the server client, the kept pass, and the window API both ap
 Checked our_tools.json: its tools study the game's code; these tests only make and check Ed25519 tokens and talk to a
 faked server.
 """
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import base64
 import json
 import tempfile

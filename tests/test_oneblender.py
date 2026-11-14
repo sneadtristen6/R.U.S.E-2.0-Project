@@ -3,6 +3,7 @@ unit or ... select which ones you want to bring into Blender ... I want to bring
 just uncheck the bones"; "Why is there two different buttons doing the same thing that then break sometimes?"): which
 Blender its ticks open and which bring-back it then calls, with the doors themselves standing in (their own tests are
 test_modelblender, test_squadblender; the keepers' are test_modelblender BonesKept and PaintKept)."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import json
 import tempfile
 import tomllib

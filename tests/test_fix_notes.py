@@ -26,6 +26,7 @@ fails at least one: its words in English, a Resize or a Move that forgets, a mod
 wears it, a warning with nothing lost, said in the pop-up only, the record not told."""
 from __future__ import annotations
 
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import json
 import re
 import unittest

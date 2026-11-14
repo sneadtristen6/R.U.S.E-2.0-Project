@@ -1,6 +1,7 @@
 """The Studio's errors in the player's language (ruse_studio.errortext; the owner, 2026-10-16: "Yes, fix the errors"):
 every StudioError the Studio's code raises has its words in errors.toml in all ten languages with the same blanks, and
 an error going to the page comes out in the Studio's language with its values filled in."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import re
 import tempfile
 import tomllib

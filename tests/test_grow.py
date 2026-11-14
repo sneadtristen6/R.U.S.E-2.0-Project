@@ -1,6 +1,7 @@
 """Opened ground grown on a grid (rusemod.nav._grow, behind Graph.open_ground): the same circles, in the same order,
 and the same count of circles left out as walking every spot in every pass, the way it was first written (`passes`
 below: a list of all the spots, which a whole map drained across can't hold in memory)."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import math
 import random
 import unittest

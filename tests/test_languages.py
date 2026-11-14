@@ -6,6 +6,7 @@ The words files' own tests check each word is in every language (schema.APP_LANG
 README, wiki and update notes, with every wiki link leading to a page that exists."""
 from __future__ import annotations
 
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import importlib.util
 import re
 import unittest

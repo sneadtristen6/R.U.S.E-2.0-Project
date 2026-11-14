@@ -3,6 +3,7 @@ bridge script, calls answered as the window answers them, files dropped and hand
 webui.open_window going to the browser where the window can't show the pages."""
 from __future__ import annotations
 
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import json
 import logging
 import os

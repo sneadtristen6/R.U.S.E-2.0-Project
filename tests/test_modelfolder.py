@@ -14,6 +14,7 @@ yet, the page saying where it will be. The fitting (rusemod.unitmodel.import_mod
 test_soldierkinds and test_modelblender have them. Then the page's code (no browser here): the Model row's More starts
 with the row, Show in folder has its tooltip and calls the Studio, each place on the page, the words in the eleven
 languages and on the stand-in page."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import json
 import re
 import tempfile

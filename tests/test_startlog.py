@@ -1,6 +1,7 @@
 """The apps' start-up log (rusemod.startlog): each start one line of seconds since the program started, written as it
 goes, the last 20 kept, never more than 25 KB, never stopping an app; the window's steps and the page's first calls
 (rusemod.webui.open_window, with a stand-in for pywebview); and the troubleshooter's report carrying it."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import inspect
 import os
 import sys

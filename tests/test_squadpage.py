@@ -11,6 +11,7 @@ page, the buttons a sentence names named as they are, no code names, nothing sma
 the card; Add a soldier and Remove only when the Studio says a squad can; a unit that isn't a squad, or a Studio without
 squad_info, drawn as before; the stand-in page's answers shaped as the contracts' section 4; and, once the Studio's own
 calls are joined, their parameters as the contracts name them."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import inspect
 import json
 import re

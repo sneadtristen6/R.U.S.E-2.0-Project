@@ -13,6 +13,7 @@ of 2026-11-12 (his question dialog, as the lead quoted them):
   (Resize and Move take a model's file only by its full path).
 On the Studio tests' made-up game, the Horse Squad's builder and model import stood in for (as tests/test_horse_squad.py
 does): what's checked here is what goes into the file and comes out of it."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import json
 import tomllib
 import os

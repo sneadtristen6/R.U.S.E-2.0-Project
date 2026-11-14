@@ -1,6 +1,7 @@
 """Every worker program the apps start starts fresh, on every system (rusemod.mend.fresh_workers): Linux's own way
 starts a copy of the running program, which can hang when a thread held a lock at that moment and carries whatever was
 swapped in then (Studio 0.9.8.10's checks on Linux, 2026-11-01: a test's stand-in went into KeptModels' workers)."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import ast
 import multiprocessing
 import unittest

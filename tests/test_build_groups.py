@@ -3,6 +3,7 @@ how many can be in a certain group. Because it's buggy.", a mod already over it 
 groups a building): a mod's menu_groups.toml read with it (a bad one refused, naming the file), the mods' groups merged
 in load order, a warning (never an error) for each group past 6 and each building past 10 groups, counted as the Studio
 counts them, and the file carried wherever a mod folder is copied or packed. Made-up data, no game files."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import struct
 import tempfile
 import unittest

@@ -4,6 +4,7 @@ building's kind (TypeBatiment) is the Factory number of the units it makes, so e
 buildings of that kind, the game's own names: the Headquarters for 3 (the menu of the buildings), the Prototype Base
 and the Atomic Center for 12 (one menu: the Atomic Center stands in Nuclear battles, the Prototype Base in 1945 and
 Total War ones, read in the game's data 2026-11-11)."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import sys
 import tempfile
 import tomllib

@@ -1,6 +1,7 @@
 """Every language's release notes in one file beside the installer (installers/notes_json.py): the apps show what's
 new in their own language (the owner, 2026-10-05: "Translated every language ... inclusive for every language we cover
 in the mod")."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import json
 import sys
 import tempfile

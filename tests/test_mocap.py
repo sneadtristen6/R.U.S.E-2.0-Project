@@ -1,5 +1,6 @@
 """rusemod.mocap (a .bvh made into one of the game's clips on the soldiers' skeleton) and RUSE Decoy's motion capture
 calls (ruse_studio.decoy: decoy_mocap_open / _preview / _use)."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import math
 import struct
 import tempfile

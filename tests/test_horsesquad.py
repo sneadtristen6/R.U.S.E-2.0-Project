@@ -11,6 +11,7 @@ With RUSE_GAME naming a game folder: the two files made from it (on 62 bones, 25
 reader), the same bytes twice; with RUSE_GAME_INDEX naming the Studio's game index too, the squad's listings read from
 it and from the game's unit data alike; with RUSE_HORSE_FIXES3 naming the folder of the two files the game test passed
 with on 2026-11-11 (horse-squad-rifle-death.glb, horse-squad-bazooka-death.glb), both byte for byte those."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import json
 import math
 import os

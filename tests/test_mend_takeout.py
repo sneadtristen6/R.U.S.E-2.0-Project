@@ -14,6 +14,7 @@
 
 Most of it on the Studio tests' made-up game (WithMod) or a bare mod folder; HeldOnTheGame on the game with the Horse
 Squad, as tests/test_check_words.py's ItsAnimationsFileHeld (skipped without it). Holds are Windows' (open handles)."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import json
 import os
 import shutil

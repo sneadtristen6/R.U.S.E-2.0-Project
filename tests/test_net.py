@@ -2,6 +2,7 @@
 2026-10-10, could open the Launcher but no mod would download ("unable to get local issuer certificate"); a player on
 Reddit, 2026-10-29, whose Windows couldn't fetch it either ("unable to get issuer certificate"): Mozilla's root list
 is the third try."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import contextlib
 import ssl
 import sys

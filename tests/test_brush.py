@@ -1,4 +1,5 @@
 """Terrain brushes (rusemod.brush): their shapes, strokes, the terrain file and the local average. No game files."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import tomllib
 import unittest
 

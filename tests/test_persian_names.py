@@ -2,6 +2,7 @@
 everywhere (the owner, 2026-11-11: "Yes, fix it", on the Nations board's units in code names; a check of 32 Studio
 calls on the game found 3,196 code names or "no name in the game" lines in Persian, 0 after). The Studio side is
 tested on its little game in test_studio (test_persian_shows_the_games_english_names); here the rule and the page."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import sys
 import unittest
 from pathlib import Path

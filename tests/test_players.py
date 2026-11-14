@@ -1,6 +1,7 @@
 """How many players a map takes (rusemod.players, maps/<map>/map.toml), on a made-up map list and menus laid out like
 the game's: an entry (TMapLoadInfo) loads its scenario through its cluster, and its menu entry (TMultiMapInfo, the
 same GUID) holds the count."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import struct
 import tempfile
 import unittest

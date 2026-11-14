@@ -2,6 +2,7 @@
 (hull, turret, barrel) with a .tga beside it, fitted to a made-up unit, saved as the mod's .glb and read back, then
 written into made-up packs beside the unit's model. T35 (2026-10-04) is the same on the game's Sherman and a real
 model; scratch tools ran it on the game's packs with every check exact."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import contextlib
 import math
 import struct

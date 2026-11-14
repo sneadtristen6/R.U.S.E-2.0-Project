@@ -15,6 +15,7 @@ stood in for (StudioApi._home_set_env, _home_restart: never the real user variab
 - every refusal of a folder too deep (the Generic Horse's Add: the platform folder, the mod's folder, a path longer
   than Windows takes) is what the page offers the move beside (home_move_offer's "needed");
 - the words the page shows, in the 11 languages."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import json
 import os
 import sys

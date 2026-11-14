@@ -6,6 +6,7 @@ cells), and a camera floor on the far mesh's points and triangles with a taller 
 row, one for the rest). Both .kdt files have real trees (rusemod.kdt_edit.rebuild) with a tight height limit around
 each part, and a MainNode whose limits are tight too, so any rise has to widen them. Heights step by 0.1 in the
 meshes (-100 to 3,176.7)."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import math
 import struct
 import unittest

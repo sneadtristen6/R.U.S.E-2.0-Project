@@ -1,5 +1,6 @@
 """Unit flags: what labels.toml says about each one (the Studio's flag picker shows it), and the build's guard against
 the two that crash the game on anything but a truck (rusemod.unitflags). Made-up units, no game files needed."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import struct
 import tempfile
 import unittest

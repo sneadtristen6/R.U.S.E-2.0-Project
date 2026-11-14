@@ -2,6 +2,7 @@
 made-up map of test_sectors (no game files). Checked: the strokes land on the cells Footprint.inside says (whole
 arrays against the plain code, cell for cell), the setting reads back, painted sectors are written as the scenario's
 zones and zone map, and the two checks: a scenario with no sector at all, a sector in pieces or with a hole."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import struct
 import tomllib
 import unittest

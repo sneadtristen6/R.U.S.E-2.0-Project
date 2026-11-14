@@ -5,6 +5,7 @@ Always: the noise is the same numbers every time and stays in its range; a model
 words. With RUSE_GAME naming a game folder: the made files' horse painted ours, the same bytes twice, its pixels none
 of the game's (the horse's own part of the picture compared texel by texel), the riders' picture and every other part
 of the file as it was; with the switch on, both files carry it; with it off, the files are as before."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import os
 import tempfile
 import unittest

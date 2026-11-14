@@ -1,5 +1,6 @@
 """Sections of a map's scenery copied once and placed many times (rusemod.scenery.add_sections, [[section]] in
 scenery.toml): on the small made-up files of test_scenery (no game files needed)."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import math
 import tomllib
 import unittest

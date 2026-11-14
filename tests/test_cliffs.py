@@ -1,6 +1,7 @@
 """Cliff faces of rock scans (rusemod.cliffs, [[cliffs]] in scenery.toml) on made-up ground: only on steep ground, each
 scan's front turned downhill and leaned as the slope, sunk, mixed, overlapping, the same every build; a scan's shape
 read from its model; the area read from scenery.toml and kept apart from the placed objects."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import math
 import tempfile
 import unittest

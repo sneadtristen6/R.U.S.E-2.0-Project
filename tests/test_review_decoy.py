@@ -8,6 +8,7 @@ test_animglb's stand-in (Blenderish) with the change a real Blender makes for th
 real door with real Blender 4.5 on the game's US rifleman and the Horse Squad (scratch/animmodels/review-decoy/door.py,
 scenarios.py, out/) found each fault first. RealBlender's test runs Blender itself: set RUSE_BLENDER to blender.exe
 (Blender 4.5), else it is skipped."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import json
 import os
 import re

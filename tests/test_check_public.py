@@ -1,4 +1,5 @@
 """The public-repo guard (tools/check_public.py): private material, game files and program addresses are refused."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import sys
 import unittest
 from pathlib import Path

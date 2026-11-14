@@ -1,4 +1,5 @@
 """Text files (.dic) and the text-key codec, on made-up data (no game files needed)."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import struct
 import unittest
 

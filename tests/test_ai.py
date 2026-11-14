@@ -1,5 +1,6 @@
 """The computer players (rusemod.ai, the Studio's AI tab): their sets of values (Default, the difficulties, the
 profiles), the units they're keener to build and the ruse cards, read, changed and built, on a made-up game."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import struct
 import tempfile
 import tomllib

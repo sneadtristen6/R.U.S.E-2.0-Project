@@ -1,5 +1,6 @@
 """The mod rules engine: every row of the conflict table (MOD_FORMAT §10.4), numbers, clones, shared objects,
 `patch every`, the final pass, `when mod`, lists, deletes and history. Made-up data, no game files needed."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import struct
 import unittest
 from decimal import Decimal

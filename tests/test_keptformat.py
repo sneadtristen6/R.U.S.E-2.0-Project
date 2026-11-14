@@ -4,6 +4,7 @@ what it made compared with the one recorded for its kind's number. A result is k
 versions, under its kind's number alone, so when code makes something else for the same inputs this test fails: bump
 the kind's number in rusemod/keptformat.py and record the new fingerprint in RECORDED below (both printed). A change
 that makes the same bytes passes, and keeps every player's kept results good across the update."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import hashlib
 import struct
 import unittest

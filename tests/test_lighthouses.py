@@ -1,6 +1,7 @@
 """A lighthouse's light goes with it (rusemod.lighthouses): on made-up game files laid out like D-Day's, the effect set
 a map's scenario starts, its lighthouse lights (one placed as Swamps' and Blitz's are, one as D-Day's), and the
 map-list entry and MapIA of the new-map tests' Blitz."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import math
 import struct
 import tempfile

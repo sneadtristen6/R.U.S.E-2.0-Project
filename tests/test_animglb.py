@@ -7,6 +7,7 @@ moving every one of them; Blender's part played by a stand-in that does what Ble
 do with such a file (each key on its frame, a straight line through a turn's four numbers between keys, every frame
 sampled on the way out, no extras kept, the bones in an order of its own). The real Blender's round trips are
 scratch/animmodels/agent5-4/roundtrip.py's (the game's US rifleman and the 2026-11-09 Horse Squad)."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import base64
 import math
 import re

@@ -1,5 +1,6 @@
 """rusemod.maplayout: a map's plots, what stands on them, their looks, their neighbours and the farm pieces they sit
 in, read from the scenery (made-up maps from test_scenery's helpers)."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import math
 import tempfile
 import unittest

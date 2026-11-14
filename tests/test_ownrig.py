@@ -6,6 +6,7 @@ rifleman go out to a .glb (their record, clips and draws, laid out as an export 
 importer and the writer: each record byte for byte, or every difference listed with its size; each clip's keys equal
 within what the clip's numbers hold; each draw's points, bones and weights as the game's. With RUSE_HR_OUT naming the
 2026-11-09 horse test's output folder (packs/, clips/, manifest.json), its combined horse-and-rider model the same."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import base64
 import math
 import os

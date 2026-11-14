@@ -1,5 +1,6 @@
 """A new map's ground drawn as our own (rusemod.groundgen), on made-up meshes (tests/test_tms.py), trees
 (tests/test_kdt.py) and water textures (tests/test_water.py): no game files needed."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import math
 import unittest
 

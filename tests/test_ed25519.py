@@ -1,4 +1,5 @@
 """rusemod.ed25519 against RFC 8032's test vectors (section 7.1), and what a bad signature does."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import unittest
 
 from rusemod import ed25519

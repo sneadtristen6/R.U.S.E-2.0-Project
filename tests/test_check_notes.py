@@ -14,6 +14,7 @@ as test_recheck_notes and test_fix_notes run it), in all 11 languages:
 Skipped when no Node is found (the page cases), as the recheck's."""
 from __future__ import annotations
 
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import json
 import re
 import shutil

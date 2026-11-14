@@ -2,6 +2,7 @@
 made-up game folder: an unchanged Play starts the copy with no build; any change, or a copy that isn't as its build
 left it, builds again; a build takes the old copy's unchanged files as they are, and its copy holds exactly the bytes a
 fresh build's would. A player's report, 2026-10-04: "Waiting 30 minutes every time just to add or remove a unit"."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import json
 import os
 import re

@@ -8,6 +8,7 @@ rusemod.modelin.glb_document raise struct.error there, so:
 - the resize of every ground unit at once fails for every unit after it ("Something went wrong: error: ...").
 FAILS on e469d4d4 by design until fixed, passes on db2abbfb. On test_animmodel's made-up game (the stand-ins of
 tests/test_recheck_resize.py): no game needed."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import unittest
 
 import test_recheck_resize as base
