@@ -2320,8 +2320,9 @@ def unit_own_clips(run, order: list, result: BuildResult, zz=None) -> dict:
         where = f"{', '.join(mods)}: {anim.UNITS}"
         name = by_name.get(unit) or _game_unit(run, unit)
         if name is None:
-            # not a game rule: animations for a unit nothing makes. Said with what to do, as unit_own_copies' line
+            # Said with what to do, as unit_own_copies' line.
             if mods:
+                # not a game rule: animations for a unit nothing makes
                 result.findings.append(Finding("error", f"{where}: no mod in the set makes a unit {unit}, and the "
                                                         f"game has none of that name. If {unit} was deleted from this "
                                                         f"mod, its animations were left behind: in the Studio, click "
@@ -2329,6 +2330,7 @@ def unit_own_clips(run, order: list, result: BuildResult, zz=None) -> dict:
                                                         f"log, or take [unit.{unit}] out of {anim.UNITS} and delete "
                                                         f"the folder {anim.OWN}/{unit}/"))
             for key in sorted(set(t.values())):
+                # not a game rule: a RUSE Decoy copy ticked for a unit nothing makes
                 result.findings.append(Finding("error", f"{copy_where(key)}: it is ticked for a unit {unit}, which no "
                                                         f"mod in the set makes and the game hasn't got. If {unit} was "
                                                         f"deleted from this mod, untick it under Who plays it in RUSE "
