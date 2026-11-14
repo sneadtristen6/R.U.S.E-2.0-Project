@@ -7,6 +7,7 @@ its made-up game and its stand-ins: tests/test_scenarios_squads_base.py. (The Ge
 game: the dry builds of the scenarios' finished mods, scratch/release-0920/scenarios/squads.)
 
 FOR: the squads scenarios (release 0.9.8.20, overnight 2026-11-13/14). USED-BY: the scenarios' run and report."""
+import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -82,8 +83,21 @@ class ExportedAndOpenedAgain(SquadScenario):
         self.assert_worded({lang: fill(self.words(lang)["squad_now_file"], file=i["soldiers"][1]["from"])
                             for lang, i in infos.items()})
         self.assertEqual(sorted(n for n in tree(copy) if n.startswith("blender/")), [])
+        # the files as the mod has them, the records naming the file each look was made from by its name alone
+        # (Export's way: rusemod.package._record_want)
         mine = {n: v for n, v in tree(self.mod).items() if n.startswith("files/")}
-        self.assertEqual({n: v for n, v in tree(copy).items() if n.startswith("files/")}, mine)
+        theirs = {n: v for n, v in tree(copy).items() if n.startswith("files/")}
+        self.assertEqual(sorted(theirs), sorted(mine))
+        for name in mine:
+            with self.subTest(file=name):
+                if not name.endswith(".json"):
+                    self.assertEqual(theirs[name], mine[name])
+                    continue
+                a, b = json.loads(mine[name]), json.loads(theirs[name])
+                if "from" in a:
+                    self.assertEqual(Path(a.pop("from")).name, b.pop("from"))
+                a.pop("report", None), b.pop("report", None)
+                self.assertEqual(a, b)
         result, loaded = self.built(copy)
         self.assertEqual(self.errors(result), [])
         self.assertEqual(sorted(result.own_models), sorted(before.own_models))

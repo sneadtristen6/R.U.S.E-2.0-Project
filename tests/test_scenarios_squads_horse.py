@@ -295,21 +295,22 @@ class BlenderThenAddedAgain(HorseScenario):
         changed, closed, not brought back; Take it out of my mod; Add to my mod again. Its Blender folder (blender/
         <unit>/: the sending and the one button's record) isn't among the files the take-out takes, so the new one's
         page has Bring my changes back on its big button, and Open in Blender opens the old one's sending (what was
-        sent last: modelblender.model_blender), not its own model."""
+        sent last: modelblender.model_blender; since the anims piece, aa2c0a65, a file made from that sending,
+        <its name>_again.glb: modelblender._again), not its own model as the first time."""
         api, page = self.studio("pc")
         mod, horse = self.added(api, page, "Cavalry")
         page.blender_open(horse, {"model": True, "bones": True, "paint": True, "kind": ""}, "us")
         start, send = self.started[-1]
-        send.write_bytes(start.read_bytes()[:-4] + b"OLD!")    # (what Blender sent: the old one's change)
+        send.write_bytes(start.read_bytes())    # (what Blender sent and was never brought back: the old one's)
         page.era_unit_remove(KEY)
         self.added(api, page, None)
         parts = page.blender_parts(horse, "us")
         page.blender_open(horse, {"model": True, "bones": True, "paint": True, "kind": ""}, "us")
         opened = self.started[-1][0]
         print("\nSQ-10 added again: big button open", parts["open"], "| Blender opened", opened.name,
-              "| the old sending:", opened == send)
+              "| the first time", start.name)
         self.assertFalse(parts["open"])
-        self.assertNotEqual(opened, send)
+        self.assertEqual(opened.name, start.name)      # (as the first time: its own model, never the old sending)
 
 
 if __name__ == "__main__":
