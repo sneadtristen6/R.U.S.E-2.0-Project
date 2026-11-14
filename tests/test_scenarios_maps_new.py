@@ -113,6 +113,36 @@ class NewMaps(MapGame):
 FLT_MAX = 3.4028234663852886e38
 
 
+class SectorsOnABigMap(MapGame):
+    """Make sectors (StudioApi.sector_auto) on a blank map made big, with sectors too small for it: a scenario holds 255
+    sectors at most (seen on the real install: Blitz made 16 x 16 cells, sectors of 600 m make 1156)."""
+
+    def scenario_file(self, pack):
+        return (self.map_folder(pack) / "scenario.toml").read_text(encoding="utf-8")
+
+    # FINDING F14: Make sectors with sectors too small for the map is refused ("leveldesign_normal.scenario: sectors 600 m
+    # across make 72361 on this map; a scenario holds 255 at most: make them bigger", English in every language: the
+    # error isn't the Studio's own), but the refused setting is saved in scenario.toml anyway: the Sectors view then
+    # fails with the same words on every look until Undo, and Test in game would build it.
+    @unittest.expectedFailure
+    def test_f14_sectors_too_small_for_the_map_arent_kept(self):
+        pack = self.api.duplicate_map(BLITZ, "Big Sectors", preset="blank_terrain")["pack"]
+        self.api.set_map_size(pack, 128, 128)
+        before = self.scenario_file(pack)
+        said = page_said(self.api, "sector_auto", pack, SCEN, 600.0)
+        self.assertIn("a scenario holds 255 at most", said)
+        self.assertEqual(self.scenario_file(pack), before)
+        self.assertEqual(page_said(self.api, "sector_view", pack, SCEN), "")
+
+    def test_sectors_that_fit_after_ones_too_small(self):
+        """After the refusal, the size the words ask for (bigger) works: the new try takes the last one's place."""
+        pack = self.api.duplicate_map(BLITZ, "Big Sectors", preset="blank_terrain")["pack"]
+        self.api.set_map_size(pack, 128, 128)
+        page_said(self.api, "sector_auto", pack, SCEN, 600.0)
+        self.assertEqual(page_said(self.api, "sector_auto", pack, SCEN, 20000.0), "")   # 20 km sectors: 64 of them
+        self.assertEqual(page_said(self.api, "sector_view", pack, SCEN), "")
+
+
 class MapSizeOnEveryMap(unittest.TestCase):
     """Map size grows a blank map's close-up mesh (rusemod.bigmap.grow_mesh), stretching its skirt parts' boxes to the
     new edge. 16 of the game's 32 maps (Frontline, Tank Graveyard, Blood and Sand, Vesuvio, Tripartite, On the Edge,
