@@ -155,6 +155,8 @@ Die Knöpfe oben nehmen keine Änderung aus Blender heraus.
 | „Blenders Szene lief mit ... Bildern pro Sekunde, das Spiel läuft mit 30 ...“ | Stelle Blender auf 30 Bilder pro Sekunde, um das Tempo des Spiels zu sehen. |
 | „In Blenders Szene ist Time Stretching an ...“ | Setze Old und New auf dieselbe Zahl, um das Tempo des Spiels zu sehen. |
 | „Keine Handlung dieser Einheit spielt diese ab ...“ | Wähle eine für eine Handlung unter **Seine Animationen** auf der Seite der Einheit. |
+| „Seit sie an Blender gingen, im Studio geändert und von Blender unverändert zurückgesendet, also bleibt die Änderung des Studios ...“ | Nichts: Deine Änderung in RUSE Decoy bleibt. |
+| „Seit sie an Blender gingen, auch im Studio geändert: Die Änderung aus Blender tritt an die Stelle der des Studios ...“ | Nichts, wenn du die Änderung aus Blender willst; sonst mach deine Änderung in RUSE Decoy noch einmal. |
 | „Seit dem letzten Zurückholen deiner Änderungen kam nichts Neues aus Blender.“ | Klicke zuerst in Blender auf **An das R.U.S.E. Studio senden**. |
 
 ## Was schiefgehen kann

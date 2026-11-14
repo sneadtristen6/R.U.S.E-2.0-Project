@@ -145,6 +145,8 @@ The buttons above don't take out a change made in Blender.
 | "Blender's scene played at ... frames a second and the game plays at 30 ..." | Set Blender's frame rate to 30 to see the game's speed. |
 | "Blender's scene has Time Stretching on ..." | Set Old and New to the same number to see the game's speed. |
 | "No action of this unit plays these ..." | Pick one for an action under **Its animations** on the unit's page. |
+| "Changed in the Studio since they went out to Blender, and sent back from Blender unchanged, so the Studio's change stays ..." | Nothing: your change in RUSE Decoy is kept. |
+| "Changed in the Studio too since they went out to Blender: Blender's change takes the place of the Studio's ..." | Nothing, if Blender's change is the one you want; if not, make your change in RUSE Decoy again. |
 | "Nothing new has come from Blender since your changes were last brought back." | Click **Send to the R.U.S.E. Studio** in Blender first. |
 
 ## What can go wrong

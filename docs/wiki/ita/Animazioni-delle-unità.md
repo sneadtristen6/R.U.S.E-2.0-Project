@@ -149,6 +149,8 @@ I pulsanti sopra non tolgono una modifica fatta in Blender.
 | «La scena di Blender andava a ... fotogrammi al secondo e il gioco va a 30 ...» | Metti Blender a 30 fotogrammi al secondo per vedere la velocità del gioco. |
 | «La scena di Blender ha il Time Stretching attivo ...» | Metti Old e New allo stesso numero per vedere la velocità del gioco. |
 | «Nessuna azione di questa unità esegue queste ...» | Sceglila per un'azione sotto **Le sue animazioni**, nella pagina dell'unità. |
+| «Cambiate nello Studio da quando sono partite per Blender, e rimandate da Blender senza modifiche, quindi resta la modifica dello Studio ...» | Niente: la tua modifica in RUSE Decoy resta. |
+| «Cambiate anche nello Studio da quando sono partite per Blender: la modifica di Blender prende il posto di quella dello Studio ...» | Niente, se vuoi la modifica di Blender; altrimenti rifai la tua modifica in RUSE Decoy. |
 | «Da Blender non è arrivato nulla di nuovo dall'ultima volta che hai riportato le tue modifiche.» | Clicca prima **Invia al R.U.S.E. Studio** in Blender. |
 
 ## Cosa può andare storto

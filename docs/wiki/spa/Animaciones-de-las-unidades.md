@@ -151,6 +151,8 @@ Los botones de arriba no quitan un cambio hecho en Blender.
 | «La escena de Blender iba a ... fotogramas por segundo y el juego va a 30 ...» | Pon Blender a 30 fotogramas por segundo para ver la velocidad del juego. |
 | «La escena de Blender tiene el Time Stretching activado ...» | Pon Old y New en el mismo número para ver la velocidad del juego. |
 | «Ninguna acción de esta unidad reproduce estas ...» | Elígela para una acción en **Sus animaciones**, en la página de la unidad. |
+| «Cambiadas en el Studio desde que salieron hacia Blender, y devueltas por Blender sin cambios, así que se queda el cambio del Studio ...» | Nada: tu cambio en RUSE Decoy se queda. |
+| «Cambiadas también en el Studio desde que salieron hacia Blender: el cambio de Blender ocupa el lugar del cambio del Studio ...» | Nada, si quieres el cambio de Blender; si no, vuelve a hacer tu cambio en RUSE Decoy. |
 | «No ha llegado nada nuevo de Blender desde la última vez que trajiste tus cambios.» | Haz clic antes en **Enviar a R.U.S.E. Studio** en Blender. |
 
 ## Qué puede salir mal

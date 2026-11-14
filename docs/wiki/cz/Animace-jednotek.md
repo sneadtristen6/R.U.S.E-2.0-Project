@@ -142,6 +142,8 @@ Tlačítka výše neodebírají změnu udělanou v Blenderu.
 | „Scéna Blenderu běžela na ... snímků za sekundu a hra běží na 30 ...“ | Nastav Blender na 30 snímků za sekundu, abys viděl rychlost hry. |
 | „Scéna Blenderu má zapnuté Time Stretching ...“ | Nastav Old a New na stejné číslo, abys viděl rychlost hry. |
 | „Žádná činnost této jednotky tyto animace nehraje ...“ | Vyber ji pro činnost v **Její animace** na stránce jednotky. |
+| „Změněné ve Studiu od chvíle, kdy odešly do Blenderu, a z Blenderu poslané zpět beze změny, takže zůstává změna ze Studia ...“ | Nic: tvoje změna v RUSE Decoy zůstává. |
+| „Změněné také ve Studiu od chvíle, kdy odešly do Blenderu: změna z Blenderu nahrazuje změnu ze Studia ...“ | Nic, pokud chceš změnu z Blenderu; jinak udělej svou změnu v RUSE Decoy znovu. |
 | „Od posledního přenesení tvých změn nepřišlo z Blenderu nic nového.“ | Nejdřív klikni v Blenderu na **Poslat do R.U.S.E. Studia**. |
 
 ## Co se může pokazit

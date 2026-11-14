@@ -159,6 +159,8 @@ Les boutons ci-dessus ne retirent pas un changement fait dans Blender.
 | « La scène de Blender tournait à ... images par seconde et le jeu tourne à 30 ... » | Mettez Blender à 30 images par seconde pour voir la vitesse du jeu. |
 | « La scène de Blender a le Time Stretching activé ... » | Mettez Old et New au même nombre pour voir la vitesse du jeu. |
 | « Aucune action de cette unité ne joue celles-ci ... » | Choisissez-en une pour une action sous **Ses animations**, sur la page de l'unité. |
+| « Changées dans le Studio depuis leur départ vers Blender, et renvoyées par Blender sans changement : le changement du Studio reste donc ... » | Rien : votre changement fait dans RUSE Decoy est gardé. |
+| « Changées aussi dans le Studio depuis leur départ vers Blender : le changement de Blender remplace celui du Studio ... » | Rien, si c'est le changement de Blender que vous voulez ; sinon, refaites votre changement dans RUSE Decoy. |
 | « Rien de nouveau n'est venu de Blender depuis le dernier retour de vos changements. » | Cliquez d'abord sur **Envoyer au R.U.S.E. Studio** dans Blender. |
 
 ## Ce qui peut mal tourner

@@ -149,6 +149,8 @@ Przyciski wyżej nie usuwają zmiany zrobionej w Blenderze.
 | „Scena Blendera szła w ... klatkach na sekundę, a gra idzie w 30 ...” | Ustaw Blendera na 30 klatek na sekundę, żeby widzieć tempo gry. |
 | „Scena Blendera ma włączone Time Stretching ...” | Ustaw Old i New na tę samą liczbę, żeby widzieć tempo gry. |
 | „Żadna czynność tej jednostki nie odtwarza tych animacji ...” | Wybierz ją dla czynności w **Jej animacje** na stronie jednostki. |
+| „Zmienione w Studio, odkąd wyszły do Blendera, a odesłane z Blendera bez zmian, więc zostaje zmiana ze Studio ...” | Nic: twoja zmiana z RUSE Decoy zostaje. |
+| „Zmienione także w Studio, odkąd wyszły do Blendera: zmiana z Blendera zastępuje zmianę ze Studio ...” | Nic, jeśli chcesz zmiany z Blendera; jeśli nie, zrób swoją zmianę w RUSE Decoy jeszcze raz. |
 | „Od ostatniego przeniesienia twoich zmian z Blendera nie przyszło nic nowego.” | Najpierw kliknij **Wyślij do R.U.S.E. Studio** w Blenderze. |
 
 ## Co może pójść nie tak
