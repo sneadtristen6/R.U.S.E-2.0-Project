@@ -126,13 +126,14 @@ class Placing(MapGame):
 class WaterOnBlankTerrain(MapGame):
     """A river or a lake painted on a Blank Terrain map, as a player starting from scratch does."""
 
-    # FINDING F11: Blank Terrain's start erases every building of the copied map, and the build opens the ground under
-    # the erased buildings to every unit ("of the map's buildings erased: the ground ... is opened"; on the made-up map
-    # 9 circles, on a real one thousands). Water the player paints there afterwards lies in those opens: the build
-    # warns once an open, "the open at (312, 1500) takes in water ...: units there stand on the ground under it, on
-    # the riverbed or the lake's floor. Leave the open off the water unless that is what you want", about opens the
-    # player never made (110 warnings on a real Blank Terrain of Blitz with one river), and by its own words units
-    # walk on the riverbed there.
+    # FINDING F11: Blank Terrain's start erases the copied map's scenery with one square that takes trees and
+    # buildings (its scenery.toml), and the build opens all of that ground to every unit, as circles covering the
+    # square (build.cleared_woods, read in the code; on a real Blank Terrain of Blitz 4,096 circles, counted with the
+    # build's own code). Water the player paints there afterwards lies in those opens: the build warns once an open,
+    # "the open at (312, 1500) takes in water ...: units there stand on the ground under it, on the riverbed or the
+    # lake's floor. Leave the open off the water unless that is what you want", about opens the player never made
+    # (3 on this map; 108 on that real map with one river, each at one of those 4,096 circles), and by its own words
+    # units walk on the riverbed there.
     @unittest.expectedFailure
     def test_f11_a_river_on_blank_terrain_isnt_opened_to_units(self):
         pack = self.api.duplicate_map(BLITZ, "Blank River", preset="blank_terrain")["pack"]
