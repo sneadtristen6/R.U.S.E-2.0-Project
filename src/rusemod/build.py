@@ -158,26 +158,29 @@ def load_mod(path, as_id: str | None = None) -> tuple[ModInfo, list]:
             info.depots = read_depots(path)  # depots.toml: every depot's trucks, on every map or the ones named
         except ScenarioError as exc:
             raise BuildError(f"{mod_id}: {exc}") from None
+        from .holding import skip_of
         from .unitlook import mod_cards, mod_textures
         from .unitmodel import UnitModelError, mod_copies, mod_models
+        # a deleted unit's file another program had open, which the Studio takes out later: never read (rusemod.holding)
+        skip = skip_of(path)
         info.textures = mod_textures(path)
-        info.cards = mod_cards(path)
-        info.models = mod_models(path)
+        info.cards = mod_cards(path, skip)
+        info.models = mod_models(path, skip)
         try:
-            info.model_copies = mod_copies(path)
+            info.model_copies = mod_copies(path, skip)
         except UnitModelError as exc:
             raise BuildError(f"{mod_id}: {exc}") from None
         from .squads import SquadError, mod_game_looks, mod_squads
         try:
-            info.squads = mod_squads(path)  # files/models/<unit>.squad.toml: a squad's own number of soldiers
+            info.squads = mod_squads(path, skip)  # files/models/<unit>.squad.toml: a squad's own number of soldiers
         except SquadError as exc:
             raise BuildError(f"{mod_id}: {exc}") from None
-        info.squad_game = mod_game_looks(path)  # files/models/<unit>@<i>.json alone: soldier i wears the game's look
+        info.squad_game = mod_game_looks(path, skip)  # files/models/<unit>@<i>.json alone: soldier i, the game's look
         from .sceneryasset import AssetError, mod_assets
         try:
             info.assets = mod_assets(path)  # files/assets/<name>/asset.toml: its own rocks, props, plants, trees
             from .buildinglook import mod_looks
-            info.looks = mod_looks(path)    # files/buildings/<name>/building.toml: its new buildings' own looks
+            info.looks = mod_looks(path, skip)   # files/buildings/<name>/building.toml: its new buildings' own looks
         except AssetError as exc:
             raise BuildError(f"{mod_id}: {exc}") from None
         from .sound import SoundError, mod_ambience, mod_new_songs, mod_sounds, mod_volumes, new_songs_rndf

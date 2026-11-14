@@ -25,7 +25,7 @@ from dataclasses import dataclass
 from decimal import Decimal
 from pathlib import Path
 
-from rusemod import loc
+from rusemod import holding, loc
 from rusemod.patch import ListV, Num, Ref, Text
 from rusemod.rndf import RndfError, literal as value_text, parse
 
@@ -34,8 +34,13 @@ NAMES_FILE = Path("text") / "studio.baseunite.csv"  # into baseunite.dic, the ga
 HEADER = ("// Made by the RUSE Studio, which rewrites this file after every change.\n"
           "// Hand-written changes belong in other .rndf files in src/.\n")
 NAME_PROP = "NameInMenuToken"
-TAKING_OUT = ".taking-out"   # <mod>/.taking-out/: what a take-out set aside until it's done (a dot folder: Export and
-#                              the build never read it)
+TAKING_OUT = holding.FOLDER  # <mod>/.taking-out/: what a take-out set aside until it's done (a dot folder: Export and
+#                              the build never read it), and the holding record of what waits (rusemod.holding)
+# Delete goes through (the owner, 2026-11-13: "Why would deleting a unit stop? ... if someone clicks it should
+# through"): a file of the unit Windows won't let go of (another program has it open) is tried again for this many
+# seconds, then left for the Studio to take out later (TakeOut.settle, rusemod.holding)
+HOLD_WAIT = 3.0
+HOLD_STEP = 0.1
 
 
 def unit_files(folder, tail: str) -> list[Path]:
@@ -83,17 +88,25 @@ def _put(path: Path, data: bytes, in_place: bool = False) -> None:
 
 
 class TakeOut:
-    """One take-out of a unit, all or nothing (the owner's check, 2026-11-13: a Delete that couldn't finish left a mod
-    that no longer built, and no way back). Every file it rewrites is kept as it was first (keep: a file that can't be
-    read stops it before anything changed), every file and folder it removes is set aside first (set_aside: moved into
-    <mod>/.taking-out/, which Windows refuses while another program has the file, or a file in the folder, open), so
-    that put_back leaves the mod as it was when a later step fails; done removes what was set aside."""
+    """One take-out of a unit, all or nothing for the mod's lists (the owner's check, 2026-11-13: a Delete that couldn't
+    finish left a mod that no longer built, and no way back). Every file it rewrites is kept as it was first (keep: a
+    file that can't be read stops it before anything changed), every file and folder it removes is set aside first
+    (set_aside: moved into <mod>/.taking-out/), so that put_back leaves the mod as it was when a later step fails; done
+    removes what was set aside.
+
+    A file of the unit Windows won't let go of (another program has it, or a file in the folder, open) no longer stops
+    it (the owner, 2026-11-13: "Why would deleting a unit stop? ... if someone clicks it should through"): settle, its
+    last step, tries it again for HOLD_WAIT seconds, then names what's still held in the mod's holding record
+    (rusemod.holding), which the build and Export leave out and the Studio takes out by itself later. A list file the
+    take-out rewrites (studio.rndf, units.toml...) that can't be read or written still stops it, everything put back."""
 
     def __init__(self, folder):
         self.folder = Path(folder)
         self.kept: dict[Path, bytes | None] = {}
         self.aside: list[tuple[Path, Path]] = []
         self.hold: Path | None = None
+        self.refused: list[tuple[Path, str]] = []   # (a file or folder Windows wouldn't let go of yet, its unit)
+        self.waiting: list[str] = []                # what settle left in the holding record: files, as paths in the mod
 
     def keep(self, path) -> None:
         path = Path(path)
@@ -104,8 +117,16 @@ class TakeOut:
                 exc.filename, exc.filename2 = str(path), None
                 raise
 
-    def set_aside(self, path) -> None:
+    def set_aside(self, path, unit: str = "") -> None:
+        """Move the file or folder `path` (of the unit called `unit`) out of the mod, into the take-out's holding folder.
+        One Windows won't let go of yet is left for settle; one already gone is nothing to do."""
         path = Path(path)
+        if not self._move(path):
+            self.refused.append((path, unit))
+
+    def _move(self, path: Path) -> bool:
+        """`path` moved aside: True, or True when it's gone already; False when Windows refuses for now (another program
+        has it open: PermissionError). Any other OSError is raised, named by the mod's file."""
         if self.hold is None:
             root = self.folder / TAKING_OUT
             root.mkdir(parents=True, exist_ok=True)
@@ -113,10 +134,41 @@ class TakeOut:
         to = self.hold / str(len(self.aside))
         try:
             os.rename(path, to)
-        except OSError as exc:   # (named by the mod's file another program holds, never the place it was going to)
+        except PermissionError:
+            return False
+        except OSError as exc:   # (named by the mod's file, never the place it was going to)
+            if isinstance(exc, FileNotFoundError) and not os.path.lexists(path):
+                return True
             exc.filename, exc.filename2 = str(path), None
             raise
         self.aside.append((path, to))
+        return True
+
+    def settle(self) -> list[str]:
+        """A take-out's last step, inside it (a failure here still puts everything back): what Windows refused is tried
+        again for HOLD_WAIT seconds; a folder still refused then gives up every file it can, one by one, and what's
+        left waits, named in the mod's holding record (kept first: put_back puts the record back too). Returns the
+        files that wait, as paths in the mod (self.waiting); [] when nothing does."""
+        left, self.refused = self.refused, []
+        end = time.monotonic() + HOLD_WAIT
+        while left and time.monotonic() < end:
+            time.sleep(HOLD_STEP)
+            left = [(path, unit) for path, unit in left if not self._move(path)]
+        if not left:
+            return []
+        files, folders = [], []
+        for path, unit in left:
+            if path.is_dir():
+                for root, _dirs, names in os.walk(path):
+                    files += [(Path(root) / n, unit) for n in sorted(names) if not self._move(Path(root) / n)]
+                folders.append((path, unit))
+            else:
+                files.append((path, unit))
+        self.keep(holding.record_path(self.folder))
+        named = holding.add(self.folder, files, folders)
+        # (what the modder is told: the files; a folder left only for a program that has it open holds none of the mod)
+        self.waiting = [rel for rel in named if (self.folder / rel).is_file()]
+        return self.waiting
 
     def put_back(self) -> list[Path]:
         """Everything as it was before; returns the files it couldn't put back (none, unless one is held now)."""
@@ -138,12 +190,12 @@ class TakeOut:
                 failed.append(path)
         if not failed:
             self._clear()
-        self.aside, self.kept = [], {}
+        self.aside, self.kept, self.refused = [], {}, []
         return failed
 
     def done(self) -> None:
-        """The take-out finished: what it set aside goes (a part another program holds stays in .taking-out, which
-        nothing reads)."""
+        """The take-out finished: what it set aside goes (a part Windows won't let go of yet stays in .taking-out, which
+        nothing reads, named in the holding record: the Studio takes it out later)."""
         self.aside, self.kept = [], {}
         self._clear()
 
@@ -151,6 +203,11 @@ class TakeOut:
         # only this take-out's own: a folder left by a Studio stopped half way holds files of a unit still in the mod
         if self.hold is not None:
             shutil.rmtree(self.hold, ignore_errors=True)
+            if self.hold.exists():
+                try:
+                    holding.add(self.folder, holds=[self.hold.name])
+                except OSError:
+                    pass   # (it stays in .taking-out, which nothing reads)
             self.hold = None
         try:
             (self.folder / TAKING_OUT).rmdir()   # (when empty)
@@ -458,11 +515,13 @@ class ModEdits:
     def remove_unit(self, target: str, take: TakeOut | None = None) -> None:
         """Delete a new unit: its copy, every change made to it and its parts, its name, and every file of its own
         (unit_files: its card, models, records, copy, clips' folder) with its rows in files/anim/units.toml (a card, a
-        model or an animation with no unit is an error in the build). All or nothing: the files are set aside and the
-        rows taken out BEFORE the unit leaves src/studio.rndf, and a step that fails (a file another program holds, a
-        units.toml that can't be read: raised as it came, anim.AnimError or OSError) puts back what was done, so the mod
-        is as it was and trying again works. `take`: a bigger take-out this is part of (api.delete_unit), which puts it
-        all back or finishes it; none: this call's own."""
+        model or an animation with no unit is an error in the build). The files are set aside and the rows taken out
+        BEFORE the unit leaves src/studio.rndf, and a step that fails (a list file that can't be read or written: a
+        units.toml with a mistake or another program holding it, raised as it came, anim.AnimError or OSError) puts back
+        what was done, so the mod is as it was and trying again works. A file of the unit another program holds doesn't
+        stop it: it waits, out of the build, for the Studio to take it out later (TakeOut.settle). `take`: a bigger
+        take-out this is part of (api.delete_unit), which settles it and puts it all back or finishes it; none: this
+        call's own."""
         own = take is None
         take = take if take is not None else TakeOut(self.folder)
         units, edits = dict(self.new_units), dict(self.edits)
@@ -477,6 +536,8 @@ class ModEdits:
             for key in [k for k in self.edits if k[0] == target]:
                 del self.edits[key]
             self.save()
+            if own:
+                take.settle()
         except BaseException:
             self.new_units, self.edits = units, edits
             if own:
@@ -487,14 +548,16 @@ class ModEdits:
 
     def remove_leftovers(self, tail: str) -> list[str]:
         """What a unit this mod no longer has left behind (a Delete that stopped half way in a Studio before
-        2026-11-13): its rows in files/anim/units.toml and its own files (unit_files), out of the mod, all or nothing as
-        remove_unit. Never for a unit the mod has (ValueError): the caller makes sure the game has no unit of that name
-        either. Returns what was taken out, as paths in the mod ("files/anim/units.toml [unit.<name>]" for its rows)."""
+        2026-11-13): its rows in files/anim/units.toml and its own files (unit_files), out of the mod, as remove_unit
+        takes them (a file another program holds waits, out of the build: TakeOut.settle). Never for a unit the mod has
+        (ValueError): the caller makes sure the game has no unit of that name either. Returns what was taken out, as
+        paths in the mod ("files/anim/units.toml [unit.<name>]" for its rows)."""
         if any(t.rsplit("/", 1)[-1] == tail for t in self.new_units):
             raise ValueError(f"{tail} is a unit of this mod")
         take = TakeOut(self.folder)
         try:
             gone = self._take_files(tail, take)
+            take.settle()
         except BaseException:
             take.put_back()
             raise
@@ -504,7 +567,8 @@ class ModEdits:
     def _take_files(self, tail: str, take: TakeOut) -> list[str]:
         """The unit `tail`'s own files set aside, its rows out of units.toml and its ticks out of the mod's copies of
         animations (copies.toml: a tick for a unit no mod makes stops the build), in `take` (put back if a later step
-        fails). The rows and ticks last: a file that can't be moved stops it with units.toml as it was."""
+        fails). A file another program holds is left for take.settle; a units.toml or copies.toml that can't be read
+        stops it before anything changed."""
         from rusemod import anim
         table_file = self.folder / anim.UNITS
         take.keep(table_file)
@@ -513,7 +577,7 @@ class ModEdits:
         ticked = anim.ticked_in(self.folder, tail)   # (so does a copies.toml that can't be read)
         gone = []
         for path in unit_files(self.folder, tail):
-            take.set_aside(path)
+            take.set_aside(path, tail)
             gone.append(path.relative_to(self.folder).as_posix())
         if table.pop(tail, None) is not None:
             anim.write_units(self.folder, table)

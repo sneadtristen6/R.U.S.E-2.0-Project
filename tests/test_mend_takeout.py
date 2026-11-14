@@ -13,7 +13,14 @@
   credit line this PC's library can't name kept; a mod with nothing stale is left byte for byte.
 
 Most of it on the Studio tests' made-up game (WithMod) or a bare mod folder; HeldOnTheGame on the game with the Horse
-Squad, as tests/test_check_words.py's ItsAnimationsFileHeld (skipped without it). Holds are Windows' (open handles)."""
+Squad, as tests/test_check_words.py's ItsAnimationsFileHeld (skipped without it). Holds are Windows' (open handles).
+
+Since the owner's item 6 (2026-11-13: "Why would deleting a unit stop? ... if someone clicks it should through"), a file
+of the unit itself another program holds no longer stops the take-out: the unit goes and the file waits, out of the
+build, until the Studio takes it out (rusemod.holding; tests/test_delete_goes_through.py). Of the four tests here that
+held such a file (a model, a clip), three now expect the take-out to go through (each names its old name) and the
+lead's put-back check holds units.toml instead; a held list file (units.toml, era_units.json, the credits) still stops
+it, everything put back, as before."""
 import json
 import os
 import shutil
@@ -52,6 +59,26 @@ except ImportError:
     msvcrt = None
 
 WINDOWS = os.name == "nt"
+
+
+def quick():
+    """A held file tried again for a short while only (edits.HOLD_WAIT: create=True, so this file still runs on the
+    code before the owner's item 6, where these tests then fail on the old behaviour)."""
+    from ruse_studio import edits
+    return mock.patch.object(edits, "HOLD_WAIT", 0.3, create=True)
+
+
+def waiting(mod: Path) -> list:
+    """The files the mod's holding record names (rusemod.holding), as paths in the mod; [] without one."""
+    f = mod / TAKING_OUT / "waiting.json"
+    return sorted(e["path"] for e in json.loads(f.read_text(encoding="utf-8"))["files"]) if f.is_file() else []
+
+
+def clear(mod: Path) -> list:
+    from rusemod import holding   # (here: this file still runs on the code before the owner's item 6)
+    return holding.clear(mod)
+
+
 UNIT = "$/GFX/Everything/Descriptor_Unit_Lancer"
 OTHER = "$/GFX/Everything/Descriptor_Unit_Keeper"
 SOURCE = "$/GFX/Everything/Descriptor_Unit_M4_Sherman"
@@ -147,27 +174,42 @@ class RemoveUnit(unittest.TestCase):
         self.assertFalse(copy.exists())
 
     @unittest.skipUnless(WINDOWS, "a file another program holds: Windows")
-    def test_a_held_model_file_leaves_the_mod_as_it_was_and_trying_again_works(self):
-        held = open(self.mod / "files" / "models" / f"{self.tail}@bazooka.glb", "rb")
+    def test_a_held_model_file_waits_the_rest_goes_and_it_goes_once_let_go(self):
+        """Was test_a_held_model_file_leaves_the_mod_as_it_was_and_trying_again_works (a held model stopped the take-out,
+        the mod as it was): since the owner's item 6 the unit and its other files go, the model waits, and the Studio's
+        clear takes it once it's let go."""
+        model = self.mod / "files" / "models" / f"{self.tail}@bazooka.glb"
+        held = open(model, "rb")
         try:
-            with self.assertRaises(OSError):
+            with quick():
                 ModEdits(self.mod).remove_unit(UNIT)
+            self.assertNotIn(UNIT, ModEdits(self.mod).new_units)
+            self.assertNotIn(self.tail, anim.read_units(self.mod))
+            self.assertEqual(unit_files(self.mod, self.tail), [str(model.relative_to(self.mod))])
+            self.assertEqual(waiting(self.mod), [model.relative_to(self.mod).as_posix()])
+            self.assertEqual(clear(self.mod), [])          # (still held: it stays named)
         finally:
             held.close()
-        self.assertEqual(tree(self.mod), self.before)
-        self.assertFalse((self.mod / TAKING_OUT).exists())
-        ModEdits(self.mod).remove_unit(UNIT)
+        self.assertEqual(clear(self.mod), [model.relative_to(self.mod).as_posix()])
         self.gone_whole()
 
     @unittest.skipUnless(WINDOWS, "a file another program holds: Windows")
-    def test_a_held_clip_leaves_the_mod_as_it_was(self):
-        held = open(self.mod / anim.OWN / self.tail / "stand.baf", "rb")
+    def test_a_held_clip_waits_and_its_folder_gives_up_the_rest(self):
+        """Was test_a_held_clip_leaves_the_mod_as_it_was: the clips' folder can't be moved while a clip in it is held,
+        but its other clips can, one by one; the held clip and the folder wait, and go once it's let go."""
+        own = self.mod / anim.OWN / self.tail
+        (own / "walk.baf").write_bytes(b"another clip")
+        held = open(own / "stand.baf", "rb")
         try:
-            with self.assertRaises(OSError):
+            with quick():
                 ModEdits(self.mod).remove_unit(UNIT)
+            self.assertEqual(sorted(p.name for p in own.iterdir()), ["stand.baf"])
+            self.assertNotIn(self.tail, anim.read_units(self.mod))
+            self.assertEqual(waiting(self.mod), [f"{anim.OWN}/{self.tail}/stand.baf"])
         finally:
             held.close()
-        self.assertEqual(tree(self.mod), self.before)
+        clear(self.mod)
+        self.gone_whole()
 
     @unittest.skipUnless(WINDOWS, "a file another program holds: Windows")
     def test_a_held_units_toml_leaves_the_mod_as_it_was_with_no_half_file_beside_it(self):
@@ -226,15 +268,16 @@ class RemoveUnit(unittest.TestCase):
         """The lead's check of 2026-11-13 (a planted mistake no test caught: remove_leftovers no longer putting back
         what it had moved): the take-out of what a deleted unit left, stopped by a file another program holds, leaves
         every leftover where it was (the files it had already set aside too, no .taking-out left), and trying again
-        once the file is free takes them all."""
+        once the file is free takes them all. The held file is units.toml since the owner's item 6 (a held clip of the
+        unit no longer stops it: test_leftovers_with_a_clip_held_go_and_the_clip_waits)."""
         edits = ModEdits(self.mod)
         edits.new_units.pop(UNIT)
         edits.save()
         before = tree(self.mod)
         self.assertGreater(len(unit_files(self.mod, self.tail)), 2)
-        # (a clip in the unit's own animations folder: the folder is the last thing set aside, so the card, the
-        # models and the records have been moved by then and must come back)
-        held = open(self.mod / anim.OWN / self.tail / "stand.baf", "rb")
+        # (units.toml is written after every file of the unit is set aside, so the card, the models, the records and
+        # the clips' folder have all been moved by then and must come back)
+        held = open(self.mod / anim.UNITS, "rb")
         try:
             with self.assertRaises(OSError):
                 ModEdits(self.mod).remove_leftovers(self.tail)
@@ -247,6 +290,26 @@ class RemoveUnit(unittest.TestCase):
         self.assertIn(f"{anim.UNITS} [unit.{self.tail}]", gone)
         self.assertEqual(unit_files(self.mod, self.tail), [])
         self.assertNotIn(self.tail, anim.read_units(self.mod))
+
+    @unittest.skipUnless(WINDOWS, "a file another program holds: Windows")
+    def test_leftovers_with_a_clip_held_go_and_the_clip_waits(self):
+        edits = ModEdits(self.mod)
+        edits.new_units.pop(UNIT)
+        edits.save()
+        clip = f"{anim.OWN}/{self.tail}/stand.baf"
+        held = open(self.mod / clip, "rb")
+        try:
+            with quick():
+                gone = ModEdits(self.mod).remove_leftovers(self.tail)
+            self.assertIn(f"{anim.UNITS} [unit.{self.tail}]", gone)
+            self.assertNotIn(self.tail, anim.read_units(self.mod))
+            self.assertEqual(waiting(self.mod), [clip])
+            self.assertEqual(unit_files(self.mod, self.tail), [str(Path(anim.OWN) / self.tail)])
+        finally:
+            held.close()
+        clear(self.mod)
+        self.assertEqual(unit_files(self.mod, self.tail), [])
+        self.assertFalse((self.mod / TAKING_OUT).exists())
 
 
 class AnimRemoveUnit(unittest.TestCase):
@@ -349,14 +412,24 @@ class OnTheStudio(WithMod):
         self.liberty_gone_whole()
 
     @unittest.skipUnless(WINDOWS, "a file another program holds: Windows")
-    def test_take_it_out_with_a_clip_held_says_which_file_in_french_too(self):
+    def test_take_it_out_with_a_clip_held_goes_through_and_names_it(self):
+        """Was test_take_it_out_with_a_clip_held_says_which_file_in_french_too (refused, in words): since the owner's
+        item 6 the unit goes whole but the held clip, which the answer names ("waiting": the page's one line) and the
+        Studio takes out once it's let go. A held list file is still said in words (the era record and credits tests
+        above)."""
         name = f"{anim.OWN}/{self.tail}/stand.baf"
-        said = self.held(name, lambda: self.api.era_unit_remove(LIBERTY, "anyway"))
-        self.assertIn(self.tail, str(said))
-        self.api.set_pref("lang", "fr")
-        self.assertIn("Fermez ce programme", str(self.api.page_error(said)))
-        self.api.set_pref("lang", "us")
-        self.assertEqual(self.api.era_unit_remove(LIBERTY, "anyway")["removed"], self.liberty)
+        f = open(self.mod / name, "rb")
+        try:
+            with quick():
+                got = self.api.era_unit_remove(LIBERTY, "anyway")
+        finally:
+            f.close()
+        self.assertEqual((got["removed"], got["waiting"]), (self.liberty, [name]))
+        self.assertNotIn(self.liberty, ModEdits(self.mod).new_units)
+        self.assertEqual(self.record(), {OTHER_TANK: self.whippet})
+        self.assertNotIn("Liberty", self.credits())
+        self.assertNotIn(self.tail, anim.read_units(self.mod))
+        self.assertEqual(self.api._clear_waiting(self.mod), [name, f"{anim.OWN}/{self.tail}"])
         self.liberty_gone_whole()
 
     def test_a_units_toml_with_a_mistake_is_said_and_nothing_goes(self):

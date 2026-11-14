@@ -6025,6 +6025,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                               f"drop what it doesn't know when it saves.")
         if st["state"] == "quiet":
             modformat.stamp(path, self.MADE_WITH["tool"], self.MADE_WITH["version"])
+        self._clear_waiting(path)   # (a deleted unit's file another program had open: rusemod.holding)
         settings = self._settings()
         settings[kind] = str(path)
         recent_key = self.KINDS[kind][1]
@@ -10082,12 +10083,16 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         mod's menu_groups.toml goes, and the units its group stood under move to the first remaining unit of that
         group (groups.py).
 
-        All or nothing (the owner's check, 2026-11-13): every file it changes is kept as it was and every file it
-        removes set aside first (edits.TakeOut), so a step that can't finish (a file another program holds, a
-        units.toml that can't be read) leaves the mod as it was, research links too, and says in words which file and
-        what to do; trying again then works. A unit this mod no longer has but whose files or animations are still in
-        it (a Delete that stopped half way in an older Studio): those leftovers are taken out instead, never a game
-        unit's (_take_leftovers), and {"deleted": None, "leftovers": what went} returned."""
+        All or nothing for the mod's lists (the owner's check, 2026-11-13): every file it changes is kept as it was and
+        every file it removes set aside first (edits.TakeOut), so a list file that can't be read or written (a
+        units.toml with a mistake, a list file another program holds) leaves the mod as it was, research links too,
+        and says in words which file and what to do; trying again then works. A file of the unit itself another
+        program holds doesn't stop it (the owner, 2026-11-13: "Why would deleting a unit stop? ... if someone clicks it
+        should through"): it's tried again for a few seconds, then the unit goes all the same and the file waits, out of
+        Test in game's and Export's builds, until the Studio takes it out by itself (rusemod.holding; _clear_waiting):
+        "waiting" names such files, as paths in the mod ([] when none). A unit this mod no longer has but whose files
+        or animations are still in it (a Delete that stopped half way in an older Studio): those leftovers are taken
+        out instead, never a game unit's (_take_leftovers), and {"deleted": None, "leftovers": what went} returned."""
         from rusemod import anim, menugroups
         from .edits import TakeOut
         from .era_units import CREDITS, INDEX
@@ -10115,6 +10120,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                     self._drop_class_table(edits, own_class)
                 self._groups_save(edits, *files)
                 self._era_forget(address)     # an era unit's (or the Horse Squad's) record line and credit go with it
+                waiting = take.settle()       # (a file of the unit another program holds: it waits, said on the page)
         except BaseException as exc:
             take.put_back()
             worded = self._take_error(exc, folder)
@@ -10122,7 +10128,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                 raise
             raise worded from exc
         take.done()
-        return {"deleted": address, "source": source, "saved": str(edits.file), **research}
+        return {"deleted": address, "source": source, "saved": str(edits.file), **research, "waiting": waiting}
 
     def _take_error(self, exc: BaseException, folder: Path) -> BaseException:
         """A take-out's failure (delete_unit) in words: a file that couldn't be read or written names the file and
@@ -10182,6 +10188,18 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                     raise
                 raise worded from exc
 
+    def _clear_waiting(self, *folders) -> list[str]:
+        """What a unit's Delete left for a program that had it open (rusemod.holding: out of the build already), taken
+        out of these mod folders now, as far as Windows lets: when a mod is opened (choose_mod, the Studio's start) and
+        before Test in game and Export build it. Never stops what calls it: a file still held stays named for next
+        time. Returns what was taken out, as paths in the mods."""
+        from rusemod import holding
+        gone = []
+        for folder in dict.fromkeys(Path(f) for f in folders if f is not None):
+            with self._saving:
+                gone += holding.clear(folder)
+        return gone
+
     def test_in_game(self) -> dict:
         """Build the current mod into the PC's one modded copy (`Modded game` where Settings says, the Launcher's too:
         rusemod.play.SHARED, _copies) and start the game from it, in the background. Returns {'job': id}; follow it
@@ -10209,6 +10227,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             if game is None:
                 # not a game rule: the game or one of its files isn't found
                 raise BuildError("We couldn't find R.U.S.E.")
+            self._clear_waiting(*folders)   # (a deleted unit's file another program had open: rusemod.holding)
             self._starter.modded(game, folders, instance, name, say, words=said, cut_off_errors=True,
                                  title=title_on(self._home))  # R.U.S.E. 2.0's title, unless Settings says the game's
             say(f"Built in {instance}. To see your changes in the game:")
@@ -10495,6 +10514,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             manifest["description"] = description.strip()
 
         def work(say):
+            self._clear_waiting(folder)   # (a deleted unit's file another program had open: rusemod.holding)
             with self._saving:
                 package.update_manifest(folder, mod=manifest)
             game = self._game()

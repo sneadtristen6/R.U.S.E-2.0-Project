@@ -242,10 +242,11 @@ def rigged_first(game: Path, model_file: Path, models: list) -> list:
     return fits + rest
 
 
-def mod_models(folder: Path) -> dict:
-    """{a new unit's name: its model file} from a mod's files/models/<the unit's name>.glb."""
+def mod_models(folder: Path, skip=None) -> dict:
+    """{a new unit's name: its model file} from a mod's files/models/<the unit's name>.glb; `skip`
+    (rusemod.holding.skip_of): a file it names is left out (a deleted unit's, another program had it open)."""
     root = Path(folder) / MODELS
-    return {f.stem: f for f in sorted(root.glob("*.glb"))} if root.is_dir() else {}
+    return {f.stem: f for f in sorted(root.glob("*.glb")) if not (skip and skip(f))} if root.is_dir() else {}
 
 
 # --- the stand-in key ---
@@ -1668,18 +1669,21 @@ def write_batch(batch: dict) -> dict:
 COPY = ".copy.toml"  # files/models/<the unit's name>.copy.toml: the unit has its own copy; its paint in files/models/<name>/
 
 
-def mod_copies(folder: Path) -> dict:
+def mod_copies(folder: Path, skip=None) -> dict:
     """{a unit's name: (the models it has copies of, as its .copy.toml's `of` lists them ([] if it names none: the
     build then copies the one its GfxDescriptor draws), its paint ({the copied models' texture in ZZ_Win.dat: (colour
     PNG, alpha PNG)}, laid out as files/replace: rusemod.unitlook.paint_in))} from a mod's
     files/models/<the unit's name>.copy.toml and files/models/<the unit's name>/. UnitModelError for a .copy.toml that
-    can't be read."""
+    can't be read. `skip` (rusemod.holding.skip_of): a .copy.toml it names is left out, never read (a deleted unit's,
+    another program had it open)."""
     import tomllib
     root = Path(folder) / MODELS
     if not root.is_dir():
         return {}
     out: dict = {}
     for f in sorted(root.glob("*" + COPY)):
+        if skip and skip(f):
+            continue
         unit = f.name[:-len(COPY)]
         try:
             of = tomllib.loads(f.read_text(encoding="utf-8")).get("of") or []

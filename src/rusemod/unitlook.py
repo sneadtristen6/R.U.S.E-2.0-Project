@@ -338,12 +338,13 @@ def own_card_name(file_name: str, unit: str) -> str:
     return f"{file_name[:cut + 1]}{unit.lower()}.png"
 
 
-def mod_cards(folder: Path) -> dict:
-    """{a new unit's name: its card picture} from a mod's files/cards/<name>.png."""
+def mod_cards(folder: Path, skip=None) -> dict:
+    """{a new unit's name: its card picture} from a mod's files/cards/<name>.png; `skip` (rusemod.holding.skip_of): a
+    picture it names is left out (a deleted unit's, another program had it open)."""
     root = Path(folder) / CARDS
     if not root.is_dir():
         return {}
-    return {f.stem: f for f in sorted(root.glob("*.png"))}
+    return {f.stem: f for f in sorted(root.glob("*.png")) if not (skip and skip(f))}
 
 
 def own_cards(zz, cards: dict, earlier: dict | None = None, say=print, loose: dict | None = None) -> dict:
