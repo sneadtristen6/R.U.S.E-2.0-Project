@@ -3621,8 +3621,9 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                 except (TypeError, ValueError):
                     raise StudioError(f"{field}: {value!r} isn't a number") from None
                 if not math.isfinite(value) or (field != "rotation" and value <= 0):
-                    raise StudioError(f"{field} must be a number more than 0" if field != "rotation"
-                                      else "the turn must be a number")
+                    if field != "rotation":   # (each refusal said as it is here, so errors.toml lists it)
+                        raise StudioError(f"{field} must be a number more than 0")
+                    raise StudioError("the turn must be a number")
             places[n] = replace(p, **{field: value})
             self._write_places(pack, places)
         return self.map_scenarios(pack)
@@ -5747,7 +5748,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         kind = "map" if where == "map" else "mod"
         folder = self._mod_dir(kind)
         if folder is None:
-            raise StudioError("Pick or make a map first." if kind == "map" else "Pick or make a mod first.")
+            raise StudioError("Pick or make a map first.") if kind == "map" else StudioError("Pick or make a mod first.")
         return folder
 
     def fix_problem(self, fix: dict) -> dict:
@@ -6085,7 +6086,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         if what in self.KINDS:
             folder = self._mod_dir(what)
             if folder is None:
-                raise StudioError("Pick or make a map first." if what == "map" else "Pick or make a mod first.")
+                raise StudioError("Pick or make a map first.") if what == "map" else StudioError("Pick or make a mod first.")
         elif what in self.WHERE:
             folder = Path(self.where_files()[what])
             folder.mkdir(parents=True, exist_ok=True)
@@ -10509,7 +10510,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         description, the game build it was last exported on and its fingerprint."""
         folder = self._mod_dir(self._kind(kind))
         if folder is None:
-            raise StudioError("Pick or make a map first." if kind == "map" else "Pick or make a mod first.")
+            raise StudioError("Pick or make a map first.") if kind == "map" else StudioError("Pick or make a mod first.")
         try:
             return package.info_of(folder)
         except package.PackageError as exc:
@@ -10527,7 +10528,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         kind = self._kind(kind)
         folder = self._mod_dir(kind)
         if folder is None:
-            raise StudioError("Pick or make a map first." if kind == "map" else "Pick or make a mod first.")
+            raise StudioError("Pick or make a map first.") if kind == "map" else StudioError("Pick or make a mod first.")
         version = (version or "").strip()
         if not re.fullmatch(r"\d+\.\d+\.\d+", version):
             raise StudioError("The version should be three numbers, like 1.0.0.")

@@ -500,6 +500,19 @@ jpn = "向きは数値にしてください"
 sc = "朝向必须是数字"
 fa = "چرخش باید یک عدد باشد"
 
+[edaa0af013b]
+us = "{0} must be a number more than 0"
+fr = "{0} doit être un nombre supérieur à 0"
+ger = "{0} muss eine Zahl größer als 0 sein"
+ita = "{0} deve essere un numero maggiore di 0"
+spa = "{0} debe ser un número mayor que 0"
+pol = "{0} musi być liczbą większą od 0"
+ru = "{0} должно быть числом больше 0"
+cz = "{0} musí být číslo větší než 0"
+jpn = "{0} は 0 より大きい数値にしてください"
+sc = "{0} 必须是大于 0 的数字"
+fa = "{0} باید عددی بزرگ‌تر از 0 باشد"
+
 [e6dfda9ec64]
 us = "{0} has no starting point {1}"
 fr = "{0} n'a pas de point de départ {1}"
@@ -993,6 +1006,19 @@ cz = "Nejprve vyberte nebo vytvořte mod."
 jpn = "先にModを選ぶか作ってください。"
 sc = "请先选择或新建一个模组。"
 fa = "اول یک ماد انتخاب کنید یا بسازید."
+
+[e0de6d37587]
+us = "Pick or make a map first."
+fr = "Choisissez ou créez d'abord une carte."
+ger = "Erst eine Karte wählen oder anlegen."
+ita = "Scegli o crea prima una mappa."
+spa = "Elige o crea primero un mapa."
+pol = "Najpierw wybierz lub utwórz mapę."
+ru = "Сначала выберите или создайте карту."
+cz = "Nejprve vyberte nebo vytvořte mapu."
+jpn = "先にマップを選ぶか作ってください。"
+sc = "请先选择或新建一张地图。"
+fa = "اول یک نقشه انتخاب کنید یا بسازید."
 
 [e548891d38d]
 us = "{0} isn't one of this mod's map files"
