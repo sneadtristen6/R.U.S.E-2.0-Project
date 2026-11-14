@@ -109,7 +109,8 @@ escouade commence par sa carte d'escouade et une ligne pour chacun de ses soldat
 Bon à savoir :
 - Les quatre fusiliers de l'escouade de fusiliers US sont une seule figure dans Blender : le jeu leur donne un seul modèle, donc ce que vous lui faites, les quatre le portent. Son soldat au bazooka est une figure à lui.
 - Vos fichiers Blender restent dans le dossier de votre mod : `Documents\RUSE 2.0\Mods\<votre mod>\blender\<nom de l'unité>\squad\`. Ils ne sont pas emballés dans votre mod quand vous le partagez. **Plus d'options**, sous les soldats, dit où ils sont, et son **Afficher dans le dossier** ouvre le dossier où ils se trouvent.
-- Vous avez fermé Blender avant de ramener vos changements ? Le petit **Ramener mes changements** sous le grand bouton prend ce que vous avez envoyé en dernier.
+- Vous avez fermé Blender avant de ramener vos changements ? **Ramener mes changements** prend quand même ce que vous avez envoyé en dernier.
+- Chaque coche de **Ce qui va dans Blender**, et ce que **Ramener mes changements** peut vous dire : [[Ouvrir dans Blender|Ouvrir-dans-Blender]].
 - Si des points de votre modèle n'ont pas d'os (les poids automatiques de Blender en oublient quelques-uns), la page dit combien : ils ne bougent qu'avec les hanches du soldat. Peignez-les sur un os dans **Weight Paint**, puis renvoyez.
 - Une escouade avec un **Uniforme personnalisé** : votre modèle prend la place de l'uniforme (sa peinture reste dans votre mod) ; quand chaque soldat est revenu à l'apparence du jeu (**Revenir à l'apparence du jeu** sur sa ligne), l'uniforme revient.
 - Vous avez déjà un .glb fait sur les os du soldat du jeu ? **Importer un modèle…** sur la ligne de ce soldat le prend tel quel.
@@ -137,12 +138,12 @@ avec lui. Sur la page de l'unité, **Ses animations** montre ce que l'unité jou
   camion. Choisissez **Dans son camion** pour garder le camion.
 
 **Une copie garde ses animations :** une unité copiée d'une unité qui a ses propres animations joue les mêmes. Pour en
-changer une rien que pour elle, cliquez sur **Changer dans RUSE Decoy** sur sa ligne **Sons et animations**, puis **Cette unité seulement**.
+changer une rien que pour elle, cliquez sur **Changer dans RUSE Decoy** sur sa ligne **Sons et animations**, puis **Cette unité seulement**. Chaque façon de changer une animation, et de retrouver celle du jeu : [[Animations des unités|Animations-des-unités]].
 
 L'Escouade à cheval générique faite ainsi dans le Studio a été jouée en jeu (novembre 2026).
 ## Un modèle avec ses propres os et ses animations
 
-Un cheval, un cheval avec son cavalier, n'importe quelle créature : un modèle sur ses propres os va sur une escouade avec ses animations.
+Un cheval, un cheval avec son cavalier, n'importe quelle créature : un modèle sur ses propres os va sur une escouade avec ses animations. Ce que sont les os, ses deux moitiés et ce que dit **Est-ce que cela marchera en jeu ?** : [[Modèles et os|Modèles-et-os]].
 
 1. **Faites-le dans Blender** : votre modèle sur une armature avec vos propres os (nommés comme vous voulez), et une action pour chaque animation. Nommez les actions d'après ce qu'elles montrent : au moins **stand** (ou **idle**), **walk** et **run** ; **death**, **fire**, **reload**, **hit**, **crouch**, **aim**, **look**, **flee** et **grenade** sont connues aussi.
 2. **Exportez-le** : **File > Export > glTF 2.0**, format **glTF Binary (.glb)**, avec **Animation** cochée.
@@ -164,7 +165,7 @@ Les animations se changent dans RUSE Decoy. Sur la page de l'unité, dans la lig
 1. **Choisissez-en une.** En bas de Blender, l'Action Editor les liste : choisissez celle à changer. **Espace** la joue.
 2. **Posez les os.** Cliquez sur un os, appuyez sur **Ctrl+Tab** pour le Pose Mode, **R** pour le tourner (**G** le déplace), puis **I** pour garder la pose à cette image. Faites-le à chaque image que vous changez : Blender passe tout seul d'une pose gardée à la suivante.
 3. **Envoyez-la.** Cliquez sur **Envoyer au R.U.S.E. Studio** : toutes les animations partent, changées ou non.
-4. **Ramenez-la.** Dans RUSE Decoy, cliquez sur **Ramener mes changements**. Il dit lesquelles sont revenues changées : elles sont désormais propres à cette unité, et RUSE Decoy les montre sous **Cette unité seulement**. Toutes les autres unités, et chaque animation que vous n'avez pas touchée, restent celles du jeu.
+4. **Ramenez-la.** Dans RUSE Decoy, cliquez sur **Ramener mes changements**. Il dit lesquelles sont revenues changées : elles sont désormais propres à cette unité. Toutes les autres unités, et chaque animation que vous n'avez pas touchée, restent celles du jeu. Ce que veut dire chacun de ses messages : [[Animations des unités|Animations-des-unités]].
 
 Bon à savoir :
 - Le jeu joue les animations à 30 images par seconde, et Blender les ouvre ainsi. Une animation s'ouvre avec la durée que lui donne le jeu ; allongez-la ou raccourcissez-la dans Blender et elle revient ainsi.

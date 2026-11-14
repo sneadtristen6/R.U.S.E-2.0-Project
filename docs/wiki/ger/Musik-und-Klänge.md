@@ -54,6 +54,9 @@ einmal Internet):
   ganze Animation hindurch (was daran hängt, wächst mit).
 - **Zurück zum Spiel-Original** nimmt jede Änderung daran heraus.
 
+Welche Animation eine Einheit für jede ihrer Handlungen spielt, eine Änderung nur für eine Einheit, eine Kopie für die
+Einheiten, die du wählst, und die Animationen einer neuen Einheit in Blender: [[Animationen der Einheiten|Animationen-der-Einheiten]].
+
 ## Motion Capture
 
 Leg die Bewegung eines echten Menschen auf eine Animation, unter **Motion Capture**: wähl eine Bewegung aus der
@@ -72,8 +75,9 @@ anderen Motion-Capture-Programm).
 
 ## Die Geräusche und Animationen einer Einheit
 
-Die Seite einer Einheit hat einen Abschnitt **Geräusche und Animation**: ihre eigenen Sprachzeilen und Motorgeräusche,
-und ihre Animationen. **Geräusche in RUSE Decoy ändern** öffnet RUSE Decoy mit den eigenen dieser Einheit. Eine Einheit
+Die Seite einer Einheit hat unter **Aussehen und Bewegung** eine Zeile **Geräusche und Animation**: ihre eigenen
+Sprachzeilen und Motorgeräusche, und ihre Animationen. **In RUSE Decoy ändern** öffnet RUSE Decoy mit den eigenen dieser
+Einheit (die Seite eines Gebäudes hat ihr eigenes Feld **Geräusche und Animation**). Eine Einheit
 spricht die Zeilen ihrer Nation und Art, also hört man eine dort geänderte Zeile von jeder Einheit, die sie teilt. Ihre
 Schüsse und Treffer stehen unter den Arten Waffen und Einschläge.
 

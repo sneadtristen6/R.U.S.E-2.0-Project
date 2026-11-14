@@ -50,6 +50,9 @@ która ją odtwarza (przeciągnij, by obrócić, kółko przybliża; widok 3D ra
   animację (to, co jest do niej przyczepione, rośnie razem z nią).
 - **Wróć do wersji z gry** usuwa wszystkie jej zmiany.
 
+Której animacji jednostka używa do każdej czynności, zmiana tylko dla jednej jednostki, kopia dla jednostek, które
+wybierzesz, i animacje nowej jednostki w Blenderze: [[Animacje jednostek|Animacje-jednostek]].
+
 ## Motion capture
 
 Nałóż ruch prawdziwej osoby na animację, w **Motion capture**: wybierz ruch z biblioteki ruchów (3205 darmowych ruchów
@@ -66,8 +69,9 @@ z bazy motion capture CMU i 100STYLE, każdy pobierany, gdy go wybierzesz) albo 
 
 ## Dźwięki i animacje jednostki
 
-Strona jednostki ma sekcję **Dźwięki i animacje**: jej własne kwestie głosowe i dźwięki silnika oraz jej animacje.
-**Zmień jej dźwięki w RUSE Decoy** otwiera RUSE Decoy na dźwiękach tej jednostki. Jednostka mówi kwestie swojej nacji
+Strona jednostki ma wiersz **Dźwięki i animacje** w **Wygląd i ruch**: jej własne kwestie głosowe i dźwięki silnika
+oraz jej animacje. **Zmień w RUSE Decoy** otwiera RUSE Decoy na dźwiękach tej jednostki (strona budynku ma własne pole
+**Dźwięki i animacje**). Jednostka mówi kwestie swojej nacji
 i swojego rodzaju, więc kwestię zmienioną tam słychać u każdej jednostki, która ją dzieli. Jej działa i trafienia są
 w rodzajach broni i trafień.
 

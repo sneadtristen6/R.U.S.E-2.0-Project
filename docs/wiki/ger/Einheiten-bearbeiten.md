@@ -84,7 +84,7 @@ Einheiten, die es spielen.
   die Seite **Blender holen (kostenlos)** und **Blender auswählen…** an, um ihm zu zeigen, wo `blender.exe` liegt). Die
   Einheit öffnet sich mit ihren Bildern, bereit zum Bemalen des Modells. Male, dann klicke auf **Meine Änderungen zurückholen**: deine
   Farbe kommt in deinen Mod. Im Spiel gesehen, aus der Nähe und von weitem.
-  Eine Einheit deines Mods öffnet sich ganz, ihr Modell und ihre Bemalung unter **Was nach Blender geht** angekreuzt: Nimm das Kreuz beim Modell weg, um nur zu bemalen. Ihr ganzes Modell durch Blender ist im Spiel noch nicht ausprobiert.
+  Eine Einheit deines Mods öffnet sich ganz, ihr Modell und ihre Bemalung unter **Was nach Blender geht** angekreuzt: Nimm das Kreuz beim Modell weg, um nur zu bemalen. Ihr ganzes Modell durch Blender ist im Spiel noch nicht ausprobiert. Schritt für Schritt: [[In Blender öffnen|In-Blender-öffnen]].
 - **Ihre Karte im Baumenü:** dreh und zoome das 3D-Modell, bis es im gestrichelten Rahmen richtig aussieht, dann
   **Diese Ansicht als Karte nehmen**. **Karte des Spiels** nimmt sie zurück. Im Spiel gesehen. Bei einer neuen Einheit
   ist die Karte ihre eigene: die Einheit, die sie kopiert, behält ihr Bild.
@@ -101,7 +101,7 @@ Einheiten, die es spielen.
 - **Ein eigenes Modell (neue Einheiten):** **Modell importieren…** holt ein 3D-Modell aus Blender oder einem anderen
   3D-Programm. Siehe [[Ein Modell importieren|Ein-Modell-importieren]]. Eine Einheit des Spiels behält ihr Modell: ihre Seite
   hat **Neue Einheit aus dieser…**, um die neue Einheit zu erstellen, die das Modell bekommt.
-- **Wo ihr Modell liegt:** **Mehr** in der Zeile **Modell** beginnt damit, wo dein Mod das eigene Modell der Einheit auf deinem PC aufbewahrt (oder aufbewahren wird, sobald sie eines hat), mit **Im Ordner zeigen**, um diesen Ordner zu öffnen. **In Blender ändern** eines Trupps sagt, wo deine Blender-Dateien liegen, mit einem eigenen **Im Ordner zeigen**.
+- **Wo ihr Modell liegt:** **Mehr** in der Zeile **Modell** beginnt damit, wo dein Mod das eigene Modell der Einheit auf deinem PC aufbewahrt (oder aufbewahren wird, sobald sie eines hat), mit **Im Ordner zeigen**, um diesen Ordner zu öffnen. **Weitere Optionen** eines Trupps, unter seinen Soldaten, sagt, wo deine Blender-Dateien liegen, mit einem eigenen **Im Ordner zeigen**.
 - **Eine neue Einheit, von Anfang bis Ende:** **Neue Einheit (Modell importieren)** oben im Reiter Einheiten, wähle
   die Einheit, von der du ausgehst (ein Panzer für einen Panzer, ein Trupp für Soldaten oder ein Pferd mit Reiter),
   gib ihr einen Namen und klick auf **Erstellen**. Dann geh **Aussehen und Bewegung** von oben nach unten durch: ihr

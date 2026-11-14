@@ -13,7 +13,24 @@ Každý hráč potřebuje **stejné mody ve stejném pořadí**, jinak si hry ne
 > [!TIP]
 > Text má stejný formát, jaký kopíruje a čte RUSE-Mod-Manager, takže se mohou přidat i přátelé, kteří ho používají.
 
-**Připravujeme:** kódy pro připojení, krátký kód, který před začátkem hry ověří, že všichni mají přesně stejné mody.
+## Ověř, že máte stejnou hru: kódy hry
+
+**Kód hry** je krátký kód vytvořený z tvé hry s mody: stejný kód znamená stejnou hru (stejnou verzi hry, stejné mody a
+stejné verze modů). Porovnejte kódy před zápasem a budete vědět, že se nerozejde.
+
+1. Stiskni jednou **Hrát** se sadou modů: kód přijde s upravenou kopií.
+2. Klikni na **Kód hry** dole v Launcheru. Okno **RUSE Guard: váš kód hry** ukáže ten tvůj: **Kopírovat** a pošli ho
+   těm, se kterými hraješ.
+3. Vlož kód přítele do **Vložte kód přítele** a klikni na **Porovnat**: „Stejná hra: můžete hrát spolu.“, nebo „Není
+   to stejná hra.“ s tím, co se liší.
+
+Dobré vědět:
+
+- Kód se mění, když se mění tvoje mody: po změně ho pošli znovu.
+- „Kód není: tyto módy nemění hratelnost, hrát s vámi může kdokoli.“
+- Sada s cheatovým modem nebo testovacím nástrojem hraje multiplayer a kooperaci jen s hráči, kteří mají stejný kód, a
+  každý jiný zápas po pár sekundách opustí.
+- **Zkontrolovat každý soubor kopie** ověří, že tvoje upravená kopie je přesně taková, jak byla sestavena.
 
 ---
 

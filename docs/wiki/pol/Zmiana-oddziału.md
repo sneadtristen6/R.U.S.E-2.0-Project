@@ -59,13 +59,14 @@ niosą jego ostatni ludzie. Te przyciski mają tylko oddziały, które tworzysz:
 
 - **Więcej opcji**, pod żołnierzami, mówi, gdzie twój mod trzyma model każdego żołnierza i twoje pliki Blendera;
   **Pokaż w folderze** otwiera folder.
-- Zamknąłeś Blendera, zanim przeniosłeś zmiany? Mały przycisk **Przenieś moje zmiany** pod dużym bierze to, co wysłałeś
-  ostatnio.
+- Zamknąłeś Blendera, zanim przeniosłeś zmiany? **Przenieś moje zmiany** i tak bierze to, co wysłałeś ostatnio. Każde
+  zaznaczenie i każdy komunikat dużego przycisku: [[Otwórz w Blenderze|Otwórz-w-Blenderze]].
 - Mundur oddziału jest w **Wygląd i ruch**, obok wartości: **Własny mundur** daje oddziałowi własny mundur, który
   **Otwórz w Blenderze** na karcie maluje wszystkim żołnierzom naraz, gdy w **Co trafia do Blendera** zaznaczone jest tylko **Jego malowanie**. Oddział nosi albo twoje modele, albo mundur.
 - Jeszcze niewypróbowane w grze: oddział z 8 albo z 2 żołnierzami.
 
-Więcej o modelach, kościach i animacjach: [[Importowanie modelu|Importowanie-modelu]].
+Więcej o modelach, kościach i animacjach: [[Importowanie modelu|Importowanie-modelu]], [[Modele i kości|Modele-i-kości]]
+i [[Animacje jednostek|Animacje-jednostek]].
 
 **Dalej:** [[Eksport i udostępnianie|Eksport-i-udostępnianie]]
 

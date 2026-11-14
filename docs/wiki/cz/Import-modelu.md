@@ -103,7 +103,8 @@ družstva a řádkem pro každého jeho vojáka; [[Změna družstva|Změna-druž
 Dobré vědět:
 - Čtyři střelci amerického střeleckého družstva jsou v Blenderu jedna figura: hra jim dává jeden model, takže co s ním uděláš, nosí všichni čtyři. Muž s bazukou je samostatná figura.
 - Tvoje soubory z Blenderu zůstávají ve složce modu: `Documents\RUSE 2.0\Mods\<tvůj mod>\blender\<název jednotky>\squad\`. Při sdílení se do modu nebalí. **Další možnosti**, pod vojáky, řekne, kde jsou, a jeho **Ukázat ve složce** otevře složku, ve které leží.
-- Zavřel jsi Blender, než jsi přenesl změny? Malé tlačítko **Přenést moje změny** pod velkým vezme, co jsi poslal naposledy.
+- Zavřel jsi Blender, než jsi přenesl změny? **Přenést moje změny** i tak vezme, co jsi poslal naposledy.
+- Každé zaškrtnutí v **Co jde do Blenderu** a co ti může říct **Přenést moje změny**: [[Otevřít v Blenderu|Otevřít-v-Blenderu]].
 - Pokud některé body tvého modelu nemají kost (automatické váhy Blenderu pár vynechají), stránka řekne kolik: hýbou se jen s boky vojáka. Namaluj je na kost v Blenderu ve **Weight Paint** a pošli znovu.
 - Družstvo s **Vlastní uniforma**: tvůj model zaujme místo uniformy (její barvy zůstanou v modu); až bude každý voják zpět ve vzhledu ze hry (**Zpět na vzhled ze hry** na jeho řádku), uniforma se vrátí.
 - Už máš .glb udělaný na kostech vojáka ze hry? **Importovat model…** na řádku toho vojáka ho vezme, jak je.
@@ -131,12 +132,12 @@ ukazují **Její animace**, co jednotka hraje pro každou činnost ve hře:
   chcete-li auto ponechat.
 
 **Kopie si nechává animace:** jednotka zkopírovaná z jednotky s vlastními animacemi hraje tytéž. Chcete-li některou
-změnit jen pro ni, klikněte na **Změnit v RUSE Decoy** na jejím řádku **Zvuky a animace** a pak na **Jen tato jednotka**.
+změnit jen pro ni, klikněte na **Změnit v RUSE Decoy** na jejím řádku **Zvuky a animace** a pak na **Jen tato jednotka**. Každý způsob, jak animaci změnit a vrátit se k té ze hry: [[Animace jednotek|Animace-jednotek]].
 
 Univerzální jízdní družstvo udělané takto ve Studiu ve hře fungovalo (listopad 2026).
 ## Model s vlastními kostmi a animacemi
 
-Kůň, kůň s jezdcem, jakýkoli tvor: model na vlastních kostech jde na družstvo i se svými animacemi.
+Kůň, kůň s jezdcem, jakýkoli tvor: model na vlastních kostech jde na družstvo i se svými animacemi. Co jsou kosti, jeho dvě poloviny a co říká **Bude to ve hře fungovat?**: [[Modely a kosti|Modely-a-kosti]].
 
 1. **Udělej ho v Blenderu**: tvůj model na armatuře s vlastními kostmi (pojmenovanými, jak chceš) a akci pro každou animaci. Pojmenuj akce podle toho, co ukazují: aspoň **stand** (nebo **idle**), **walk** a **run**; známé jsou i **death**, **fire**, **reload**, **hit**, **crouch**, **aim**, **look**, **flee** a **grenade**.
 2. **Exportuj ho**: **File > Export > glTF 2.0**, formát **glTF Binary (.glb)**, se zaškrtnutým **Animation**.
@@ -158,7 +159,7 @@ Animace se mění v RUSE Decoy. Na stránce jednotky klikni v řádku **Zvuky a 
 1. **Vyber jednu.** Dole v Blenderu je vypisuje Action Editor: vyber tu, kterou chceš změnit. **Mezerník** ji přehraje.
 2. **Napózuj kosti.** Klikni na kost, stiskni **Ctrl+Tab** pro Pose Mode, **R** ji otočí (**G** posune), pak **I** uloží pózu v tomto snímku. Udělej to v každém snímku, který měníš: Blender přejde z jedné uložené pózy do další sám.
 3. **Pošli ji.** Klikni na **Poslat do R.U.S.E. Studia**: odejdou všechny animace, změněné i nezměněné.
-4. **Vrať ji.** V RUSE Decoy klikni na **Přenést moje změny**. Řekne, které se vrátily změněné: ty jsou teď vlastní této jednotky a RUSE Decoy je ukáže pod **Jen tato jednotka**. Každá jiná jednotka a každá animace, na kterou jsi nesáhl, zůstávají herní.
+4. **Vrať ji.** V RUSE Decoy klikni na **Přenést moje změny**. Řekne, které se vrátily změněné: ty jsou teď vlastní této jednotky. Každá jiná jednotka a každá animace, na kterou jsi nesáhl, zůstávají herní. Co znamená každá jeho zpráva: [[Animace jednotek|Animace-jednotek]].
 
 Dobré vědět:
 - Hra přehrává animace rychlostí 30 snímků za sekundu a Blender je tak otevře. Animace se otevře tak dlouhá, jak ji hra přehrává; prodloužíš-li ji nebo zkrátíš v Blenderu, vrátí se tak.

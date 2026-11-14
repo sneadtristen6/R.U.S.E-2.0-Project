@@ -48,6 +48,9 @@ samo spustí rychlou testovací kopii, abyste mohli svou práci průběžně kon
 | Změnit jednotku, udělat novou, vyměnit jí munici | [[Úprava jednotek|Úprava-jednotek]] |
 | Dát nové jednotce nebo budově 3D model z Blenderu nebo jiného 3D nástroje, nebo ho umístit na mapu | [[Import modelu|Import-modelu]] |
 | Změnit vojáky družstva: celé družstvo najednou v Blenderu, nebo jednoho vojáka ze souboru modelu | [[Změna družstva|Změna-družstva]] |
+| Vzít jednotku do Blenderu a přenést moje změny: **Otevřít v Blenderu**, **Co jde do Blenderu**, **Přenést moje změny** | [[Otevřít v Blenderu|Otevřít-v-Blenderu]] |
+| Pochopit kosti: co jsou, dvě poloviny modelu, váhy v Blenderu, co říká **Bude to ve hře fungovat?** | [[Modely a kosti|Modely-a-kosti]] |
+| Změnit, jak se jednotky hýbou: jakou animaci hraje každá činnost, pro jednu jednotku nebo pro všechny, kopie, v Blenderu | [[Animace jednotek|Animace-jednotek]] |
 | Přidat jednotky od 1. světové války po dnešek (1. světová válka, 2. světová válka+, Studená válka, Současnost), v jejich skutečné velikosti a za výzkumem | [[Jednotky z jiných období|Jednotky-z-jiných-období]] |
 | Dát jednomu z národů hry nový název a vlajku (Čína místo Itálie) | [[Změna jednoho národa v jiný|Změna-jednoho-národa-v-jiný]] |
 | Změnit, co která budova staví a v jakém pořadí, výzkum, přidat vlastní budovy s vlastním vzhledem | [[Budovy a nabídky stavby|Budovy-a-nabídky-stavby]] |

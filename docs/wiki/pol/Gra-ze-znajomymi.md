@@ -13,7 +13,24 @@ Każdy gracz potrzebuje **tych samych modów w tej samej kolejności**, inaczej 
 > [!TIP]
 > Tekst ma ten sam format, który kopiuje i czyta RUSE-Mod-Manager, więc znajomi, którzy go używają, też mogą dołączyć.
 
-**Wkrótce:** kody dołączenia, krótki kod, który przed startem gry sprawdza, czy wszyscy mają dokładnie te same mody.
+## Sprawdź, czy macie tę samą grę: kody gry
+
+**Kod gry** to krótki kod zrobiony z twojej zmodowanej gry: ten sam kod znaczy tę samą grę (tę samą wersję gry, te
+same mody i te same wersje modów). Porównajcie kody przed meczem, a będziecie wiedzieć, że się nie rozjedzie.
+
+1. Naciśnij raz **Graj** z zestawem modów: kod pojawia się ze zmodowaną kopią.
+2. Kliknij **Kod gry** na dole Launchera. Okno **RUSE Guard: twój kod gry** pokazuje twój: **Kopiuj** i wyślij go tym,
+   z którymi grasz.
+3. Wklej kod znajomego w **Wklej kod znajomego** i kliknij **Porównaj**: „Ta sama gra: możecie grać razem.” albo „To
+   nie ta sama gra.” z tym, co się różni.
+
+Dobrze wiedzieć:
+
+- Kod zmienia się, gdy zmieniają się twoje mody: wyślij go ponownie po zmianie.
+- „Brak kodu: te mody nie zmieniają rozgrywki, każdy może z tobą zagrać.”
+- Zestaw z modem z kodami albo narzędziem testowym gra w trybie wieloosobowym i kooperacji tylko z graczami, którzy
+  mają ten sam kod, i opuszcza każdy inny mecz po kilku sekundach.
+- **Sprawdź każdy plik kopii** sprawdza, czy twoja zmodowana kopia jest dokładnie taka, jaka została zbudowana.
 
 ---
 

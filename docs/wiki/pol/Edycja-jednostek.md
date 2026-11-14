@@ -82,7 +82,7 @@ jej używają, dźwięk dla wszystkich jednostek, które go używają.
   proponuje **Pobierz Blendera (za darmo)** i **Wybierz Blendera…**, by wskazać, gdzie jest `blender.exe`). Jednostka
   otwiera się ze swoimi obrazami, gotowa do malowania na modelu. Maluj, potem kliknij **Przenieś moje zmiany**: twoje
   malowanie trafia do twojego moda. Widziane w grze, z bliska i z daleka.
-  Jednostka twojego moda otwiera się cała, jej model i malowanie zaznaczone w **Co trafia do Blendera**: odznacz model, żeby tylko malować. Cały jej model przez Blendera nie był jeszcze sprawdzany w grze.
+  Jednostka twojego moda otwiera się cała, jej model i malowanie zaznaczone w **Co trafia do Blendera**: odznacz model, żeby tylko malować. Cały jej model przez Blendera nie był jeszcze sprawdzany w grze. Krok po kroku: [[Otwórz w Blenderze|Otwórz-w-Blenderze]].
 - **Jej karta w menu budowy:** obracaj i przybliżaj model 3D, aż będzie dobrze wyglądał w przerywanej ramce, potem
   kliknij **Użyj tego widoku jako karty**. **Karta z gry** przywraca poprzednią. Widziane w grze. Nowa jednostka ma
   własną kartę: jednostka, którą kopiuje, zachowuje swój obraz.
@@ -97,7 +97,7 @@ jej używają, dźwięk dla wszystkich jednostek, które go używają.
 - **Własny model (nowe jednostki):** **Importuj model…** wczytuje model 3D z Blendera lub dowolnego narzędzia 3D. Zobacz
   [[Importowanie modelu|Importowanie-modelu]]. Jednostka z gry zachowuje swój model: jej strona ma **Nowa jednostka z tej…**,
   by zrobić nową jednostkę, na którą trafi model.
-- **Gdzie jest trzymany jej model:** **Więcej** w wierszu **Model** zaczyna się od tego, gdzie twój mod trzyma własny model jednostki na twoim komputerze (albo będzie go trzymał, gdy już go dostanie), z **Pokaż w folderze**, by otworzyć ten folder. **Zmień w Blenderze** oddziału mówi, gdzie są trzymane twoje pliki Blendera, z własnym **Pokaż w folderze**.
+- **Gdzie jest trzymany jej model:** **Więcej** w wierszu **Model** zaczyna się od tego, gdzie twój mod trzyma własny model jednostki na twoim komputerze (albo będzie go trzymał, gdy już go dostanie), z **Pokaż w folderze**, by otworzyć ten folder. **Więcej opcji** oddziału, pod jego żołnierzami, mówi, gdzie są trzymane twoje pliki Blendera, z własnym **Pokaż w folderze**.
 - **Nowa jednostka od początku do końca:** **Nowa jednostka (import modelu)** u góry zakładki Jednostki, wybierz
   jednostkę wyjściową (czołg dla czołgu, oddział dla żołnierzy albo konia z jeźdźcem), nazwij ją i kliknij **Utwórz**.
   Potem przejdź w dół przez **Wygląd i ruch**: jej model, jej żołnierzy, jej animacje, jej dźwięki, jej ciężarówkę.
