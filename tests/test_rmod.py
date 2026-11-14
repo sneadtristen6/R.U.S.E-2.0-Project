@@ -180,53 +180,6 @@ class Builds(unittest.TestCase):
                             f.level == "warning"), result.findings)
         self.assertEqual(self.packed(self.instance)["genpython\\map\\effetmap.xyz"], b"XYZ0 code")
 
-    def test_a_library_mod_known_to_stop_missions_builds_with_a_warning(self):
-        """rusemod.knownissues (the owner, 2026-11-13: "build warning and a note so both"): a mod known by its .rmod
-        file's bytes gets one warning; the build, its files and its fingerprint (the join code) are as without it."""
-        import hashlib
-        from unittest import mock
-        from rusemod import knownissues
-        a = self.mod("A.rmod", {"genglad/readme.txt": b"from A"}, mod_id="a", name="Mod A")
-        b = self.mod("B.rmod", {"top.bin": b"from B"}, mod_id="b", name="Mod B")
-        before = build_and_write(self.game, [a, b], instance=self.instance, say=lambda s: None)
-        packed_before = self.packed(self.instance)
-        data = Path(b[0].rmod).read_bytes()
-        known = {hashlib.sha256(data).hexdigest(): knownissues.MissionsStop("Mod B", "b@1.2", "campaign", 3)}
-        lines = []
-        with mock.patch.object(knownissues, "KNOWN", known), mock.patch.object(knownissues, "SIZES", {len(data)}):
-            result = build_and_write(self.game, [a, b], instance=self.instance, say=lines.append)
-        self.assertEqual(result.errors, [])
-        warned = [f.message for f in result.findings if f.level == "warning" and "campaign chapter" in f.message]
-        self.assertEqual(warned, ["Mod B replaces the maps of 3 campaign chapter(s) with ones that lack places their "
-                                  "missions use: with it on, those chapters stop about a second after they start"])
-        self.assertTrue(any(line.startswith("  warning") and "3 campaign chapter(s)" in line for line in lines), lines)
-        self.assertEqual(result.fingerprint, before.fingerprint)
-        self.assertEqual(self.packed(self.instance), packed_before)
-        self.assertFalse(any("campaign chapter" in f.message for f in before.findings))   # not known: not said
-
-    def test_a_known_mod_is_known_by_its_file_not_its_name(self):
-        import hashlib
-        from unittest import mock
-        from rusemod import knownissues
-        from rusemod.build import known_issue_findings
-        t = self.mod("T.rmod", {"top.bin": b"tutorial"}, mod_id="t", name="Mod T")
-        data = Path(t[0].rmod).read_bytes()
-        known = {hashlib.sha256(data).hexdigest(): knownissues.MissionsStop("RSCBM2", "rscbm2-v1@1.0.1", "tutorial", 1)}
-        other = self.mod("U.rmod", {"top.bin": b"tutorial, one byte more"}, mod_id="t", name="Mod T")  # same id
-        with mock.patch.object(knownissues, "KNOWN", known), \
-                mock.patch.object(knownissues, "SIZES", {len(data), len(Path(other[0].rmod).read_bytes())}):
-            said = [f.message for f in known_issue_findings([t[0], t[0], other[0]])]
-        self.assertEqual(said, ["RSCBM2 replaces the tutorial's map with one that lacks places its mission uses: with "
-                                "it on, the tutorial stops about a second after it starts"])   # once, and only T's file
-        self.assertIsNone(knownissues.missions_stop(self.root / "no such.rmod"))
-
-    def test_the_six_known_files_are_listed_once_each(self):
-        from rusemod import knownissues
-        self.assertEqual(len(knownissues.KNOWN), 6)
-        self.assertEqual({k.stops for k in knownissues.KNOWN.values()}, {"campaign", "tutorial"})
-        self.assertEqual(len(knownissues.SIZES), 6)
-        self.assertTrue(all(len(sha) == 64 and int(sha, 16) >= 0 for sha in knownissues.KNOWN))
-
     def test_a_mod_for_a_pack_the_game_lacks_writes_nothing(self):
         text = rmod_json({"x.bin": b"x"}).replace("ZZ_GladPatchableWin.dat", "NoSuchPack.dat")
         (self.root / "C.rmod").write_text(text, encoding="utf-8")

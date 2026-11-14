@@ -533,6 +533,12 @@ where = "rusemod.build:unit_models"
 kind = "mistake"
 us = "{0}{1} is in {2}'s army (Nationalite {3}), but its model {4}{5} is in the mesh pack of {6}'s units only, and the unit data has no cluster maps that could load {7}'s models in every match: the game loads a nation's unit models only in matches where a player has that nation, so in other matches this unit has no model, or crashes the game. Copy one of {8}'s units instead, or leave it in {9}'s army"
 
+[cc80568d68f]
+check = "nation-models"
+where = "rusemod.build:unit_models"
+kind = "mistake"
+us = "{0}{1}, in {2}'s army, has a model only {3}'s units have, and the unit data has no cluster maps that could load {4}'s models in every match: in matches where no player has {5}, this unit would have no model, or crash the game"
+
 [c455b473de2]
 check = "spawn-models"
 where = "rusemod.build:spawn_models"
