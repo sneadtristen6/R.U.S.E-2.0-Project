@@ -9,7 +9,9 @@ Each test here FAILS on 70de183f by design, for the case it names, until that ca
 - the disk full while its animations are written into the mod: Python's "[Errno 28] No space left on device" inside
   the translated words "...: its animations can't be kept: {1}";
 - the platform folder's file of an Add before, held open by another app while the new one replaces it: the job
-  names the Add's own temporary file (removed right after), not the file held open;
+  names the Add's own temporary file (removed right after), not the file held open (since the owner's 46, an older
+  mod's horse never changes, the Add never writes over a horse file with other bytes: its own goes beside the one held,
+  which stays as it was, and the Add goes on);
 - "every ground unit" resized while the Horse Squad's platform-folder file is locked by another app (review-loss F14:
   "The "every ground unit" skip line carries the English reason"): the line's reason is Python's "[Errno 13]
   Permission denied" in English with the Studio in French (Resize's own refusal the same: seen, not asserted).
@@ -19,6 +21,7 @@ RUSE_HORSE_SQUAD_GLBS, as tests/test_horse_squad.py; skipped without them), the 
 (what a write raises then), the lock a real one (Windows' byte-range lock); the third on the Studio tests' made-up
 game, on Windows (where a file held open can't be replaced). Nothing of the game's is written."""
 import errno
+import hashlib
 import os
 import pathlib
 import shutil
@@ -106,22 +109,32 @@ class TheAddsOwnWritesOnAFullDisk(unittest.TestCase):
 
 @unittest.skipUnless(sys.platform == "win32", "a file held open by another program stops its replace on Windows only")
 class TheFileAnotherProgramHolds(WithLibrary):
-    def test_the_platform_folder_s_file_another_program_holds_is_the_one_named(self):
+    def test_the_platform_folder_s_file_another_program_holds_is_never_written_over(self):
         """Seen on 70de183f: "The Horse Squad couldn't be added: <platform folder>\\horse_squad\\.making-<8 letters>\\
         rifle.glb couldn't be read or written, because another program has it open..." (the Add's own temporary file,
-        removed right after; Python's error names it first and the held file second, horse_squad._horse_file_error
-        says the first)."""
+        removed right after). Since the owner's 46 (an older mod's horse never changes) the Add never writes over a
+        horse file with other bytes: the file held, an Add's before, stays as it was, and this Add's own goes beside it
+        (horse_squad._horse_place), its model made from that one."""
         root = self.home / horse_squad.FOLDER
         root.mkdir(parents=True, exist_ok=True)
         held = root / self.rifle.name
         held.write_bytes(b"made by an Add before")
         self.api.new_mod("Held")
+        imports = []
+
+        def imported(api, address, file, **kw):
+            imports.append(file)
         with open(held, "rb"):       # (another program holding it, as Python's own open holds a file on Windows)
-            with mock.patch.dict(sys.modules, {horse_squad.BUILDER: stand_in(self.rifle, self.heavy)}):
+            with mock.patch.dict(sys.modules, {horse_squad.BUILDER: stand_in(self.rifle, self.heavy)}), \
+                    mock.patch.object(StudioApi, "model_import", imported), \
+                    mock.patch.object(StudioApi, "_horse_check", lambda api, address: None):
                 view = finished(self.api, self.api.horse_squad_add(0, 10, "Generic Horse", 5, group="new")["job"])
-        self.assertEqual(view["state"], "failed")
-        self.assertIn(str(held), view["message"])
-        self.assertNotIn(".making-", view["message"])
+        self.assertEqual(view["state"], "done", view.get("message"))
+        self.assertEqual(held.read_bytes(), b"made by an Add before")
+        beside = root / f"rifle-{hashlib.sha256(b'glb rifle').hexdigest()[:16]}.glb"
+        self.assertEqual(beside.read_bytes(), b"glb rifle")
+        self.assertEqual(imports, [str(beside), str(root / self.heavy.name)])
+        self.assertEqual(sorted(os.listdir(root)), sorted([held.name, beside.name, self.heavy.name]))
 
 
 @unittest.skipUnless(ON_THE_GAME and sys.platform == "win32", WHY_SKIPPED + " (or this isn't Windows: its file lock)")

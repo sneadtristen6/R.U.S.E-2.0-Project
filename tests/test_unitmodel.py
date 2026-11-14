@@ -3,6 +3,7 @@
 written into made-up packs beside the unit's model. T35 (2026-10-04) is the same on the game's Sherman and a real
 model; scratch tools ran it on the game's packs with every check exact."""
 import contextlib
+import hashlib
 import math
 import struct
 import tempfile
@@ -1129,6 +1130,36 @@ class BodyPictureOfAnotherKind(unittest.TestCase):
             for p in patches:
                 stack.enter_context(p)
             return unitmodel.import_model(Path("game"), TANK, self.dir / "tank.3ds", self.dir / "out.glb")
+
+    def test_its_report_keeps_the_sha_256_of_the_file_it_was_made_from(self):
+        """The bytes a model was made from are known again by its record (the Generic Horse's files, kept and shared by
+        them: ruse_studio.horse_squad, the owner's 12 and 46): the report import_model returns has the SHA-256 of the
+        file it was fitted from (SOURCE_SHA), for a model fitted to the unit's hull and one rigged to its bones; the
+        model file it writes hasn't (its bytes as before)."""
+        want = hashlib.sha256((self.dir / "tank.3ds").read_bytes()).hexdigest()
+        self.assertEqual(unitmodel.file_sha256(self.dir / "tank.3ds"), want)
+        for read in (None, self.rigged):
+            with self.subTest(rigged=read is not None):
+                report = self.imported(self.zz, read)
+                self.assertEqual(report[unitmodel.SOURCE_SHA], want)
+                self.assertNotIn(unitmodel.SOURCE_SHA, unitmodel.glb_report(self.dir / "out.glb"))
+
+    def test_its_sha_256_is_of_the_file_as_it_was_before_anything_is_written(self):
+        """A fitting that writes over the very file it was made from (`ruse import-model` given the mod's own model
+        file, say): the report's SHA-256 is of the bytes it was fitted from, read before the model file is written; a
+        file that can't be read leaves it out, the fitting's own reading saying why."""
+        src = self.dir / "tank.3ds"
+        want = hashlib.sha256(src.read_bytes()).hexdigest()
+        real = modelin.write_glb
+
+        def write_glb(prep, out, *args, **kw):
+            real(prep, out, *args, **kw)
+            src.write_bytes(b"written over")
+        with mock.patch("rusemod.modelin.write_glb", write_glb):
+            self.assertEqual(self.imported(self.zz)[unitmodel.SOURCE_SHA], want)
+        src.write_bytes(tank_3ds())
+        with mock.patch.object(unitmodel, "file_sha256", side_effect=PermissionError(13, "Permission denied")):
+            self.assertNotIn(unitmodel.SOURCE_SHA, self.imported(self.zz))
 
     def test_a_model_with_no_bones_is_fitted_to_it(self):
         report = self.imported(self.zz)   # before 2026-11-11: "... has to be rigged to its bones"
