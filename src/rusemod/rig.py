@@ -18,7 +18,8 @@ them, and in the file's order with each parent before its children (all 633 diff
 A file can carry the game's own record of its skeleton in its skin's extras (`rusemod_skeleton`, the record's bytes in
 base64): it is kept, byte for byte, while the file's bones still match it (the same names and parents, every rest
 matrix within float noise of it); a file whose bones were changed has its record worked out from them again, and the
-notes say so."""
+notes say so. A file back from the model's own Blender also carries, in each animation's extras, the clip that went out
+under its name (CLIP_OUT): kept_clip keeps an animation that came back as it went out byte for byte (item 45)."""
 from __future__ import annotations
 
 import base64
@@ -1085,3 +1086,241 @@ def _same_track(track: baf.Track, poses: tuple, frames: int, parent: list | None
         if max(abs(x) for x in d) > TOL_BACK_MOVE:
             return False
     return True
+
+
+# --- a model on bones of its own back from Blender: each animation as it went out where it came back the same ---
+# The owner, 2026-11-13, item 45 ("A trip through Blender with nothing changed still rewrites all 25 of the horse's
+# animation files, with a key at every frame"): "Yes, an animation that comes back from Bundler should come back the
+# exact same." The model's own Blender (ruse_studio.modelblender) sends a model on bones of its own out with the
+# animations the mod plays and, on its way back, writes into the file it takes in the skeleton record that went out
+# (with_record: Blender keeps no extras) and each clip that went out, in its animation's extras (with_went_out), in the
+# order they went out in. Whatever takes that file in (ruse_studio.animmodel_calls: Bring back, and every Resize or
+# Move after, which fit the model again from it) keeps each animation that came back the same as the clip that went
+# out, byte for byte, and of a changed one every bone that wasn't changed (kept_clip), as RUSE Decoy's own Blender
+# button does with its clips (clips_back). A clip whose keys aren't on the game's 30 frames a second went out to
+# Blender on them (ruse_studio.animblender.on_game_frames, RUSE Decoy's way too): what came back is set against that.
+CLIP_OUT = "rusemod_clip_out"       # an animation's extras in a file back from Blender: the clip that went out (base64)
+CLIP_GIVEN = "rusemod_clip_given"   # ... and what Blender was given of it, when that isn't the clip itself (base64)
+
+
+def clips_out(doc: dict) -> dict:
+    """{each animation's name: (the clip that went out to Blender under it, what Blender was given of it or None: the
+    clip itself)}, as a file back from Blender carries them (CLIP_OUT, CLIP_GIVEN: with_went_out), named as rig_of
+    names them; the first of a name the file gives twice (rusemod.unitmodel.own_clips numbers the second: never set
+    against one). {} for none; one that can't be read is left out (that animation is taken in as Blender sent it)."""
+    out: dict = {}
+    for a, anim in enumerate(doc.get("animations") or []):
+        if not isinstance(anim, dict):
+            continue
+        name = anim.get("name") or f"animation {a + 1}"
+        extras = anim.get("extras") if isinstance(anim.get("extras"), dict) else {}
+        if name in out or not isinstance(extras.get(CLIP_OUT), str):
+            continue
+        try:
+            went = base64.b64decode(extras[CLIP_OUT], validate=True)
+            given = extras.get(CLIP_GIVEN)
+            out[name] = (went, base64.b64decode(given, validate=True) if isinstance(given, str) else None)
+        except (ValueError, TypeError):
+            continue
+    return out
+
+
+def with_went_out(raw: bytes, went: dict, given: dict | None = None) -> bytes:
+    """A .glb Blender sent back with its animations in the order they went out in (`went`, {an animation's name: the
+    clip that went out under it}, in that order; one made in Blender after them, in Blender's order: its export writes
+    them in an order of its own, and the unit's animations are listed in the order the file gives them, so the mod's
+    list stays as it was), each that went out carrying its clip in its extras (CLIP_OUT) and, when Blender was given it
+    otherwise (`given`, {name: what Blender was given}), that too (CLIP_GIVEN): clips_out reads them. As it is when
+    none of its animations went out."""
+    from .gltf import glb_views, pack_glb
+    given = given or {}
+    doc, views = glb_views(raw)
+    anims = [a for a in doc.get("animations") or [] if isinstance(a, dict)]
+    named = [(a.get("name") or f"animation {k + 1}", a) for k, a in enumerate(anims)]
+    if not any(name in went for name, _a in named):
+        return raw
+    first: dict = {}        # (each name's first animation: the one set against the clip that went out under it)
+    for k, (name, _a) in enumerate(named):
+        first.setdefault(name, k)
+    for name, k in first.items():
+        if name in went:
+            a = named[k][1]
+            extras = {key: v for key, v in (a.get("extras") if isinstance(a.get("extras"), dict) else {}).items()
+                      if key not in (CLIP_OUT, CLIP_GIVEN)}
+            extras[CLIP_OUT] = base64.b64encode(bytes(went[name])).decode("ascii")
+            if given.get(name) is not None and bytes(given[name]) != bytes(went[name]):
+                extras[CLIP_GIVEN] = base64.b64encode(bytes(given[name])).decode("ascii")
+            a["extras"] = extras
+    back = [named[first[name]][1] for name in went if name in first]
+    doc["animations"] = back + [a for k, (name, a) in enumerate(named) if not (name in went and first[name] == k)]
+    return pack_glb(doc, views)
+
+
+def bones_of(raw: bytes, record: bytes) -> bool:
+    """Whether a .glb's bones are the skeleton record `record`'s, within float noise (the same names and parents, every
+    rest matrix within NEAR_*: _kept_record's measure); False for one that can't be read so."""
+    try:
+        doc, binary = glb_document(raw)
+        doc["animations"] = []          # (its bones alone: the animations aren't read for this)
+        return _kept_record(skeleton_extra(record), rig_of(doc, binary)) is not None
+    except (ModelError, ValueError, KeyError, IndexError, TypeError, struct.error):
+        return False
+
+
+def with_record(raw: bytes, record: bytes) -> bytes:
+    """A .glb Blender sent back (it keeps no extras) with the skeleton record that went out (`record`) in its skins'
+    extras again (SKELETON_EXTRA), when its bones still match it (bones_of), so rig_of keeps that record byte for byte
+    and every clip made on it keeps its skeleton part. As it is when they don't (a bone moved, added or renamed in
+    Blender: its record is worked out again from its bones, as before), when it carries a record already, or when it
+    can't be read so."""
+    from .gltf import glb_views, pack_glb
+    try:
+        doc, views = glb_views(raw)
+        if _carried(doc) is not None or not bones_of(raw, record):
+            return raw
+    except (ModelError, ValueError, KeyError, IndexError, TypeError, struct.error):
+        return raw
+    for skin in doc.get("skins") or []:
+        extras = skin.get("extras") if isinstance(skin.get("extras"), dict) else {}
+        skin["extras"] = {**extras, SKELETON_EXTRA: skeleton_extra(record)}
+    return pack_glb(doc, views)
+
+
+def _track_frames(track: baf.Track, frames: int) -> list:
+    """A track's (move, turn, size) at each of `frames` frames, as rusemod.baf.sample gives them (one key holds, two go
+    straight across the whole clip, more by time), the keys walked once instead of looked up again for every frame (a
+    track of a clip made from Blender's has a key at every frame)."""
+    fracs = [k / (frames - 1) if frames > 1 else 0.0 for k in range(frames)]
+
+    def walk(keys: list, value, between) -> list:
+        if len(keys) == 1:
+            return [value(keys[0])] * frames
+        if len(keys) == 2:
+            a, b = value(keys[0]), value(keys[1])
+            return [between(a, b, f) for f in fracs]
+        times = [k[0] for k in keys]
+        values = [value(k) for k in keys]
+        out, j = [], 1
+        for f in fracs:
+            t = baf.time_of(f)
+            while j < len(times) - 1 and times[j] < t:    # (rusemod.baf._segment's, from where the last frame was)
+                j += 1
+            t0, t1 = times[j - 1], times[j]
+            out.append(between(values[j - 1], values[j], min(1.0, max(0.0, (t - t0) / (t1 - t0) if t1 > t0 else 0.0))))
+        return out
+
+    def vec(k):
+        return tuple(k[1:4])
+
+    def lerp(a, b, f):
+        return tuple(a[i] + (b[i] - a[i]) * f for i in range(3))
+    moves = walk(track.T, vec, lerp)
+    turns = walk(track.R, lambda k: baf.unpack_quat(k[1:5]), baf.slerp)
+    sizes = walk(track.S, vec, lerp)
+    return list(zip(moves, turns, sizes))
+
+
+def _same_frames(a: list, b: list, parent: list | None) -> bool:
+    """_same_track's measure on two tracks' poses at each frame (_track_frames'): within TOL_BACK_* at every one."""
+    for k, (pa, pb) in enumerate(zip(a, b)):
+        x, y = compose(*pa), compose(*pb)
+        if max(abs(x[4 * i + j] - y[4 * i + j]) for i in range(3) for j in range(3)) > TOL_BACK_FRAME:
+            return False
+        d = [x[3] - y[3], x[7] - y[7], x[11] - y[11]]
+        if parent is not None:
+            m = parent[k]
+            d = [m[4 * i] * d[0] + m[4 * i + 1] * d[1] + m[4 * i + 2] * d[2] for i in range(3)]
+        if max(abs(v) for v in d) > TOL_BACK_MOVE:
+            return False
+    return True
+
+
+def kept_clip(made: bytes, went: bytes, given: bytes | None = None,
+              poses: list | None = None) -> tuple[bytes, list | None]:
+    """An animation taken in from a file back from Blender (`made`: the clip rusemod.unitmodel.own_clips made of it,
+    from `poses`: Rig.poses' each bone's (moves, turns, sizes) at each frame, as the file has them) set against what
+    went out to Blender under its name, as RUSE Decoy's Blender button sets its clips (_settle): `went`, the clip as the
+    mod had it, and `given`, what Blender was given of it when that isn't the clip itself (on the game's frames:
+    ruse_studio.animblender.on_game_frames). Each bone whose pose comes back within TOL_BACK_* of what Blender was given
+    at every frame keeps that track, byte for byte, and the clip its length; every bone so, on the same skeleton
+    record: `went` itself, byte for byte. Its poses as the file has them, never `made`'s own tracks, are what's
+    measured: a turn near half a turn is packed with its w no closer than about 0.001 (rusemod.baf), so a clip packed
+    again from Blender's numbers moved such a turn by more than TOL_BACK_FRAME (real Blender 4.5.14, the Generic
+    Horse's clavicles, 2026-11-13) where Blender hadn't (None: `made`'s tracks, for a caller without the file). Set
+    against each other only when both are on the same bones (names, parents and track order) with the same frames
+    and length (within 1e-4 of a second, _settle's); else `made` as it is (its bones or timing changed in Blender).
+    Returns (the clip, the bones whose track came back changed, in track order; None when the two couldn't be set
+    against each other)."""
+    against = bytes(given) if given is not None else bytes(went)
+    clip, changed = _kept_tracks(bytes(made), against, poses)
+    if changed == [] and clip == against:      # (came back as Blender was given it: the clip as the mod had it)
+        return bytes(went), []
+    return clip, changed
+
+
+def _kept_tracks(made: bytes, went: bytes, poses: list | None = None) -> tuple[bytes, list | None]:
+    """kept_clip's work, `made` set against one clip (`went`): each bone's track as `went` has it where its pose
+    (`poses`, else `made`'s track) came back within TOL_BACK_*, else as `made` has it; all of them so, on the same
+    record: `went` itself."""
+    if made == went:
+        return went, []
+    try:
+        m, w = baf.parse(made), baf.parse(went)
+        msk, wsk = baf.skeleton(m.skeleton), baf.skeleton(w.skeleton)
+    except (ValueError, IndexError, struct.error, UnicodeDecodeError):    # (baf.ClipError is a ValueError)
+        return made, None
+    frames = m.frames
+    if (msk["names"] != wsk["names"] or msk["parents"] != wsk["parents"] or msk["index"] != wsk["index"]
+            or len(m.tracks) != len(w.tracks) or len(w.tracks) != wsk["bones"] or w.frames != frames
+            or (frames > 1 and abs(m.duration - w.duration) >= 1e-4)
+            or (poses is not None and (len(poses) != wsk["bones"] or any(len(ch) != frames for p in poses
+                                                                         for ch in p)))):
+        return made, None
+    was = [_track_frames(t, frames) for t in w.tracks]
+    worlds = None
+    tracks, changed = [], []
+    for u, (mt, wt) in enumerate(zip(m.tracks, w.tracks)):
+        b = wsk["index"][u]
+        same = mt == wt
+        if not same:
+            if worlds is None:      # (each bone's pose in the model at each frame, as the clip that went out plays)
+                by_bone = {wsk["index"][v]: was[v] for v in range(len(w.tracks))}
+                worlds = []
+                for k in range(frames):
+                    row = [None] * wsk["bones"]
+                    for c in range(wsk["bones"]):
+                        here = compose(*by_bone[c][k])
+                        row[c] = here if wsk["parents"][c] < 0 else mul(row[wsk["parents"][c]], here)
+                    worlds.append(row)
+            p = wsk["parents"][b]
+            back = list(zip(*poses[b])) if poses is not None else _track_frames(mt, frames)
+            same = _same_frames(was[u], back, [x[p] for x in worlds] if p >= 0 else None)
+        tracks.append(wt if same else mt)
+        if not same:
+            changed.append(wsk["names"][b])
+    if not changed and m.skeleton == w.skeleton:
+        return went, []
+    return baf.build(baf.Clip(w.duration, w.frames, tracks, m.skeleton), max(baf.MOST_BONES, len(tracks))), changed
+
+
+def kept_clips(made: dict, out: dict, rig: Rig | None = None) -> tuple[dict, dict]:
+    """kept_clip for each animation of `made` ({name: its clip}, in its order: rusemod.unitmodel.own_clips' of `rig`,
+    the file's, whose poses are measured) that went out under its name (`out`: clips_out's, {name: (the clip, what
+    Blender was given or None)}): ({name: the clip}, {name: the bones that came back changed, or None: not set against
+    one})."""
+    poses: dict = {}
+    if rig is not None:
+        for anim in rig.animations:     # (named as own_clips names them: a name given twice numbered)
+            name, k = anim.name, 2
+            while name in poses:
+                name, k = f"{anim.name} {k}", k + 1
+            poses[name] = anim
+    kept, changed = {}, {}
+    for name, data in made.items():
+        if name in out:
+            anim = poses.get(name)
+            kept[name], changed[name] = kept_clip(data, *out[name],
+                                                  poses=rig.poses(anim)[1] if anim is not None else None)
+        else:
+            kept[name], changed[name] = data, None
+    return kept, changed
