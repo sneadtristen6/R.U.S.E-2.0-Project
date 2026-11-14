@@ -315,6 +315,31 @@ def _near(a: bytes, b: bytes) -> bool:
     return True
 
 
+def _went_out_kept(file: Path, target: Path, report: dict, clips: dict) -> None:
+    """After import_model took in a file on bones of its own: when the file came back from the model's own Blender
+    (ruse_studio.modelblender's Bring back writes into it each clip that went out to Blender, rusemod.rig.CLIP_OUT),
+    each animation that came back as it went out is that clip, byte for byte, and of a changed one every bone that
+    wasn't changed keeps its track (rusemod.rig.kept_clips; item 45, the owner, 2026-11-13: "Yes, an animation that
+    comes back from Bundler should come back the exact same"): in `clips` (what the fit keeps as the unit's own and
+    fingerprints: _record_more), in the model's own file `target` (it carries them all: rusemod.modelin.
+    own_animations_glb) and in the fit's `report`. The same file fitted again (Resize, Move) gives the same clips, so
+    they stay. Nothing for any other file: as import_model took it in."""
+    from rusemod import animmodel, rig
+    from rusemod.modelin import OWN_SKELETON, clip_lengths, own_animations_glb
+    out = rig.clips_out(animmodel.file_document(file))
+    if not out or not clips:
+        return
+    kept, _changed = rig.kept_clips(clips, out, rig.read_rig(file))   # (its poses as the file has them: measured)
+    if kept == clips:
+        return
+    target.write_bytes(own_animations_glb(target.read_bytes(), kept))   # (the fit's own write: FitUndo puts it back)
+    clips.clear()
+    clips.update(kept)
+    own = report.get(OWN_SKELETON) if isinstance(report, dict) else None
+    if isinstance(own, dict):
+        own["animations"] = clip_lengths(kept)
+
+
 class AnimModelCalls:
     def _own_bones_fit(self, address: str, file: Path, found: list, target: Path, size: float,
                        clips: dict) -> dict | None:
@@ -339,8 +364,10 @@ class AnimModelCalls:
         if on is None:
             return None
         try:
-            return import_model(self._game(), on, Path(file), target, size=size, others=found, own_bones=True,
-                                clips=clips)
+            report = import_model(self._game(), on, Path(file), target, size=size, others=found, own_bones=True,
+                                  clips=clips)
+            _went_out_kept(Path(file), target, report, clips)
+            return report
         except (ModelError, OSError, ValueError) as exc:
             cause = oserror_of(exc)
             if cause is not None:   # (a file it couldn't read or write: in words, never Python's own)
@@ -413,9 +440,11 @@ class AnimModelCalls:
                 raise file_error(cause, target, target) from cause
             raise StudioError(f"{Path(file).name}: {exc}") from None
         try:
-            from rusemod.rig import read_rig
+            from rusemod.rig import clips_out, read_rig
             rig = read_rig(file)
-            said, halves = animmodel.file_says(animmodel.file_document(file), [a.name for a in rig.animations])
+            doc = animmodel.file_document(file)
+            said, halves = animmodel.file_says(doc, [a.name for a in rig.animations])
+            went = clips_out(doc)   # (a file back from Blender: each clip that went out to it, as the mod had it)
         except (animmodel.AnimModelError, ValueError, OSError) as exc:
             cause = oserror_of(exc)
             if cause is not None:   # (the file imported, read: in words, never Python's own)
@@ -475,8 +504,12 @@ class AnimModelCalls:
                     raise file_error(cause, own) from cause
                 raise StudioError(f"{Path(file).name}: its animations can't be kept: {exc}") from None
         # what of the modder's own this fit couldn't keep: his animations' changes, and the picks made on the page
-        # (with a record from before FROM_FILE, every pick the action table showed)
-        lost = [name for name in changed if kept.get(name) != mine[name]]
+        # (with a record from before FROM_FILE, every pick the action table showed). One that went out to Blender as
+        # the mod had it, his RUSE Decoy change and all, and came back (as it went, or changed there on top of it) is
+        # still his: never named (item 45; a87ddb70 named decoy-blender2's run so after one bone of it was moved in
+        # Blender, real Blender 4.5.14, 2026-11-13); one changed in the mod after it went out is
+        lost = [name for name in changed if kept.get(name) != mine[name]
+                and (went.get(name) or (None,))[0] != mine[name]]
         chosen = set(picks) if last_plays is None else \
             {a for a in set(picks) | set(last_plays) if picks.get(a) != last_plays.get(a)}
         moved = sorted(a for a in chosen if after.get(a) != picks.get(a))
@@ -598,14 +631,15 @@ class AnimModelCalls:
     def _file_clips(path: Path) -> dict:
         """The animations a model file on bones of its own gives, the way a fit takes them in (rusemod.unitmodel.
         _import_own_bones: its rig, its record, own_clips), {name: the clip's bytes}; {} when it can't be read."""
-        from rusemod import rig, unitmodel
+        from rusemod import animmodel, rig, unitmodel
         try:
             r = rig.read_rig(Path(path))
             record, _notes = unitmodel.own_skeleton(r)
             made, _notes = unitmodel.own_clips(r, record)
+            # (a file back from Blender: each animation as it went out where it came back so, _went_out_kept's way)
+            return rig.kept_clips(made, rig.clips_out(animmodel.file_document(Path(path))), r)[0]
         except Exception:  # noqa: BLE001 - a file that can't be read, however, tells nothing: _changed_since then
             return {}      # names the animation it would have told of (never dropped without a word)
-        return made
 
     @staticmethod
     def _same_file(a, b) -> bool:
