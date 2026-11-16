@@ -69,14 +69,16 @@ R.U.S.E. 2.0 は私の初めてのモッディングプロジェクトです。�
 
 | オプション | 金額 | 掲載 |
 | --- | --- | --- |
+| [Buy me a coffee](https://www.patreon.com/c/sneadtristen6/shop) | 1回 $5 | プロジェクトを続ける助けになる、ちょっとしたチップです。 |
+| [Request a feature](https://www.patreon.com/c/sneadtristen6/shop) | 1回 $10 | R.U.S.E. 2.0 に欲しい機能を教えてください。 |
 | [Above & Beyond Supporter](https://www.patreon.com/SneadTristen6/posts/171328212) | 1回 $20 | GitHub とMODのクレジットの Above & Beyond Supporters の欄に、あなたが選んだ名前。 |
-| [Monumental Supporter](https://www.patreon.com/SneadTristen6/posts/monumental-100-171328695) | 1回 $100 | Monumental Supporters の欄での目立つ謝辞と、プロジェクトの構想の土台作りを手伝ってくれたことへの専用のお礼。 |
+| [Monumental Supporter](https://www.patreon.com/SneadTristen6/posts/monumental-100-171328695) | 1回 $100 | クレジットの Monumental Supporters の欄の先頭に、あなたが選んだ名前。さらに、ゲームの中の何か（町、橋、飛行場、またはマップそのもの）に名前を付けられます。 |
 
-私はずっと、**硫黄島を Pacific Defense という DLC 風の拡張の旗艦マップ** にし、あわせてゲームに **中国** を加えることを思い描いてきました。支援は、その夢に向かって進む助けになります。これらは、この独立したファンプロジェクトの開発目標です。
+支援は R.U.S.E. 2.0 を支える時間とツールに使われます。新しいマップ、新しいユニット、RUSE Studio、そしてすべてのプレイヤーのためにゲームを生かし続けることです。
 
 クレジットは任意です。購入後、公開する名前とそれを公開してよいという許可を Patreon のメッセージで送ってください。匿名のままでもかまいません。クレジットはプロジェクトのリリースとともに更新されます。これらのショップでの購入は、自動では更新されません。
 
-[1回 $3 で機能をリクエストする](https://www.patreon.com/SneadTristen6/posts/request-r-u-s-e-171321812)こともできます。
+Monumental Supporters の方は、同じメッセージで町・橋・飛行場・マップに付けたい名前を送ってください。今後のマップに入ります。
 
 ## R.U.S.E. 2.0 で変わること
 
@@ -339,7 +341,7 @@ LittleGroove は R.U.S.E. 初の本格的な MOD マネージャー **RUSE-Mod-M
 
 #### Monumental Supporters
 
-R.U.S.E. 2.0 と、硫黄島を旗艦マップとする Pacific Defense の構想、そして中国の土台作りを手伝ってくれる $100 の支援者への、目立つ形での個人的なお礼です。このグループは、支援者のクレジットの最初に載ります。
+R.U.S.E. 2.0 の土台作りを手伝ってくれる $100 の支援者への、目立つ形での個人的なお礼です。このグループは、支援者のクレジットの最初に載ります。
 
 #### Above & Beyond Supporters
 

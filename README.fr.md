@@ -74,18 +74,20 @@ construire.
 
 | Option | Montant | Reconnaissance |
 | --- | --- | --- |
+| [Buy me a coffee](https://www.patreon.com/c/sneadtristen6/shop) | 5 $ une fois | Un petit pourboire qui aide à faire vivre le projet. |
+| [Request a feature](https://www.patreon.com/c/sneadtristen6/shop) | 10 $ une fois | Dites-moi quelle fonctionnalité vous aimeriez dans R.U.S.E. 2.0. |
 | [Above & Beyond Supporter](https://www.patreon.com/SneadTristen6/posts/171328212) | 20 $ une fois | Le nom de votre choix dans la section Above & Beyond Supporters des crédits sur GitHub et dans les mods. |
-| [Monumental Supporter](https://www.patreon.com/SneadTristen6/posts/monumental-100-171328695) | 100 $ une fois | Une mention bien visible dans la section Monumental Supporters, avec un remerciement dédié pour avoir aidé à poser les fondations de la vision du projet. |
+| [Monumental Supporter](https://www.patreon.com/SneadTristen6/posts/monumental-100-171328695) | 100 $ une fois | Le nom de votre choix en tête de la section Monumental Supporters des crédits, et vous pouvez nommer quelque chose dans le jeu : une ville, un pont, un aérodrome ou une carte entière. |
 
-J'ai toujours imaginé **Iwo Jima comme la carte phare d'une extension de type DLC, Pacific Defense**, en plus d'ajouter
-**la Chine** au jeu. Votre soutien m'aide à avancer vers ce rêve. Ce sont des objectifs de développement pour ce projet
-de fan indépendant.
+Votre soutien finance le temps et les outils derrière R.U.S.E. 2.0 : de nouvelles cartes, de nouvelles unités, RUSE
+Studio, et un jeu qui reste vivant pour tous les joueurs.
 
 Le crédit est facultatif : après l'achat, envoyez un message Patreon avec le nom public de votre choix et l'autorisation
 de le publier, ou choisissez de rester anonyme. Les crédits sont mis à jour avec les versions du projet. Ces achats de
 la boutique ne se renouvellent pas automatiquement.
 
-Vous pouvez aussi [demander une fonctionnalité pour 3 $, une seule fois](https://www.patreon.com/SneadTristen6/posts/request-r-u-s-e-171321812).
+Monumental Supporters : dans le même message, envoyez le nom que vous voulez donner à une ville, un pont, un aérodrome
+ou une carte ; il figurera dans une prochaine carte.
 
 ## Ce que change R.U.S.E. 2.0
 
@@ -454,9 +456,8 @@ Les noms des soutiens sont ajoutés ici une fois que le soutien a choisi un nom 
 
 #### Monumental Supporters
 
-Un remerciement bien visible et personnel pour les soutiens à 100 $ qui aident à poser les fondations de R.U.S.E. 2.0
-et de la vision de Pacific Defense, avec Iwo Jima comme carte phare, et de la Chine. Ce groupe apparaît en premier dans
-les crédits des soutiens.
+Un remerciement bien visible et personnel pour les soutiens à 100 $ qui aident à poser les fondations de R.U.S.E. 2.0.
+Ce groupe apparaît en premier dans les crédits des soutiens.
 
 #### Above & Beyond Supporters
 

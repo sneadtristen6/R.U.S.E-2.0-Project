@@ -72,18 +72,20 @@ R.U.S.E. 2.0 to mój pierwszy projekt moddingowy. Jeśli chcesz wspierać rozwó
 
 | Opcja | Kwota | Wyróżnienie |
 | --- | --- | --- |
+| [Buy me a coffee](https://www.patreon.com/c/sneadtristen6/shop) | $5 jednorazowo | Mały napiwek, który pomaga utrzymać projekt przy życiu. |
+| [Request a feature](https://www.patreon.com/c/sneadtristen6/shop) | $10 jednorazowo | Napisz mi, jaką funkcję chcesz w R.U.S.E. 2.0. |
 | [Above & Beyond Supporter](https://www.patreon.com/SneadTristen6/posts/171328212) | $20 jednorazowo | Wybrana przez ciebie nazwa w sekcji Above & Beyond Supporters podziękowań na GitHubie i w modach. |
-| [Monumental Supporter](https://www.patreon.com/SneadTristen6/posts/monumental-100-171328695) | $100 jednorazowo | Wyraźne wyróżnienie w sekcji Monumental Supporters, z osobnym podziękowaniem za pomoc w kładzeniu fundamentów pod wizję projektu. |
+| [Monumental Supporter](https://www.patreon.com/SneadTristen6/posts/monumental-100-171328695) | $100 jednorazowo | Wybrana przez ciebie nazwa na pierwszym miejscu w sekcji Monumental Supporters podziękowań, a do tego możesz nazwać coś w grze: miasto, most, lotnisko albo całą mapę. |
 
-Zawsze wyobrażałem sobie **Iwo Jimę jako mapę flagową rozszerzenia w stylu DLC Pacific Defense**, obok dodania
-**Chin** do gry. Wsparcie pomaga mi zbliżać się do tego marzenia. To cele rozwoju tego niezależnego projektu
-fanowskiego.
+Wsparcie idzie na czas i narzędzia stojące za R.U.S.E. 2.0: nowe mapy, nowe jednostki, RUSE Studio i utrzymanie gry przy
+życiu dla każdego gracza.
 
 Podziękowanie jest opcjonalne: po zakupie wyślij wiadomość na Patreonie z wybraną publiczną nazwą i zgodą na jej
 opublikowanie albo pozostań anonimowo. Podziękowania są aktualizowane wraz z wydaniami projektu. Te zakupy w Sklepie
 nie odnawiają się automatycznie.
 
-Możesz też [zamówić funkcję za jednorazowe $3](https://www.patreon.com/SneadTristen6/posts/request-r-u-s-e-171321812).
+Monumental Supporters: w tej samej wiadomości wyślij nazwę, którą chcesz nadać miastu, mostowi, lotnisku albo mapie;
+trafi do jednej z kolejnych map.
 
 ## Co zmienia R.U.S.E. 2.0
 
@@ -441,9 +443,8 @@ Nazwy wspierających są dodawane tutaj, gdy wspierający wybierze publiczną na
 
 #### Monumental Supporters
 
-Wyraźne, osobiste podziękowanie dla wspierających za $100, którzy pomagają położyć fundamenty pod R.U.S.E. 2.0
-i wizję Pacific Defense, z Iwo Jimą jako mapą flagową, oraz Chin. Ta grupa pojawia się jako pierwsza
-w podziękowaniach dla wspierających.
+Wyraźne, osobiste podziękowanie dla wspierających za $100, którzy pomagają położyć fundamenty pod R.U.S.E. 2.0. Ta grupa
+pojawia się jako pierwsza w podziękowaniach dla wspierających.
 
 #### Above & Beyond Supporters
 

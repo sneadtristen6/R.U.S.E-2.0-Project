@@ -72,18 +72,20 @@ R.U.S.E. 2.0 je můj první moddingový projekt. Pokud chcete podpořit vývoj a
 
 | Možnost | Částka | Uznání |
 | --- | --- | --- |
+| [Buy me a coffee](https://www.patreon.com/c/sneadtristen6/shop) | $5 jednorázově | Malé spropitné, které pomáhá udržet projekt v chodu. |
+| [Request a feature](https://www.patreon.com/c/sneadtristen6/shop) | $10 jednorázově | Napište mi, jakou funkci byste v R.U.S.E. 2.0 chtěli. |
 | [Above & Beyond Supporter](https://www.patreon.com/SneadTristen6/posts/171328212) | $20 jednorázově | Vámi zvolené jméno v sekci Above & Beyond Supporters v poděkování na GitHubu a v modu. |
-| [Monumental Supporter](https://www.patreon.com/SneadTristen6/posts/monumental-100-171328695) | $100 jednorázově | Výrazné poděkování v sekci Monumental Supporters, s osobním poděkováním za pomoc s položením základů vize projektu. |
+| [Monumental Supporter](https://www.patreon.com/SneadTristen6/posts/monumental-100-171328695) | $100 jednorázově | Vámi zvolené jméno na prvním místě v sekci Monumental Supporters v poděkování a můžete něco ve hře pojmenovat: město, most, letiště nebo celou mapu. |
 
-Vždy jsem si představoval **Iwo Jimu jako vlajkovou mapu rozšíření ve stylu DLC Pacific Defense** a k tomu přidání
-**Číny** do hry. Podpora mi pomáhá k tomuto snu směřovat. Jsou to cíle vývoje tohoto nezávislého fanouškovského
-projektu.
+Podpora jde na čas a nástroje za R.U.S.E. 2.0: nové mapy, nové jednotky, RUSE Studio a udržení hry naživu pro všechny
+hráče.
 
 Uvedení jména je dobrovolné: po nákupu pošlete na Patreonu zprávu se zvoleným veřejným jménem a svolením ho
 zveřejnit, nebo zůstaňte v anonymitě. Poděkování se aktualizují s vydáními projektu. Tyto nákupy v Shopu se
 automaticky neobnovují.
 
-Můžete si také [vyžádat funkci za jednorázové $3](https://www.patreon.com/SneadTristen6/posts/request-r-u-s-e-171321812).
+Monumental Supporters: ve stejné zprávě pošlete jméno, které chcete dát městu, mostu, letišti nebo mapě; objeví se v
+některé z příštích map.
 
 ## Co R.U.S.E. 2.0 mění
 
@@ -437,8 +439,8 @@ Jména podporovatelů se sem přidávají, až si podporovatel zvolí veřejné 
 
 #### Monumental Supporters
 
-Výrazné osobní poděkování podporovatelům s $100, kteří pomáhají položit základy R.U.S.E. 2.0 a vize Pacific Defense,
-s Iwo Jimou jako vlajkovou mapou, a Číny. Tato skupina je v poděkování podporovatelům uvedena první.
+Výrazné osobní poděkování podporovatelům s $100, kteří pomáhají položit základy R.U.S.E. 2.0. Tato skupina je v
+poděkování podporovatelům uvedena první.
 
 #### Above & Beyond Supporters
 

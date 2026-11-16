@@ -72,18 +72,20 @@ R.U.S.E. 2.0 is my first modding project. If you want to support development and
 
 | Option | Amount | Recognition |
 | --- | --- | --- |
+| [Buy me a coffee](https://www.patreon.com/c/sneadtristen6/shop) | $5 once | A small tip that helps keep the project going. |
+| [Request a feature](https://www.patreon.com/c/sneadtristen6/shop) | $10 once | Tell me a feature you'd like in R.U.S.E. 2.0. |
 | [Above & Beyond Supporter](https://www.patreon.com/SneadTristen6/posts/171328212) | $20 once | Your chosen name in the Above & Beyond Supporters section of the GitHub and mod credits. |
-| [Monumental Supporter](https://www.patreon.com/SneadTristen6/posts/monumental-100-171328695) | $100 once | A prominent acknowledgment in the Monumental Supporters section, with a dedicated thank-you for helping lay the foundation for the project's vision. |
+| [Monumental Supporter](https://www.patreon.com/SneadTristen6/posts/monumental-100-171328695) | $100 once | Your chosen name first in the Monumental Supporters section of the credits, and you get to name something in the game: a town, a bridge, an airfield or a whole map. |
 
-I've always envisioned **Iwo Jima as the flagship map for a Pacific Defense DLC-style expansion**, alongside
-adding **China** to the game. Support helps me work toward that dream. These are development goals for this
-independent fan project.
+Support goes into the time and tools behind R.U.S.E. 2.0: new maps, new units, RUSE Studio, and keeping the game alive
+for every player.
 
 Credit is optional: after purchasing, send a Patreon message with your chosen public name and permission to
 publish it, or choose to remain anonymous. Credits are updated with project releases. These Shop purchases do
 not renew automatically.
 
-You can also [request a feature for a one-time $3](https://www.patreon.com/SneadTristen6/posts/request-r-u-s-e-171321812).
+Monumental Supporters: in the same message, send the name you'd like for a town, bridge, airfield or map; it goes into
+an upcoming map.
 
 ## What R.U.S.E. 2.0 changes
 
@@ -427,8 +429,8 @@ Supporter names are added here after the supporter chooses a public credit name.
 
 #### Monumental Supporters
 
-A prominent, personal thank-you for $100 supporters helping lay the foundation for R.U.S.E. 2.0 and the vision
-of Pacific Defense, with Iwo Jima as its flagship map, and China. This group appears first in the supporter credits.
+A prominent, personal thank-you for $100 supporters helping lay the foundation for R.U.S.E. 2.0. This group appears
+first in the supporter credits.
 
 #### Above & Beyond Supporters
 

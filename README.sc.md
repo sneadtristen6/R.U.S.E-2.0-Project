@@ -70,15 +70,16 @@ R.U.S.E. 2.0 是我的第一个模组项目。如果你想支持开发、关注�
 
 | 选项 | 金额 | 致谢方式 |
 | --- | --- | --- |
+| [请我喝杯咖啡（Buy me a coffee）](https://www.patreon.com/c/sneadtristen6/shop) | 一次 $5 | 一点小小的打赏，帮助项目继续做下去。 |
+| [功能请求（Request a feature）](https://www.patreon.com/c/sneadtristen6/shop) | 一次 $10 | 告诉我你希望 R.U.S.E. 2.0 加入的功能。 |
 | [卓越支持者（Above & Beyond Supporter）](https://www.patreon.com/SneadTristen6/posts/171328212) | 一次 $20 | 你选择的名称会出现在 GitHub 和模组致谢的“卓越支持者”部分。 |
-| [丰碑级支持者（Monumental Supporter）](https://www.patreon.com/SneadTristen6/posts/monumental-100-171328695) | 一次 $100 | 在“丰碑级支持者”部分得到醒目的致谢，并专门感谢你帮助为项目的愿景打下基础。 |
+| [丰碑级支持者（Monumental Supporter）](https://www.patreon.com/SneadTristen6/posts/monumental-100-171328695) | 一次 $100 | 你选择的名称排在致谢“丰碑级支持者”部分的最前面，而且你可以为游戏里的某样东西命名：一座城镇、一座桥、一个机场，或一整张地图。 |
 
-我一直设想 **把硫磺岛作为一个 Pacific Defense DLC 式扩展的旗舰地图**，同时
-**把中国加入游戏**。支持能帮助我朝这个梦想努力。这些是这个独立粉丝项目的开发目标。
+支持会用在 R.U.S.E. 2.0 背后的时间和工具上：新地图、新单位、RUSE Studio，以及让游戏为每位玩家继续活下去。
 
 署名是可选的：购买后，通过 Patreon 发一条消息，写明你选择的公开名称并允许公布它，或者选择保持匿名。致谢会随项目的发布更新。这些商店购买不会自动续费。
 
-你也可以[一次性花 $3 提出一个功能请求](https://www.patreon.com/SneadTristen6/posts/request-r-u-s-e-171321812)。
+丰碑级支持者：请在同一条消息里写上你想给城镇、桥、机场或地图起的名字；它会出现在之后的一张地图里。
 
 ## R.U.S.E. 2.0 带来的改变
 
@@ -346,7 +347,7 @@ LittleGroove 制作了 R.U.S.E. 的第一个真正的模组管理器 **RUSE-Mod-
 
 #### 丰碑级支持者（Monumental Supporters）
 
-一份醒目的、个人的感谢，献给 $100 的支持者，他们帮助为 R.U.S.E. 2.0 打下基础，也为 Pacific Defense 的愿景打下基础：以硫磺岛为旗舰地图，还有中国。这一组在支持者致谢中排在最前面。
+一份醒目的、个人的感谢，献给 $100 的支持者，他们帮助为 R.U.S.E. 2.0 打下基础。这一组在支持者致谢中排在最前面。
 
 #### 卓越支持者（Above & Beyond Supporters）
 
