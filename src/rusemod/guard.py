@@ -493,12 +493,19 @@ _WIN_PATH = re.compile(rb"[A-Za-z]:\\[^\s\"<>|]+")  # a Windows path (the dump's
 _MARK = re.compile(rb"RUSEGUARD-[A-Z]+.{0,4000}?RUSEGUARD-END", re.DOTALL)
 
 
-def _clean_stop(raw: bytes) -> str:
-    """RUSE Guard's marked text with any Steam ID, long id or path taken out (defence in depth), printable only."""
+def no_ids(raw: bytes) -> bytes:
+    """`raw` with any Steam ID, Windows path or long id taken out (defence in depth): RUSE Guard's own cleaning, for
+    its line (_clean_stop) and for the game's error text Bug Watch sends (rusemod.bugwatch.read_dump): one cleaning
+    for both, so what the agreement says of both stays true of both."""
     raw = _STEAM_ID.sub(b"<id>", raw)
     raw = _WIN_PATH.sub(b"<path>", raw)
-    raw = _LONG_ID.sub(b"<n>", raw)
-    return "".join(c if 32 <= ord(c) < 127 else " " for c in raw.decode("ascii", "replace")).strip()[:1000]
+    return _LONG_ID.sub(b"<n>", raw)
+
+
+def _clean_stop(raw: bytes) -> str:
+    """RUSE Guard's marked text with any Steam ID, long id or path taken out (defence in depth: no_ids), printable
+    only."""
+    return "".join(c if 32 <= ord(c) < 127 else " " for c in no_ids(raw).decode("ascii", "replace")).strip()[:1000]
 
 
 def read_stop(dump_path) -> dict | None:
@@ -527,7 +534,11 @@ def read_stop(dump_path) -> dict | None:
 
 
 def stop_dumps_since(since: float, local: str | None = None) -> list[Path]:
-    """The crash report files written after `since` on this PC (GUARD_DUMPS under %LOCALAPPDATA%)."""
+    """The game's own crash report files written after `since` on this PC (GUARD_DUMPS under %LOCALAPPDATA%). Another
+    program can leave its crash report in the same folder (the game's crash reporter is used by other programs too):
+    that one is never read, only looked at as far as telling whose it is (rusemod.bugwatch.game_report: its module
+    list's names, nothing else of it)."""
+    from .bugwatch import game_report
     local = local or os.environ.get("LOCALAPPDATA")
     if not local:
         return []
@@ -535,7 +546,7 @@ def stop_dumps_since(since: float, local: str | None = None) -> list[Path]:
     for pattern in GUARD_DUMPS:
         for p in Path(local).glob(pattern):
             try:
-                if p.stat().st_mtime >= since:
+                if p.stat().st_mtime >= since and game_report(p):
                     out.append(p)
             except OSError:
                 continue

@@ -363,6 +363,21 @@ async function changeBugwatch(turnOn) {
   renderBugwatch();
 }
 
+// Settings' "Save username": the name only (set_username, as the first start saves a name without Bug Watch). Bug
+// Watch stays as it is: off stays off, on stays on under the new name. Only the player's own tick turns it on.
+async function saveUsername() {
+  const w = state.words, typed = $("bugwatch-name").value.trim(), b = state.bugwatch || {};
+  try {
+    if (!typed && !b.name) { state.bugwatch = { ...b, note: w.username_need, bad: true }; renderBugwatch(); return; }
+    // the same name again keeps its #number; a new one gets a new number
+    const keep = b.name && typed === b.name.replace(/#\d{4}$/, "") ? b.name : typed;
+    await api().set_username(keep);
+    state.bugwatch = { ...(await api().bugwatch_status()), note: "" };
+  } catch (err) { state.bugwatch = { ...b, note: errorText(err), bad: true }; }
+  $("bugwatch-sent").classList.add("hidden");
+  renderBugwatch();
+}
+
 async function showBugwatch() {
   const box = $("bugwatch-sent");
   try { box.textContent = JSON.stringify(await api().bugwatch_next_send(), null, 2); }
@@ -1735,7 +1750,7 @@ async function start() {
   $("set-signin-open").addEventListener("click", () => { if (window.OwnedSignIn) window.OwnedSignIn.open(); });
   window.addEventListener("ownedsignin", () => { if (state.settings) loadSignin(); });  // the sign-in window changed something
   $("bugwatch-on").addEventListener("change", (e) => changeBugwatch(e.target.checked));
-  $("bugwatch-save").addEventListener("click", () => changeBugwatch(true));
+  $("bugwatch-save").addEventListener("click", saveUsername);
   $("bugwatch-show").addEventListener("click", showBugwatch);
   $("set-copies-change").addEventListener("click", () => changeCopies(true));
   $("set-copies-default").addEventListener("click", () => changeCopies(false));

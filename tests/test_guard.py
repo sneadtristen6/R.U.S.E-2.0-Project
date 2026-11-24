@@ -10,6 +10,7 @@ import time
 import unittest
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
+from unittest import mock
 
 from rusemod import ed25519, guard
 
@@ -106,6 +107,14 @@ class Record(unittest.TestCase):
         self.assertEqual(guard.scan(sigs, ["explorer.exe", "MemTool.exe", "steam.exe"]),
                          [{"name": "memtool.exe", "what": "a memory editor"}])
         self.assertEqual(guard.scan(sigs, ["explorer.exe"]), [])
+
+
+def game_report(data: bytes, program: str | None = None) -> bytes:
+    """A small crash report file of the game (or of another `program`, by its path) with `data` in its memory, laid
+    out as tests/test_bugwatch.py's Crashes.dump makes one: only the game's own crash reports are read
+    (rusemod.bugwatch.game_report)."""
+    import test_bugwatch
+    return test_bugwatch.Crashes.dump(None, extra=b"\0" + data, program=program)
 
 
 class Bundle(unittest.TestCase):
@@ -270,7 +279,7 @@ class Bundle(unittest.TestCase):
     def test_collect_stops_bundles_a_lock_crash_with_no_steam_id(self):
         local = self.dir / "LocalAppData"
         (local / "Temp" / "CrashRpt_abc").mkdir(parents=True)
-        (local / "Temp" / "CrashRpt_abc" / "report.dmp").write_bytes(self.DUMP)
+        (local / "Temp" / "CrashRpt_abc" / "report.dmp").write_bytes(game_report(self.DUMP))
         said = guard.collect_stops(self.home, since=0, username="Nick#4821", server="", now=1791000200,
                                    local=str(local), say=lambda s: None)
         self.assertEqual(len(said), 1)
@@ -315,7 +324,7 @@ class Bundle(unittest.TestCase):
                 if self.polls == 1:
                     dumps.mkdir(parents=True, exist_ok=True)
                     dump = dumps / "report.dmp"
-                    dump.write_bytes(Bundle.DUMP)
+                    dump.write_bytes(game_report(Bundle.DUMP))
                     # a real lock crash comes minutes after the watch starts; a file written microseconds after it
                     # can read a hair earlier than the watch's start (72 of 500 quick writes on Windows), so it's
                     # dated a second on, as a crash during the match would be
@@ -342,13 +351,33 @@ class Bundle(unittest.TestCase):
     def test_a_lock_crash_with_no_username_still_goes_out(self):
         local = self.dir / "LocalAppData"
         (local / "Temp" / "CrashRpt_abc").mkdir(parents=True)
-        (local / "Temp" / "CrashRpt_abc" / "report.dmp").write_bytes(self.DUMP)
+        (local / "Temp" / "CrashRpt_abc" / "report.dmp").write_bytes(game_report(self.DUMP))
         guard.collect_stops(self.home, since=0, username="", server="", now=1791000200, local=str(local),
                             say=lambda s: None)
         body = json.loads(next((self.home / guard.OUTBOX).glob("*.json")).read_text(encoding="utf-8"))
         self.assertTrue(guard.check_bundle(body))
         self.assertEqual(body["evidence"]["player"], "player-" + body["client_key"][:12])
         self.assertIn("a cheat copy was stopped", body["evidence"]["stop"]["text"])
+
+    def test_another_programs_crash_report_is_never_read(self):
+        """Only the game's own crash reports are read (the agreement: "When the game writes its own crash report, the
+        apps read that report on your PC: RUSE Guard takes out only its own marked lines"). Another program's in the
+        same folder, even one holding a filled-in mark, is passed over and never read past its module list; the game's
+        own beside it still goes out (the control). (Until 0.9.8.22 every crash report there was read.)"""
+        local = self.dir / "LocalAppData"
+        other = self.FILLED.replace(b"local 0", b"local 7")
+        for folder, data, program in (("CrashRpt_game", self.FILLED, None),
+                                      ("CrashRpt_other", other, "C:\\Program Files\\Paint\\paint.exe")):
+            (local / "Temp" / folder).mkdir(parents=True)
+            (local / "Temp" / folder / "report.dmp").write_bytes(game_report(data, program))
+        read, real = [], guard.read_stop
+        with mock.patch.object(guard, "read_stop", lambda p: read.append(Path(p).parent.name) or real(p)):
+            said = guard.collect_stops(self.home, since=0, username="Nick#4821", server="", now=1791000200,
+                                       local=str(local), say=lambda s: None)
+        self.assertEqual((read, len(said)), (["CrashRpt_game"], 1))
+        body = json.loads(next((self.home / guard.OUTBOX).glob("*.json")).read_text(encoding="utf-8"))
+        self.assertTrue(guard.check_bundle(body))
+        self.assertIn("multi 1 coop 0 local 0", body["evidence"]["stop"]["text"])
 
     def _watch_scan(self, consent):
         # run a MatchWatch with the program check's module functions stubbed, and return (findings, whether it looked)

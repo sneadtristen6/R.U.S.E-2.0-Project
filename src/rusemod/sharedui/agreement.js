@@ -73,23 +73,40 @@
   // agreement (rusemod.guard.TERMS_VERSION raised) has a username already: it stays (asked again, a new #number would
   // have replaced it, and with it whose crashes and matches are whose), and the Bug Watch tick starts as it is now,
   // so the box says what accepting leaves on; untick it and Bug Watch goes off, tick it and it comes on.
-  function accept(api, words, status) {
+  // `again`: the screen shown again (a version accepted before). Both apps can run at once, so Bug Watch can be
+  // switched in the other app while this screen is up: when this window comes back, the box shows Bug Watch as it is
+  // then (never ticked for a player who has it off), unless the player changed the box here; and accepting changes
+  // Bug Watch only as the player changed the box here.
+  function accept(api, words, status, again) {
     return new Promise((done) => {
       renderAgreement(words, status.available);
-      $("agree-bugwatch").checked = Boolean(status.available && status.on);
+      const box = $("agree-bugwatch");
+      let shown = Boolean(status.available && status.on);   // Bug Watch as the box was last set from it
+      box.checked = shown;
+      const follow = async () => {
+        if (box.checked !== shown) return;   // the player's own change here stays
+        try {
+          const now = await api.bugwatch_status();
+          if (box.checked !== shown) return;
+          shown = Boolean(status.available && now.on);
+          box.checked = shown;
+        } catch (e) { /* the box stays as it is */ }
+      };
+      if (again) window.addEventListener("focus", follow);
       const btn = $("agree-accept");
       const handler = async () => {
-        const bw = status.available && $("agree-bugwatch").checked;
+        const bw = status.available && box.checked;
         btn.disabled = true;
         try {
           await api.guard_accept_terms();   // RUSE Guard, with its program check, is on for everyone who accepts
         } catch (e) { btn.disabled = false; return; }  // a failure keeps the screen up; the player can try again
         btn.removeEventListener("click", handler);
+        window.removeEventListener("focus", follow);
         $("agree").classList.add("agree-hidden");
         if (status.name) {   // agreed to an earlier version: the username stays, Bug Watch as the tick says
           try {
-            if (bw && !status.on) await api.bugwatch_on(status.name);
-            else if (!bw && status.on) await api.bugwatch_off();
+            if (bw && !shown) await api.bugwatch_on(status.name);
+            else if (!bw && shown) await api.bugwatch_off();
           } catch (e) { /* Settings keeps the switch */ }
         } else {
           await askUsername(api, words, bw);   // RUSE Guard is required, so a username is always needed
@@ -142,7 +159,7 @@
       const got = await api.bugwatch_status();
       status = { available: Boolean(got.available), on: Boolean(got.on), name: String(got.name || "") };
     } catch (e) { /* an older back end: no Bug Watch box, the username asked */ }
-    await accept(api, words, status);
+    await accept(api, words, status, (st.terms || 0) > 0);
   }
 
   window.Agreement = { open };
