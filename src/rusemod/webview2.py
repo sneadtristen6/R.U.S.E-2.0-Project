@@ -1,6 +1,6 @@
 """Microsoft's WebView2, which the apps' own window draws its screens with (rusemod.webui): whether this PC has it, and
 Microsoft's small installer for it ("Evergreen Bootstrapper"), which comes with the installed apps: installers/
-build_app.py puts it in the program's webview2 folder, checked to be signed by Microsoft. It fetches WebView2 from
+build_app.py puts it in the installed app's webview2 folder, checked to be signed by Microsoft. It fetches WebView2 from
 Microsoft, so it needs the internet.
 
 It goes in only when the player says yes (the owner, 2026-11-24: "make this like a box in the settings or something
