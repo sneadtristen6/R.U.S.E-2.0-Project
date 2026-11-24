@@ -98,9 +98,22 @@ class Launcher(Base):
         self.assertIn("lowercase", sets[1]["error"])
         self.assertEqual(sets[2]["error"], "it lists no mods")
 
-    def test_play_vanilla_builds_the_copy_with_the_title(self):
-        # the owner, 2026-11-02: "when loading a vanilla game in launcher it doesnt load gold ruse make it so it does"
+    def test_play_vanilla_starts_the_game_as_steam_installed_it_by_default(self):
+        # the owner, 2026-11-24: "Eugen's logo should now be shown by default, just like normal [R.U.S.E.] does": with
+        # nothing chosen, Vanilla is the game as Steam installed it, no copy built
         api = self.api()
+        self.assertEqual(api.game_title(), {"ruse20": False})
+        with mock.patch("rusemod.play.Starter.modded", autospec=True) as modded:
+            j = wait_for(api, api.play("vanilla")["job"])
+        self.assertEqual((j["state"], self.urls, self.started), ("done", [STEAM_PLAY], []), j)
+        modded.assert_not_called()
+        self.assertFalse((self.instances / SHARED).exists())
+
+    def test_play_vanilla_with_the_title_turned_on_builds_the_copy_with_it(self):
+        # the owner, 2026-11-02: "when loading a vanilla game in launcher it doesnt load gold ruse make it so it does",
+        # now for a player who turned R.U.S.E. 2.0's title on (Settings, or the agreement screen's box)
+        api = self.api()
+        self.assertEqual(api.set_game_title(True), {"ruse20": True})
         with mock.patch("rusemod.play.Starter.modded", autospec=True) as modded:
             j = wait_for(api, api.play("vanilla")["job"])
         self.assertEqual((j["state"], self.urls), ("done", []), j)
@@ -111,9 +124,38 @@ class Launcher(Base):
 
     def test_play_vanilla_with_the_games_own_title_goes_through_steam(self):
         api = self.api()
-        api.set_game_title(False)
+        api.set_game_title(True)
+        self.assertEqual(api.set_game_title(False), {"ruse20": False})   # on, then off again
         j = wait_for(api, api.play("vanilla")["job"])
         self.assertEqual((j["state"], self.urls, self.started), ("done", [STEAM_PLAY], []))
+
+    def test_play_vanilla_after_the_update_goes_through_steam(self):
+        # what a Launcher before this update saved: nothing (the gold title, its old default) or "game" (the switch
+        # unticked); both start Vanilla as Steam installed it now, the gold title only after the player turns it on
+        from rusemod.home import save_settings
+        for saved in ({}, {"game_title": "game"}):
+            with self.subTest(saved=saved):
+                save_settings(self.home, saved)
+                self.urls.clear()
+                api = self.api()
+                self.assertEqual(api.game_title(), {"ruse20": False})
+                with mock.patch("rusemod.play.Starter.modded", autospec=True) as modded:
+                    j = wait_for(api, api.play("vanilla")["job"])
+                self.assertEqual((j["state"], self.urls, self.started), ("done", [STEAM_PLAY], []), j)
+                modded.assert_not_called()
+
+    def test_a_mod_set_is_built_with_the_games_own_title_unless_turned_on(self):
+        mod = write_mod(self.tmp.name, "econ-half", {"eco.rndf": "patch $/B ( ProductionPrice *= 0.5 )"})
+        self.mod_set("half", [mod])
+        api = self.api()
+        for on in (False, True):
+            with self.subTest(on=on):
+                if on:
+                    api.set_game_title(True)
+                with mock.patch("rusemod.play.Starter.modded", autospec=True) as modded:
+                    j = wait_for(api, api.play("half")["job"])
+                self.assertEqual(j["state"], "done", j)
+                self.assertIs(modded.call_args[1]["title"], on)
 
     def test_play_a_mod_set_builds_the_copy_and_starts_it(self):
         mod = write_mod(self.tmp.name, "econ-half", {"eco.rndf": "patch $/B ( ProductionPrice *= 0.5 )"})

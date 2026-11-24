@@ -143,7 +143,8 @@ mappa; finirà in una delle prossime mappe.
 
 - **Un solo clic:** scegli un set di mod e premi **Gioca**; il Launcher costruisce una copia moddata separata e la avvia.
 - **R.U.S.E. 2.0 in oro:** il gioco moddato si apre su una scena di battaglia, e i suoi menu e le schermate di caricamento
-  dicono R.U.S.E. 2.0 in oro (Impostazioni tiene il titolo del gioco, se preferisci).
+  dicono R.U.S.E. 2.0 in oro. È spento finché non lo attivi nelle Impostazioni: fino ad allora il gioco tiene il suo
+  titolo e il video del logo di Eugen Systems.
 - **Le mod della community così come sono** (anche i `.rmod` di RUSE-Mod-Manager), un elenco di mod supportate da
   spuntare, ordini di caricamento condivisi in entrambe le direzioni con RUSE-Mod-Manager, e uno strumento di risoluzione
   dei problemi che trova cosa blocca Gioca e lo sistema.

@@ -1,6 +1,7 @@
 """R.U.S.E. 2.0's title in the copies the apps build (rusemod.signature, rusemod.menulogo; the owner, 2026-10-22: "It's
-one of our signatures", and "a toggle somewhere in the settings to go back to generic ruse"): on unless Settings says
-the game's own title; made from the player's own game files and put in under every mod's (a mod changing one of the
+one of our signatures", and "a toggle somewhere in the settings to go back to generic ruse"): off unless the player
+turns it on (the owner, 2026-11-24: "Eugen's logo should now be shown by default ... you can opt in the settings");
+made from the player's own game files and put in under every mod's (a mod changing one of the
 same files has its own used); the platform's own video change isn't held back the way a mod's is; a copy built with
 the other choice is built again; the menu logo's gold leaves the menu's code alone.
 
@@ -64,23 +65,60 @@ def place(char: int) -> bytes:
 
 
 class Settings(unittest.TestCase):
-    def test_on_unless_settings_say_the_games_own(self):
+    """The game's own title unless the player turns ours on (the owner, 2026-11-24: "Eugen's logo should now be shown by
+    default, just like normal [R.U.S.E.] does, and you can opt in the settings to turn on the [R.U.S.E.] 2.0 intro and
+    gold font"): only the opt-in's own value turns it on, so what the apps saved before (nothing for ours, "game" for
+    the game's own) is the game's own title for everyone after the update."""
+
+    @staticmethod
+    def saved(home: Path) -> dict:
+        return json.loads((home / "settings.json").read_text(encoding="utf-8"))
+
+    def test_off_unless_the_player_turns_it_on(self):
         with tempfile.TemporaryDirectory() as tmp:
             home = Path(tmp)
-            self.assertTrue(signature.title_on(home))
-            signature.keep_title(home, False)
-            self.assertEqual(json.loads((home / "settings.json").read_text(encoding="utf-8"))[signature.SETTING],
-                             "game")
-            self.assertFalse(signature.title_on(home))
+            self.assertFalse(signature.title_on(home))            # nothing saved: the game's own
+            self.assertFalse((home / "settings.json").exists())   # (and reading it saves nothing)
+            self.assertFalse(signature.title_on(None))            # (no home at all: the game's own too)
             signature.keep_title(home, True)
-            self.assertNotIn(signature.SETTING, json.loads((home / "settings.json").read_text(encoding="utf-8")))
+            self.assertEqual(self.saved(home)[signature.SETTING], signature.ON)
             self.assertTrue(signature.title_on(home))
+            signature.keep_title(home, False)                    # on, then off again
+            self.assertEqual(self.saved(home)[signature.SETTING], "game")
+            self.assertFalse(signature.title_on(home))
+            signature.keep_title(home, True)                     # and on again
+            self.assertTrue(signature.title_on(home))
+
+    def test_what_the_older_apps_saved_is_the_games_own_title(self):
+        from rusemod.home import save_settings
+        for name, values in (("nothing saved (ours, by the old default)", {"lang": "fr"}),
+                             ("the old switch unticked", {signature.SETTING: "game"}),
+                             ("a value nothing writes", {signature.SETTING: "R.U.S.E. 2.0"}),
+                             ("not a word", {signature.SETTING: True}),
+                             ("empty", {signature.SETTING: ""})):
+            with self.subTest(name), tempfile.TemporaryDirectory() as tmp:
+                home = Path(tmp)
+                save_settings(home, values)
+                self.assertFalse(signature.title_on(home))
+        with tempfile.TemporaryDirectory() as tmp:   # the opt-in's own value, and only it
+            home = Path(tmp)
+            save_settings(home, {signature.SETTING: signature.ON})
+            self.assertTrue(signature.title_on(home))
+
+    def test_the_choice_leaves_the_other_settings_alone(self):
+        from rusemod.home import save_settings
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp)
+            save_settings(home, {"guard": {"terms": 4}, "lang": "ru"})
+            signature.keep_title(home, True)
+            signature.keep_title(home, False)
+            self.assertEqual(self.saved(home), {"guard": {"terms": 4}, "lang": "ru", signature.SETTING: "game"})
 
     def test_a_copy_built_with_the_other_choice_is_built_again(self):
         with tempfile.TemporaryDirectory() as tmp:
             game = write_game(Path(tmp))
             self.assertNotEqual(built_from(game, [], title=True)["key"], built_from(game, [], title=False)["key"])
-            self.assertEqual(built_from(game, [])["key"], built_from(game, [], title=True)["key"])
+            self.assertEqual(built_from(game, [])["key"], built_from(game, [], title=False)["key"])   # (the default)
 
 
 class MenuGold(unittest.TestCase):

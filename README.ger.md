@@ -143,7 +143,8 @@ einer Karte geben willst; er kommt in eine der nächsten Karten.
 
 - **Ein Knopfdruck:** wähl ein Mod-Set und drück auf **Spielen**; der Launcher baut eine getrennte gemoddete Kopie und startet sie.
 - **R.U.S.E. 2.0 in Gold:** das gemoddete Spiel öffnet mit einer Schlachtszene, und seine Menüs und Ladebildschirme zeigen
-  R.U.S.E. 2.0 in Gold (in den Einstellungen bleibt der eigene Titel des Spiels, wenn dir das lieber ist).
+  R.U.S.E. 2.0 in Gold. Das ist aus, bis du es in den Einstellungen einschaltest: bis dahin behält das Spiel seinen
+  eigenen Titel und das Logo-Video von Eugen Systems.
 - **Community-Mods, wie sie sind** (auch `.rmod` von RUSE-Mod-Manager), eine Liste unterstützter Mods zum Anhaken,
   Ladereihenfolgen, in beide Richtungen mit RUSE-Mod-Manager geteilt, und eine Fehlersuche, die findet, was Spielen verhindert,
   und es behebt.

@@ -150,7 +150,8 @@ ou une carte ; il figurera dans une prochaine carte.
 - **Un seul clic :** choisissez un ensemble de mods et appuyez sur **Jouer** ; le Launcher construit une copie moddée
   séparée et la lance.
 - **R.U.S.E. 2.0 en or :** le jeu moddé s'ouvre sur une scène de bataille, et ses menus et écrans de chargement
-  affichent R.U.S.E. 2.0 en or (les Réglages gardent le titre du jeu si vous préférez).
+  affichent R.U.S.E. 2.0 en or. C'est désactivé tant que vous ne l'activez pas dans les Réglages : d'ici là, le jeu
+  garde son propre titre et la vidéo du logo d'Eugen Systems.
 - **Les mods de la communauté tels quels** (les `.rmod` de RUSE-Mod-Manager aussi), une liste de mods compatibles à
   cocher, des ordres de chargement partagés dans les deux sens avec RUSE-Mod-Manager, et un outil de dépannage qui
   trouve ce qui bloque Jouer et le corrige.

@@ -288,9 +288,10 @@ async function changeCopies(choose) {
   loadBackup();  // the clean backup goes beside the copies
 }
 
-// --- the game's title in the modded copies (rusemod.signature through api.game_title): R.U.S.E. 2.0's gold title
-// (the default) or the game's own (the owner, 2026-10-22: "a toggle somewhere in the settings to go back to generic
-// ruse"). Kept in settings.json, the Studio's too; the next Play builds the copy with it ---
+// --- the game's title in the modded copies (rusemod.signature through api.game_title): the game's own (the default,
+// the owner, 2026-11-24: "Eugen's logo should now be shown by default") or R.U.S.E. 2.0's gold title and intro, the
+// player's opt-in (the owner, 2026-10-22: "a toggle somewhere in the settings to go back to generic ruse"). Kept in
+// settings.json, the Studio's too; the next Play builds the copy with it ---
 async function loadTitle() {
   try { state.title = await api().game_title(); } catch (err) { state.title = { note: errorText(err), bad: true }; }
   if (state.settings) renderTitle();
@@ -300,7 +301,7 @@ function renderTitle() {
   const w = state.words, t = state.title || {}, box = $("title-gold");
   text($("set-title-help"), w.set_title_help);
   text($("title-gold-label"), w.title_gold);
-  box.checked = t.ruse20 !== false;
+  box.checked = t.ruse20 === true;  // (unticked unless the player turned it on)
   box.disabled = t.ruse20 === undefined;  // (not read yet)
   const note = $("set-title-note");
   text(note, t.note || "");

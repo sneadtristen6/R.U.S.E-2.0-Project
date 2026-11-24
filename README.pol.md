@@ -143,7 +143,8 @@ trafi do jednej z kolejnych map.
 - **Jedno kliknięcie:** wybierz zestaw modów i naciśnij **Graj**; Launcher buduje osobną zmodowaną kopię i ją
   uruchamia.
 - **R.U.S.E. 2.0 w złocie:** zmodowana gra otwiera się sceną bitwy, a jej menu i ekrany ładowania mówią R.U.S.E. 2.0
-  w złocie (Ustawienia zachowają oryginalny tytuł gry, jeśli wolisz).
+  w złocie. Jest to wyłączone, dopóki nie włączysz tego w Ustawieniach: do tego czasu gra zachowuje swój oryginalny
+  tytuł i film z logo Eugen Systems.
 - **Mody społeczności takie, jakie są** (także `.rmod` z RUSE-Mod-Manager), lista obsługiwanych modów do zaznaczenia,
   kolejności ładowania udostępniane w obie strony z RUSE-Mod-Manager oraz rozwiązywanie problemów, które znajduje, co
   blokuje Graj, i to naprawia.

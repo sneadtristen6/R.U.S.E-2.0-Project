@@ -143,7 +143,8 @@ některé z příštích map.
 
 - **Jedno stisknutí:** vyberte sadu modů a stiskněte **Hrát**; Launcher sestaví samostatnou upravenou kopii a spustí ji.
 - **R.U.S.E. 2.0 ve zlaté:** upravená hra se otevře na bitevní scéně a její nabídky a obrazovky načítání ukazují
-  R.U.S.E. 2.0 zlatě (pokud chcete raději původní název hry, ponechá ho Nastavení).
+  R.U.S.E. 2.0 zlatě. Je to vypnuté, dokud to nezapnete v Nastavení: do té doby si hra ponechá svůj původní název a
+  video s logem Eugen Systems.
 - **Komunitní mody tak, jak jsou** (i soubory `.rmod` z RUSE-Mod-Manager), seznam podporovaných modů k zaškrtnutí,
   pořadí načítání sdílená oběma směry s RUSE-Mod-Manager a řešení potíží, které najde, co brání tlačítku Hrát, a
   opraví to.

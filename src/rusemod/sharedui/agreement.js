@@ -5,8 +5,12 @@
 // build a mod?" / "Choose your mods".
 //
 // RUSE Guard, with its program check, is required (Accept -> guard_accept_terms); Bug Watch (bugwatch_on) is opt-in.
-// Then "Choose your username" -- always, since RUSE Guard is required -> set_username (guard-only) or bugwatch_on. Gated
-// off until RUSE Guard is live (fairOn); the words come from the app (words.toml agree_*/username_*, English fallback).
+// So is R.U.S.E. 2.0's title and intro: a box apart from Accept, unticked (the owner, 2026-11-24: "Allow them to have a
+// selectable point where hey, if you want to have the Ruse 2.0 screen, do this. Click this."); ticked when Accept is
+// pressed, it's kept through the app's set_game_title, as Settings' switch keeps it (rusemod.signature), and Accept
+// never waits on it. Then "Choose your username" -- always, since RUSE Guard is required -> set_username (guard-only)
+// or bugwatch_on. Gated off until RUSE Guard is live (fairOn); the words come from the app (words.toml agree_*/
+// username_*, English fallback).
 (function () {
   "use strict";
   const $ = (id) => document.getElementById(id);
@@ -39,6 +43,7 @@
       '<h2 id="agree-guard-title"></h2><p id="agree-guard" class="small"></p>' +
       '<label class="agree-row agree-hidden" id="agree-bugwatch-row"><input id="agree-bugwatch" type="checkbox"> <span id="agree-bugwatch-label"></span></label>' +
       '<p id="agree-bugwatch-note" class="muted small agree-hidden"></p>' +
+      '<label class="agree-row" id="agree-ruse20-row"><input id="agree-ruse20" type="checkbox"> <span id="agree-ruse20-label"></span></label>' +
       '<details><summary id="agree-full-toggle" class="small"></summary><pre id="agree-full" class="agree-full"></pre></details>' +
       '<p id="agree-accept-note" class="muted small"></p>' +
       '<div class="actions"><button id="agree-accept" type="button" class="primary"></button></div>' +
@@ -63,6 +68,8 @@
     $("agree-bugwatch-note").classList.toggle("agree-hidden", !bugwatch);
     text($("agree-bugwatch-label"), w.bugwatch_on_label);
     text($("agree-bugwatch-note"), w.set_bugwatch_help);
+    text($("agree-ruse20-label"), w.agree_ruse20);
+    $("agree-ruse20").title = $("agree-ruse20-row").title = w.tip_agree_ruse20 || "";   // (its tooltip, as every control's)
     text($("agree-full-toggle"), w.agree_full_toggle);
     text($("agree-full"), w.agree_full);
     text($("agree-accept-note"), w.agree_accept_note);
@@ -77,15 +84,20 @@
     return new Promise((done) => {
       renderAgreement(words, status.available);
       $("agree-bugwatch").checked = Boolean(status.available && status.on);
+      $("agree-ruse20").checked = false;   // R.U.S.E. 2.0's title: only the player's own tick turns it on
       const btn = $("agree-accept");
       const handler = async () => {
         const bw = status.available && $("agree-bugwatch").checked;
+        const ruse20 = $("agree-ruse20").checked;
         btn.disabled = true;
         try {
           await api.guard_accept_terms();   // RUSE Guard, with its program check, is on for everyone who accepts
         } catch (e) { btn.disabled = false; return; }  // a failure keeps the screen up; the player can try again
         btn.removeEventListener("click", handler);
         $("agree").classList.add("agree-hidden");
+        if (ruse20) {   // ticked: the title and intro on, as Settings' switch does; unticked: the choice stays as it is
+          try { await api.set_game_title(true); } catch (e) { /* Settings keeps the switch */ }
+        }
         if (status.name) {   // agreed to an earlier version: the username stays, Bug Watch as the tick says
           try {
             if (bw && !status.on) await api.bugwatch_on(status.name);

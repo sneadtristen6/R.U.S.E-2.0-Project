@@ -267,13 +267,15 @@ class LauncherApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedC
             keep_instances_dir(self._home, None)
         return self.copies_folder()
 
-    # --- the game's title in the copies (rusemod.signature): R.U.S.E. 2.0's gold title, or the game's own ---
+    # --- the game's title in the copies (rusemod.signature): the game's own, or R.U.S.E. 2.0's gold title ---
     def game_title(self) -> dict:
-        """Settings' title switch: {"ruse20": True} when the copies get R.U.S.E. 2.0's gold title (the default)."""
+        """Settings' title switch: {"ruse20": True} when the copies get R.U.S.E. 2.0's gold title (the player's
+        opt-in; the game's own title is the default)."""
         return {"ruse20": title_on(self._home)}
 
     def set_game_title(self, ruse20: bool) -> dict:
-        """Keep the choice (settings.json, the Studio's too); the next Play builds the copy with it."""
+        """Keep the choice (settings.json, the Studio's too): Settings' switch, and the agreement screen's box
+        (shared/agreement.js) when it's ticked at Accept; the next Play builds the copy with it."""
         keep_title(self._home, bool(ruse20))
         return self.game_title()
 
@@ -1017,7 +1019,7 @@ class LauncherApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedC
         return buildtext.worded_view(view, self._lang())  # Play's lines in the player's language
 
     def _play(self, chosen: dict, say) -> None:
-        title = title_on(self._home)  # R.U.S.E. 2.0's title, unless Settings says the game's
+        title = title_on(self._home)  # the game's own title, unless the player turned R.U.S.E. 2.0's on
         if chosen["id"] == VANILLA and not title:
             self._starter.vanilla(say)  # the game's own title: Steam starts the game as it installed it
             return

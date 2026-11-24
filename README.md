@@ -138,7 +138,7 @@ an upcoming map.
 
 - **One press:** pick a mod set and press **Play**; the Launcher builds a separate modded copy and starts it.
 - **R.U.S.E. 2.0 in gold:** the modded game opens on a battle scene, and its menus and loading screens say R.U.S.E. 2.0
-  in gold (Settings keeps the game's own title if you'd rather).
+  in gold. It's off unless you turn it on in Settings: until then the game keeps its own title and Eugen's logo video.
 - **Community mods as they are** (RUSE-Mod-Manager's `.rmod` too), a list of supported mods to tick, load orders
   shared both ways with RUSE-Mod-Manager, and a troubleshooter that finds what stops Play and fixes it.
 - **Updates itself**, in eleven languages: the game's ten, and Persian.
