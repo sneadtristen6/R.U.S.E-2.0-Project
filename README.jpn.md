@@ -70,7 +70,6 @@ R.U.S.E. 2.0 は私の初めてのモッディングプロジェクトです。�
 | オプション | 金額 | 掲載 |
 | --- | --- | --- |
 | [Buy me a coffee](https://www.patreon.com/c/sneadtristen6/shop) | 1回 $5 | プロジェクトを続ける助けになる、ちょっとしたチップです。 |
-| [Request a feature](https://www.patreon.com/c/sneadtristen6/shop) | 1回 $10 | R.U.S.E. 2.0 に欲しい機能を教えてください。 |
 | [Above & Beyond Supporter](https://www.patreon.com/SneadTristen6/posts/171328212) | 1回 $20 | GitHub とMODのクレジットの Above & Beyond Supporters の欄に、あなたが選んだ名前。 |
 | [Monumental Supporter](https://www.patreon.com/SneadTristen6/posts/monumental-100-171328695) | 1回 $100 | クレジットの Monumental Supporters の欄の先頭に、あなたが選んだ名前。さらに、ゲームの中の何か（町、橋、飛行場、またはマップそのもの）に名前を付けられます。 |
 

@@ -73,7 +73,6 @@ R.U.S.E. 2.0 je můj první moddingový projekt. Pokud chcete podpořit vývoj a
 | Možnost | Částka | Uznání |
 | --- | --- | --- |
 | [Buy me a coffee](https://www.patreon.com/c/sneadtristen6/shop) | $5 jednorázově | Malé spropitné, které pomáhá udržet projekt v chodu. |
-| [Request a feature](https://www.patreon.com/c/sneadtristen6/shop) | $10 jednorázově | Napište mi, jakou funkci byste v R.U.S.E. 2.0 chtěli. |
 | [Above & Beyond Supporter](https://www.patreon.com/SneadTristen6/posts/171328212) | $20 jednorázově | Vámi zvolené jméno v sekci Above & Beyond Supporters v poděkování na GitHubu a v modu. |
 | [Monumental Supporter](https://www.patreon.com/SneadTristen6/posts/monumental-100-171328695) | $100 jednorázově | Vámi zvolené jméno na prvním místě v sekci Monumental Supporters v poděkování a můžete něco ve hře pojmenovat: město, most, letiště nebo celou mapu. |
 

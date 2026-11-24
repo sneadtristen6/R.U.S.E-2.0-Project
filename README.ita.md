@@ -73,7 +73,6 @@ R.U.S.E. 2.0 è il mio primo progetto di modding. Se vuoi sostenere lo sviluppo 
 | Opzione | Importo | Riconoscimento |
 | --- | --- | --- |
 | [Buy me a coffee](https://www.patreon.com/c/sneadtristen6/shop) | $5 una volta | Una piccola mancia che aiuta a mandare avanti il progetto. |
-| [Request a feature](https://www.patreon.com/c/sneadtristen6/shop) | $10 una volta | Dimmi una funzione che vorresti in R.U.S.E. 2.0. |
 | [Above & Beyond Supporter](https://www.patreon.com/SneadTristen6/posts/171328212) | $20 una volta | Il nome che scegli nella sezione Above & Beyond Supporters dei crediti su GitHub e nelle mod. |
 | [Monumental Supporter](https://www.patreon.com/SneadTristen6/posts/monumental-100-171328695) | $100 una volta | Il nome che scegli per primo nella sezione Monumental Supporters dei crediti, e puoi dare un nome a qualcosa nel gioco: una città, un ponte, un aeroporto o un'intera mappa. |
 

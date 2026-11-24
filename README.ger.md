@@ -73,7 +73,6 @@ willst, [besuch mein Patreon](https://www.patreon.com/SneadTristen6). Jede Unter
 | Option | Betrag | Anerkennung |
 | --- | --- | --- |
 | [Buy me a coffee](https://www.patreon.com/c/sneadtristen6/shop) | $5 einmalig | Ein kleines Trinkgeld, das hilft, das Projekt am Laufen zu halten. |
-| [Request a feature](https://www.patreon.com/c/sneadtristen6/shop) | $10 einmalig | Sag mir, welches Feature du dir in R.U.S.E. 2.0 wünschst. |
 | [Above & Beyond Supporter](https://www.patreon.com/SneadTristen6/posts/171328212) | $20 einmalig | Dein gewählter Name im Abschnitt Above & Beyond Supporters der Danksagungen auf GitHub und in den Mods. |
 | [Monumental Supporter](https://www.patreon.com/SneadTristen6/posts/monumental-100-171328695) | $100 einmalig | Dein gewählter Name ganz vorn im Abschnitt Monumental Supporters der Danksagungen, und du darfst etwas im Spiel benennen: eine Stadt, eine Brücke, einen Flugplatz oder eine ganze Karte. |
 

@@ -75,7 +75,6 @@ construire.
 | Option | Montant | Reconnaissance |
 | --- | --- | --- |
 | [Buy me a coffee](https://www.patreon.com/c/sneadtristen6/shop) | 5 $ une fois | Un petit pourboire qui aide à faire vivre le projet. |
-| [Request a feature](https://www.patreon.com/c/sneadtristen6/shop) | 10 $ une fois | Dites-moi quelle fonctionnalité vous aimeriez dans R.U.S.E. 2.0. |
 | [Above & Beyond Supporter](https://www.patreon.com/SneadTristen6/posts/171328212) | 20 $ une fois | Le nom de votre choix dans la section Above & Beyond Supporters des crédits sur GitHub et dans les mods. |
 | [Monumental Supporter](https://www.patreon.com/SneadTristen6/posts/monumental-100-171328695) | 100 $ une fois | Le nom de votre choix en tête de la section Monumental Supporters des crédits, et vous pouvez nommer quelque chose dans le jeu : une ville, un pont, un aérodrome ou une carte entière. |
 

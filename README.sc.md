@@ -71,7 +71,6 @@ R.U.S.E. 2.0 是我的第一个模组项目。如果你想支持开发、关注�
 | 选项 | 金额 | 致谢方式 |
 | --- | --- | --- |
 | [请我喝杯咖啡（Buy me a coffee）](https://www.patreon.com/c/sneadtristen6/shop) | 一次 $5 | 一点小小的打赏，帮助项目继续做下去。 |
-| [功能请求（Request a feature）](https://www.patreon.com/c/sneadtristen6/shop) | 一次 $10 | 告诉我你希望 R.U.S.E. 2.0 加入的功能。 |
 | [卓越支持者（Above & Beyond Supporter）](https://www.patreon.com/SneadTristen6/posts/171328212) | 一次 $20 | 你选择的名称会出现在 GitHub 和模组致谢的“卓越支持者”部分。 |
 | [丰碑级支持者（Monumental Supporter）](https://www.patreon.com/SneadTristen6/posts/monumental-100-171328695) | 一次 $100 | 你选择的名称排在致谢“丰碑级支持者”部分的最前面，而且你可以为游戏里的某样东西命名：一座城镇、一座桥、一个机场，或一整张地图。 |
 

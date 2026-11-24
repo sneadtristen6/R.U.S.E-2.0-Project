@@ -73,7 +73,6 @@ R.U.S.E. 2.0 اولین پروژهٔ مادسازی من است. اگر می‌�
 | گزینه | مبلغ | قدردانی |
 | --- | --- | --- |
 | [یک قهوه مهمانم کنید (Buy me a coffee)](https://www.patreon.com/c/sneadtristen6/shop) | $5، یک بار | انعامی کوچک که به ادامهٔ پروژه کمک می‌کند. |
-| [درخواست قابلیت (Request a feature)](https://www.patreon.com/c/sneadtristen6/shop) | $10، یک بار | قابلیتی را که در R.U.S.E. 2.0 می‌خواهید به من بگویید. |
 | [حامی Above & Beyond](https://www.patreon.com/SneadTristen6/posts/171328212) | $20، یک بار | نامی که انتخاب می‌کنید در بخش حامیان Above & Beyond در سپاسگزاری‌های GitHub و ماد. |
 | [حامی Monumental](https://www.patreon.com/SneadTristen6/posts/monumental-100-171328695) | $100، یک بار | نامی که انتخاب می‌کنید در صدر بخش حامیان Monumental در سپاسگزاری‌ها، و می‌توانید روی چیزی در بازی نام بگذارید: یک شهر، یک پل، یک فرودگاه یا یک نقشهٔ کامل. |
 
