@@ -64,9 +64,11 @@ isn't touched.
 Pick your mod set and press **Play**. The first time, the Launcher builds a modded copy of the game (a minute or so);
 after that only what changed. Then R.U.S.E. starts, with your mods.
 
-Your modded game says **R.U.S.E. 2.0 in gold**: it opens on a battle scene, and its main menu, menus and loading
-screens carry the gold title. It's made on your PC from your own game's files the first time (a few minutes, once).
-To keep the game's own title, untick **The game's title** in **Settings**.
+**R.U.S.E. 2.0 in gold** is off unless you turn it on: until then your game keeps its own title and Eugen's logo
+video. To turn it on, tick **Use the gold R.U.S.E. 2.0 title and intro** under **The game's title** in **Settings**
+(the agreement the Launcher shows when it first opens has a box for it too). The game then opens on a battle scene,
+with mods or without, and its main menu, menus and loading screens carry the gold title. It's made on your PC from
+your own game's files the first time (a few minutes, once).
 
 > [!NOTE]
 > Starting R.U.S.E. from **Steam** starts the game **without** mods, as always. To play with mods, start it from the

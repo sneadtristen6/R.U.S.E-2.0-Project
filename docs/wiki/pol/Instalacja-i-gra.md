@@ -66,9 +66,12 @@ twojej gry nie jest ruszany.
 Wybierz swój zestaw modów i naciśnij **Graj**. Za pierwszym razem Launcher buduje zmodowaną kopię gry (mniej więcej
 minutę); potem tylko to, co się zmieniło. Następnie R.U.S.E. startuje z twoimi modami.
 
-Twoja zmodowana gra ma napis **R.U.S.E. 2.0 na złoto**: otwiera się sceną bitwy, a jej menu główne, menu i ekrany
-wczytywania noszą złoty tytuł. Powstaje on na twoim PC z plików twojej własnej gry za pierwszym razem (kilka minut,
-jeden raz). Aby zachować tytuł z gry, odznacz **Tytuł gry** w **Ustawieniach**.
+**R.U.S.E. 2.0 na złoto** jest wyłączone, dopóki tego nie włączysz: do tego czasu twoja gra zachowuje swój oryginalny
+tytuł i film z logo Eugen Systems. Aby to włączyć, zaznacz w **Ustawieniach**, w sekcji **Tytuł gry**, pole
+**Używaj złotego tytułu i filmu wprowadzającego R.U.S.E. 2.0** (umowa, którą Launcher pokazuje przy pierwszym
+uruchomieniu, też ma na to pole). Gra otwiera się wtedy sceną bitwy, z modami lub bez, a jej menu główne, menu i
+ekrany wczytywania noszą złoty tytuł. Powstaje on na twoim PC z plików twojej własnej gry za pierwszym razem (kilka
+minut, jeden raz).
 
 > [!NOTE]
 > Uruchomienie R.U.S.E. ze **Steama** uruchamia grę **bez** modów, jak zawsze. Aby grać z modami, uruchom ją przyciskiem

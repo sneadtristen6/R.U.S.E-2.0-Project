@@ -66,10 +66,12 @@ Bibliothek hinzufügen**. Dein Spielordner wird nicht angerührt.
 Wähle dein Mod-Set und drücke **Spielen**. Beim ersten Mal baut der Launcher eine gemoddete Kopie des Spiels (etwa eine
 Minute); danach nur das, was sich geändert hat. Dann startet R.U.S.E., mit deinen Mods.
 
-Dein gemoddetes Spiel zeigt **R.U.S.E. 2.0 in Gold**: es öffnet sich mit einer Schlachtszene, und sein Hauptmenü, die
-Menüs und die Ladebildschirme tragen den goldenen Titel. Er wird beim ersten Mal auf deinem PC aus den Dateien deines
-eigenen Spiels gemacht (ein paar Minuten, einmal). Um den eigenen Titel des Spiels zu behalten, nimm in den
-**Einstellungen** unter **Der Titel des Spiels** den Haken weg.
+**R.U.S.E. 2.0 in Gold** ist aus, bis du es einschaltest: Bis dahin behält dein Spiel seinen eigenen Titel und das
+Logo-Video von Eugen Systems. Zum Einschalten setz in den **Einstellungen** unter **Der Titel des Spiels** das Häkchen
+bei **Den goldenen Titel und das Intro von R.U.S.E. 2.0 verwenden** (die Vereinbarung, die der Launcher beim ersten
+Öffnen zeigt, hat dafür auch ein Kästchen). Dann öffnet sich das Spiel mit einer Schlachtszene, mit Mods oder ohne,
+und sein Hauptmenü, die Menüs und die Ladebildschirme tragen den goldenen Titel. Er wird beim ersten Mal auf deinem
+PC aus den Dateien deines eigenen Spiels gemacht (ein paar Minuten, einmal).
 
 > [!NOTE]
 > Startest du R.U.S.E. über **Steam**, startet das Spiel **ohne** Mods, wie immer. Um mit Mods zu spielen, starte es

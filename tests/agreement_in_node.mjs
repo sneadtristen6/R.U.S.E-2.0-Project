@@ -5,15 +5,16 @@
 //
 //   node agreement_in_node.mjs <agreement.js> <scenario.json>
 //
-// scenario: {"cases": [{"name", "words": {key: text}, "tick": bool, "accept": n, "username": text}]}; each case on a
-// fresh page (the screen's code loaded again, its markup made from the HTML it writes):
+// scenario: {"cases": [{"name", "words": {key: text}, "tick": bool, "untick": bool, "accept": n, "username": text}]};
+// each case on a fresh page (the screen's code loaded again, its markup made from the HTML it writes):
 //   -> {"id", "begin": name}                 the test gets the case's app ready (answered {"ok": true})
 //   Agreement.open({api, words, fairOn: true}); the page left to finish; what the screen shows read ("shown"); the box
-//   ticked when the case says so; Accept clicked ("accept" times, 1 if not said; the page left to finish after each);
-//   when the username is asked, it typed and Save clicked
+//   ticked or unticked when the case says so; Accept clicked ("accept" times, 1 if not said; the page left to finish
+//   after each); when the username is asked, it typed and Save clicked
 //   -> {"id", "call": name, "args": [...]}   each call the screen makes, answered {"value"} or {"error": its message}
-//   -> {"id", "end": name, "out": {"shown", "calls": [names], "finished": open() returned, "agree_shown",
-//      "username_shown", "box_after": the box's tick at the end, "error"?}}
+//   -> {"id", "end": name, "out": {"shown", "calls": [names], "made": [[name, args]], "finished": open() returned,
+//      "result": what it returned (null for nothing), "agree_shown", "username_shown", "box_after": the box's tick at
+//      the end, "error"?}}
 //   -> {"id", "done": true}
 import fs from "node:fs";
 import readline from "node:readline";
@@ -112,24 +113,26 @@ for (const c of scenario.cases) {
     setTimeout, clearTimeout, String, Boolean, Object, Array, Error };
   ctx.window = ctx;
   vm.createContext(ctx);
-  const calls = [];
+  const calls = [], made = [];
   const api = new Proxy({}, {
     get: (_t, name) => {
       if (name === "then" || typeof name !== "string") return undefined;
       return async (...args) => {
         calls.push(name);
+        made.push([name, args]);
         const r = await ask({ call: name, args });
         if ("error" in r) throw new Error(r.error);
         return r.value;
       };
     },
   });
-  const out = { calls };
+  const out = { calls, made };
   try {
     vm.runInContext(code, ctx, { filename: "agreement.js" });
     let finished = false;
     const opened = ctx.window.Agreement.open({ api, words: c.words, fairOn: true });
-    opened.then(() => { finished = true; }, (err) => { out.error = String((err && err.stack) || err); });
+    opened.then((v) => { finished = true; out.result = v === undefined ? null : JSON.parse(JSON.stringify(v)); },
+      (err) => { out.error = String((err && err.stack) || err); });
     await settle();
     const box = byId.get("agree-ruse20"), row = byId.get("agree-ruse20-row"), label = byId.get("agree-ruse20-label");
     out.shown = {
@@ -141,6 +144,7 @@ for (const c of scenario.cases) {
       accept: byId.get("agree-accept") ? byId.get("agree-accept").textContent : null,
     };
     if (c.tick && box) box.checked = true;
+    if (c.untick && box) box.checked = false;
     for (let k = 0; k < (c.accept || 1); k++) {
       byId.get("agree-accept").click();
       await settle();

@@ -68,9 +68,12 @@ añadir a la biblioteca**. La carpeta de tu juego no se toca.
 Elige tu conjunto de mods y pulsa **Jugar**. La primera vez, el Launcher construye una copia con mods del juego (un
 minuto o así); después, solo lo que cambió. Luego R.U.S.E. se inicia, con tus mods.
 
-Tu juego con mods dice **R.U.S.E. 2.0 en oro**: se abre con una escena de batalla, y su menú principal, sus menús y sus
-pantallas de carga llevan el título dorado. Se hace en tu PC con los archivos de tu propio juego la primera vez (unos
-minutos, una sola vez). Para conservar el título del propio juego, desmarca **El título del juego** en **Ajustes**.
+**R.U.S.E. 2.0 en oro** está desactivado hasta que lo actives: hasta entonces, tu juego conserva su propio título y el
+vídeo del logo de Eugen Systems. Para activarlo, marca **Usar el título dorado y la introducción de R.U.S.E. 2.0** en
+**El título del juego**, en **Ajustes** (el acuerdo que el Launcher muestra la primera vez que se abre también tiene
+una casilla para ello). El juego se abre entonces con una escena de batalla, con mods o sin ellos, y su menú
+principal, sus menús y sus pantallas de carga llevan el título dorado. Se hace en tu PC con los archivos de tu propio
+juego la primera vez (unos minutos, una sola vez).
 
 > [!NOTE]
 > Iniciar R.U.S.E. desde **Steam** inicia el juego **sin** mods, como siempre. Para jugar con mods, inícialo con

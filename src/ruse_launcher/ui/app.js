@@ -1823,7 +1823,8 @@ async function start() {
   checkUpdate();
   await openLangPick(true);  // until a language is picked there: "Choose your language", first
   // then the shared agreement + username (shared/agreement.js), once RUSE Guard is live, before "Choose your mods"
-  await window.Agreement.open({ api: api(), words: state.words, fairOn: state.fairOn });
+  const agreed = await window.Agreement.open({ api: api(), words: state.words, fairOn: state.fairOn });
+  if (agreed && agreed.problem) setMessage(agreed.problem, "bad");  // (its title box's choice couldn't be kept)
   await firstBackup();
   openWelcome();  // the first run: "Choose your mods"
 }

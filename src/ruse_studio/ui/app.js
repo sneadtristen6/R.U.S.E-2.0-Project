@@ -6722,7 +6722,8 @@ async function start() {
   // then the shared agreement + username (shared/agreement.js), once RUSE Guard is live, before the start screen
   let guardLive = false;
   try { guardLive = (await api().fair_play_on()).on; } catch { guardLive = false; }
-  await window.Agreement.open({ api: api(), words: state.words, fairOn: guardLive });
+  const agreed = await window.Agreement.open({ api: api(), words: state.words, fairOn: guardLive });
+  if (agreed && agreed.problem) say(agreed.problem, "error");  // (its title box's choice couldn't be kept)
   filesMoved().catch(() => {});  // an older back end: nothing moved
   firstBackup(status.ready).catch(problem);
   // the start screen (startflow.js, loaded after this file: the page's scripts all read first)

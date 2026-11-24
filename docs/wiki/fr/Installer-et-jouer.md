@@ -67,10 +67,12 @@ dossier du jeu) : cliquez sur **Convertir un ancien mod…**, choisissez son dos
 Choisissez votre ensemble de mods et appuyez sur **Jouer**. La première fois, le Launcher construit une copie moddée du
 jeu (une minute environ) ; ensuite, seulement ce qui a changé. Puis R.U.S.E. démarre, avec vos mods.
 
-Votre jeu moddé affiche **R.U.S.E. 2.0 en or** : il s'ouvre sur une scène de bataille, et son menu principal, ses
-menus et ses écrans de chargement portent le titre doré. Il est fait sur votre PC à partir des fichiers de votre propre
-jeu la première fois (quelques minutes, une fois). Pour garder le titre du jeu, décochez **Le titre du jeu** dans les
-**Réglages**.
+**R.U.S.E. 2.0 en or** est désactivé tant que vous ne l'activez pas : d'ici là, votre jeu garde son propre titre et
+la vidéo du logo d'Eugen Systems. Pour l'activer, cochez **Utiliser le titre doré et l'intro de R.U.S.E. 2.0** sous
+**Le titre du jeu** dans les **Réglages** (l'accord que le Launcher affiche à sa première ouverture a aussi une case
+pour cela). Le jeu s'ouvre alors sur une scène de bataille, avec ou sans mods, et son menu principal, ses menus et
+ses écrans de chargement portent le titre doré. Il est fait sur votre PC à partir des fichiers de votre propre jeu la
+première fois (quelques minutes, une fois).
 
 > [!NOTE]
 > Lancer R.U.S.E. depuis **Steam** lance le jeu **sans** mods, comme toujours. Pour jouer avec des mods, lancez-le avec

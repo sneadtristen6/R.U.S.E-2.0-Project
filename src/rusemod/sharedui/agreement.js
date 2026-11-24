@@ -5,11 +5,13 @@
 // build a mod?" / "Choose your mods".
 //
 // RUSE Guard, with its program check, is required (Accept -> guard_accept_terms); Bug Watch (bugwatch_on) is opt-in.
-// So is R.U.S.E. 2.0's title and intro: a box apart from Accept, unticked (the owner, 2026-11-24: "Allow them to have a
-// selectable point where hey, if you want to have the Ruse 2.0 screen, do this. Click this."); ticked when Accept is
-// pressed, it's kept through the app's set_game_title, as Settings' switch keeps it (rusemod.signature), and Accept
-// never waits on it. Then "Choose your username" -- always, since RUSE Guard is required -> set_username (guard-only)
-// or bugwatch_on. Gated off until RUSE Guard is live (fairOn); the words come from the app (words.toml agree_*/
+// So is R.U.S.E. 2.0's title and intro: a box apart from Accept, unticked unless the player turned the title on before
+// (the owner, 2026-11-24: "Allow them to have a selectable point where hey, if you want to have the Ruse 2.0 screen, do
+// this. Click this."). Accept doesn't depend on it: only after Accept has worked is a box the player changed kept,
+// through the app's set_game_title, as Settings' switch keeps it (rusemod.signature). If keeping it fails, open()
+// hands the app a line to say (words.toml agree_ruse20_failed), so the choice is never lost unsaid; Settings can still
+// change it. Then "Choose your username" -- always, since RUSE Guard is required -> set_username (guard-only) or
+// bugwatch_on. Gated off until RUSE Guard is live (fairOn); the words come from the app (words.toml agree_*/
 // username_*, English fallback).
 (function () {
   "use strict";
@@ -79,12 +81,17 @@
   // `status`: bugwatch_status() as the app had it ({available, on, name}). A player shown a new version of the
   // agreement (rusemod.guard.TERMS_VERSION raised) has a username already: it stays (asked again, a new #number would
   // have replaced it, and with it whose crashes and matches are whose), and the Bug Watch tick starts as it is now,
-  // so the box says what accepting leaves on; untick it and Bug Watch goes off, tick it and it comes on.
-  function accept(api, words, status) {
+  // so the box says what accepting leaves on; untick it and Bug Watch goes off, tick it and it comes on. `titleOn`:
+  // whether R.U.S.E. 2.0's title is on now (game_title; null when it couldn't be read). Its box starts so: unticked for
+  // everyone who hasn't turned it on, ticked for a player who did (on an earlier version, or in Settings), so the box
+  // says what accepting leaves on too; only a change the player makes is kept. Resolves with {problem}: a line for the
+  // app to say, or "" when there's none.
+  function accept(api, words, status, titleOn) {
     return new Promise((done) => {
+      const w = words;
       renderAgreement(words, status.available);
       $("agree-bugwatch").checked = Boolean(status.available && status.on);
-      $("agree-ruse20").checked = false;   // R.U.S.E. 2.0's title: only the player's own tick turns it on
+      $("agree-ruse20").checked = titleOn === true;   // R.U.S.E. 2.0's title: never ticked for the player
       const btn = $("agree-accept");
       const handler = async () => {
         const bw = status.available && $("agree-bugwatch").checked;
@@ -95,8 +102,10 @@
         } catch (e) { btn.disabled = false; return; }  // a failure keeps the screen up; the player can try again
         btn.removeEventListener("click", handler);
         $("agree").classList.add("agree-hidden");
-        if (ruse20) {   // ticked: the title and intro on, as Settings' switch does; unticked: the choice stays as it is
-          try { await api.set_game_title(true); } catch (e) { /* Settings keeps the switch */ }
+        let problem = "";
+        if (ruse20 !== (titleOn === true)) {   // the player changed the box: kept as Settings' switch keeps it
+          try { await api.set_game_title(ruse20); }
+          catch (e) { problem = w.agree_ruse20_failed || (e && e.message) || String(e); }   // (said by the app)
         }
         if (status.name) {   // agreed to an earlier version: the username stays, Bug Watch as the tick says
           try {
@@ -106,7 +115,7 @@
         } else {
           await askUsername(api, words, bw);   // RUSE Guard is required, so a username is always needed
         }
-        done();
+        done({ problem });
       };
       btn.addEventListener("click", handler);
     });
@@ -154,7 +163,9 @@
       const got = await api.bugwatch_status();
       status = { available: Boolean(got.available), on: Boolean(got.on), name: String(got.name || "") };
     } catch (e) { /* an older back end: no Bug Watch box, the username asked */ }
-    await accept(api, words, status);
+    let titleOn = null;   // R.U.S.E. 2.0's title as it is now; not read: its box starts unticked
+    try { titleOn = (await api.game_title()).ruse20 === true; } catch (e) { /* an older back end */ }
+    return accept(api, words, status, titleOn);   // {problem}: a line the app says (the title box's choice not kept)
   }
 
   window.Agreement = { open };

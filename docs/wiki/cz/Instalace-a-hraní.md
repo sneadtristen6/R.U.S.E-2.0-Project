@@ -64,9 +64,11 @@ Složky vaší hry se to nedotkne.
 Vyberte svou sadu módů a stiskněte **Hrát**. Poprvé Launcher sestaví kopii hry s mody (asi minutu); potom už jen to,
 co se změnilo. Pak se spustí R.U.S.E. s vašimi mody.
 
-Vaše hra s mody říká **R.U.S.E. 2.0 ve zlaté**: otevře se bitevní scénou a její hlavní nabídka, nabídky a načítací
-obrazovky nesou zlatý název. Udělá se na vašem PC ze souborů vaší vlastní hry napoprvé (několik minut, jednou).
-Chcete-li ponechat původní název hry, zrušte v **Nastavení** zaškrtnutí **Název hry**.
+**R.U.S.E. 2.0 ve zlaté** je vypnuté, dokud ho nezapnete: do té doby si vaše hra ponechá svůj původní název a video
+s logem Eugen Systems. Chcete-li ho zapnout, zaškrtněte v **Nastavení** v části **Název hry** políčko
+**Používat zlatý název a intro R.U.S.E. 2.0** (smlouva, kterou Launcher ukáže při prvním spuštění, má pro to také
+políčko). Hra se pak otevře bitevní scénou, s mody i bez nich, a její hlavní nabídka, nabídky a načítací obrazovky
+nesou zlatý název. Udělá se na vašem PC ze souborů vaší vlastní hry napoprvé (několik minut, jednou).
 
 > [!NOTE]
 > Spuštění R.U.S.E. ze **Steamu** spustí hru **bez** modů, jako vždy. Chcete-li hrát s mody, spusťte ji tlačítkem
