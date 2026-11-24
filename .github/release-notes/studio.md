@@ -1,6 +1,8 @@
 **RUSE Studio, a preview for modders.** Browse the game's units in any of its ten languages, change them in a mod of
 your own, and test it in the game. Your Steam install is never changed.
 
+**0.9.8.22:** Only the project page changes: its support options are updated. Nothing changes in the app.
+
 **0.9.8.21:** A fix behind the scenes: our own tests pass again on every system GitHub runs them on. Nothing changes in the app.
 
 **0.9.8.20:** Your own animated models (a horse and rider, or any creature), animations for one unit or for the units you pick, the Generic Horse, a squad soldier by soldier and one Open in Blender (Studio); a squad's own soldier, changed in Blender (Studio); a Having trouble? link to new wiki pages (Studio); 279 more messages in plain words, in your language; guards where some mod sets stopped the game; an upgrade made in another building keeps its unit; the mod set editor says why, and Play waits for the mods' check; the build warns about missions a set leaves without their places, and .rmod mods' units get their models; Bug Watch says why a build or a Play failed, and the agreement's version 4; a game crash we know names its unit (Launcher); Delete always goes through (Studio); 16 fixes from our tests of what players do and 4 map fixes (Studio).

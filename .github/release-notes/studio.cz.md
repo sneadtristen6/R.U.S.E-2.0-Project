@@ -1,6 +1,8 @@
 **RUSE Studio, ukázková verze pro moddery.** Procházejte jednotky hry v kterémkoli z jejích deseti jazyků, měňte je ve
 vlastním módu a vyzkoušejte ho ve hře. Vaše instalace Steamu se nikdy nemění.
 
+**0.9.8.22:** Mění se jen stránka projektu: její možnosti podpory jsou aktualizované. V aplikaci se nic nemění.
+
 **0.9.8.21:** Oprava v pozadí: naše vlastní testy znovu procházejí na každém systému, kde je GitHub spouští. V aplikaci se nic nemění.
 
 **0.9.8.20:** Družstvo voják po vojákovi, jedno Otevřít v Blenderu, animace pro jedinou jednotku nebo pro jednotky, které vyberete, modely s vlastními animacemi a Univerzální jízdní družstvo (Studio); vlastní voják družstva, změněný v Blenderu (Studio); odkaz „Nedaří se? Přečti si návod“ na nové stránky wiki (Studio); dalších 279 zpráv jednoduchými slovy, ve vašem jazyce; ochrany tam, kde některé sady módů zastavovaly hru; vylepšení vyráběné v jiné budově si nechá svou jednotku; editor sad říká proč a Hrát čeká na kontrolu módů; sestavení upozorní na mise, kterým sada vezme jejich místa, a jednotky módů .rmod dostanou své modely; Bug Watch říká, proč selhalo sestavení nebo Hrát, a verze 4 smlouvy; pád hry, který známe, jmenuje svou jednotku (Launcher); mazání vždy projde (Studio); 16 oprav z našich testů toho, co dělají hráči, a 4 opravy map (Studio).

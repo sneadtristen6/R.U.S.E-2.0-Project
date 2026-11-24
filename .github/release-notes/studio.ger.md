@@ -1,6 +1,8 @@
 **RUSE Studio, eine Vorschau für Modder.** Durchsuche die Einheiten des Spiels in jeder seiner zehn Sprachen, ändere
 sie in einem eigenen Mod und teste ihn im Spiel. Deine Steam-Installation wird nie verändert.
 
+**0.9.8.22:** Nur die Projektseite ändert sich: ihre Unterstützungsoptionen sind aktualisiert. In der App ändert sich nichts.
+
 **0.9.8.21:** Eine Korrektur hinter den Kulissen: unsere eigenen Tests laufen wieder auf jedem System durch, auf dem GitHub sie ausführt. In der App ändert sich nichts.
 
 **0.9.8.20:** Ein Trupp Soldat für Soldat, ein einziges In Blender öffnen, Animationen für eine einzige Einheit oder für die Einheiten, die du wählst, Modelle mit eigenen Animationen und der Generische Reitertrupp (Studio); ein eigener Soldat für einen Trupp, in Blender geändert (Studio); ein Link „Probleme? Lies die Anleitung“ zu neuen Wiki-Seiten (Studio); 279 weitere Meldungen in einfachen Worten, in deiner Sprache; Schutz an Stellen, an denen manche Mod-Sets das Spiel anhielten; ein Upgrade aus einem anderen Gebäude behält seine Einheit; der Set-Editor sagt warum, und Spielen wartet auf die Prüfung der Mods; der Build warnt vor Missionen, denen ein Set ihre Orte nimmt, und die Einheiten von .rmod-Mods bekommen ihre Modelle; Bug Watch sagt, warum ein Build oder ein Spielen fehlschlug, und Version 4 der Vereinbarung; ein Spielabsturz, den wir kennen, nennt seine Einheit (Launcher); Löschen geht immer durch (Studio); 16 Korrekturen aus unseren Tests dessen, was Spieler tun, und 4 Korrekturen an Karten (Studio).

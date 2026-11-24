@@ -1,6 +1,8 @@
 **RUSE Studio, una versión preliminar para modders.** Explora las unidades del juego en cualquiera de sus diez
 idiomas, cámbialas en un mod propio y pruébalo en el juego. Tu instalación de Steam nunca se modifica.
 
+**0.9.8.22:** Solo cambia la página del proyecto: sus opciones de apoyo están actualizadas. En la aplicación no cambia nada.
+
 **0.9.8.21:** Un arreglo interno: nuestras propias pruebas vuelven a pasar en todos los sistemas donde GitHub las ejecuta. En la aplicación no cambia nada.
 
 **0.9.8.20:** Un pelotón soldado a soldado, un solo Abrir en Blender, animaciones para una sola unidad o para las unidades que elijas, modelos con animaciones propias y el Pelotón a caballo genérico (Studio); un soldado propio para un pelotón, cambiado en Blender (Studio); un enlace «¿Problemas? Lee la guía» a nuevas páginas de la wiki (Studio); 279 mensajes más en palabras sencillas, en tu idioma; protecciones donde algunos conjuntos de mods detenían el juego; una mejora hecha en otro edificio conserva su unidad; el editor de conjuntos dice por qué, y Jugar espera la comprobación de los mods; la construcción avisa de las misiones que un conjunto deja sin sus lugares, y las unidades de los mods .rmod tienen sus modelos; Bug Watch dice por qué falló una construcción o un Jugar, y la versión 4 del acuerdo; un fallo del juego que conocemos nombra su unidad (Launcher); Eliminar siempre llega hasta el final (Studio); 16 arreglos de nuestras pruebas de lo que hacen los jugadores y 4 arreglos de mapas (Studio).

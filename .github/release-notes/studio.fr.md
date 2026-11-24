@@ -1,6 +1,8 @@
 **RUSE Studio, un aperçu pour les moddeurs.** Parcourez les unités du jeu dans n'importe laquelle de ses dix langues,
 modifiez-les dans un mod à vous et testez-le en jeu. Votre installation Steam n'est jamais modifiée.
 
+**0.9.8.22:** Seule la page du projet change : ses options de soutien sont mises à jour. Rien ne change dans l'application.
+
 **0.9.8.21:** Une correction en coulisses : nos propres tests passent de nouveau sur tous les systèmes où GitHub les lance. Rien ne change dans l'application.
 
 **0.9.8.20:** Une escouade soldat par soldat, un seul Ouvrir dans Blender, des animations pour une seule unité ou pour les unités que vous choisissez, des modèles avec leurs propres animations et l'Escouade à cheval générique (Studio) ; le propre soldat d'une escouade, changé dans Blender (Studio) ; un lien « Un souci ? Lisez le guide » vers de nouvelles pages du wiki (Studio); 279 messages de plus en mots simples, dans votre langue ; des gardes là où certains ensembles de mods arrêtaient le jeu ; une amélioration faite dans un autre bâtiment garde son unité ; l'éditeur d'ensembles dit pourquoi, et Jouer attend la vérification des mods ; la construction signale les missions qu'un ensemble laisse sans leurs lieux, et les unités des mods .rmod ont leurs modèles ; Bug Watch dit pourquoi une construction ou un Jouer a échoué, et la version 4 de l'accord ; un plantage du jeu que nous connaissons nomme son unité (Launcher) ; Supprimer va toujours jusqu'au bout (Studio) ; 16 corrections issues de nos tests de ce que font les joueurs et 4 corrections de cartes (Studio) .

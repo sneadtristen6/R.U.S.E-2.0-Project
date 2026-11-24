@@ -1,6 +1,8 @@
 **RUSE Launcher 0.4, pour les joueurs.** Il trouve R.U.S.E. via Steam, et **Jouer** construit une copie moddée du jeu
 avec vos mods et la lance. Votre installation Steam n'est jamais modifiée.
 
+**0.4.8.22:** Seule la page du projet change : ses options de soutien sont mises à jour. Rien ne change dans l'application.
+
 **0.4.8.21:** Une correction en coulisses : nos propres tests passent de nouveau sur tous les systèmes où GitHub les lance. Rien ne change dans l'application.
 
 **0.4.8.20:** Les mods avec les nouvelles escouades et animations du Studio ; le propre soldat d'une escouade, changé dans Blender (Studio) ; 279 messages de plus en mots simples, dans votre langue; un plantage du jeu que nous connaissons nomme son unité ; des gardes là où certains ensembles de mods arrêtaient le jeu ; une amélioration faite dans un autre bâtiment garde son unité ; l'éditeur d'ensembles dit pourquoi, et Jouer attend la vérification des mods ; la construction signale les missions qu'un ensemble laisse sans leurs lieux, et les unités des mods .rmod ont leurs modèles ; Bug Watch dit pourquoi une construction ou un Jouer a échoué, et la version 4 de l'accord ; une unité sans image de carte refusée à la construction .

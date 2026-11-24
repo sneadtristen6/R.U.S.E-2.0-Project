@@ -3,8 +3,8 @@ title: "Roadmap: what's done, what's next"
 category: Announcements
 order: 2
 ---
-Where things stand, and what's next. Tested-in-game features are marked ✅. Latest: **RUSE Studio 0.9.8.21** and
-**RUSE Launcher 0.4.8.21**, in [Releases](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases).
+Where things stand, and what's next. Tested-in-game features are marked ✅. Latest: **RUSE Studio 0.9.8.22** and
+**RUSE Launcher 0.4.8.22**, in [Releases](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases).
 0.9.x is the alpha; **1.0** is the launch.
 
 ### Done
@@ -52,8 +52,8 @@ Where things stand, and what's next. Tested-in-game features are marked ✅. Lat
 
 ### Next
 
-- **0.9.8.22: the fixes we know of.** Every problem we know of in 0.9.8.20, and its fix, is listed under What's next in
-  the [0.9.8.21 announcement](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/blob/main/docs/community/release-0.9.8.21.md).
+- **0.9.8.23: the fixes we know of.** Every problem we know of in 0.9.8.20, and its fix, is listed under What's next in
+  the [0.9.8.22 announcement](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/blob/main/docs/community/release-0.9.8.22.md).
 - **Iwo Jima and Pacific Island Defense:** the flagship.
 - **The map importer, still in progress:** a real place as a map, the first for R.U.S.E. as far as we know. It builds
   part of Utah Beach into a map that opens in the game, but the beach, the water and the ground up close aren't right

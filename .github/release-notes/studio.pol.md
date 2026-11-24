@@ -1,6 +1,8 @@
 **RUSE Studio, wersja zapoznawcza dla modderów.** Przeglądaj jednostki gry w dowolnym z jej dziesięciu języków,
 zmieniaj je we własnym modzie i testuj go w grze. Twoja instalacja Steam nigdy nie jest zmieniana.
 
+**0.9.8.22:** Zmienia się tylko strona projektu: jej opcje wsparcia są zaktualizowane. W aplikacji nic się nie zmienia.
+
 **0.9.8.21:** Poprawka pod maską: nasze własne testy znów przechodzą na każdym systemie, na którym uruchamia je GitHub. W aplikacji nic się nie zmienia.
 
 **0.9.8.20:** Oddział żołnierz po żołnierzu, jedno Otwórz w Blenderze, animacje dla jednej jednostki albo dla jednostek, które wybierzesz, modele z własnymi animacjami i Uniwersalny oddział konny (Studio); własny żołnierz oddziału, zmieniony w Blenderze (Studio); link „Masz problem? Przeczytaj poradnik” do nowych stron wiki (Studio); 279 kolejnych komunikatów prostymi słowami, w twoim języku; zabezpieczenia tam, gdzie niektóre zestawy modów zatrzymywały grę; ulepszenie robione w innym budynku zachowuje swoją jednostkę; edytor zestawów mówi dlaczego, a Graj czeka na sprawdzenie modów; budowanie ostrzega przed misjami, którym zestaw zabiera ich miejsca, a jednostki modów .rmod mają swoje modele; Bug Watch mówi, dlaczego budowanie lub Graj się nie udało, i wersja 4 umowy; znana nam awaria gry podaje swoją jednostkę (Launcher); usuwanie zawsze dochodzi do końca (Studio); 16 poprawek z naszych testów tego, co robią gracze, i 4 poprawki map (Studio).
