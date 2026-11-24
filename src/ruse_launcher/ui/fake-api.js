@@ -188,6 +188,10 @@
     crash_why_mesh: "A model had no mesh (its 3D shape) when the game measured its size." });
   let crashTold = false, crashPlayed = false;   // (?fake=crash: told once, after a Play)
   let fakeBugwatch = { available: true, on: false, name: "", code: "" };  // ?fake=bugoff hides the card, as bugwatch.ON = False does
+  // Settings' WebView2 card (rusemod.webview2): a PC without it, so the preview shows the card and an install
+  // (words.toml set_webview2_*, webview2_*, tip_webview2_install)
+  const fakeWebview2 = { offered: true, version: "", installing: false, tried: false, failed: false };
+  Object.assign(words.us, { set_webview2_title: "Microsoft WebView2", set_webview2_help: "This app's own window draws its screens with Microsoft WebView2, which is free. Without it, the app opens in your web browser instead.", webview2_installed: "Installed on this PC (version {version}).", webview2_missing: "Not on this PC. Its installer came with this app: it's Microsoft's, and needs the internet.", webview2_install: "Install WebView2", tip_webview2_install: "Opens Microsoft's WebView2 installer, which shows how far it is. It needs the internet.", webview2_installing: "Installing… Microsoft's installer shows how far it is.", webview2_done: "Installed. Close this app (Cancel in its small box) and start it again: it then opens in its own window.", webview2_not_done: "WebView2 didn't install. You can try again." });
   if (new URLSearchParams(location.search).get("fake") === "bugoff") fakeBugwatch.available = false;
   // ?fake=agree: the first-start agreement hasn't been accepted yet; ?fake=agree-again: version 3 was, by a player
   // with a username and Bug Watch on (rusemod.guard.TERMS_VERSION is 4)
@@ -420,6 +424,12 @@
       game_title: async () => ({ ruse20: fakeTitle }),
       set_game_title: async (on) => { fakeTitle = Boolean(on); return { ruse20: fakeTitle }; },
       bugwatch_status: async () => ({ ...fakeBugwatch }),
+      webview2_status: async () => ({ ...fakeWebview2 }),
+      webview2_install: async () => {  // Microsoft's installer "runs" for 2.5 s, then it's there
+        Object.assign(fakeWebview2, { installing: true, tried: false, failed: false });
+        setTimeout(() => Object.assign(fakeWebview2, { installing: false, tried: true, version: "143.0.3650.80" }), 2500);
+        return { ...fakeWebview2 };
+      },
       bugwatch_on: async (name) => {
         const kept = /#\d{4}$/.test(name) ? name : `${name}#4821`;
         fakeBugwatch = { ...fakeBugwatch, on: true, name: kept, code: "Zx3k9QpL" };

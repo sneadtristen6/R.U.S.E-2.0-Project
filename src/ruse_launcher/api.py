@@ -47,6 +47,7 @@ from rusemod.guardcalls import GuardCalls
 from rusemod.owned import OwnedCalls
 from rusemod.ownedpass import OwnedPassCalls
 from rusemod.update import UpdateCalls
+from rusemod.webview2 import WebView2Calls
 from rusemod.build import BuildError
 from rusemod.loadorder import match as match_order, parse as parse_order, share_text
 from rusemod.mod_index import DEFAULT_URL, ModIndexError, size_text, states
@@ -129,7 +130,7 @@ def _kind_of(path) -> str:
 
 
 class LauncherApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCalls, OwnedPassCalls, BackupCalls,
-                  startlog.StartCalls, GuardCalls, BugWatchCalls):
+                  startlog.StartCalls, GuardCalls, BugWatchCalls, WebView2Calls):
     """The launcher's back end. The arguments replace the real world in tests: the game folder, the launcher's own
     folder, where modded copies and the game's backups go, how links, the game and Steam get started, and the
     window's dialogs."""

@@ -43,6 +43,7 @@ from rusemod.guardcalls import GuardCalls
 from rusemod.owned import OwnedCalls
 from rusemod.ownedpass import OwnedPassCalls
 from rusemod.update import UpdateCalls
+from rusemod.webview2 import WebView2Calls
 from rusemod.build import MAP_FILES, BuildError, build_and_write, build_cache, load_mod
 from rusemod.lock import fingerprint_text
 from rusemod.home import PrefsCalls, default_home, game_dir as find_game_dir
@@ -687,7 +688,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                 FlagTypeCalls, BoardCalls, ModelBlenderCalls, SquadBlenderCalls, OneBlenderCalls, DecoyBlenderCalls,
                 ActionCalls,
                 ModelFitCalls, AnimModelCalls,
-                GroupCalls, StartScreenCalls, GuardCalls, BugWatchCalls):
+                GroupCalls, StartScreenCalls, GuardCalls, BugWatchCalls, WebView2Calls):
     UPDATE_APP, UPDATE_VERSION = "studio", __version__  # rusemod.update: the app looks for its newer releases
     PREFS_APP = "studio"  # rusemod.home: the language and keys, kept in settings.json
     # What Export writes into every mod's manifest ([made_with]); the mod list and the Launcher show it as the credit

@@ -251,6 +251,60 @@ class BuildCommands(unittest.TestCase):
                 with self.subTest(name=name):
                     self.assertEqual(Path(tmp, name).read_bytes(), (ROOT / name).read_bytes())
 
+    def test_both_apps_carry_microsofts_webview2_installer_only_when_microsoft_signed_it(self):
+        from rusemod import webview2
+        # where the build puts it is where the apps look (rusemod.webview2.setup_file)
+        self.assertEqual(build_app.WEBVIEW2_PLACE, (webview2.FOLDER, webview2.SETUP_NAME))
+        self.assertEqual(build_app.WEBVIEW2_URL, webui.WEBVIEW2_DOWNLOAD)
+        microsoft = "CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US"
+        with tempfile.TemporaryDirectory() as tmp:
+            fetched = []
+
+            def fetch(url, target):
+                fetched.append(url)
+                target.write_bytes(b"MZ the bootstrapper")
+            app = Path(tmp, "app")
+            made = build_app.webview2_setup(app, fetch=fetch, signature=lambda p: ("Valid", microsoft))
+            self.assertEqual(made, app / "webview2" / "MicrosoftEdgeWebview2Setup.exe")
+            self.assertEqual((fetched, made.read_bytes()), ([build_app.WEBVIEW2_URL], b"MZ the bootstrapper"))
+            # a given file instead of a download (RUSE_WEBVIEW2_SETUP), checked the same way
+            given = Path(tmp, "given.exe")
+            given.write_bytes(b"MZ given")
+            fetched.clear()
+            with mock.patch.dict(os.environ, {"RUSE_WEBVIEW2_SETUP": str(given)}):
+                made = build_app.webview2_setup(Path(tmp, "app2"), fetch=fetch, signature=lambda p: ("Valid", microsoft))
+            self.assertEqual((fetched, made.read_bytes()), ([], b"MZ given"))
+            # anything else stops the build and leaves no file behind: unsigned, a broken signature, someone else's
+            for status, signer in (("NotSigned", ""), ("HashMismatch", microsoft), ("Valid", "CN=Someone, O=Someone")):
+                with self.subTest(status=status, signer=signer), self.assertRaises(SystemExit) as stop:
+                    build_app.webview2_setup(Path(tmp, "app3"), fetch=fetch, signature=lambda p: (status, signer))
+                self.assertIn("signature", str(stop.exception))
+                self.assertFalse(Path(tmp, "app3", "webview2", "MicrosoftEdgeWebview2Setup.exe").exists())
+        # the build calls it for every app, before the installer is made
+        main = Path(ROOT / "installers" / "build_app.py").read_text(encoding="utf-8").split("def main(")[1]
+        self.assertLess(main.index("webview2_setup(program.parent)"), main.index("installer_command("))
+
+    def test_the_installer_offers_webview2_ticked_and_never_forces_it(self):
+        script = (ROOT / "installers" / "installer.iss").read_text(encoding="utf-8")
+        task = next(line for line in script.splitlines() if line.startswith('Name: "webview2"'))
+        self.assertIn("Check: OfferWebView2", task)
+        self.assertNotIn("unchecked", task)  # ticked unless the player unticks it
+        offer = script.split("function OfferWebView2: Boolean;")[1].split("end;")[0]
+        for part in ("not WizardSilent", "not HasWebView2", "not UnderWine"):  # updates, PCs that have it, Wine
+            self.assertIn(part, offer)
+        self.assertIn("wine_get_version@ntdll.dll", script)  # Wine told as rusemod.browsermode.under_wine tells it
+        self.assertIn("WizardIsTaskSelected('webview2')", script)
+        self.assertIn(r"{app}\webview2\MicrosoftEdgeWebview2Setup.exe'), '/silent /install'", script)
+        self.assertIn("MsgBox(FmtMessage(CustomMessage('WebView2Failed')", script)  # an install that ends without it
+        self.assertNotIn("Open the download now?", script)  # the old English-only question is gone
+        languages = re.findall(r'^Name: "(\w+)"; MessagesFile:', script, re.M)
+        self.assertEqual(len(languages), 11)
+        for language in languages:
+            for word in ("WebView2Group", "WebView2Task", "WebView2Installing", "WebView2Failed"):
+                with self.subTest(language=language, word=word):
+                    self.assertRegex(script, rf"(?m)^{language}\.{word}=\S")
+            self.assertIn("%1", re.search(rf"(?m)^{language}\.WebView2Failed=(.*)$", script).group(1))
+
     def test_installer(self):
         with mock.patch.object(build_app, "iscc", lambda: "ISCC.exe"):
             cmd = build_app.installer_command("launcher", Path("prog"), Path("launcher.ico"), Path("dist"))

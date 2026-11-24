@@ -4,7 +4,8 @@ installers/README.md). Runs on Windows: GitHub Actions does it on every push to 
   py -3 installers/build_app.py launcher|studio [--test-install]
 
 Steps: draw the icon; compile the app into a folder under build/<app>/ ("RUSE Launcher.exe" and everything it
-needs, Python included; the Studio also the game's own Python 2.5.1: python251()); run that program's self-test;
+needs, Python included; the Studio also the game's own Python 2.5.1: python251(); both Microsoft's WebView2
+installer, checked to be Microsoft's: webview2_setup()); run that program's self-test;
 make dist/RUSE-Launcher-Setup-<version>.exe. With
 --test-install it also installs the result into a scratch folder, runs the installed app's self-test and uninstalls.
 """
@@ -65,6 +66,53 @@ def python251(app_dir: Path, source: Path | None = None) -> Path:
     return target
 # Beside the built program: the apps' licence (GPL-3.0) and the libraries they carry, with theirs
 LICENCE_FILES = ("LICENSE", "THIRD_PARTY_NOTICES.md")
+
+# Microsoft's WebView2 installer (its "Evergreen Bootstrapper", about 2 MB, which fetches WebView2 from Microsoft), carried
+# by both apps in webview2/ beside the program and run only on the player's yes: the installer's ticked box, the box
+# when an app starts without WebView2, Settings (rusemod.webview2; the owner, 2026-11-24). Microsoft's distribution
+# page says to "package it with your WebView2 app". Fetched at each build from Microsoft's own link (the one
+# rusemod.webui.WEBVIEW2_DOWNLOAD opens: it leads to MicrosoftEdgeWebview2Setup.exe on Microsoft's download server,
+# checked 2026-11-24), or taken from the file RUSE_WEBVIEW2_SETUP names. Microsoft changes the file now and then, so
+# its bytes aren't pinned: the build stops unless Windows says its signature is valid and Microsoft Corporation's.
+WEBVIEW2_URL = "https://go.microsoft.com/fwlink/p/?LinkId=2124703"
+WEBVIEW2_PLACE = ("webview2", "MicrosoftEdgeWebview2Setup.exe")  # rusemod.webview2's FOLDER and SETUP_NAME
+WEBVIEW2_SIGNER = "O=Microsoft Corporation"
+
+
+def webview2_signature(path: Path) -> tuple[str, str]:
+    """Windows' word on `path`'s signature: (its status, "Valid" when it holds; the signer's certificate subject)."""
+    script = ("$s = Get-AuthenticodeSignature -LiteralPath $env:RUSE_SIGNED_FILE; "
+              "[string]$s.Status; [string]$s.SignerCertificate.Subject")
+    out = subprocess.run(["powershell", "-NoProfile", "-NonInteractive", "-Command", script], capture_output=True,
+                         text=True, timeout=120, env=dict(os.environ, RUSE_SIGNED_FILE=str(path)))
+    lines = [line.strip() for line in out.stdout.splitlines()] + ["", ""]
+    return lines[0], lines[1]
+
+
+def _fetch(url: str, target: Path) -> None:
+    import urllib.request
+    with urllib.request.urlopen(url, timeout=120) as answer, open(target, "wb") as f:
+        shutil.copyfileobj(answer, f)
+
+
+def webview2_setup(app_dir: Path, source=None, fetch=_fetch, signature=webview2_signature) -> Path:
+    """Put Microsoft's WebView2 installer in the built app's webview2 folder: the file `source` (else the one
+    RUSE_WEBVIEW2_SETUP names), else fetched from Microsoft. SystemExit, with the file taken out again, unless its
+    signature is valid and Microsoft Corporation's: an app never carries an installer that isn't Microsoft's."""
+    target = app_dir.joinpath(*WEBVIEW2_PLACE)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    given = source or os.environ.get("RUSE_WEBVIEW2_SETUP")
+    if given:
+        shutil.copy2(given, target)
+    else:
+        fetch(WEBVIEW2_URL, target)
+    status, signer = signature(target) if target.is_file() else ("no file", "")
+    if status != "Valid" or WEBVIEW2_SIGNER not in signer:
+        target.unlink(missing_ok=True)
+        raise SystemExit(f"Microsoft's WebView2 installer didn't pass the signature check (status: {status or 'none'}; "
+                         f"signed by: {signer or 'nobody'}): the build stops rather than ship it")
+    print(f"WebView2 installer: {target.stat().st_size:,} bytes, signed by {signer}", flush=True)
+    return target
 
 
 def version(app: str) -> str:
@@ -203,6 +251,7 @@ def main(argv=None) -> int:
     program = next(build.rglob(exe_name(app)))
     blender_scripts(program.parent)
     licence_files(program.parent)
+    webview2_setup(program.parent)
     if APPS[app].get("python251"):
         python251(program.parent)
     check_data_files(app, program.parent)

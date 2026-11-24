@@ -942,7 +942,7 @@ class Words(unittest.TestCase):
         for key, entry in _words().items():   # every word in all eleven languages, the agreement's too (2026-10-31)
             self.assertEqual([lang for lang in schema.APP_LANGS if not entry.get(lang)], [], key)
         app_js = (Path(__file__).parents[1] / "src" / "ruse_launcher" / "ui" / "app.js").read_text(encoding="utf-8")
-        used = set(re.findall(r"\b(?:w|state\.words)\.([a-z_]+)", app_js))
+        used = set(re.findall(r"\b(?:w|state\.words)\.([a-z][a-z_0-9]*)", app_js))  # (digits too: webview2_install)
         self.assertGreater(len(used), 40)
         self.assertEqual(sorted(used - set(_words())), [])
         self.assertEqual((words("fr")["play"], words("xx")["play"]), ("Jouer", "Play"))

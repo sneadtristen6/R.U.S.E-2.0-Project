@@ -318,6 +318,62 @@ class TheWindowOrTheBrowser(unittest.TestCase):
         code, went, _ = self.open(fake_webview(lambda **kw: None), engine="missing", choice="browser")
         self.assertEqual((code, len(went)), (0, 1))
 
+    def test_no_webview2_the_players_yes_installs_it_then_the_app_starts_again(self):
+        from rusemod import webview2
+        boxes = []
+        with mock.patch.object(webview2, "setup_file", return_value=Path("C:/app/webview2/setup.exe")), \
+                mock.patch.object(webview2, "install", return_value="143.0.3650.80") as install, \
+                mock.patch.object(webview2, "start_again") as again, \
+                mock.patch.object(browsermode, "message_box", side_effect=lambda *a: boxes.append(a)), \
+                mock.patch("builtins.print"):
+            code, went, _ = self.open(fake_webview(lambda **kw: None), engine="missing", choice="install")
+        self.assertEqual((code, went, boxes), (0, [], []))  # no browser, no box: the new start opens the window
+        install.assert_called_once_with(Path("C:/app/webview2/setup.exe"))
+        again.assert_called_once_with()
+
+    def test_an_install_that_ends_without_webview2_says_so_and_opens_the_browser(self):
+        from rusemod import webview2
+        boxes = []
+        with mock.patch.object(webview2, "setup_file", return_value=Path("setup.exe")), \
+                mock.patch.object(webview2, "install", return_value=""), \
+                mock.patch.object(webview2, "start_again") as again, \
+                mock.patch.object(browsermode, "message_box", side_effect=lambda *a: boxes.append(a)), \
+                mock.patch("builtins.print"):
+            code, went, _ = self.open(fake_webview(lambda **kw: None), engine="missing", choice="install")
+        self.assertEqual((code, len(went)), (0, 1))
+        again.assert_not_called()
+        self.assertEqual(len(boxes), 1)
+        self.assertIn("didn't install", boxes[0][0])
+        self.assertIn("Settings", boxes[0][0])
+
+    def test_the_box_asks_yes_or_no_when_the_installer_came_with_the_app(self):
+        from rusemod import webview2
+        said = browsermode.texts(None, "us", "RUSE Launcher")
+        for answer, choice in ((6, "install"), (7, "browser")):  # Yes, No
+            with mock.patch.object(webview2, "offered", return_value=True), \
+                    mock.patch.object(browsermode, "message_box", return_value=answer) as box:
+                self.assertEqual(webui.no_engine_choice("RUSE Launcher", said), choice)
+            text, title, flags = box.call_args[0]
+            self.assertIn("Install it now?", text)
+            self.assertEqual(flags & 0xF, 0x04)  # Yes and No only
+        # without it (run from the repo): the old three answers, Microsoft's page among them
+        with mock.patch.object(webview2, "offered", return_value=False), \
+                mock.patch.object(browsermode, "message_box", return_value=2) as box:
+            self.assertEqual(webui.no_engine_choice("RUSE Launcher", said), "quit")
+        self.assertIn("download page", box.call_args[0][0])
+
+    def test_the_boxes_words_are_in_every_language_of_both_apps(self):
+        from ruse_launcher.api import words as launcher_words
+        from ruse_studio.api import words as studio_words
+        for words in (launcher_words, studio_words):
+            for lang in ("us", "fr", "ger", "ita", "spa", "pol", "ru", "cz", "jpn", "sc", "fa"):
+                said = browsermode.texts(words, lang, "RUSE Studio")
+                for key in ("webview2_ask", "webview2_failed"):
+                    with self.subTest(words=words.__module__, lang=lang, key=key):
+                        self.assertIn("RUSE Studio", said[key])
+                        if lang != "us":
+                            self.assertNotEqual(said[key], browsermode.texts(words, "us", "RUSE Studio")[key])
+
 
 class DialogsAndDrops(unittest.TestCase):
     def test_the_apis_dialogs_and_drops_go_the_browsers_way(self):

@@ -51,8 +51,8 @@ TYPES = {".html": "text/html; charset=utf-8", ".htm": "text/html; charset=utf-8"
          ".woff2": "font/woff2", ".woff": "font/woff", ".ttf": "font/ttf", ".wav": "audio/wav", ".ogg": "audio/ogg",
          ".mp3": "audio/mpeg", ".flac": "audio/flac"}
 
-# The box's words when the app gives none (each app's words.toml has them in all ten languages: browser_open,
-# browser_closed, browser_no_engine)
+# The box's words when the app gives none (each app's words.toml has them in all eleven languages: browser_open,
+# browser_closed, browser_no_engine, webview2_ask, webview2_failed)
 ENGLISH = {
     "browser_open": "{app} is open in your web browser, because its own window can't open on this PC.\n\n"
                     "If no page opened, paste this address into your browser (it's already copied):\n{address}\n\n"
@@ -64,6 +64,14 @@ ENGLISH = {
                          "Yes: open the download page (then start {app} again).\n"
                          "No: use {app} in your web browser now.\n"
                          "Cancel: close {app}.",
+    # with Microsoft's installer at hand (rusemod.webview2): the player's yes installs it, a no opens the browser
+    "webview2_ask": "{app}'s own window needs Microsoft WebView2, which this PC doesn't have yet. It's free, from "
+                    "Microsoft, and its installer came with {app}.\n\n"
+                    "Install it now? Microsoft's installer opens and needs the internet.\n\n"
+                    "Yes: install it, then {app} opens in its own window.\n"
+                    "No: use {app} in your web browser instead (you can install it later in Settings).",
+    "webview2_failed": "Microsoft WebView2 didn't install, so {app} opens in your web browser instead.\n\n"
+                       "You can try again any time in Settings.",
 }
 
 

@@ -17,7 +17,7 @@ import urllib.request
 import uuid
 from pathlib import Path
 
-from . import browsermode, startlog
+from . import browsermode, startlog, webview2
 from .home import default_home
 
 WEBVIEW2_DOWNLOAD = "https://go.microsoft.com/fwlink/p/?LinkId=2124703"  # Microsoft's WebView2 Runtime installer
@@ -164,7 +164,8 @@ def open_window(title: str, folder: Path, page: str, api, width=1180, height=760
 
     Where the window can't show the pages, they open in the player's own web browser instead (rusemod.browsermode):
     under Wine (Linux and the Steam Deck through Proton: WebView2 doesn't start there, issue #21), on a PC without
-    WebView2 when the player picks it, when pywebview's .NET part doesn't load or WebView2 fails to start, and when
+    WebView2 when the player picks it (or Microsoft's installer, offered on a yes, ends without it: rusemod.webview2),
+    when pywebview's .NET part doesn't load or WebView2 fails to start, and when
     `browser` asks for it (the apps' --browser). `words(lang)`: the app's words, for the box that says so."""
     log = startlog.current()
     if browser:
@@ -180,7 +181,20 @@ def open_window(title: str, folder: Path, page: str, api, width=1180, height=760
     startlog.mark("pywebview")
     engine = web_engine()
     if engine == "missing":
-        if no_engine_choice(title, browsermode.texts(words, browsermode.page_language(api), title)) != "browser":
+        said = browsermode.texts(words, browsermode.page_language(api), title)
+        choice = no_engine_choice(title, said)
+        if choice == "install":
+            # Microsoft's installer that came with the app (rusemod.webview2), on the player's yes. A new start of
+            # the app sees what it installed; when it installed nothing, the player is told and the browser opens
+            found = webview2.install(webview2.setup_file())
+            print(f"Microsoft's WebView2 installer ended: {('version ' + found) if found else 'no WebView2 after it'}")
+            if found:
+                webview2.start_again()
+                return 0
+            browsermode.message_box(said["webview2_failed"], title, 0x30 | 0x10000)  # OK, warning, to the front
+            return _in_browser(title, folder, page, api, extra, setup, words,
+                               "no WebView2: Microsoft's installer ended without it")
+        if choice != "browser":
             return 3
         return _in_browser(title, folder, page, api, extra, setup, words, "no WebView2: the player picked the browser")
     if engine != "ok":
@@ -369,8 +383,12 @@ def web_engine() -> str:
 
 
 def no_engine_choice(title: str, words: dict) -> str:
-    """A PC without WebView2: the player picks "download" (Microsoft's page opens), "browser" (the app in their web
-    browser now) or "quit"."""
+    """A PC without WebView2. With Microsoft's installer at hand (an installed app, rusemod.webview2.offered) the
+    player picks "install" (Yes) or "browser" (No: the app in their web browser now); the box never installs on its
+    own. Without it (run from the repo): "download" (Microsoft's page opens), "browser" or "quit"."""
+    if webview2.offered():
+        answer = browsermode.message_box(words["webview2_ask"], title, 0x04 | 0x20 | 0x10000)  # Yes/No, question
+        return "install" if answer == 6 else "browser"  # Yes; No
     answer = browsermode.message_box(words["browser_no_engine"], title, 0x03 | 0x30)  # Yes/No/Cancel, warning icon
     if answer == 6:  # Yes
         os.startfile(WEBVIEW2_DOWNLOAD)
