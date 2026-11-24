@@ -1,8 +1,10 @@
 """The road network (rusemod.roadnet): mapinfo.win's buffer 0 read, written back the game's way, and a road added."""
 import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import math
+import os
 import struct
 import unittest
+from pathlib import Path
 
 from rusemod.roadnet import (LEAF_MOST, MAX_DEPTH, POINT_STEP, RoadNet, RoadNetError, _resample, _tree_write,
                              build_tree, cost_word)
@@ -132,6 +134,74 @@ class AddingARoad(unittest.TestCase):
         self.assertEqual(got["links"], got["points"] - 1)
         with self.assertRaisesRegex(RoadNetError, "at least two points"):
             net.add_road([(1.0, 1.0)])
+
+    def test_an_end_on_a_long_link_joins_it(self):
+        """FL-119 (a player, 2026-11-24: every road he drew was refused, "its ends joined no road within 12 m"): an end
+        drawn ON a road joins it wherever it lies along the link, not only within the join of one of its points."""
+        net = ring()  # links about 26,000 map units (100 m) long
+        old = list(net.links)
+        (ax, ay), (bx, by) = net.points[0], net.points[1]
+        mid = ((ax + bx) / 2, (ay + by) / 2)
+        out = (mid[0] + (mid[0] - 500000) * 0.2, mid[1] + (mid[1] - 500000) * 0.2)  # away from the ring
+        self.assertGreater(math.dist(mid, (ax, ay)), 3000.0 * 4)  # farther than the Studio's join from both points
+        got = net.add_road([mid, out], join=3000.0)
+        self.assertEqual(got["joined"], 1)
+        self.assertEqual(len(net.parts()), 1)  # one piece: the build doesn't refuse it
+        self.assertEqual(net.links[:len(old)], old)  # the road's own links keep their numbers (the crossings name them)
+        self.assertIn(net.links[len(old)][0], (0, 1))  # joined at a point of the link it lies on
+
+    def test_an_end_joins_the_nearer_point_of_the_link(self):
+        for t, point in ((0.2, 0), (0.8, 1)):
+            net = ring()
+            (ax, ay), (bx, by) = net.points[0], net.points[1]
+            on = (ax + (bx - ax) * t, ay + (by - ay) * t)
+            out = (on[0] + (on[0] - 500000) * 0.2, on[1] + (on[1] - 500000) * 0.2)
+            first = len(net.links)
+            net.add_road([on, out], join=3000.0)
+            self.assertEqual(net.links[first][0], point, t)
+
+    def test_an_end_beside_a_road_farther_than_the_join_is_still_a_dead_end(self):
+        net = ring()
+        (ax, ay), (bx, by) = net.points[0], net.points[1]
+        mid = ((ax + bx) / 2, (ay + by) / 2)
+        away = math.dist(mid, (500000, 500000))
+        start = (500000 + (mid[0] - 500000) * (away + 4000) / away, 500000 + (mid[1] - 500000) * (away + 4000) / away)
+        end = (500000 + (mid[0] - 500000) * (away + 30000) / away, 500000 + (mid[1] - 500000) * (away + 30000) / away)
+        got = net.add_road([start, end], join=3000.0)  # 4000 from the road's line: past the join
+        self.assertEqual(got["joined"], 0)
+        self.assertEqual(len(net.parts()), 2)
+
+    @unittest.skipUnless(os.environ.get("RUSE_GAME") and Path(os.environ.get("RUSE_GAME", ""), "Data").is_dir(),
+                         "needs the game (RUSE_GAME)")
+    def test_on_every_game_map_an_end_on_a_road_joins_it(self):
+        """The class of FL-119 on the game's own road networks: on every map, a road drawn from the middle of each of
+        its 25 longest links (where an end lay farthest from the network's points) joins the network, with the
+        Studio's join of 3000 map units (ui/maps.js), and the network stays one piece."""
+        from rusemod.build import find_pack
+        from rusemod.cover import PACK
+        from rusemod.edat import Edat
+        from ruse_mod_engine import sdb
+        game = Path(os.environ["RUSE_GAME"])
+        maps = 0
+        with Edat.open(str(find_pack(game, PACK))) as dat:
+            for e in dat.entries:
+                if not e.path.lower().endswith("\\mapinfo.win"):
+                    continue
+                net = RoadNet.read(sdb.split_mapinfo(dat.read(e))[1][0])
+                if len(net.parts()) != 1:
+                    continue  # (a test map of the game's own with more than one piece)
+                maps += 1
+                longest = sorted(net.links, key=lambda k: -math.dist(net.points[k[0]], net.points[k[1]]))[:25]
+                for a, b, _c in longest:
+                    (ax, ay), (bx, by) = net.points[a], net.points[b]
+                    mid = ((ax + bx) / 2, (ay + by) / 2)
+                    nx, ny = -(by - ay), bx - ax  # across the road, 40 m out
+                    n = math.hypot(nx, ny) or 1.0
+                    copy = RoadNet(list(net.points), list(net.links), net.tree)
+                    got = copy.add_road([mid, (mid[0] + nx / n * 10400, mid[1] + ny / n * 10400)], join=3000.0)
+                    self.assertEqual(got["joined"], 1, (e.path, a, b))
+                    self.assertEqual(len(copy.parts()), 1, (e.path, a, b))
+        self.assertGreaterEqual(maps, 30)
 
     def test_points_about_a_step_apart(self):
         pts = _resample([(0.0, 0.0), (10000.0, 0.0), (10000.0, 10000.0)], POINT_STEP)

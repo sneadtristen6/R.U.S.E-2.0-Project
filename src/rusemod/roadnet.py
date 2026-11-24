@@ -83,14 +83,14 @@ class RoadNet:
     # --- adding a road ---
     def add_road(self, line: list[tuple[float, float]], join: float = 20000.0, open_at=None) -> dict:
         """Add a road along `line` (map points, in order: a new road's curve, sampled): points about POINT_STEP
-        apart, linked in a chain; each end linked to the nearest road point within `join` map units (a junction),
+        apart, linked in a chain; each end linked to the road it lies within `join` map units of (a junction: _join_at),
         else left as a dead end. A new link's flag bit (cost_word) is `open_at(x, y)` at its middle: whether the
         vehicles' graph has ground there (set when it isn't given). The index is built again. Returns what was
         added."""
         if len(line) < 2:
             raise RoadNetError("a road needs at least two points")
         pts = _resample(line, POINT_STEP)
-        ends = [self._nearest(pts[0], join), self._nearest(pts[-1], join)]
+        ends = [self._join_at(pts[0], join), self._join_at(pts[-1], join)]
         first = len(self.points)
         self.points.extend(pts)
         new_links = [(first + i, first + i + 1) for i in range(len(pts) - 1)]
@@ -160,11 +160,27 @@ class RoadNet:
         flag = True if open_at is None else bool(open_at((ax + bx) / 2, (ay + by) / 2))
         return cost_word(math.hypot(bx - ax, by - ay), flag)
 
-    def _nearest(self, at: tuple[float, float], within: float) -> int | None:
+    def _join_at(self, at: tuple[float, float], within: float) -> int | None:
+        """The road point an end at `at` joins, or None when no road is within `within` map units of it: the nearest
+        link measured to its line, not to its points, and of that link the point nearer to where `at` meets it; a
+        point with no link, when it is nearer still. Measured to the points alone, an end drawn on a road the Studio
+        shows joined nothing on 14% to 47% of the road length of every game map (FL-119, 2026-11-24: a player's every
+        road refused): the shipped links run up to 450 m between their points, and the Studio's join is about 12 m.
+        The new link then runs along the road it joins, to that point; the road's own links keep their numbers, which
+        the movement graphs' crossings name (nav.Graph.renumber_roads)."""
         best, where = within, None
-        for i, p in enumerate(self.points):
+        x, y = at
+        for a, b, _cost in self.links:
+            (ax, ay), (bx, by) = self.points[a], self.points[b]
+            dx, dy = bx - ax, by - ay
+            n = dx * dx + dy * dy
+            t = 0.0 if n == 0 else max(0.0, min(1.0, ((x - ax) * dx + (y - ay) * dy) / n))
+            d = math.hypot(ax + t * dx - x, ay + t * dy - y)
+            if d < best or (d == best and where is None):
+                best, where = d, (a if t <= 0.5 else b)
+        for i, p in enumerate(self.points):  # a point no link reaches (never on a shipped map: their networks are whole)
             d = math.dist(p, at)
-            if d <= best:
+            if d < best or (d == best and where is None):
                 best, where = d, i
         return where
 
