@@ -7,7 +7,8 @@ you can opt in the settings to turn on the [R.U.S.E.] 2.0 intro and gold font.")
 - Both apps' Settings switch, called as their pages call it (rusemod.webui.page_api) on one scratch home: nothing saved,
   the older apps' "game", the opt-in's value, on then off, one choice for both apps; the switch drawn unticked unless
   the answer says on, by each page's own code (run in Node by tests/title_switch_in_node.mjs), and a change kept.
-- `ruse build`: the game's own title unless --ruse20-title.
+- The command line's modded copy: R.U.S.E. 2.0's gold title unless --game-title, as in the release (left as it was: the
+  owner's own test-copy tools build through it without either switch, and his ask was the apps' default).
 - The agreement screen (rusemod/sharedui/agreement.js, run in Node by tests/agreement_in_node.mjs, every call answered
   by the real Launcher's or Studio's API on a scratch home): the box unticked, its words and tooltip in the player's
   language; Accept working without it and leaving the choice as it is; the box ticked keeping the opt-in, for both
@@ -190,7 +191,7 @@ class TheSwitch(OnePC):
 
 
 class TheCommandLine(unittest.TestCase):
-    def test_a_copy_gets_the_games_own_title_unless_asked(self):
+    def test_a_copy_keeps_the_gold_title_unless_asked_as_in_the_release(self):
         from rusemod import cli
         from test_build import PACK, write_mod
         with tempfile.TemporaryDirectory(dir=TMP) as d:
@@ -199,9 +200,8 @@ class TheCommandLine(unittest.TestCase):
             (game / "Data" / "PC" / "190852" / "ZZ_GladPatchableWin.dat").write_bytes(PACK)
             mod = write_mod(d, "econ-half", {"eco.rndf": "patch $/B ( ProductionPrice *= 0.5 )"})
             copy = ["--instance", str(Path(d) / "copy")]
-            for given, want in (([*copy], False), ([*copy, "--ruse20-title"], True), ([*copy, "--game-title"], False),
-                                ([*copy, "--ruse20-title", "--game-title"], False),
-                                (["--out", str(Path(d) / "packs"), "--ruse20-title"], False)):   # (no copy, no title)
+            for given, want in (([*copy], True), ([*copy, "--game-title"], False),
+                                (["--out", str(Path(d) / "packs")], False)):   # (no copy, no title)
                 with self.subTest(given=given), mock.patch.object(cli, "build_and_write") as built:
                     built.return_value.errors = []
                     self.assertEqual(cli.main(["--game", str(game), "build", str(mod), *given]), 0)
