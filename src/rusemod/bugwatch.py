@@ -8,10 +8,15 @@ Opt-in (the owner, 2026-10-22): nothing is counted, kept or sent unless the play
 switch, beside RUSE Guard's fairplay.ON: off until the owner says.
 
 WHAT THE AGREEMENT SAYS, KEPT (2026-11-24): the player's untick deletes what the PC kept and nothing comes back, in
-either app, not even after a later tick (turn_off; Watch._now_on reads the setting at every count, save and send);
-the game's error text goes out through RUSE Guard's own cleaning, with no Steam ID, long number or path (no_ids); only
-the game's own crash reports are read (game_report); and Settings' "Save username" saves the name only, never ticking
-Bug Watch (the pages call set_username, as the first start does).
+either app of this version, not even after a later tick (turn_off; Watch._now_on reads the setting at every count, save
+and send). Known limits while the other app is still 0.9.8.22 or older (the two update one at a time): that app writes
+its own counts back at its end, as 0.9.8.22 did, and its untick leaves no mark for the counts this app made since its
+last save (Watch._now_on); both end once both apps are this version. The game's error text goes out with the player's
+own folders named for anyone and any other full path cut to its file name, spaces, Python's doubled \\ and network
+paths too (no_paths), then through RUSE Guard's own cleaning: a SteamID64 and any number of 9 digits or more (no_ids;
+a Steam ID written another way, as STEAM_0:1:... or [U:1:...], is not looked for). Only the game's own crash reports
+are read (game_report). Settings' "Save username" saves the name only, never ticking Bug Watch (the pages call
+set_username, as the first start does).
 
 What is counted, per UTC day and app version: every call a window makes (webui._passed_on: its name, how many,
 how many failed, the error's kind, the time in five steps), every long job (webui.Job), screens, problems shown,
@@ -114,7 +119,13 @@ FUNC_RE = re.compile(r"[A-Za-z0-9_.<>$-]{1,80}")
 ID_CHARS = string.ascii_letters + string.digits + "_-"
 # what the server refuses as a path, anywhere in a send (worker.js PATH_PATTERNS)
 LOOKS_LIKE_PATH = re.compile(r"(?:^|[^A-Za-z0-9])[A-Za-z]:[\\/]|[\\/]Users[\\/]|/home/", re.IGNORECASE)
-ABSOLUTE = re.compile(r"(?<![A-Za-z0-9])[A-Za-z]:[\\/][^\s\"'<>|*?]*")
+# a full Windows path (no_paths): its drive, its folders, spaces and all (each one up to its next slash, any number of
+# them: Python prints a path's \ as \\), then its last part up to a space or a quote
+ABSOLUTE = re.compile(r"(?<![A-Za-z0-9])[A-Za-z]:[\\/]+(?:[^\\/\r\n\"'<>|*?:]+[\\/]+)*[^\s\\/\"'<>|*?:]*")
+# a network path (\\server\share\..., as Windows writes it, or Python's \\\\server\\share), where a path starts: a
+# server's name, then at least one more part, as above
+NETWORK = re.compile(r"(?<![^\s\"'(\[=,;])\\{2,}[A-Za-z0-9._$-]+[\\/]+(?:[^\\/\r\n\"'<>|*?:]+[\\/]+)*"
+                     r"[^\s\\/\"'<>|*?:]*")
 
 
 # --- the player's yes -------------------------------------------------------------------------------------------
@@ -216,8 +227,9 @@ def turn_off(home) -> dict:
 
     What was kept is deleted and never comes back (the agreement: "Untick it any time in Settings: nothing more is
     counted or sent, and what was kept is deleted"): this app's counts in memory go at once, and the new untick mark
-    (_untick_mark) tells every app's Watch, the other app's too (both apps can run at once, and this untick can't reach
-    that app's memory), that what it counted before is never written or sent, even after the player ticks it again."""
+    (_untick_mark) tells every app's Watch of this version, the other app's too (both apps can run at once, and this
+    untick can't reach that app's memory), that what it counted before is never written or sent, even after the player
+    ticks it again. The other app still on 0.9.8.22 or older reads no mark: Watch._now_on's known limits."""
     from .home import save_settings
     values = _settings(home)
     values["bugwatch"] = {**(values.get("bugwatch") or {}), "on": False, "untick_mark": secrets.token_hex(8)}
@@ -387,22 +399,30 @@ def own_holds(folders) -> dict[str, int]:
 # --- making what's sent safe ------------------------------------------------------------------------------------
 def no_paths(text: str) -> str:
     """`text` with no path left in it: the player's own folders written as Windows names them for anyone
-    (community.private_paths_out), then any other full path cut down to its file name."""
+    (community.private_paths_out), then any other full path cut down to its file name: one on a drive (ABSOLUTE) or a
+    network path (NETWORK), its folders' spaces and Python's doubled \\ too (2026-11-24: until then a folder's space
+    or a network path let the rest of the path through)."""
     from .community import private_paths_out
     out = private_paths_out(str(text or ""))
-    out = ABSOLUTE.sub(lambda m: re.split(r"[\\/]", m.group(0).rstrip("\\/"))[-1] or "", out)
+    out = NETWORK.sub(_last_part, ABSOLUTE.sub(_last_part, out))
     return LOOKS_LIKE_PATH.sub(" ", out)
+
+
+def _last_part(found) -> str:
+    """What no_paths leaves of a full path it found: its last part, the file's name."""
+    return re.split(r"[\\/]", found.group(0).rstrip("\\/"))[-1] or ""
 
 
 GAME_DATA = re.compile(r"(datadir:)", re.IGNORECASE)   # the game's own name for its data, in its error text
 
 
 def no_ids(text: str) -> str:
-    """`text` with any Steam ID, long number or Windows path taken out by RUSE Guard's own cleaning (guard.no_ids, the
-    one RUSE Guard's line goes through), for the game's error text a crash report sends (read_dump): never a Steam
-    account, as the agreement says. The game's own name for its data, "DataDir:" as in 'File "DataDir:\\x\\menu.py",
-    line 40', is no drive and is left as it is: that cleaning would take its "r:\\" for one and cut out the game's own
-    script names, which no_paths keeps."""
+    """`text` through RUSE Guard's own cleaning (guard.no_ids, the one RUSE Guard's line goes through): a SteamID64,
+    any number of 9 digits or more, and a drive's path left, for the game's error text a crash report sends (read_dump,
+    after no_paths). A Steam ID written another way (STEAM_0:1:..., [U:1:...]) or a shorter number is not looked for.
+    The game's own name for its data, "DataDir:" as in 'File "DataDir:\\x\\menu.py", line 40', is no drive and is left
+    as it is: that cleaning would take its "r:\\" for one and cut out the game's own script names, which no_paths
+    keeps."""
     from .guard import no_ids as cleaned
     parts = GAME_DATA.split(str(text or ""))   # (the game's own "DataDir:" at every odd place)
     return "".join(part if i % 2 else cleaned(part.encode("utf-8", "replace")).decode("utf-8", "replace")
@@ -535,12 +555,15 @@ class Watch:
         self.clock = clock
         self.days: dict[str, dict] = {}
         self._dirty = 0
+        self._kept = False   # this Watch's days file there, as it last knew it: read at its start or written since
         values = _settings_now(self.home)
         # the untick mark these counts are made under (_now_on; None: not known, the settings can't be read now, and
         # then nothing kept is taken in)
         self.mark = _untick_mark(values) if values is not None else None
         try:
-            self.days = json.loads(self.file.read_text(encoding="utf-8")) if values is not None else {}
+            if values is not None:
+                self.days = json.loads(self.file.read_text(encoding="utf-8"))
+                self._kept = True
         except (OSError, ValueError):
             self.days = {}
 
@@ -548,13 +571,21 @@ class Watch:
         """Whether Bug Watch is on now, settings.json read now (None: it can't be read this moment, the other app
         writing it; then nothing is counted, written or dropped). Counts this app made before the player's last untick,
         here or in the other app (a new untick mark), go first; with Bug Watch off, all of them: what an untick
-        deleted never comes back by a save or a send, not even after the player ticks it again. Under the lock."""
+        deleted never comes back by a save or a send, not even after the player ticks it again. Under the lock.
+
+        An untick in the other app while that app is still 0.9.8.22 or older (the Studio and the Launcher update one at
+        a time) leaves no new mark, but deletes the kept files as every untick does: so this Watch's days file, there
+        before (read at its start or written since) and gone now, is that untick too, and the counts made before it
+        go, even when the player ticked it again there while this app counted nothing (2026-11-24). Known limits:
+        counts this app made since its last save, before such an untick, have no file to tell by; and that older app
+        still writes its own counts back at its end, as 0.9.8.22 did. Both end once both apps are this version."""
         values = _settings_now(self.home)
         if values is None:
             return None
         mark = _untick_mark(values)
-        if mark != self.mark:
-            self.days, self.mark, self._dirty = {}, mark, 0
+        gone = self._kept and not self.file.exists()   # (deleted by an untick: turn_off, in either app, any version)
+        if mark != self.mark or gone:
+            self.days, self.mark, self._dirty, self._kept = {}, mark, 0, False
         if _switched_off() or not _ticked_in(values):
             self.days, self._dirty = {}, 0
             return False
@@ -743,8 +774,10 @@ class Watch:
             try:
                 self.folder.mkdir(parents=True, exist_ok=True)
                 self.file.write_text(json.dumps(self.days), encoding="utf-8")
+                self._kept = True
                 if self._now_on() is False or self.mark != mark:
                     self.file.unlink(missing_ok=True)
+                    self._kept = False
             except OSError:
                 pass
 
@@ -857,6 +890,7 @@ class Watch:
                 self.save()
             else:
                 self.file.unlink(missing_ok=True)
+                self._kept = False   # (its own unlink: no untick)
         return moved
 
     def _write_out(self, name: str, body: dict) -> bool:

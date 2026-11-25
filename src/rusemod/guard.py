@@ -494,9 +494,10 @@ _MARK = re.compile(rb"RUSEGUARD-[A-Z]+.{0,4000}?RUSEGUARD-END", re.DOTALL)
 
 
 def no_ids(raw: bytes) -> bytes:
-    """`raw` with any Steam ID, Windows path or long id taken out (defence in depth): RUSE Guard's own cleaning, for
-    its line (_clean_stop) and for the game's error text Bug Watch sends (rusemod.bugwatch.read_dump): one cleaning
-    for both, so what the agreement says of both stays true of both."""
+    """`raw` with a SteamID64, a path on a drive (up to its first space) and any number of 9 digits or more taken out
+    (defence in depth): RUSE Guard's own cleaning, for its line (_clean_stop) and for the game's error text Bug Watch
+    sends (rusemod.bugwatch.read_dump, after its no_paths, which takes paths with spaces and network paths): one
+    cleaning for both. A Steam ID written another way (STEAM_0:1:..., [U:1:...]) is not looked for."""
     raw = _STEAM_ID.sub(b"<id>", raw)
     raw = _WIN_PATH.sub(b"<path>", raw)
     return _LONG_ID.sub(b"<n>", raw)

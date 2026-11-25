@@ -76,18 +76,23 @@
   // `again`: the screen shown again (a version accepted before). Both apps can run at once, so Bug Watch can be
   // switched in the other app while this screen is up: when this window comes back, the box shows Bug Watch as it is
   // then (never ticked for a player who has it off), unless the player changed the box here; and accepting changes
-  // Bug Watch only as the player changed the box here.
+  // Bug Watch only as the player changed the box here. The window's answers can come back late and in any order: the
+  // click that brings the window back can land on Accept while Bug Watch's state is still being asked. So the box and
+  // what it was last set from are read together at the click, before anything waits, and only the latest look sets
+  // the box: an answer that comes back meanwhile never makes a switch the player didn't make (2026-11-24).
   function accept(api, words, status, again) {
     return new Promise((done) => {
       renderAgreement(words, status.available);
       const box = $("agree-bugwatch");
       let shown = Boolean(status.available && status.on);   // Bug Watch as the box was last set from it
+      let looks = 0;                                          // the latest look's number (an older answer is let go)
       box.checked = shown;
       const follow = async () => {
         if (box.checked !== shown) return;   // the player's own change here stays
+        const look = ++looks;
         try {
           const now = await api.bugwatch_status();
-          if (box.checked !== shown) return;
+          if (look !== looks || box.checked !== shown) return;
           shown = Boolean(status.available && now.on);
           box.checked = shown;
         } catch (e) { /* the box stays as it is */ }
@@ -95,18 +100,22 @@
       if (again) window.addEventListener("focus", follow);
       const btn = $("agree-accept");
       const handler = async () => {
-        const bw = status.available && box.checked;
+        const bw = status.available && box.checked, was = shown;   // read together, before anything waits
+        window.removeEventListener("focus", follow);
         btn.disabled = true;
         try {
           await api.guard_accept_terms();   // RUSE Guard, with its program check, is on for everyone who accepts
-        } catch (e) { btn.disabled = false; return; }  // a failure keeps the screen up; the player can try again
+        } catch (e) {   // a failure keeps the screen up; the player can try again, and the box follows again
+          btn.disabled = false;
+          if (again) window.addEventListener("focus", follow);
+          return;
+        }
         btn.removeEventListener("click", handler);
-        window.removeEventListener("focus", follow);
         $("agree").classList.add("agree-hidden");
         if (status.name) {   // agreed to an earlier version: the username stays, Bug Watch as the tick says
           try {
-            if (bw && !shown) await api.bugwatch_on(status.name);
-            else if (!bw && shown) await api.bugwatch_off();
+            if (bw && !was) await api.bugwatch_on(status.name);
+            else if (!bw && was) await api.bugwatch_off();
           } catch (e) { /* Settings keeps the switch */ }
         } else {
           await askUsername(api, words, bw);   // RUSE Guard is required, so a username is always needed
