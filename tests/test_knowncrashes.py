@@ -30,6 +30,11 @@ from rusemod import bugwatch, crashcode, ed25519, home as homes, knowncrashes, n
 # RFC 8032, section 7.1, TEST 1: a published test key (its secret is in the RFC); no list the apps take is signed with it
 TEST_SECRET = bytes.fromhex("9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60")
 TEST_PUBLIC = bytes.fromhex("d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a")
+# RFC 8032, section 7.1, TEST 2: the other published test key
+TEST2_PUBLIC = bytes.fromhex("3d4017c3e843895a92b70aa74d1b7ebc9c982ccf2ec4968cc0cd55f12af4660c")
+# a key made for this test file alone: no one else holds its secret, so key_ready may pass it
+OWN_SECRET = bytes(range(1, 33))
+OWN_PUBLIC = ed25519.public_key(OWN_SECRET)
 
 
 class MadeUp:
@@ -588,12 +593,31 @@ class TheReleaseBuildNeedsTheListKey(unittest.TestCase):
             self.assertEqual(knowncrashes.main(["--check-key"]), 1)
 
     def test_a_real_key_passes_and_a_wrong_one_fails(self):
-        with mock.patch.object(knowncrashes, "KEY", TEST_PUBLIC):
+        with mock.patch.object(knowncrashes, "KEY", OWN_PUBLIC):
             self.assertIsNone(knowncrashes.key_ready())
             self.assertEqual(knowncrashes.main(["--check-key"]), 0)
         with mock.patch.object(knowncrashes, "KEY", b"\x01" * 5):
             self.assertIsNotNone(knowncrashes.key_ready())
         self.assertEqual(knowncrashes.main([]), 2)
+
+    def test_a_published_test_key_fails_the_check(self):
+        """A key anyone can sign with (the two RFC 8032 test public keys) is never one a release build may carry."""
+        for public in (TEST_PUBLIC, TEST2_PUBLIC):
+            with mock.patch.object(knowncrashes, "KEY", public):
+                self.assertIn("published test key", knowncrashes.key_ready())
+                self.assertEqual(knowncrashes.main(["--check-key"]), 1)
+            self.assertIn("published test key", knowncrashes.key_ready(public))
+
+    def test_the_own_test_key_is_not_a_published_one(self):
+        self.assertNotIn(OWN_PUBLIC, (TEST_PUBLIC, TEST2_PUBLIC))
+        self.assertIsNone(knowncrashes.key_ready(OWN_PUBLIC))
+
+    def test_the_two_sets_of_test_keys_are_equal_once_joined(self):
+        try:
+            from rusemod import releasesig
+        except ImportError:
+            self.skipTest("rusemod.releasesig is not on this branch (it is on legal/signed-updates): checked once both are in one tree")
+        self.assertEqual(set(knowncrashes.TEST_PUBLICS), set(releasesig.TEST_PUBLICS))
 
     def test_the_crash_code_text_names_no_private_tool(self):
         text = Path(crashcode.__file__).read_text(encoding="utf-8")

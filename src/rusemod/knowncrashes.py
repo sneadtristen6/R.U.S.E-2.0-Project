@@ -48,7 +48,13 @@ TEMP_GLOB = "known-crashes.*.tmp.json"                  # a refresh's file befor
 #                                                         turn_off deletes one left behind too)
 PREFIX = b"RUSE2-CRASHES-1:"                            # what is signed: PREFIX + the list's text (UTF-8)
 KEY: bytes | None = None                                # the list key's public half (32 bytes); None: HTTPS alone
-MOST_BYTES = 64 * 1024                                  # the most a served list (and the list's own text) may weigh
+# The RFC 8032 test vectors' public keys (section 7.1, TEST 1 and TEST 2): a key anyone can sign with, so never one a
+# release build may carry (key_ready). The same two as rusemod.releasesig.TEST_PUBLICS (a test keeps the two equal).
+TEST_PUBLICS = frozenset({
+    bytes.fromhex("d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a"),
+    bytes.fromhex("3d4017c3e843895a92b70aa74d1b7ebc9c982ccf2ec4968cc0cd55f12af4660c"),
+})
+MOST_BYTES = 64 * 1024                                # the most a served list (and the list's own text) may weigh
 FRESH = 24 * 3600                                       # seconds a checked list is used before it's asked for again
 TIMEOUT = 15                                            # seconds for the download
 WAIT_AT_CRASH = 30                                      # seconds GameWatch waits for a download still running at a crash
@@ -425,6 +431,8 @@ def key_ready(key=None) -> str | None:
         return "the list key is not in the apps yet (KEY is None: a list would be taken on HTTPS alone)"
     if not isinstance(public, bytes) or len(public) != 32 or ed25519._decompress(public) is None:
         return "KEY is not an Ed25519 public key"
+    if public in TEST_PUBLICS:
+        return "KEY is a published test key (RFC 8032): anyone can sign a list with it"
     return None
 
 
