@@ -87,7 +87,7 @@ class TheAgreement(Watched):
         la.guard_accept_terms()                          # (the page's Accept)
         named = la.bugwatch_on("Nick")                   # (the page's username, Bug Watch ticked)
         self.assertRegex(named["name"], r"^Nick#\d{4}$")
-        self.assertEqual(self.settings()["guard"]["terms"], 4)
+        self.assertEqual(self.settings()["guard"]["terms"], 5)   # version 5: the v5 words (legal/agreement-v5)
         self.assertFalse(self.opens(la))
         self.assertFalse(self.opens(self.api))
         self.assertEqual(self.api.bugwatch_status()["name"], named["name"])
@@ -123,7 +123,7 @@ class TheAgreement(Watched):
         self.assertTrue(status["on"])                    # (the box starts ticked: agreement.js accept)
         la.guard_accept_terms()
         la.bugwatch_off()                                # (unticked: bw false, status.on true)
-        self.assertEqual((self.settings()["guard"]["terms"], la.bugwatch_status()["on"]), (4, False))
+        self.assertEqual((self.settings()["guard"]["terms"], la.bugwatch_status()["on"]), (5, False))   # version 5 now
         self.assertEqual(la.bugwatch_status()["name"], status["name"])
 
     def test_closed_without_accepting(self):

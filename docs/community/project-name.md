@@ -7,14 +7,17 @@ order: 0
 R.U.S.E., about the name before the full version (1.0, with all its new features), and the project will take a name
 they're okay with. Until then it stays R.U.S.E. 2.0.
 
-**We've been careful from the start:** the apps never ship or share any of Eugen's files. They work from each
-player's own copy of R.U.S.E., the Steam install is never changed, and mods carry data only.
+**We've been careful from the start:** the apps never ship or share any of Eugen's files. They work from each player's
+own copy of R.U.S.E., and leave the Steam install as it is unless the player asks them to restore it from its clean
+backup. In some instances, game data may be changed, but that is with your copy of the game: mods change the data, and
+some the scripts, of the separate modded copy the apps build.
 
 **We understand the name can be confusing, and that's what this discussion is for:** what the project should be
 called.
 
 **What it has to name:** a free, fan-made toolkit for R.U.S.E. **RUSE Studio** makes mods: units, maps, missions, and
-now your own 3D models. The **RUSE Launcher** plays them. Your Steam install is never changed.
+now your own 3D models. The **RUSE Launcher** plays them, in a separate modded copy: Play never changes your Steam
+install.
 
 **How to take part:**
 

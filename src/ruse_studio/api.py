@@ -40,6 +40,7 @@ from rusemod.brush import BrushError, parse_strokes, strokes_toml
 from rusemod.bugwatch import BugWatchCalls
 from rusemod.community import APP_NAMES, REPO_URL, CommunityCalls, private_paths_out
 from rusemod.guardcalls import GuardCalls
+from rusemod.termscalls import TermsCalls
 from rusemod.owned import OwnedCalls
 from rusemod.ownedpass import OwnedPassCalls
 from rusemod.update import UpdateCalls
@@ -688,7 +689,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                 FlagTypeCalls, BoardCalls, ModelBlenderCalls, SquadBlenderCalls, OneBlenderCalls, DecoyBlenderCalls,
                 ActionCalls,
                 ModelFitCalls, AnimModelCalls,
-                GroupCalls, StartScreenCalls, GuardCalls, BugWatchCalls, WebView2Calls):
+                GroupCalls, StartScreenCalls, GuardCalls, TermsCalls, BugWatchCalls, WebView2Calls):
     UPDATE_APP, UPDATE_VERSION = "studio", __version__  # rusemod.update: the app looks for its newer releases
     PREFS_APP = "studio"  # rusemod.home: the language and keys, kept in settings.json
     # What Export writes into every mod's manifest ([made_with]); the mod list and the Launcher show it as the credit
@@ -6485,13 +6486,15 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             keep_instances_dir(self._home, None)
         return self.copies_folder()
 
-    # the game's title in the copies (rusemod.signature): R.U.S.E. 2.0's gold title, or the game's own
+    # the game's title in the copies (rusemod.signature): the game's own, or R.U.S.E. 2.0's gold title
     def game_title(self) -> dict:
-        """Settings' title switch: {"ruse20": True} when the copies get R.U.S.E. 2.0's gold title (the default)."""
+        """Settings' title switch: {"ruse20": True} when the copies get R.U.S.E. 2.0's gold title (the player's
+        opt-in; the game's own title is the default)."""
         return {"ruse20": title_on(self._home)}
 
     def set_game_title(self, ruse20: bool) -> dict:
-        """Keep the choice (settings.json, the Launcher's too); the next Test in game builds the copy with it."""
+        """Keep the choice (settings.json, the Launcher's too): Settings' switch, and the agreement screen's box
+        (shared/agreement.js) when it's ticked at Accept; the next Test in game builds the copy with it."""
         keep_title(self._home, bool(ruse20))
         return self.game_title()
 
@@ -10380,7 +10383,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                 raise BuildError("We couldn't find R.U.S.E.")
             self._clear_waiting(*folders)   # (a deleted unit's file another program had open: rusemod.holding)
             self._starter.modded(game, folders, instance, name, say, words=said, cut_off_errors=True,
-                                 title=title_on(self._home))  # R.U.S.E. 2.0's title, unless Settings says the game's
+                                 title=title_on(self._home))  # the game's own title, unless the player turned ours on
             say(f"Built in {instance}. To see your changes in the game:")
             if not look:   # (said as a whole line, so rusemod.buildtext lists it: in the player's language)
                 say("  Your unit changes show in every game mode.")

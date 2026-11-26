@@ -20,9 +20,10 @@ Launcher.
 
 **How it works,** as the patch notes would say it:
 
-R.U.S.E. multiplayer has no anti-cheat of its own, so we built RUSE Guard into the Launcher. It keeps the cheats people
-use for testing out of matches against other players, lets players who don't cheat show it, and makes you choose
-before a mod runs scripts inside your game.
+R.U.S.E. doesn't have an effective anti-cheat, which is why RUSE Guard is needed; RUSE Guard is ours, built into the
+Launcher for the copies our apps build. It keeps the cheats people use for testing out of matches with players who don't
+have the same build, lets players who don't cheat show it, and makes you choose before a mod runs scripts inside your
+game.
 
 **Cheats and test tools only play with players who have the same build.** A mod set with a cheat or a test tool in it
 (the "Cheat" mods in Supported mods, and any mod whose scripts add money, make units out of nowhere or open the game's
@@ -79,12 +80,13 @@ players' PCs. Detector by detector, against what we wrote:
 | 3.7 Signed mod manifests | catches a whole lobby running the same changed mod, which matching codes can't | **not in ours**: if everyone's mod is changed the same way, everyone's join code still matches | his mod keys; signing keys held by the owner, the public halves shipped in the Launcher |
 | 4 Flag, review, verdict | a flag opens a human review with the replay; the player can appeal; no auto-ban | **not in ours** (ours only tells on screen) | his server core; the upload, storage and the reviewers' screen are still to build |
 | 5 Replay reading | every order of a match read from its replay file (all 17 kinds) | **not in ours** | his replay reader, the evidence for every review |
-| 6 Dev keys | signed keys let a developer use test tools in multiplayer, for testing | **not in ours**: our offline lock keeps test tools out of every online match, developers' too | his dev keys as the one way past our offline lock |
+| 6 Dev keys | signed keys let a developer use test tools in multiplayer, for testing | **not in ours**: our lock keeps test tools out of every match with players who have another build, developers' too | his dev keys as the one way past our lock |
 | 7 Mod vetting | a capability scan before a mod is listed; approved sets' codes allow-listed | **partly**: our scan finds scripts that send cheat orders, the "Runs scripts" badge and trust tick, the cheat tag from the mod list | his capability scan for the Supported mods list, and approved sets' codes |
 | 8 Terms of service | what is scanned, what a flag means, appeals | **not in ours** | his draft |
 
-What ours adds to his: the offline lock in the game itself (a cheat set can't play online at all, before any server
-sees it), the trust tick before a script mod runs, the Launcher's cheat badges, the copy check, and the live watcher.
+What ours adds to his: the lock in the game itself (a cheat set plays only with players who have the same build, before
+any server sees it), the trust tick before a script mod runs, the Launcher's cheat badges, the copy check, and the
+watcher in every modded game, which says on screen when a match sees a spawn order or a sudden jump in a side's money.
 
 **One rule of his to apply before turning ours on:** RUSE Guard runs in multiplayer only; it never runs in
 single-player. Our watcher also watches skirmish against the AI (that's how test F3 checks it offline); it switches to
@@ -97,7 +99,7 @@ files, the server on his PC, the process scan as he designed it.
 
 - **In the platform** (in our private repository until it's tested in the game): his signed tokens
   checked with Ed25519 written in plain Python (checked against the standard's test vectors), so the Launcher needs no
-  extra package; a **dev key** is the one way past the offline lock; **signed mod manifests** are checked file by file
+  extra package; a **dev key** is the one way past the lock; **signed mod manifests** are checked file by file
   before Play; the **in-game record** (his §3.2 state hash every 10 s of game time and §3.4 script hotkeys, multiplayer
   and co-op only) goes in every map's script folder like the watcher; after a multiplayer match the Launcher collects
   the record, the replay and the rest into one **bundle**, signed with the install's own key, and sends it to the

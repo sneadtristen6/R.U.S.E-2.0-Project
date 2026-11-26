@@ -24,8 +24,9 @@ Pozostałe pliki (`RUSE-Launcher-notes.json`, *Source code*) nie są potrzebne.
 2. **„System Windows ochronił ten komputer”?** Kliknij **Więcej informacji**, potem **Uruchom mimo to**. Aplikacja jest
    nowa dla sprawdzania reputacji Windows; jej kod jest publiczny na tym GitHubie.
 3. Przejdź przez instalator. Zostaw zaznaczone **Zachowaj czystą kopię plików gry**: aplikacje nigdy nie zmieniają
-   folderu twojej gry, ale inne menedżery modów i ręczne zmiany mogą to robić, a każda zmodowana gra jest budowana z tych
-   plików. Kopia powstaje przy pierwszym uruchomieniu aplikacji (kilka minut, mniej więcej tyle miejsca na dysku, co gra).
+   folderu twojej gry, chyba że poprosisz je o przywrócenie go z tej kopii, ale inne menedżery modów i ręczne zmiany
+   mogą to zrobić, a każda gra z modami jest budowana z tych plików. Kopia powstaje przy pierwszym uruchomieniu
+   aplikacji (kilka minut, mniej więcej tyle miejsca na dysku, ile zajmuje gra).
 4. Uruchom **RUSE Launcher** (menu Start albo skrót na pulpicie). Za pierwszym razem **Wybierz język**: dowolny
    z jedenastu, dziesięciu języków gry i perskiego (فارسی); przycisk języka u góry zmienia go w każdej chwili.
    Launcher sam znajduje R.U.S.E. przez Steam.
@@ -66,13 +67,16 @@ twojej gry nie jest ruszany.
 Wybierz swój zestaw modów i naciśnij **Graj**. Za pierwszym razem Launcher buduje zmodowaną kopię gry (mniej więcej
 minutę); potem tylko to, co się zmieniło. Następnie R.U.S.E. startuje z twoimi modami.
 
-Twoja zmodowana gra ma napis **R.U.S.E. 2.0 na złoto**: otwiera się sceną bitwy, a jej menu główne, menu i ekrany
-wczytywania noszą złoty tytuł. Powstaje on na twoim PC z plików twojej własnej gry za pierwszym razem (kilka minut,
-jeden raz). Aby zachować tytuł z gry, odznacz **Tytuł gry** w **Ustawieniach**.
+**R.U.S.E. 2.0 na złoto** jest wyłączone, dopóki tego nie włączysz: do tego czasu twoja gra zachowuje swój własny tytuł
+i film z logo Eugen Systems. Aby to włączyć, zaznacz **Używaj złotego tytułu i filmu wprowadzającego R.U.S.E. 2.0** w
+sekcji **Tytuł gry** w **Ustawieniach** (umowa, którą Launcher pokazuje przy pierwszym otwarciu, też ma na to pole). Gra
+otwiera się wtedy na scenie bitwy, z modami lub bez, a jej menu główne, menu i ekrany wczytywania mają złoty tytuł.
+Powstaje on na twoim PC z plików twojej własnej gry oraz obrazu i dźwięku dołączonych do aplikacji, za pierwszym razem
+(kilka minut, raz).
 
 > [!NOTE]
 > Uruchomienie R.U.S.E. ze **Steama** uruchamia grę **bez** modów, jak zawsze. Aby grać z modami, uruchom ją przyciskiem
-> **Graj** w Launcherze. Twoja instalacja Steam nigdy nie jest zmieniana.
+> **Graj** w Launcherze. Graj nigdy nie zmienia twojej instalacji Steam.
 
 ## Aktualizacje
 
@@ -81,6 +85,9 @@ aktualizacja się nie uda z komunikatem „certificate verify failed”, pobierz
 w przeglądarce i uruchom go: instaluje się na starym i zachowuje twoje mody.
 
 **Wymagane aktualizacje:** aktualizacji oznaczonej jako wymagana (ważnej, na przykład poprawki bezpieczeństwa) nie da się pominąć. Okno zasłania Launcher, a aktualizacja instaluje się sama, po czym Launcher uruchamia się ponownie; dopóki nie zostanie zainstalowana, **Graj** pozostaje wyłączone. Bez internetu okno o tym informuje: połącz się i naciśnij **Spróbuj ponownie**. Studio robi to samo z **Testuj w grze**.
+
+Aktualizacja instaluje się tylko wtedy, gdy ma nasz podpis. Jeśli Launcher lub Studio mówi, że nowej wersji nie udało
+się potwierdzić, nie instaluj jej ręcznie, chyba że powiemy tak na naszym Discordzie; poczekaj na następną aktualizację.
 
 ## Problemy?
 

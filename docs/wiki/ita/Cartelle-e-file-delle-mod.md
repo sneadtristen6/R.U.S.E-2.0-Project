@@ -10,7 +10,7 @@
 | Le mod dello Studio | `Documents\RUSE 2.0\Mods\<mod>` (la cartella Documenti); le modifiche alle mappe in `Maps`, i file esportati in `Exports`, i backup in `Backups`. Nello Studio, **Impostazioni → Dove sono i tuoi file** le apre una per una, e **Mostra la cartella di questa mod** (menu della mod) apre quella che stai modificando |
 | Le mod installate dal launcher | `%LOCALAPPDATA%\RUSE Mod Platform\library` |
 | Le copie moddate del gioco | La cartella che scegli nelle Impostazioni (**Dove vanno le copie con le mod**, in entrambe le app); il posto consigliato è `RUSE-Instances` sulla stessa unità del gioco (per esempio `D:\RUSE-Instances`), dove una copia condivide i file del gioco. Su un'altra unità ogni copia è una copia completa del gioco: più lenta e più grande. Il backup pulito del gioco (`RUSE-Backup`) va accanto. |
-| Il gioco stesso | Mai modificato |
+| Il gioco stesso | Mai cambiato dalle app, a meno che tu chieda a una delle due app di ripristinarlo dal suo backup pulito |
 
 Gli Studio più vecchi le tenevano in `%LOCALAPPDATA%\RUSE Mod Platform` (`mods`, `maps`, `exports`, `mod-backups`): lo Studio le sposta in Documenti al primo avvio, e lo dice.
 
@@ -66,7 +66,7 @@ crea questa cartella per te.
 | Lo zip contiene una cartella dentro una cartella | Il launcher guarda una cartella più in basso e la trova. Due o più livelli sotto, dice che non ha trovato nessuna mod. | Comprimi la cartella che contiene `mod.toml`. |
 | Una cartella di mappa chiamata come il titolo della mappa | La build dice che non è il nome del pacchetto di una mappa. | Rinominala con il nome del pacchetto. |
 | Un file modificato a mano ha un errore di battitura | Il controllo della mod nomina il file e la riga. | Correggilo, oppure **Metti da parte** nello Studio. |
-| Un `.exe`, un `.dll` o uno script per PC dentro la mod | Rifiutato: le mod portano solo dati (gli script di missione del gioco stesso, come li salva lo Studio, sono l'unica eccezione). | Toglilo. |
+| Un `.exe`, un `.dll` o uno script per PC dentro la mod | Rifiutato: niente programmi. In alcuni casi i dati del gioco possono essere cambiati, ma ciò avviene con la tua copia del gioco: le mod cambiano i dati, e alcune cambiano gli script del gioco, solo nella copia moddata. | Toglilo. |
 
 Se un file non si può leggere, lo Studio non lo sovrascrive mai: il tuo lavoro non va mai perso. **Metti da parte** lo
 rinomina `<name>.broken.toml` accanto all'originale.

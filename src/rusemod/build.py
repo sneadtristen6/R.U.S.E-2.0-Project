@@ -4468,7 +4468,7 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
     Play. `say` gets every report line as it comes. Nothing is written when the build has errors. Problems the user
     can fix raise BuildError. `cache`: a folder for what can be measured once and kept between builds (BUILD_CACHE
     under the platform's folder for the apps and `ruse build`; none in the tests). `signature`: the copy gets R.U.S.E.
-    2.0's gold title (rusemod.signature; the apps' Play and Test in game, unless Settings says the game's own title,
+    2.0's gold title (rusemod.signature; the apps' Play and Test in game when the player turned it on,
     signature.title_on). `built_from`: what the mods were read from (rusemod.play.built_from), kept in the copy's
     record so the next Play can start it without a build.
 

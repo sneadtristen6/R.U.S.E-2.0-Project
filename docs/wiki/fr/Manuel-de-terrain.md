@@ -23,13 +23,17 @@ téléchargements, voir la [page du projet](https://github.com/sneadtristen6/R.U
 > **Encore buggé, à utiliser à vos risques :** les textures de Map Paint, et les deux cartes vierges (Terrain vierge et
 > Océan vierge).
 
+**Pour les ayants droit :** si vous représentez Eugen Systems, ou toute autre personne dont vous pensez que ce projet
+touche les droits, écrivez à sneadtristen6@gmail.com avec l'objet « Rights holder ». Nous répondons dans les 7 jours, et
+si vous nous demandez de modifier ou de retirer quelque chose qui vous appartient, nous le ferons.
+
 ## Deux applications, deux rôles
 
 | | **RUSE Launcher** | **RUSE Studio** |
 |---|---|---|
 | **Pour** | tous ceux qui jouent avec des mods | ceux qui les créent |
 | **Fait** | charge les mods dans votre jeu et vérifie qu'ils marchent ensemble : chaque mod auquel vous jouez passe par lui | crée des mods : nouvelles cartes, scénarios modifiés, unités, villes, armées |
-| **Vous obtenez** | un jeu moddé, à un clic, votre installation Steam intacte | un mod que vous pouvez tester en jeu, puis exporter et partager |
+| **Vous obtenez** | un jeu moddé à portée d'un clic, votre installation Steam intacte avec Jouer | un mod que vous pouvez tester en jeu, puis exporter et partager |
 
 Un mod créé dans le Studio se joue avec le Launcher : exportez-le, ajoutez-le, jouez. **Tester en jeu** dans le Studio
 lance tout seul une copie de test rapide, pour vérifier votre travail au fur et à mesure.

@@ -71,11 +71,11 @@ def _code_id() -> dict:
 CODE = _code_id()  # taken once, as the program starts: an edit made to the code later shows after a restart
 
 
-def built_from(game: Path, mod_paths, pack: str = DEFAULT_PACK, title: bool = True,
+def built_from(game: Path, mod_paths, pack: str = DEFAULT_PACK, title: bool = False,
                lock_lines: tuple | None = None) -> dict:
     """What a modded copy is built from, for rusemod.instance.needs_build: the mods in their order (every file of
     each), the game (its Steam build, and every file's size and time), the pack the units come from, the app's code
-    (CODE) and whether it has R.U.S.E. 2.0's title (rusemod.signature, Settings); for a cheat copy whose lock speaks
+    (CODE) and whether it has R.U.S.E. 2.0's title (rusemod.signature, the player's opt-in); for a cheat copy whose lock speaks
     the player's language, its lines (`lock_lines`, rusemod.fairplay.lock_lines: another language builds the copy
     again; a copy without a lock never builds again for a language). Taken before the mods are read and again after
     the build (Starter.modded): a copy whose mods changed in between keeps no record, so the next Play builds. `key`
@@ -326,7 +326,7 @@ class Starter:
 
     def modded(self, game: Path, mod_folders, instance: Path, name: str, say, watch: bool = True,
                guard: dict | None = None, words: dict | None = None, cut_off_errors: bool = False,
-               title: bool = True) -> None:
+               title: bool = False) -> None:
         """Build these mod folders into the modded copy `instance` and start the game from it. The folders' order
         counts: a later mod comes after an earlier one, so it wins when both change the same value, unless the mods
         themselves say otherwise (MOD_FORMAT §10.6). A problem raises BuildError (or RndfError, OSError) with a
@@ -344,7 +344,7 @@ class Starter:
         lines a cheat copy's lock says in the game (rusemod.fairplay.lock_lines).
         `cut_off_errors`: ground the mods cut off from the rest of a map stops the build (the Studio's Test in game)
         instead of being a warning (build_and_write). `title`: the copy gets R.U.S.E. 2.0's gold title (the
-        default), or the game's own (Settings: rusemod.signature.title_on).
+        player's opt-in: rusemod.signature.title_on), or the game's own (the default).
 
         An error leaving here says, for Bug Watch, how far the Play got (`stage`: refused "before" any build, the
         "build" raised, the build "listed" mistakes in the mods, or the game didn't "start") and which mods were on

@@ -4,10 +4,10 @@ Start with [ai/START-HERE.md](ai/START-HERE.md): what the project is, where ever
 
 ## Owned copies only
 
-The R.U.S.E. 2.0 Project supports R.U.S.E. only when the person owns it on their Steam account. R.U.S.E. belongs to
-Eugen Systems and Ubisoft. The game itself only starts for a Steam account that owns it, and our tools never get
-around that: they find the game through your Steam library, mod a separate copy of it, and never ship the game's
-files. The apps also check the game folder before a modded game starts (`src/rusemod/owned.py`).
+The R.U.S.E. 2.0 Project supports R.U.S.E. only when the person owns it on their Steam account. R.U.S.E. is a game
+developed and published by Eugen Systems. The game itself only starts for a Steam account that owns it, and our tools
+never get around that: they find the game through your Steam library, mod a separate copy of it, and never ship the
+game's files. The apps also check the game folder before a modded game starts (`src/rusemod/owned.py`).
 
 Don't help with anything that lets people get or play R.U.S.E. without owning it, here or in any fork of this
 repository. That includes:

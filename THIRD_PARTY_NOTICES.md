@@ -124,8 +124,10 @@ is released under GPL 3.0 (its LICENSE file holds the text of GPL version 2). Th
 
 ## RUSE Decoy's motion library: motion capture (fetched when picked)
 
-The Studio carries only the list of these moves (src/rusemod/motions.json.gz: what each move is, its size and
-SHA-256); a move's file is fetched from its set's site when a modder picks it, and kept with its credit beside it.
+The Studio carries only the list of these moves (what each move is, its size and SHA-256). A CMU move's file is fetched
+when a modder picks it, from a public copy of the CMU library on GitHub (github.com/Shriinivas/cmubvh), not from CMU's
+own site. 100STYLE is fetched from Zenodo as one 1.4 GB file when a modder asks for it; its moves are kept and the big
+file is deleted. A clip made from a move carries its credit beside it in the mod.
 
 | Set | Moves | Licence | Credit | Source |
 |---|---|---|---|---|
@@ -197,6 +199,20 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ```
+
+## The R.U.S.E. 2.0 intro's engine sound
+
+The engine sound in the R.U.S.E. 2.0 intro (played only for players who tick the R.U.S.E. 2.0 title and intro), cut to
+length for the intro. Source: not applicable.
+
+## Downloaded when you pick them: era units, textures and aerial photos
+
+- Era units: 3D models by their makers on Sketchfab, under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/),
+  fitted to the game (turned and scaled) and given their nation's markings. The Studio downloads them from R.U.S.E.
+  2.0's own GitHub release "era-units". Each model's maker, title, licence and link are in that release's list, on the
+  unit's page in the Studio, and in each mod's CREDITS-era-units.md.
+- Map Paint: textures from Poly Haven and ambientCG (CC0), and aerial photos from the USGS National Map (public domain).
+  Each is kept in the mod with its source, maker, licence and link beside it.
 
 ## The other libraries the apps carry
 

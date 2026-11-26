@@ -406,7 +406,8 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--instance", help="build a modded copy of the game in this folder (never the Steam install)")
     p.add_argument("--all", action="store_true", help="show every note, without collapsing similar ones")
     p.add_argument("--game-title", action="store_true",
-                   help="a modded copy keeps the game's own title (default: R.U.S.E. 2.0's gold title, as the apps')")
+                   help="a modded copy keeps the game's own title and logo video (this command's default is R.U.S.E. "
+                        "2.0's gold title and intro, unchanged; the apps' default is the game's own)")
     p.set_defaults(fn=cmd_build)
     p = sub.add_parser("index", help="the game index: find anything in the game data, and where it's used")
     p.add_argument("--index", help="the index file (default: the one for this game build, in the platform folder)")

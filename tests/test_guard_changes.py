@@ -398,8 +398,8 @@ class VanillaIsOurCopy(Base):
             for key in ("set_title_help", "title_off_note"):
                 with self.subTest(lang=lang, key=key):
                     self.assertNotIn("Steam", w[key])
-        self.assertEqual(words("us")["title_off_note"], "The next Play gives your game the game's own R.U.S.E. title, "
-                                                        "Vanilla too.")
+        self.assertEqual(words("us")["title_off_note"], "The next Play gives your game the game's own R.U.S.E. title "
+                                                        "and Eugen's logo video, Vanilla too.")
 
     def test_no_start_through_steam_is_left(self):
         from rusemod.play import Starter

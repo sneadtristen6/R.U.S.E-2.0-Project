@@ -55,9 +55,11 @@ V nabídce módu ve Studiu **Ukázat složku tohoto módu** otevře složku mód
 
 ## Co mod může obsahovat
 
-Jen data: čísla, texty, mapy, modely, textury. Programy (`.exe`, `.dll`, skripty, které běží na PC) obě aplikace
-odmítnou. Jedna výjimka: vlastní skripty misí hry, tak jak je ukládá Studio. Běží uvnitř hry a mohou dělat cokoli, co
-umí ona, proto je instalujte jen od autorů, kterým věříte ([SECURITY.md](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/blob/main/SECURITY.md)).
+V některých případech se mohou data hry změnit, ale týká se to vaší kopie hry: mod mění data (čísla, texty, mapy,
+modely, textury) upravené kopie, kterou aplikace sestaví, a některé mody tam mění vlastní skripty hry, například skripty
+misí, které ukládá Studio. Tyto skripty běží uvnitř hry a mohou dělat cokoli, co umí ona, proto je instalujte jen od
+autorů, kterým věříte ([SECURITY.md](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/blob/main/SECURITY.md)).
+Programy (`.exe`, `.dll`, skripty, které běží na PC) obě aplikace odmítnou.
 
 ## Dobrá praxe
 

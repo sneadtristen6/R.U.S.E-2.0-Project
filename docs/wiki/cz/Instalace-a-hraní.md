@@ -23,8 +23,9 @@ Ostatní soubory tam (`RUSE-Launcher-notes.json`, *Source code*) nepotřebujete.
 2. **„Systém Windows ochránil váš počítač“?** Klikněte na **Další informace**, pak na **Přesto spustit**. Aplikace je
    pro kontrolu pověsti ve Windows nová; její kód je veřejný tady na GitHubu.
 3. Proklikejte se instalátorem. Nechte zaškrtnuté **Uchovat čistou kopii souborů hry**: aplikace nikdy nemění složku
-   vaší hry, ale jiní správci modů a ruční úpravy ano, a každá hra s mody se sestavuje z těchto souborů. Kopie se
-   vytvoří při prvním spuštění aplikace (několik minut, zhruba tolik místa na disku jako hra).
+   vaší hry, pokud je nepožádáte, aby ji obnovily z této kopie, ale jiní správci modů a ruční úpravy ji změnit mohou a
+   každá hra s mody se sestavuje z těchto souborů. Kopie se vytvoří při prvním spuštění aplikace (několik minut, zhruba
+   tolik místa na disku jako hra).
 4. Spusťte **RUSE Launcher** (nabídka Start nebo zástupce na ploše). Při prvním spuštění **Vyberte jazyk**: kterýkoli
    z jedenácti, deset jazyků hry a perštinu (فارسی); tlačítko jazyka nahoře ho kdykoli změní. R.U.S.E. najde sám přes
    Steam. Pokud řekne, že nemůže: **Nastavení > Složka hry > Vybrat složku…** a vyberte složku, ve které je `RUSE.exe`
@@ -64,13 +65,16 @@ Složky vaší hry se to nedotkne.
 Vyberte svou sadu módů a stiskněte **Hrát**. Poprvé Launcher sestaví kopii hry s mody (asi minutu); potom už jen to,
 co se změnilo. Pak se spustí R.U.S.E. s vašimi mody.
 
-Vaše hra s mody říká **R.U.S.E. 2.0 ve zlaté**: otevře se bitevní scénou a její hlavní nabídka, nabídky a načítací
-obrazovky nesou zlatý název. Udělá se na vašem PC ze souborů vaší vlastní hry napoprvé (několik minut, jednou).
-Chcete-li ponechat původní název hry, zrušte v **Nastavení** zaškrtnutí **Název hry**.
+**R.U.S.E. 2.0 zlatě** je vypnuto, dokud to nezapnete: do té doby si vaše hra ponechává svůj původní název a úvodní
+video s logem Eugen Systems. Zapnete to zaškrtnutím **Používat zlatý název a intro R.U.S.E. 2.0** v části **Název hry**
+v **Nastavení** (dohoda, kterou Launcher ukáže při prvním otevření, má pro to také políčko). Hra se pak otevře bitevní
+scénou, s mody i bez nich, a její hlavní menu, menu a načítací obrazovky nesou zlatý název. Vytvoří se na vašem PC z
+vlastních souborů vaší hry a z obrázku a zvuku, které jsou součástí aplikací, při prvním použití (několik minut,
+jednou).
 
 > [!NOTE]
 > Spuštění R.U.S.E. ze **Steamu** spustí hru **bez** modů, jako vždy. Chcete-li hrát s mody, spusťte ji tlačítkem
-> **Hrát** v Launcheru. Vaše instalace ze Steamu se nikdy nemění.
+> **Hrát** v Launcheru. Hrát nikdy nemění vaši instalaci Steamu.
 
 ## Aktualizace
 
@@ -79,6 +83,9 @@ selže s „certificate verify failed“, stáhněte v prohlížeči nejnovějš
 nainstaluje se přes starou verzi a vaše mody zachová.
 
 **Povinné aktualizace:** aktualizaci označenou jako povinnou (důležitou, například bezpečnostní opravu) nelze přeskočit. Launcher zakryje okno a aktualizace se nainstaluje sama, pak se Launcher znovu otevře; dokud není nainstalovaná, **Hrát** zůstává vypnuté. Bez internetu to okno řekne: připojte se a stiskněte **Zkusit znovu**. Studio dělá totéž s **Vyzkoušet ve hře**.
+
+Aktualizace se nainstaluje, jen když nese náš podpis. Pokud Launcher nebo Studio řekne, že novou verzi nebylo možné
+potvrdit, neinstalujte ji ručně, pokud to neřekneme na našem Discordu; počkejte na další aktualizaci.
 
 ## Problémy?
 

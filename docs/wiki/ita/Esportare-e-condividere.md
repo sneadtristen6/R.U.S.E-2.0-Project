@@ -56,9 +56,12 @@ Nel menu della mod dello Studio, **Mostra la cartella di questa mod** apre la ca
 
 ## Cosa può contenere una mod
 
-Solo dati: numeri, testi, mappe, modelli, texture. I programmi (`.exe`, `.dll`, script che girano su un PC) vengono rifiutati
-da entrambe le app. Un'eccezione: gli script di missione del gioco stesso, come li salva lo Studio. Girano dentro il gioco e
-possono fare tutto ciò che può fare il gioco, quindi installali solo da autori di cui ti fidi ([SECURITY.md](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/blob/main/SECURITY.md)).
+In alcuni casi i dati del gioco possono essere cambiati, ma ciò avviene con la tua copia del gioco: una mod cambia i
+dati (numeri, testi, mappe, modelli, texture) della copia moddata che le app costruiscono, e alcune mod cambiano lì gli
+script del gioco, come gli script delle missioni che lo Studio salva. Quegli script girano dentro il gioco e possono
+fare tutto ciò che può fare il gioco, quindi installali solo da autori di cui ti fidi
+([SECURITY.md](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/blob/main/SECURITY.md)). I programmi (`.exe`,
+`.dll`, script che girano su un PC) sono rifiutati da entrambe le app.
 
 ## Buone abitudini
 

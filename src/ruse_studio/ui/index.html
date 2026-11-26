@@ -858,6 +858,15 @@
         <label class="setting-pick"><input id="title-gold" type="checkbox"> <span id="title-gold-label"></span></label>
         <p id="set-title-note" class="small" role="status"></p>
       </section>
+      <!-- the terms again, the credits and the licence (rusemod.termscalls, app.js SETTINGS "terms"): read only,
+           three folds and no buttons -->
+      <section class="setting" id="set-terms">
+        <h2 id="set-terms-title"></h2><p id="set-terms-help" class="muted small"></p>
+        <p id="terms-accepted" class="small"></p>
+        <details><summary id="terms-agreement-sum"></summary><pre id="terms-agreement-text" class="terms-text"></pre></details>
+        <details><summary id="terms-notices-sum"></summary><pre id="terms-notices-text" class="terms-text"></pre></details>
+        <details><summary id="terms-licence-sum"></summary><pre id="terms-licence-text" class="terms-text"></pre></details>
+      </section>
       <!-- the clean game backup (rusemod.backup, app.js renderBackup): the only way the Studio writes into the game's
            own folder, and only when the modder asks for a restore -->
       <section class="setting" id="set-backup">

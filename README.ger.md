@@ -14,9 +14,11 @@
 &nbsp;&nbsp;
 [![Auf Patreon unterstützen](https://img.shields.io/badge/Support%20on-Patreon-65764A?style=for-the-badge&logo=patreon&logoColor=white)](https://www.patreon.com/SneadTristen6)
 
-<sub>Windows. Braucht R.U.S.E. auf Steam. Rührt deine Steam-Installation nie an.</sub>
+<sub>Windows. Braucht R.U.S.E. auf Steam. Mods kommen in eine eigene Kopie, nie in deine Steam-Installation.</sub>
 
 </div>
+
+> R.U.S.E. ist ein Spiel, das von Eugen Systems entwickelt und veröffentlicht wurde. R.U.S.E. 2.0 ist ein kostenloses Fan-Projekt. Es wird von Eugen Systems weder gemacht noch genehmigt noch unterstützt. Es hat auch nichts mit Valve zu tun. Du brauchst dein eigenes Exemplar von R.U.S.E.
 
 > [!TIP]
 > **So installierst und spielst du (5 Minuten):**
@@ -34,15 +36,15 @@
 
 ## Was R.U.S.E. 2.0 ist
 
-**R.U.S.E. 2.0 ist eine von Fans gemachte Fortsetzung von R.U.S.E. (2010), dem beliebten Echtzeit-Strategiespiel von Eugen Systems über den Zweiten Weltkrieg**: die ganze Front auf einem Kartentisch, Schlachten, die so sehr durch Täuschung wie durch Stärke gewonnen werden. Es bringt neue Karten, neue Einheiten und gemoddetes Spielen auf einen Knopfdruck, in zwei kostenlosen Apps:
+**R.U.S.E. 2.0 ist eine kostenlose, von Fans gemachte Mod-Plattform für R.U.S.E. (2010)**, das Echtzeit-Strategiespiel von Eugen Systems über den Zweiten Weltkrieg: die ganze Front auf einem Kartentisch, Schlachten, die so sehr durch Täuschung wie durch Stärke gewonnen werden. Es bringt neue Karten, neue Einheiten und gemoddetes Spielen auf einen Knopfdruck, in zwei kostenlosen Apps:
 
 - **RUSE Launcher, für Spieler.** Wähl ein Set von Mods und drück auf **Spielen**. Das ist alles.
 - **RUSE Studio, für Modder.** Ändere jede Einheit, mach neue mit eigenen 3D-Modellen, bau Karten von einem leeren Blatt aus
   oder forme die eigenen des Spiels um, dann drück auf **Im Spiel testen**.
 
-**Fairplay eingebaut.** RUSE Guard, unser Anti-Cheat, hält Cheats aus echten Mehrspieler-Gefechten heraus: Ein mit Cheats gemoddetes Spiel bleibt offline, und Spieler vergleichen Beitrittscodes, um zu wissen, dass sie dasselbe Spiel spielen.
+**Fairplay eingebaut.** RUSE Guard, unser Anti-Cheat: Ein mit Cheats oder Testwerkzeugen gebautes Spiel spielt Mehrspieler und Koop nur mit Spielern, die denselben Build haben, und Spieler vergleichen Beitrittscodes, um zu wissen, dass sie dasselbe Spiel spielen.
 
-**Deine eigene Kopie, nie verändert.** Die Apps funktionieren nur mit einer Kopie von R.U.S.E., die dir gehört, und bauen daraus eine eigene gemoddete Kopie: Ein Mod ändert nur die Daten des Spiels, und deine Steam-Installation wird nie angerührt.
+**Deine Kopie des Spiels.** Die Apps funktionieren nur mit einer Kopie von R.U.S.E., die dir gehört, und bauen auf deinem PC eine eigene gemoddete Kopie davon. In manchen Fällen können Spieldaten geändert werden, aber nur an deiner Kopie des Spiels: dieser gemoddeten Kopie. Mods ändern ihre Daten und manche ihre Skripte; unsere Apps fügen den Skripten ihres Spiels die Skripte von RUSE Guard und ein paar kleine eigene Schutzvorrichtungen hinzu; und ein paar Mod-Sets brauchen außerdem einen kleinen Patch für ihre Programmdatei. Deine Steam-Installation bleibt, wie sie ist, es sei denn, du bittest den Launcher oder das Studio, sie aus ihrer sauberen Sicherung wiederherzustellen.
 
 **Open Source** (GPL-3.0), in elf Sprachen: den zehn des Spiels und Persisch.
 
@@ -57,34 +59,27 @@
       <sub><b>Vom Ersten Weltkrieg bis heute, alles in einem.</b> Doppeldecker, Bomber und Jets auf einem Flugplatz.</sub>
     </td>
     <td width="33%" valign="top">
-      <img src="docs/images/guard-offline-message.jpg" alt="R.U.S.E. im Spiel: die Meldung von RUSE Guard in einer mit Cheats gebauten Kopie: Sie ist fürs Offline-Spiel und verlässt Mehrspieler- und Koop-Gefechte" width="260"><br>
-      <sub><b>RUSE Guard.</b> Ein mit Cheats gebautes Spiel bleibt offline.</sub>
+      <img src="docs/images/guard-offline-message.jpg" alt="R.U.S.E. im Spiel: eine frühere Meldung von RUSE Guard in einer mit Cheats gebauten Kopie, aus der Zeit, bevor solche Kopien mit Spielern spielen konnten, die denselben Build haben" width="260"><br>
+      <sub><b>RUSE Guard.</b> Eine frühere Meldung: Heute spielt ein mit Cheats gebautes Spiel nur mit Spielern, die denselben Build haben.</sub>
     </td>
   </tr>
 </table>
 
 ## Die Entwicklung unterstützen
 
-R.U.S.E. 2.0 ist mein erstes Modding-Projekt. Wenn du die Entwicklung unterstützen und die Arbeit hinter den Kulissen verfolgen
-willst, [besuch mein Patreon](https://www.patreon.com/SneadTristen6). Jede Unterstützung hilft mir, weiterzubauen.
+R.U.S.E. 2.0 ist mein erstes Modding-Projekt, in meiner Freizeit gemacht. Es ist kostenlos, und es bleibt für alle kostenlos. Wenn du meine Arbeit daran unterstützen und die Arbeit hinter den Kulissen verfolgen willst, kannst du einmalige Unterstützung über [mein Patreon](https://www.patreon.com/SneadTristen6) geben. Sie ist freiwillig. Sie ist keine Spende an eine gemeinnützige Organisation (also nicht steuerlich absetzbar), und sie kauft weder die Apps noch das Spiel noch einen Mod noch irgendwelche Rechte daran.
 
 ### Einmalige Unterstützung
 
-| Option | Betrag | Anerkennung |
+| Option | Betrag | Dankeschön |
 | --- | --- | --- |
 | [Buy me a coffee](https://www.patreon.com/c/sneadtristen6/shop) | $5 einmalig | Ein kleines Trinkgeld, das hilft, das Projekt am Laufen zu halten. |
 | [Above & Beyond Supporter](https://www.patreon.com/SneadTristen6/posts/171328212) | $20 einmalig | Dein gewählter Name im Abschnitt Above & Beyond Supporters der Danksagungen auf GitHub und in den Mods. |
-| [Monumental Supporter](https://www.patreon.com/SneadTristen6/posts/monumental-100-171328695) | $100 einmalig | Dein gewählter Name ganz vorn im Abschnitt Monumental Supporters der Danksagungen, und du darfst etwas im Spiel benennen: eine Stadt, eine Brücke, einen Flugplatz oder eine ganze Karte. |
+| [Monumental Supporter](https://www.patreon.com/SneadTristen6/posts/monumental-100-171328695) | $100 einmalig | Dein gewählter Name ganz vorn im Abschnitt Monumental Supporters der Danksagungen, unsere höchste Unterstützer-Danksagung. |
 
-Die Unterstützung fließt in die Zeit und die Werkzeuge hinter R.U.S.E. 2.0: neue Karten, neue Einheiten, RUSE Studio und
-ein Spiel, das für alle Spieler lebendig bleibt.
+Die Unterstützung fließt in die Zeit und die Werkzeuge hinter R.U.S.E. 2.0: neue Karten, neue Einheiten, RUSE Studio und dass das Spiel für jeden Spieler am Leben bleibt.
 
-Die Nennung ist freiwillig: schick nach dem Kauf eine Patreon-Nachricht mit deinem gewählten öffentlichen Namen und der Erlaubnis,
-ihn zu veröffentlichen, oder bleib anonym. Die Danksagungen werden mit den Releases des Projekts aktualisiert. Diese Käufe im Shop
-verlängern sich nicht automatisch.
-
-Monumental Supporters: schick in derselben Nachricht den Namen, den du einer Stadt, einer Brücke, einem Flugplatz oder
-einer Karte geben willst; er kommt in eine der nächsten Karten.
+Die Namensnennung ist freiwillig: Schick nach deiner Zahlung eine Patreon-Nachricht mit deinem gewählten öffentlichen Namen und der Erlaubnis, ihn zu veröffentlichen, oder bleib anonym. Die Danksagungen werden mit den Releases des Projekts aktualisiert. Das sind einmalige Zahlungen über den Shop von Patreon: Sie verlängern sich nicht, und für Erstattungen gelten die Regeln von Patreon.
 
 ## Was R.U.S.E. 2.0 ändert
 
@@ -142,8 +137,9 @@ einer Karte geben willst; er kommt in eine der nächsten Karten.
 ### Für Spieler
 
 - **Ein Knopfdruck:** wähl ein Mod-Set und drück auf **Spielen**; der Launcher baut eine getrennte gemoddete Kopie und startet sie.
-- **R.U.S.E. 2.0 in Gold:** das gemoddete Spiel öffnet mit einer Schlachtszene, und seine Menüs und Ladebildschirme zeigen
-  R.U.S.E. 2.0 in Gold (in den Einstellungen bleibt der eigene Titel des Spiels, wenn dir das lieber ist).
+- **R.U.S.E. 2.0 in Gold:** Das gemoddete Spiel öffnet sich mit einer Schlachtszene, und seine Menüs und Ladebildschirme
+  sagen R.U.S.E. 2.0 in Gold. Es ist aus, bis du es einschaltest, in den Einstellungen oder mit dem Kästchen auf dem
+  ersten Bildschirm: Bis dahin behält das Spiel seinen eigenen Titel und das Logo-Video von Eugen.
 - **Community-Mods, wie sie sind** (auch `.rmod` von RUSE-Mod-Manager), eine Liste unterstützter Mods zum Anhaken,
   Ladereihenfolgen, in beide Richtungen mit RUSE-Mod-Manager geteilt, und eine Fehlersuche, die findet, was Spielen verhindert,
   und es behebt.
@@ -245,15 +241,16 @@ zu den eigenen Dateien des Spiels bleiben privat, bis wir ein ausdrückliches OK
 Alles, was wir hier tun, soll der Community helfen und dieses Spiel an einen besseren Ort bringen. R.U.S.E. ist eines meiner
 liebsten Spiele überhaupt, und ich will es einfach besser machen.
 
-**Nur eigene Kopien.** Das R.U.S.E. 2.0 Project unterstützt R.U.S.E. nur, wenn du es auf deinem Steam-Konto besitzt. Das Spiel
-selbst startet nur für ein Steam-Konto, das es besitzt, und unsere Werkzeuge umgehen das nie: sie finden das Spiel über deine
-Steam-Bibliothek, modden eine getrennte Kopie davon und liefern nie die Dateien des Spiels aus. Wir unterstützen keine
-Steam-Emulatoren, Raubkopien oder sonst etwas, womit man spielen kann, ohne das Spiel zu besitzen. Wenn du es nicht besitzt,
-funktionieren diese Werkzeuge für dich nicht und sind nicht für dich gedacht. Wir eskalieren alles, was wir für angebracht halten.
+**Nur eigene Kopien.** Das R.U.S.E. 2.0 Project unterstützt R.U.S.E. nur, wenn du es besitzt. Das Spiel selbst startet
+nur für ein Steam-Konto, dem es gehört, und unsere Werkzeuge umgehen das nie: Sie finden das Spiel über deine
+Steam-Bibliothek, modden eine eigene Kopie davon und liefern nie die Dateien des Spiels aus. Wir unterstützen keine
+Steam-Emulatoren, Raubkopien oder sonst etwas, womit Leute spielen können, ohne das Spiel zu besitzen. Wenn du es nicht
+besitzt, funktionieren diese Werkzeuge für dich nicht und sind nicht für dich.
 
-Besitzt du es auf andere Weise, etwa als Box-Version aus der Zeit, bevor R.U.S.E. auf Steam war, oder haben sich die Apps geirrt?
-Das Fenster in der App hat deinen Code und zwei Knöpfe: eröffne ein Ticket auf Discord oder auf GitHub, und wir schicken dir einen
-Freischaltcode für deinen PC.
+Besitzt du es auf anderem Weg, etwa als Schachtelversion aus der Zeit, bevor R.U.S.E. auf Steam war, oder haben die Apps
+sich geirrt? Das Fenster in der App zeigt deinen Code und zwei Knöpfe: ein Ticket auf Discord oder auf GitHub öffnen,
+und wir schicken dir einen Freischaltcode für deinen PC. GitHub-Tickets sind öffentlich, du kannst den Code also
+stattdessen in einer privaten Nachricht auf Discord an sneadtristen6 schicken.
 
 <details>
 <summary><b>Stand, Doku und Mitwirken</b></summary>
@@ -351,6 +348,13 @@ py -3 -m unittest discover -s tests
 
 </details>
 
+## Für Rechteinhaber
+
+Wenn du Eugen Systems vertrittst oder sonst jemanden, dessen Rechte nach deiner Meinung dieses Projekt berührt, schreib
+bitte an sneadtristen6@gmail.com mit dem Betreff „Rights holder“. Wir lesen jede Nachricht und antworten innerhalb von 7
+Tagen. Wenn du uns bittest, etwas von dir zu ändern oder zu entfernen, tun wir es. Du musst vorher keine förmliche
+Mitteilung schicken.
+
 ## Danksagungen
 
 R.U.S.E. 2.0 wird von sneadtristen6 und Claude gebaut, mit der Hilfe und Arbeit der Leute unten.
@@ -378,17 +382,19 @@ den Code. Seit September 2026 Seite an Seite haben sie gebaut:
   jeder Rolle, Aufklärungsfahrzeuge, Waffen, die Flugzeuge treffen, jedes Flag und jede Zahl erklärt, und eine Nation, die zu
   einer anderen gemacht wird.
 - **Musik und Missionen:** Stücke und Sprachzeilen im Studio ersetzt, und eigene Missionen.
-- **Zwei Apps in elf Sprachen** (den zehn des Spiels und Persisch), das Studio für Modder und der Launcher für Spieler, die nie
-  den eigenen Ordner des Spiels anrühren, mit einer Prüfung, die einen Mod, der das Spiel kaputtmachen würde, stoppt, bevor es
+- **Zwei Apps in elf Sprachen** (den zehn des Spiels und Persisch), das Studio für Modder und der Launcher für Spieler,
+  die den eigenen Ordner des Spiels in Ruhe lassen, es sei denn, du bittest eine der Apps, ihn aus seiner sauberen
+  Sicherung wiederherzustellen, mit einer Prüfung, die einen Mod stoppt, der das Spiel kaputt machen würde, bevor es
   startet.
-- **RUSE Guard, unser Anti-Cheat, gebaut und eingeschaltet:** die Sperre, die ein mit Cheats gemoddetes Spiel offline hält, der Wächter in jedem gemoddeten Spiel, Beitrittscodes, der Server mit seinem Prüfbildschirm und die Vereinbarung, die jeder Spieler sieht.
+- **RUSE Guard, unser Anti-Cheat, gebaut und eingeschaltet:** die Sperre, die ein mit Cheats gemoddetes Spiel nur mit Spielern spielen lässt, die denselben Build haben, die Prüfung auf bekannte Cheat-Tools in Mehrspieler- und Koop-Partien, der Beobachter in jedem gemoddeten Spiel (er sagt auf dem Bildschirm, wenn eine Partie einen Spawn-Befehl oder einen plötzlichen Sprung im Geld einer Seite sieht), Beitrittscodes, der Server und sein Prüfbildschirm und die Vereinbarung, die jeder Spieler sieht.
 - **Nur eigene Kopien:** die Prüfung, dass das Spiel eine Kopie ist, die dir gehört, Freischaltcodes für Besitzer, die Steam nicht bestätigen kann, und die Anmeldung über Steam.
 - **Bug Watch:** Absturz- und Fehlerberichte, wenn du es einschaltest, damit Probleme schneller behoben werden.
 - **Große Mods:** Mod-Sets über 4 GB, Baulisten in Gruppen und etwa viermal schnellere Builds (alle 366 Einheiten aus anderen Epochen in etwa 5 Minuten).
 - **Der erste Kartenimporter für R.U.S.E.**, soweit wir wissen: ein echter Ort als Karte, aus den eigenen Teilen des Spiels. Er baut schon einen Teil von Utah Beach zu einer Karte, die sich im Spiel öffnet; im Studio funktioniert er noch nicht ganz.
-- **Der Code:** alles in `src/rusemod`, `src/ruse_studio` und `src/ruse_launcher` ist unser eigener, für R.U.S.E. 2.0
-  geschrieben. Die anderen, auf deren Arbeit er aufbaut, sind unten genannt und in
-  [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+- **Der Code:** Alles in `src/rusemod`, `src/ruse_studio` und `src/ruse_launcher` ist unser eigenes, für R.U.S.E. 2.0
+  geschrieben. Ein paar Dinge, die mitkommen, sind die Arbeit anderer: der Motorsound des Intros und die Modelle in der
+  Startszene. Sie und die anderen, auf deren Arbeit es aufbaut, werden unten und in
+  [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) genannt.
 
 Es ist noch früh, und es kommt noch viel mehr. Danke an alle unten, ohne die nichts davon angefangen hätte.
 
@@ -418,6 +424,11 @@ unter CC0 oder CC BY. Jeder Macher wird genannt, mit Titel, Lizenz und Link des 
 der Danksagungsdatei jedes Mods, der eines benutzt (`CREDITS-era-units.md`), und in der vollständigen Liste im
 [Release der Epocheneinheiten](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases/tag/era-units). Was wir geändert
 haben: jedes wurde an das Spiel angepasst (gedreht und skaliert) und hat die Hoheitszeichen seiner Nation bekommen.
+
+### Der Motorsound des Intros
+
+Der Motorsound im Intro von R.U.S.E. 2.0, für Spieler, die den Titel und das Intro von R.U.S.E. 2.0 anhaken. Quelle:
+nicht zutreffend.
 
 ### (Anonyme) Oozaru: Testen und Fehlersuche
 
@@ -463,12 +474,33 @@ steht, die Wörter der Apps, was getestet ist), oder zu dieser Seite, und frag, 
 Die beste Seite, auf die du ihn hinweisen kannst: [docs/MOD_FORMAT.md](docs/MOD_FORMAT.md) (alles, was ein Mod kann, Datei für
 Datei). Kommst du immer noch nicht weiter? Öffne ein [Issue](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/issues).
 
+## Rechtliches
+
+- R.U.S.E. ist ein Spiel, das von Eugen Systems entwickelt und veröffentlicht wurde. R.U.S.E. 2.0 ist ein kostenloses
+  Fan-Projekt. Es wird von Eugen Systems weder gemacht noch genehmigt noch unterstützt. Es hat weder mit Ubisoft, dem
+  Herausgeber des Spiels bis 2015, noch mit Valve etwas zu tun. R.U.S.E., Eugen Systems und Ubisoft sind die Namen ihrer
+  Eigentümer, und Steam ist eine Marke der Valve Corporation; wir nutzen diese Namen nur, um zu sagen, womit unsere Apps
+  arbeiten.
+- Unsere Apps bringen keine Dateien des Spiels mit, und sie arbeiten nur mit einer Kopie des Spiels, die dir gehört. In
+  manchen Fällen können Spieldaten geändert werden, aber nur an deiner Kopie des Spiels: der eigenen gemoddeten Kopie,
+  die die Apps bauen. Sie lassen dein installiertes Spiel, wie es ist, es sei denn, du bittest den Launcher oder das
+  Studio, es aus seiner sauberen Sicherung wiederherzustellen.
+- Online mit einer gemoddeten Kopie spielen: R.U.S.E. hat keinen wirksamen Anti-Cheat, deshalb braucht es RUSE Guard.
+  Wir können nicht versprechen, wie Steam oder das Spiel eine gemoddete Kopie online behandeln; online mit einer zu
+  spielen, vor allem mit einer, die mit Cheat- oder Testwerkzeugen gebaut wurde, geschieht auf eigenes Risiko.
+- Die Unterstützung des Projekts auf Patreon bezahlt die Zeit und die Werkzeuge des Betreuers. Sie ist keine Spende an
+  eine gemeinnützige Organisation, und sie kauft weder das Spiel noch irgendeinen Inhalt davon noch irgendwelche Rechte
+  daran.
+- Nutzungsbedingungen und Datenschutz: [PRIVACY.md](PRIVACY.md). Teile von Dritten und ihre Lizenzen:
+  [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Rechteinhaber: siehe „Für Rechteinhaber“.
+
 ## Lizenz
 
 GNU General Public License, Version 3 ([LICENSE](LICENSE), GPL-3.0): Copyright (C) 2026 sneadtristen6 und die Mitwirkenden der
-RUSE Mod Platform. Die Apps liefern [`src/ruse_mod_engine`](src/ruse_mod_engine/) mit, LittleGrooves RUSE-Mod-Manager-Engine
+RUSE Mod Platform, mit Hilfe von KI-Werkzeugen geschrieben. Die Apps liefern [`src/ruse_mod_engine`](src/ruse_mod_engine/) mit, LittleGrooves RUSE-Mod-Manager-Engine
 (GPLv3), so verwendet, wie sie ist (siehe Danksagungen), und ihre Lizenz verlangt das ganze Programm unter GPL-3.0 (bis
 2026-09-30 stand es unter MIT). `src/ruse_mod_engine/python251` enthält die Lizenz von Python
-([ihre LICENSE.txt](src/ruse_mod_engine/python251/LICENSE.txt)). Dies ist ein unabhängiges, von Fans gemachtes Werkzeug, nicht
-mit Eugen Systems verbunden oder von Eugen Systems unterstützt. R.U.S.E. und seine Spieldaten gehören ihren Eigentümern; dieses
-Projekt liefert keine Spieldateien aus und arbeitet nur mit einer Kopie eines Spiels, das du besitzt.
+([ihre LICENSE.txt](src/ruse_mod_engine/python251/LICENSE.txt)). Das ist ein unabhängiges, von Fans gemachtes Werkzeug,
+nicht mit Eugen Systems oder Valve verbunden und von ihnen nicht empfohlen. R.U.S.E. und seine Spieldaten gehören ihren
+Eigentümern, und Steam ist eine Marke der Valve Corporation. Unsere Apps bringen keine Dateien des Spiels mit und
+arbeiten nur mit einer Kopie des Spiels, die dir gehört.

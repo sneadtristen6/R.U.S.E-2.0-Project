@@ -1,6 +1,6 @@
 """R.U.S.E. 2.0's signature (the owner, 2026-10-22: "the loading screen should have Ruse 2.0 ... we should have a small
 encoder ... on everything, including ... studio test builds. Should have this Ruse 2.0. It's one of our signatures"):
-every modded copy the apps build shows the title as gold "R.U.S.E. 2.0":
+a modded copy the apps build for a player who turned it on shows the title as gold "R.U.S.E. 2.0":
 
 - the main menu's logo (rusemod.menulogo: the 2.0 made from the logo's own letters, centred, gold, its shine kept),
   the small logo on the other screens as R.U.S.E. 2.0 too (small_logo_picture), and every white or grey outline in
@@ -20,9 +20,12 @@ All of it is made on the player's PC from their own game files (nothing of the g
 own picture), the first time it's needed, and kept in the build cache (only a new game version or a new recipe makes
 it again). The build puts it
 in as changed game files under every mod's: a mod that changes one of the same files has its own used.
-Settings in either app can turn it off (the owner, 2026-10-22: "a toggle somewhere in the settings to go back to
-generic ruse"): the copy then has the game's own title. A file that isn't the one the title was fitted to (another
-game version) is left as the game's, and the build says so."""
+It is off unless the player turns it on (the owner, 2026-11-24: "Eugen's logo should now be shown by default, just like
+normal [R.U.S.E.] does, and you can opt in the settings to turn on the [R.U.S.E.] 2.0 intro and gold font"): the
+switch in Settings in either app (the owner, 2026-10-22: "a toggle somewhere in the settings to go back to generic
+ruse"), or the box on the agreement screen (rusemod/sharedui/agreement.js). Off, the copy has the game's own title and
+the game's own company logo video. A file that isn't the one the title was fitted to (another game version) is left as
+the game's, and the build says so."""
 from __future__ import annotations
 
 import hashlib
@@ -31,7 +34,9 @@ from pathlib import Path
 
 from .gamefiles import GameFile
 
-SETTING = "game_title"           # settings.json: "game" for the game's own title; anything else (or none): ours
+SETTING = "game_title"           # settings.json: ON for ours (the player's opt-in); "game", anything else or none: the
+#                                  game's own (before 2026-11-24 only "game" meant the game's own; none meant ours)
+ON = "ruse20"                    # the opt-in's own value: nothing else turns the title on
 TITLE = "R.U.S.E. 2.0 title"     # how the build names it in its lines
 RECIPE = 7                       # raised when what's made changes: the cache's old files are then made again
 #                                  (2: the start-up video over the battle scene; the menus' hover frames gold;
@@ -63,19 +68,20 @@ SUPERSAMPLE = 4                       # a letter outline drawn this many times f
 
 
 def title_on(home: Path | None) -> bool:
-    """Whether the copies get R.U.S.E. 2.0's title (the default) or the game's own (Settings)."""
+    """Whether the copies get R.U.S.E. 2.0's title (the player's opt-in: Settings, or the agreement screen's box) or
+    the game's own (the default). Only the opt-in's own value (ON) turns it on: no value and the older apps' "game"
+    are both the game's own, so every player has the game's own title after this update, those who had ours by the
+    old default too (the owner, 2026-11-24: "they should see the game's own title")."""
     from .home import settings
-    return home is None or settings(home).get(SETTING) != "game"
+    return home is not None and settings(home).get(SETTING) == ON
 
 
 def keep_title(home: Path, on: bool) -> None:
-    """Keep the choice in settings.json, for both apps; the next Play or Test in game builds with it."""
+    """Keep the choice in settings.json, for both apps: ON, or "game" for the game's own (which the older apps read as
+    the game's own too); the next Play or Test in game builds with it."""
     from .home import save_settings, settings
     values = settings(home)
-    if on:
-        values.pop(SETTING, None)
-    else:
-        values[SETTING] = "game"
+    values[SETTING] = ON if on else "game"
     save_settings(home, values)
 
 

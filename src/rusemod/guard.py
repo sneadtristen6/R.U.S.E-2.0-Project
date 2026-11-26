@@ -1,10 +1,10 @@
 """RUSE Guard, the Launcher's side (DomesticNukes' design: his RUSE-Guard repository, docs/DESIGN.md). The match review
 half (the detectors, the replay reader, the review server and screen) runs on his side; this is what the Launcher
-does for it. Like the rest of fair play it is SWITCHED OFF (rusemod.fairplay.ON).
+does for it. It is on: rusemod.fairplay.ON.
 
 - **Signed tokens** in his format (`base64url(canonical JSON).base64url(signature)`), checked with Ed25519
   (rusemod.ed25519) against the public keys the owner ships in KEYS (empty until he makes them):
-  - a **dev key** (`<home>/guard/devkey.txt`) is the one way past the offline lock: a developer's copy with test tools
+  - a **dev key** (`<home>/guard/devkey.txt`) is the one way past the cheat-copy lock: a developer's copy with test tools
     can join multiplayer, and its matches are filed as dev tests;
   - a **signed mod manifest** (`ruseguard.manifest` in a mod's folder) says the mod's files are exactly what the
     owner approved (DESIGN §3.7): a whole lobby running the same changed mod no longer passes.
@@ -13,13 +13,12 @@ does for it. Like the rest of fair play it is SWITCHED OFF (rusemod.fairplay.ON)
   match's replay, the copy's fingerprint and file list, the signed manifests and the process scan's findings (§3.5),
   signs the bundle with this install's own key and sends it to the RUSE Guard server, or keeps it in the outbox
   until a server is set.
-- **The process scan** (§3.5, disclosed in the terms; part of RUSE Guard, which the apps require) looks only while a
-  multiplayer or co-op match is on, only at running programs' names, against RUSE Guard's list of known cheat tools,
-  which comes inside the app as a plain file anyone can read and changes only with an app update (CHEAT_TOOLS, the
-  owner's 14 A of 2026-11-25: nothing is downloaded for it). The Launcher knows a match is on from the in-game
-  record's lines on the game's own error output, which it reads while the game runs (GameLines; the owner's 31 A:
-  "Repair it for 31"). It reports names, never anything else, and it never decides anything: the server only uses it
-  to raise a review that a real detector opened.
+- **The process scan** (§3.5) is part of RUSE Guard, which our builds require, as the terms say; the player can't turn
+  it off on its own. It looks only while a multiplayer or co-op match the Launcher started is live (the in-game record
+  says so on the game's error output, which the Launcher reads while the game runs: GameLines), only at running
+  programs' names, against the list of known cheat tools that comes inside the app as a plain file anyone can read and
+  changes only with an app update (CHEAT_TOOLS: nothing is downloaded for it). It reports names, never anything else,
+  and it never decides anything: a report naming a listed tool opens a review, and the reviewer decides.
 Nothing here judges or bans: the server opens reviews for people to look at.
 """
 from __future__ import annotations
@@ -57,12 +56,13 @@ SERVER = "https://ruse-guard.sneadtristen6.workers.dev"  # the project's server:
 #                                                       (GuardCalls.use_guard_server), so tests keep their bundles
 MANIFEST = "ruseguard.manifest"                       # a signed mod manifest, in the mod's folder
 MATCH_LOG = "ruse_guard_match.txt"                    # what the in-game record writes, in the copy's folder
-TERMS_VERSION = 4                                     # the agreement's version; raised when its text changes, so the
+TERMS_VERSION = 5                                     # the agreement's version; raised when its text changes, so the
 #                                                       apps show it again (2: the final text of 2026-10-31; 3, 2026-11-02:
 #                                                       a game crash report's chain and memory place listed; 4, 2026-11-13:
 #                                                       Bug Watch's map and unit at a game crash, what a
 #                                                       player's own mods hold by kind and count, and the version accepted:
-#                                                       rusemod.bugwatch.AGREEMENT_V4)
+#                                                       rusemod.bugwatch.AGREEMENT_V4; 5, 2026-11-26: the terms of use and
+#                                                       privacy notice, PRIVACY.md)
 BUNDLE_LIMIT = 20_000_000                             # the most a bundle may weigh (the replay is most of it)
 SCAN_EVERY = 30                                       # seconds between process scans in a live multiplayer match
 # The in-game record's lines on the game's own error output (gamescripts/guard_hash.py25): "live multi 1 coop 0" ten
@@ -356,10 +356,10 @@ def bundle(home, log: MatchLog, *, username: str, record: dict | None, replay: P
         replay_b64 = base64.b64encode(replay.read_bytes()).decode("ascii")
     key = client_key(home)
     public = ed25519.public_key(key).hex()
-    # The server files every bundle under a handle and refuses an empty one (cloudflare/guard worker.js fieldsOf). A
-    # player who accepted RUSE Guard but ticked neither opt-in was never asked for a username (sharedui/agreement.js),
-    # so they're filed under this install's own anonymous id instead: the start of its public key, which every bundle
-    # already carries in full as client_key. Never a Steam ID; no "#", so it can't look like a chosen username.
+    # The server files every bundle under a handle and refuses an empty one (cloudflare/guard worker.js fieldsOf). Every
+    # player picks a username on the agreement screen; a settings file without one (from an older app) is filed under
+    # this install's own anonymous id: the start of its public key, which every bundle already carries in full as
+    # client_key. Never a Steam ID; no "#", so it can't look like a chosen username.
     handle = username or f"player-{public[:12]}"
     # each player's Launcher sends its own bundle; the server finds the others of the same match (by start time
     # and the shared state hashes) and gives the match its id. This install's own key (client_key) ties a player's

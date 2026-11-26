@@ -24,7 +24,9 @@ and the project will take a name they're okay with. Ideas and constructive criti
 ### House rules
 
 - Be kind. Everyone here does this for the love of the game.
-- Mods carry data only: no programs, no modified game executables, no copies of the game.
+- In some instances, game data may be changed, but that is with your copy of the game: mods change data, and some change
+  the game's scripts, in the modded copy the apps build. Don't post programs for Windows, modified game executables or
+  copies of the game.
 - Credit the people whose work you build on.
 
 Thanks to **DomesticNukes** for the map-making research, and **LittleGroove** for the `.rmod` engine the launcher

@@ -22,9 +22,10 @@ The other files there (`RUSE-Launcher-notes.json`, *Source code*) aren't needed.
 1. Open the file you downloaded (usually in your **Downloads** folder).
 2. **"Windows protected your PC"?** Click **More info**, then **Run anyway**. The app is new to Windows' reputation
    check; its code is public on this GitHub.
-3. Click through the installer. Leave **Keep a clean copy of my game's files** ticked: the apps never change your
-   game's folder, but other mod managers and hand edits can, and every modded game is built from those files. The
-   copy is made the first time the app starts (a few minutes, about as much disk space as the game).
+3. Click through the installer. Leave **Keep a clean copy of my game's files** ticked: the apps never change your game's
+   folder unless you ask them to restore it from this copy, but other mod managers and hand edits can, and every modded
+   game is built from those files. The copy is made the first time the app starts (a few minutes, about as much disk
+   space as the game).
 4. Start **RUSE Launcher** (Start menu, or the desktop shortcut). The first time, **Choose your language**: any of
    eleven, the game's ten and Persian (فارسی); the language button at the top changes it any time. It finds R.U.S.E.
    by itself through Steam. If it says it can't: **Settings > Game folder > Choose folder…** and pick the folder that
@@ -64,13 +65,15 @@ isn't touched.
 Pick your mod set and press **Play**. The first time, the Launcher builds a modded copy of the game (a minute or so);
 after that only what changed. Then R.U.S.E. starts, with your mods.
 
-Your modded game says **R.U.S.E. 2.0 in gold**: it opens on a battle scene, and its main menu, menus and loading
-screens carry the gold title. It's made on your PC from your own game's files the first time (a few minutes, once).
-To keep the game's own title, untick **The game's title** in **Settings**.
+**R.U.S.E. 2.0 in gold** is off unless you turn it on: until then your game keeps its own title and Eugen's logo video.
+To turn it on, tick **Use the gold R.U.S.E. 2.0 title and intro** under **The game's title** in **Settings** (the
+agreement the Launcher shows when it first opens has a box for it too). The game then opens on a battle scene, with mods
+or without, and its main menu, menus and loading screens carry the gold title. It's made on your PC from your own game's
+files and a picture and a sound that come with the apps, the first time (a few minutes, once).
 
 > [!NOTE]
 > Starting R.U.S.E. from **Steam** starts the game **without** mods, as always. To play with mods, start it from the
-> Launcher's **Play**. Your Steam install is never changed.
+> Launcher's **Play**. Play never changes your Steam install.
 
 ## Updates
 
@@ -82,6 +85,9 @@ installs over the old one and keeps your mods.
 covers the Launcher and the update installs by itself, then the Launcher opens again; until it's in, **Play** stays
 off. Without the internet, the box says so: connect and press **Try again**. The Studio does the same, with **Test in
 game**.
+
+An update installs only when it carries our signature. If the Launcher or the Studio says a new version couldn't be
+confirmed, don't install it by hand unless we say so on our Discord; wait for the next update.
 
 ## Problems?
 

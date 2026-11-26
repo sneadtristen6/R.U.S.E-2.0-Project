@@ -190,6 +190,7 @@ const SETTINGS = [  // the language isn't here: it has its own button at the top
   { id: "where", render() { renderWhere(); } },  // loaded when Settings opens (loadWhere)
   { id: "copies", render() { renderCopies(); } },  // loaded when Settings opens (loadCopies)
   { id: "title", render() { renderTitle(); } },  // loaded when Settings opens (loadTitle)
+  { id: "terms", render() { renderTerms(); } },  // read each time Settings opens (loadTerms)
   { id: "backup", render() { renderBackup(); } },  // loaded when Settings opens (loadBackup)
   { id: "bugwatch", render() { renderBugwatch(); } },  // loaded when Settings opens (loadBugwatch)
   { id: "guardcode", render() { renderGuardCode(); } },  // loaded when Settings opens (loadGuardCode)
@@ -329,9 +330,10 @@ async function changeCopies(choose) {
   loadBackup();  // the clean backup goes beside the copies
 }
 
-// --- the game's title in the modded copies (rusemod.signature through api.game_title): R.U.S.E. 2.0's gold title
-// (the default) or the game's own (the owner, 2026-10-22: "a toggle somewhere in the settings to go back to generic
-// ruse"). Kept in settings.json, the Studio's too; the next Play builds the copy with it ---
+// --- the game's title in the modded copies (rusemod.signature through api.game_title): the game's own (the default,
+// the owner, 2026-11-24: "Eugen's logo should now be shown by default") or R.U.S.E. 2.0's gold title and intro, the
+// player's opt-in (the owner, 2026-10-22: "a toggle somewhere in the settings to go back to generic ruse"). Kept in
+// settings.json, the Studio's too; the next Play builds the copy with it ---
 async function loadTitle() {
   try { state.title = await api().game_title(); } catch (err) { state.title = { note: errorText(err), bad: true }; }
   if (state.settings) renderTitle();
@@ -341,11 +343,36 @@ function renderTitle() {
   const w = state.words, t = state.title || {}, box = $("title-gold");
   text($("set-title-help"), w.set_title_help);
   text($("title-gold-label"), w.title_gold);
-  box.checked = t.ruse20 !== false;
+  box.checked = t.ruse20 === true;  // (unticked unless the player turned it on)
   box.disabled = t.ruse20 === undefined;  // (not read yet)
   const note = $("set-title-note");
   text(note, t.note || "");
   note.className = "message" + (t.note ? (t.bad ? " bad" : " good") : "");
+}
+
+// --- the terms again, the credits and the licence (rusemod.termscalls through api.terms_info): read only. The
+// agreement's words are the app's own (the same text as the first-start screen); the two files are what the app ships.
+async function loadTerms() {
+  try { state.terms = await api().terms_info(); } catch (err) { state.terms = { failed: errorText(err) }; }
+  if (state.settings) renderTerms();
+}
+
+function renderTerms() {
+  const w = state.words, t = state.terms, answered = !!t;   // (until terms_info answers, nothing is said about the version or the files)
+  text($("set-terms-help"), w.set_terms_help);
+  // a version older than this app's is said so (the owner, 2026-11-25: "Eleven, yes.")
+  const newer = answered && !t.failed && t.accepted && t.current && t.accepted < t.current ? " " + w.terms_newer : "";
+  text($("terms-accepted"), !answered ? "" : t.failed ? t.failed : t.accepted
+    ? fill(w.terms_accepted, { version: t.accepted, current: t.current }) + newer : w.terms_accepted_none);
+  const folds = [["agreement", w.terms_read_agreement, w.agree_full, w.tip_terms_agreement],
+    ["notices", w.terms_read_credits, t && t.notices, w.tip_terms_credits],
+    ["licence", w.terms_read_licence, t && t.licence, w.tip_terms_licence]];
+  for (const [id, label, body, tip] of folds) {
+    text($(`terms-${id}-sum`), label);
+    $(`terms-${id}-sum`).title = tip || "";
+    // (a missing file is said, never replaced; before the answer, not said at all)
+    text($(`terms-${id}-text`), id !== "agreement" && !answered ? "" : body == null ? w.terms_missing : body);
+  }
 }
 
 async function changeTitle() {
@@ -1895,8 +1922,8 @@ async function start() {
   $("lang-pick-close").addEventListener("click", closeLangPick);
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && langPick && !langPick.first) closeLangPick(); });
   $("settings-open").addEventListener("click", () => {
-    state.settings = true; render(); loadWhere(); loadCopies(); loadTitle(); loadBackup(); loadBugwatch(); loadGuardCode(); loadSignin();
-    loadWebview2();
+    state.settings = true; render(); loadWhere(); loadCopies(); loadTitle(); loadTerms(); loadBackup(); loadBugwatch();
+    loadGuardCode(); loadSignin(); loadWebview2();
   });
   $("set-webview2-install").addEventListener("click", installWebview2);
   $("title-gold").addEventListener("change", changeTitle);
@@ -1992,7 +2019,8 @@ async function start() {
   showVersion();
   await openLangPick(true);  // until a language is picked there: "Choose your language", first
   // then the shared agreement + username (shared/agreement.js), once RUSE Guard is live, before "Choose your mods"
-  await window.Agreement.open({ api: api(), words: state.words, fairOn: state.fairOn });
+  const agreed = await window.Agreement.open({ api: api(), words: state.words, fairOn: state.fairOn });
+  if (agreed && agreed.problem) setMessage(agreed.problem, "bad");  // (its title box's choice couldn't be kept)
   await firstBackup();
   checkUpdate();  // only once the agreement is accepted (the owner, 2026-11-25, 18 B; the back end holds it too)
   openWelcome();  // the first run: "Choose your mods"

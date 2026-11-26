@@ -381,6 +381,9 @@ button:disabled, button[aria-disabled="true"] { cursor: default; opacity: 0.45; 
 .setting .confirm { margin: 0; }
 .setting .good { color: var(--good); }
 .setting .bad { color: var(--bad); }
+/* the terms, credits and licences (app.js renderTerms): long texts in a fold, scrolling inside it */
+.setting summary { cursor: pointer; }
+.terms-text { margin: 8px 0 0; max-height: 320px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; font-size: 12px; }
 /* where things are kept (app.js renderWhere): each folder with its path and Show in folder */
 .where-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; }
 .where-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; padding: 6px 10px;

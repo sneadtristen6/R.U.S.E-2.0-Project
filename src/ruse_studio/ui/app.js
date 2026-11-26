@@ -6211,21 +6211,41 @@ const SETTINGS = [  // the language isn't here: it has its own button at the top
     }));
   } },
   { id: "copies", async render() { renderCopies(await api().copies_folder()); } },
-  // the game's title in the modded copies (rusemod.signature): R.U.S.E. 2.0's gold title (the default) or the game's
-  // own (the owner, 2026-10-22: "a toggle somewhere in the settings to go back to generic ruse"); the Launcher's too
+  // the game's title in the modded copies (rusemod.signature): the game's own (the default, the owner, 2026-11-24:
+  // "Eugen's logo should now be shown by default") or R.U.S.E. 2.0's gold title and intro, the player's opt-in (the
+  // owner, 2026-10-22: "a toggle somewhere in the settings to go back to generic ruse"); the Launcher's too
   { id: "title", async render() {
     const w = state.words, box = $("title-gold"), line = $("set-title-note");
     $("title-gold-label").textContent = w.title_gold;
     box.title = w.tip_title_gold;
-    box.checked = (await api().game_title()).ruse20 !== false;
+    box.checked = (await api().game_title()).ruse20 === true;  // (unticked unless the player turned it on)
     line.textContent = "";
     box.onchange = async () => {
       try {
-        box.checked = (await api().set_game_title(box.checked)).ruse20 !== false;
+        box.checked = (await api().set_game_title(box.checked)).ruse20 === true;
         line.textContent = box.checked ? w.title_on_note : w.title_off_note;
         line.className = "small good";
       } catch (err) { problem(err); }
     };
+  } },
+  // the terms again, the credits and the licence (rusemod.termscalls): read only; the agreement's words are the app's
+  // own (the first-start screen's text), the two files are what the app ships; the Launcher's too
+  { id: "terms", async render() {
+    const w = state.words;
+    let t;
+    try { t = await api().terms_info(); } catch (err) { t = { failed: errorText(err) }; }
+    // a version older than this app's is said so (the owner, 2026-11-25: "Eleven, yes.")
+    const newer = !t.failed && t.accepted && t.current && t.accepted < t.current ? " " + w.terms_newer : "";
+    $("terms-accepted").textContent = t.failed ? t.failed : t.accepted
+      ? fillText(w.terms_accepted, { version: t.accepted, current: t.current }) + newer : w.terms_accepted_none;
+    const folds = [["agreement", w.terms_read_agreement, w.agree_full, w.tip_terms_agreement],
+      ["notices", w.terms_read_credits, t.notices, w.tip_terms_credits],
+      ["licence", w.terms_read_licence, t.licence, w.tip_terms_licence]];
+    for (const [id, label, body, tip] of folds) {
+      $(`terms-${id}-sum`).textContent = label;
+      $(`terms-${id}-sum`).title = tip || "";
+      $(`terms-${id}-text`).textContent = body == null ? w.terms_missing : body;   // (a missing file is said, never replaced)
+    }
   } },
   { id: "backup", render() { renderBackup(); } },  // loaded each time Settings opens (loadBackup)
   { id: "bugwatch", render() { renderBugwatch(); } },  // loaded each time Settings opens (loadBugwatch)
@@ -6813,7 +6833,8 @@ await setLanguage(state.lang);
   // then the shared agreement + username (shared/agreement.js), once RUSE Guard is live, before the start screen
   let guardLive = false;
   try { guardLive = (await api().fair_play_on()).on; } catch { guardLive = false; }
-  await window.Agreement.open({ api: api(), words: state.words, fairOn: guardLive });
+  const agreed = await window.Agreement.open({ api: api(), words: state.words, fairOn: guardLive });
+  if (agreed && agreed.problem) say(agreed.problem, "error");  // (its title box's choice couldn't be kept)
   filesMoved().catch(() => {});  // an older back end: nothing moved
   firstBackup(status.ready).catch(problem);
   checkUpdate();  // only once the agreement is accepted (the owner, 2026-11-25, 18 B; the back end holds it too)

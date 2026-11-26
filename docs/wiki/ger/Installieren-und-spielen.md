@@ -22,10 +22,10 @@ Die anderen Dateien dort (`RUSE-Launcher-notes.json`, *Source code*) brauchst du
 1. Öffne die heruntergeladene Datei (meist in deinem Ordner **Downloads**).
 2. **„Der Computer wurde durch Windows geschützt“?** Klicke auf **Weitere Informationen**, dann auf **Trotzdem
    ausführen**. Die App ist neu für die Reputationsprüfung von Windows; ihr Code ist öffentlich hier auf GitHub.
-3. Klick dich durch das Installationsprogramm. Lass **Eine saubere Kopie der Spieldateien behalten** angehakt: die Apps
-   ändern den Ordner deines Spiels nie, andere Mod-Manager und Änderungen von Hand aber schon, und jedes gemoddete Spiel
-   wird aus diesen Dateien gebaut. Die Kopie wird beim ersten Start der App erstellt (ein paar Minuten, etwa so viel
-   Speicherplatz wie das Spiel).
+3. Klick dich durch das Installationsprogramm. Lass **Eine saubere Kopie der Spieldateien behalten** angehakt: Die Apps
+   ändern den Ordner deines Spiels nie, es sei denn, du bittest sie, ihn aus dieser Kopie wiederherzustellen, andere
+   Mod-Manager und Änderungen von Hand aber schon, und jedes gemoddete Spiel wird aus diesen Dateien gebaut. Die Kopie
+   wird beim ersten Start der App erstellt (ein paar Minuten, etwa so viel Speicherplatz wie das Spiel).
 4. Starte **RUSE Launcher** (Startmenü oder Verknüpfung auf dem Desktop). Beim ersten Mal **Wählen Sie Ihre Sprache**:
    eine von elf, die zehn des Spiels und Persisch (فارسی); die Sprachschaltfläche oben ändert sie jederzeit. Er findet
    R.U.S.E. selbst über Steam. Sagt er, dass er es nicht kann: **Einstellungen > Spielordner > Ordner wählen…** und
@@ -66,14 +66,17 @@ Bibliothek hinzufügen**. Dein Spielordner wird nicht angerührt.
 Wähle dein Mod-Set und drücke **Spielen**. Beim ersten Mal baut der Launcher eine gemoddete Kopie des Spiels (etwa eine
 Minute); danach nur das, was sich geändert hat. Dann startet R.U.S.E., mit deinen Mods.
 
-Dein gemoddetes Spiel zeigt **R.U.S.E. 2.0 in Gold**: es öffnet sich mit einer Schlachtszene, und sein Hauptmenü, die
-Menüs und die Ladebildschirme tragen den goldenen Titel. Er wird beim ersten Mal auf deinem PC aus den Dateien deines
-eigenen Spiels gemacht (ein paar Minuten, einmal). Um den eigenen Titel des Spiels zu behalten, nimm in den
-**Einstellungen** unter **Der Titel des Spiels** den Haken weg.
+**R.U.S.E. 2.0 in Gold** ist aus, bis du es einschaltest: Bis dahin behält dein Spiel seinen eigenen Titel und das
+Logo-Video von Eugen. Zum Einschalten setz in den **Einstellungen** unter **Der Titel des Spiels** das Häkchen bei **Den
+goldenen Titel und das Intro von R.U.S.E. 2.0 verwenden** (die Vereinbarung, die der Launcher beim ersten Öffnen zeigt,
+hat dafür auch ein Kästchen). Dann öffnet sich das Spiel mit einer Schlachtszene, mit Mods oder ohne, und sein
+Hauptmenü, die Menüs und die Ladebildschirme tragen den goldenen Titel. Er wird beim ersten Mal auf deinem PC aus den
+Dateien deines eigenen Spiels und einem Bild und einem Sound gemacht, die mit den Apps kommen (ein paar Minuten,
+einmal).
 
 > [!NOTE]
 > Startest du R.U.S.E. über **Steam**, startet das Spiel **ohne** Mods, wie immer. Um mit Mods zu spielen, starte es
-> über **Spielen** im Launcher. Deine Steam-Installation wird nie verändert.
+> über **Spielen** im Launcher. „Spielen“ ändert nie deine Steam-Installation.
 
 ## Updates
 
@@ -82,6 +85,10 @@ anbietet. Schlägt das Update mit „certificate verify failed“ fehl, lade das
 deinem Browser herunter und führe es aus: es installiert sich über das alte und behält deine Mods.
 
 **Notwendige Updates:** Ein als notwendig markiertes Update (ein wichtiges, etwa eine Sicherheitskorrektur) lässt sich nicht überspringen. Ein Fenster legt sich über den Launcher, das Update installiert sich von selbst, und der Launcher öffnet sich wieder; bis es installiert ist, bleibt **Spielen** gesperrt. Ohne Internet sagt das Fenster das: Verbinden Sie sich und klicken Sie auf **Erneut versuchen**. Das Studio macht es genauso, mit **Im Spiel testen**.
+
+Ein Update wird nur installiert, wenn es unsere Signatur trägt. Sagt der Launcher oder das Studio, dass eine neue
+Version nicht bestätigt werden konnte, installier sie nicht von Hand, es sei denn, wir sagen es auf unserem Discord;
+warte auf das nächste Update.
 
 ## Probleme?
 

@@ -54,9 +54,11 @@ In the Studio's mod menu, **Show this mod's folder** opens the folder of the mod
 
 ## What a mod can hold
 
-Data only: numbers, texts, maps, models, textures. Programs (`.exe`, `.dll`, scripts that run on a PC) are refused by
-both apps. One exception: the game's own mission scripts, as the Studio saves them. They run inside the game and can do
-anything it can, so install those only from authors you trust ([SECURITY.md](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/blob/main/SECURITY.md)).
+In some instances, game data may be changed, but that is with your copy of the game: a mod changes the data (numbers,
+texts, maps, models, textures) of the modded copy the apps build, and some mods change the game's own scripts there,
+like the mission scripts the Studio saves. Those scripts run inside the game and can do anything it can, so install them
+only from authors you trust ([SECURITY.md](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/blob/main/SECURITY.md)).
+Programs (`.exe`, `.dll`, scripts that run on a PC) are refused by both apps.
 
 ## Good practice
 

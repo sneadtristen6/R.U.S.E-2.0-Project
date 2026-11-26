@@ -44,6 +44,7 @@ from rusemod.backup import BackupCalls, BackupError
 from rusemod.bugwatch import BugWatchCalls
 from rusemod.community import APP_NAMES, CommunityCalls
 from rusemod.guardcalls import GuardCalls
+from rusemod.termscalls import TermsCalls
 from rusemod.owned import OwnedCalls
 from rusemod.ownedpass import OwnedPassCalls
 from rusemod.update import UpdateCalls
@@ -130,7 +131,7 @@ def _kind_of(path) -> str:
 
 
 class LauncherApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCalls, OwnedPassCalls, BackupCalls,
-                  startlog.StartCalls, GuardCalls, BugWatchCalls, WebView2Calls):
+                  startlog.StartCalls, GuardCalls, TermsCalls, BugWatchCalls, WebView2Calls):
     """The launcher's back end. The arguments replace the real world in tests: the game folder, the launcher's own
     folder, where modded copies and the game's backups go, how links, the game and Steam get started, and the
     window's dialogs."""
@@ -268,13 +269,15 @@ class LauncherApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedC
             keep_instances_dir(self._home, None)
         return self.copies_folder()
 
-    # --- the game's title in the copies (rusemod.signature): R.U.S.E. 2.0's gold title, or the game's own ---
+    # --- the game's title in the copies (rusemod.signature): the game's own, or R.U.S.E. 2.0's gold title ---
     def game_title(self) -> dict:
-        """Settings' title switch: {"ruse20": True} when the copies get R.U.S.E. 2.0's gold title (the default)."""
+        """Settings' title switch: {"ruse20": True} when the copies get R.U.S.E. 2.0's gold title (the player's
+        opt-in; the game's own title is the default)."""
         return {"ruse20": title_on(self._home)}
 
     def set_game_title(self, ruse20: bool) -> dict:
-        """Keep the choice (settings.json, the Studio's too); the next Play builds the copy with it."""
+        """Keep the choice (settings.json, the Studio's too): Settings' switch, and the agreement screen's box
+        (shared/agreement.js) when it's ticked at Accept; the next Play builds the copy with it."""
         keep_title(self._home, bool(ruse20))
         return self.game_title()
 
@@ -1042,7 +1045,7 @@ class LauncherApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedC
         return {"watching": watching, "notice": notice}
 
     def _play(self, chosen: dict, say) -> None:
-        title = title_on(self._home)  # R.U.S.E. 2.0's title, unless Settings says the game's
+        title = title_on(self._home)  # the game's own title, unless the player turned R.U.S.E. 2.0's on
         # Vanilla is the modded copy with no mods, built and started here like every set's, with RUSE Guard in it and
         # Play's checks and watches; never Steam's start link (the owner, 2026-11-25, the legal fixes' 36 B: "if
         # they're using our apps, they should be using [RUSE] Guard. If they want to play vanilla [R.U.S.E.], they

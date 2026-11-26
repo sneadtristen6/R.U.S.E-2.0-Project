@@ -10,7 +10,7 @@
 | Die Mods des Studios | `Documents\RUSE 2.0\Mods\<mod>` (im Explorer „Dokumente“); Kartenänderungen in `Maps`, exportierte Dateien in `Exports`, Sicherungen in `Backups`. Im Studio öffnet **Einstellungen → Wo Ihre Dateien liegen** jeden davon, und **Ordner dieses Mods zeigen** (Mod-Menü) den, den du bearbeitest |
 | Die installierten Mods des Launchers | `%LOCALAPPDATA%\RUSE Mod Platform\library` |
 | Gemoddete Kopien des Spiels | Der Ordner, den du in den Einstellungen wählst (**Wohin Kopien mit Mods kommen**, in beiden Apps); der empfohlene Ort ist `RUSE-Instances` auf demselben Laufwerk wie das Spiel (zum Beispiel `D:\RUSE-Instances`), wo eine Kopie die Dateien des Spiels mitbenutzt. Auf einem anderen Laufwerk ist jede Kopie eine vollständige Kopie des Spiels: langsamer und größer. Die saubere Sicherung des Spiels (`RUSE-Backup`) kommt daneben. |
-| Das Spiel selbst | Wird nie verändert |
+| Das Spiel selbst | Von den Apps nie geändert, es sei denn, du bittest eine der Apps, es aus seiner sauberen Sicherung wiederherzustellen |
 
 Ältere Studios legten sie in `%LOCALAPPDATA%\RUSE Mod Platform` ab (`mods`, `maps`, `exports`, `mod-backups`): Das Studio verschiebt sie beim ersten Start nach Dokumente und sagt es dir.
 
@@ -66,7 +66,7 @@ Studio legt diesen Ordner für dich an.
 | Die Zip-Datei enthält einen Ordner in einem Ordner | Der Launcher schaut einen Ordner tiefer und findet ihn. Bei zwei oder mehr Ebenen sagt er, dass er keinen Mod gefunden hat. | Zippe den Ordner, der `mod.toml` enthält. |
 | Ein Kartenordner, benannt nach dem Titel der Karte | Der Build sagt, dass das kein Paketname einer Karte ist. | Benenne ihn in den Paketnamen um. |
 | Eine von Hand bearbeitete Datei hat einen Tippfehler | Die Mod-Prüfung nennt die Datei und die Zeile. | Korrigiere ihn, oder **Beiseitelegen** im Studio. |
-| Eine `.exe`, `.dll` oder ein PC-Skript im Mod | Abgelehnt: Mods enthalten nur Daten (die eigenen Missionsskripte des Spiels, so wie das Studio sie speichert, sind die einzige Ausnahme). | Nimm es heraus. |
+| Eine `.exe`, `.dll` oder ein PC-Skript im Mod | Abgelehnt: keine Programme. In manchen Fällen können Spieldaten geändert werden, aber nur an deiner Kopie des Spiels: Mods ändern Daten, und manche ändern die eigenen Skripte des Spiels, nur in der gemoddeten Kopie. | Nimm es heraus. |
 
 Kann eine Datei nicht gelesen werden, schreibt das Studio nie darüber: deine Arbeit geht nie verloren. **Beiseitelegen**
 benennt sie in `<name>.broken.toml` neben dem Original um.

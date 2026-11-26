@@ -10,7 +10,7 @@
 | Los mods del Studio | `Documents\RUSE 2.0\Mods\<mod>` (la carpeta Documentos); los cambios de mapas en `Maps`, los archivos exportados en `Exports`, las copias de seguridad en `Backups`. En el Studio, **Ajustes → Dónde están tus archivos** abre cada una, y **Mostrar la carpeta de este mod** (menú del mod) abre la que estás editando |
 | Los mods instalados del launcher | `%LOCALAPPDATA%\RUSE Mod Platform\library` |
 | Las copias con mods del juego | La carpeta que eliges en Ajustes (**Dónde van las copias con mods**, en cualquiera de las dos aplicaciones); el lugar recomendado es `RUSE-Instances` en la misma unidad que el juego (por ejemplo `D:\RUSE-Instances`), donde una copia comparte los archivos del juego. En otra unidad, cada copia es una copia completa del juego: más lenta y más grande. La copia de seguridad limpia del juego (`RUSE-Backup`) va a su lado. |
-| El propio juego | Nunca se modifica |
+| El propio juego | Las aplicaciones nunca lo cambian, salvo que le pidas a cualquiera de las dos que lo restaure desde su copia de seguridad limpia |
 
 Los Studio más antiguos los guardaban en `%LOCALAPPDATA%\RUSE Mod Platform` (`mods`, `maps`, `exports`, `mod-backups`): el Studio los mueve a Documentos la primera vez que arranca, y lo avisa.
 
@@ -66,7 +66,7 @@ esta carpeta por ti.
 | El zip contiene una carpeta dentro de otra carpeta | El launcher mira una carpeta más abajo y lo encuentra. Dos o más niveles más abajo, dice que no encontró ningún mod. | Comprime la carpeta que contiene `mod.toml`. |
 | Una carpeta de mapa con el título del mapa como nombre | La construcción dice que no es el nombre de paquete de un mapa. | Cámbiale el nombre al nombre de paquete. |
 | Un archivo editado a mano tiene una errata | La comprobación del mod nombra el archivo y la línea. | Arréglalo, o usa **Apartar** en el Studio. |
-| Un `.exe`, un `.dll` o un script de PC dentro del mod | Rechazado: los mods solo llevan datos (los propios scripts de misión del juego, tal como los guarda el Studio, son la única excepción). | Quítalo. |
+| Un `.exe`, un `.dll` o un script de PC dentro del mod | Rechazado: nada de programas. En algunos casos pueden cambiarse datos del juego, pero eso es en tu copia del juego: los mods cambian datos, y algunos cambian los propios scripts del juego, solo en la copia con mods. | Quítalo. |
 
 Si un archivo no se puede leer, el Studio nunca escribe encima: tu trabajo nunca se pierde. **Apartar** le cambia el
 nombre a `<name>.broken.toml` junto al original.

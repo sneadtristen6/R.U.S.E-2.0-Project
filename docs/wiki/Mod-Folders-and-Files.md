@@ -10,7 +10,7 @@
 | The Studio's mods | `Documents\RUSE 2.0\Mods\<mod>`; map changes in `Maps`, exported files in `Exports`, backups in `Backups`. In the Studio, **Settings → Where your files are** opens each one, and the mod menu's **Show this mod's folder** opens the one you're editing |
 | The launcher's installed mods | `%LOCALAPPDATA%\RUSE Mod Platform\library` |
 | Modded copies of the game | The folder you choose in Settings (**Where modded copies go**, in either app); the recommended place is `RUSE-Instances` on the same drive as the game (for example `D:\RUSE-Instances`), where a copy shares the game's files. On another drive each copy is a full copy of the game: slower and bigger. The game's clean backup (`RUSE-Backup`) goes beside it. |
-| The game itself | Never changed |
+| The game itself | Never changed by the apps, unless you ask either app to restore it from its clean backup |
 
 Older Studios kept them in `%LOCALAPPDATA%\RUSE Mod Platform` (`mods`, `maps`, `exports`, `mod-backups`): the Studio moves them to Documents the first time it starts, and says so.
 
@@ -64,7 +64,7 @@ maps play in the game (2026-10-03), and the Studio's **Duplicate map** makes thi
 | The zip holds a folder inside a folder | The launcher looks one folder down and finds it. Two or more down, it says it found no mod. | Zip the folder that holds `mod.toml`. |
 | A map folder named after the map's title | The build says it isn't a map's pack name. | Rename it to the pack name. |
 | A file edited by hand has a typo | The mod check names the file and the line. | Fix it, or **Set aside** in the Studio. |
-| A `.exe`, `.dll` or PC script inside the mod | Refused: mods carry data only (the game's own mission scripts, as the Studio saves them, are the one exception). | Take it out. |
+| A `.exe`, `.dll` or PC script inside the mod | Refused: no programs. In some instances, game data may be changed, but that is with your copy of the game: mods change data, and some change the game's own scripts, only in the modded copy. | Take it out. |
 
 If a file can't be read, the Studio never writes over it: your work is never lost. **Set aside** renames it
 `<name>.broken.toml` next to the original.

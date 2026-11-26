@@ -805,6 +805,9 @@ button.finding:hover { border-color: #7fb4e6; color: #fff; }
 .setting { padding: 14px 16px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); display: grid; gap: 8px; }
 .setting h2 { margin: 0; font-size: 15px; }
 .setting p { margin: 0; }
+/* the terms, credits and licences (app.js SETTINGS "terms"): long texts in a fold, scrolling inside it */
+.setting summary { cursor: pointer; }
+.terms-text { margin: 8px 0 0; max-height: 320px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; font-size: 12px; }
 /* a choice of its own (Research: what taking out a unit does, seconds or minutes): its words, then its list */
 .setting-pick { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 13px; }
 /* the clean game backup (app.js renderBackup): its buttons, the question before a restore, and what a check found */
