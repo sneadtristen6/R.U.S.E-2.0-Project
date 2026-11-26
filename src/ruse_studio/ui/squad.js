@@ -580,7 +580,7 @@
       if (models.length) parts.push(el("h4", { textContent: w.squad_more_models }), ...models);
       if (mine()) {
         parts.push(helpLine(w.squad_more_asset, "squad", "squad-note"),   // (with the Having trouble? link: Change a squad)
-          el("p", { className: "squad-note", textContent: w.squad_more_bones }));
+          helpLine(w.squad_more_bones, "import", "squad-note"));   // (and Import a model: bones and animations of its own)
       }
       moreBody.replaceChildren(...parts);
       showMore();

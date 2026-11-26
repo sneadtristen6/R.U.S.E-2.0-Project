@@ -163,6 +163,14 @@ class Item15SquadLink(WikiPages):
         self.assertIn('helpLine(w.squad_more_asset, "squad", "squad-note")', js("squad.js"))
 
 
+class Item16ImportLink(WikiPages):
+    ITEM = "16"
+
+    def test_52f_own_bones_and_animations_link_to_the_how_to(self):
+        self.topic_opens_each_language_s_page("import", "Import-a-Model", "Importer-un-modèle")
+        self.assertIn('helpLine(w.squad_more_bones, "import", "squad-note")', js("squad.js"))
+
+
 AUTOMATIC = {"us": "Automatic", "fr": "Automatique", "ger": "Automatisch", "ita": "Automatica", "spa": "Automática",
              "pol": "Automatycznie", "ru": "Автоматически", "cz": "Automaticky", "jpn": "自動", "sc": "自动",
              "fa": "خودکار"}

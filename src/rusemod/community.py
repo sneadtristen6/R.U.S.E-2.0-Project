@@ -45,6 +45,10 @@ WIKI_TOPICS = {
               "ita": "Cambiare-una-squadra", "spa": "Cambiar-un-pelotón", "pol": "Zmiana-oddziału",
               "ru": "Изменение-отряда", "cz": "Změna-družstva", "jpn": "分隊の変更", "sc": "修改小队",
               "fa": "تغییر-جوخه"},
+    "import": {"us": "Import-a-Model", "fr": "Importer-un-modèle", "ger": "Ein-Modell-importieren",
+               "ita": "Importare-un-modello", "spa": "Importar-un-modelo", "pol": "Importowanie-modelu",
+               "ru": "Импорт-модели", "cz": "Import-modelu", "jpn": "モデルの取り込み", "sc": "导入模型",
+               "fa": "وارد-کردن-مدل"},
 }
 BUG_CATEGORY = "bug-reports"      # the category's slug: .github/DISCUSSION_TEMPLATE/bug-reports.yml is its form
 APP_NAMES = {"studio": "RUSE Studio", "launcher": "RUSE Launcher"}  # as the form's "Which app?" lists them

@@ -36,7 +36,7 @@ class App(CommunityCalls):
 
 class ThePages(unittest.TestCase):
     def test_every_topic_has_its_page_in_every_language(self):
-        self.assertEqual(sorted(WIKI_TOPICS), ["animations", "blender", "bones", "squad"])
+        self.assertEqual(sorted(WIKI_TOPICS), ["animations", "blender", "bones", "import", "squad"])
         for topic, pages in WIKI_TOPICS.items():
             self.assertEqual(sorted(pages), sorted(LANGS), topic)
             for lang, page in pages.items():
