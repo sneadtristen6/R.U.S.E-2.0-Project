@@ -248,6 +248,18 @@ def files_of(folder, left_out: list | None = None) -> list[Path]:
                         continue
                     out.append(Path(root) / n)
     return out
+def too_big(folder) -> tuple[int, int] | None:
+    """(the megabytes of files the mod at `folder` would pack, the most a Launcher takes: SIZE_LIMIT) when it is past
+    that, so it is refused before anything is packed (check refuses such a file after it is written); else None."""
+    size = 0
+    for f in files_of(folder):
+        try:
+            size += f.stat().st_size
+        except OSError:
+            pass                                          # (one that can't be read is said by the packing itself)
+    if size <= SIZE_LIMIT:
+        return None
+    return -(-size // 1_000_000), -(-SIZE_LIMIT // 1_000_000)
 
 
 def _names_a_unit(record: Path) -> bool:
@@ -1124,6 +1136,10 @@ def pack(folder, out, *, build_id: str | None = None, data_revision: str | None 
         game["data_revision"] = str(data_revision)
     if fingerprint:
         game["fingerprint"] = str(fingerprint)
+    big = too_big(folder)
+    if big:
+        raise PackageError(f"This mod is {big[0]} MB of files, more than the Launcher takes ({big[1]} MB); nothing "
+                           f"was packed.")
     info = update_manifest(folder, game=game, made_with=made_with) if game or made_with else info_of(folder)
     _check_info(info)
     try:

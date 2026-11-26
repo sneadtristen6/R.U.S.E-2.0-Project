@@ -1068,3 +1068,15 @@ jpn = "{0} には複数の Mod が入っています（{1}）：Mod ごとのフ
 sc = "{0} 包含多个模组（{1}）：请分别添加每个模组自己的文件。"
 fa = "{0} بیش از یک ماد دارد ({1}): پروندهٔ هر ماد را جداگانه اضافه کنید."
 
+[ed18f3fcb13]
+us = "This mod is {0} MB of files, more than the Launcher takes ({1} MB); nothing was packed."
+fr = "Ce mod fait {0} Mo de fichiers, plus que ce que le Launcher accepte ({1} Mo) ; rien n'a été empaqueté."
+ger = "Dieser Mod umfasst {0} MB an Dateien, mehr als der Launcher annimmt ({1} MB); es wurde nichts gepackt."
+ita = "Questa mod pesa {0} MB di file, più di quanto accetta il Launcher ({1} MB); non è stato impacchettato nulla."
+spa = "Este mod son {0} MB de archivos, más de lo que acepta el Launcher ({1} MB); no se empaquetó nada."
+pol = "Ten mod to {0} MB plików, więcej, niż przyjmuje Launcher ({1} MB); nic nie zostało spakowane."
+ru = "Этот мод — {0} МБ файлов, больше, чем принимает Launcher ({1} МБ); ничего не упаковано."
+cz = "Tento mod má {0} MB souborů, více, než Launcher přijímá ({1} MB); nic nebylo zabaleno."
+jpn = "この Mod はファイルが {0} MB あり、Launcher が受け付ける量（{1} MB）を超えています。何もパックしていません。"
+sc = "此模组的文件共 {0} MB，超过 Launcher 可接受的大小（{1} MB）；未打包任何内容。"
+fa = "حجم فایل‌های این ماد {0} مگابایت است، بیش از مقداری که لانچر می‌پذیرد ({1} مگابایت)؛ چیزی بسته‌بندی نشد."

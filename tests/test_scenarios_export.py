@@ -311,18 +311,32 @@ class Unusual(Studio):
         self.assertNotIn("(the older version replaced)", lines[0])       # (the same version)
         self.assertNotIn("(the older version replaced)", lines[2])       # (3.0.0 was there: not older)
 
-    @unittest.expectedFailure
     def test_FE12_a_mod_past_the_size_a_launcher_takes(self):
-        """FE-12: Export packs a mod past package.SIZE_LIMIT (500 MB unpacked), then its own check of the file stops
-        the job: "big-1.0.0.rusemod would unpack to ... MB, far more than a mod of data files; it isn't unpacked",
-        words about unpacking after the packing is done, and the file no Launcher takes is left in Exports. (The
-        limit made small here, as a real 500 MB mod is too big for a test.)"""
+        """FE-12: Export packed a mod past package.SIZE_LIMIT (500 MB unpacked), then its own check of the file
+        stopped the job with words about unpacking after the packing was done, and the file no Launcher takes was left
+        in Exports. Now refused before anything is packed (the owner's pick 51c, accepted 2026-11-14). (The limit made
+        small here, as a real 500 MB mod is too big for a test.)"""
         self.make("Big")
         with mock.patch.object(package, "SIZE_LIMIT", 100):
             view = self.export("1.0.0")
         self.assertEqual(view["state"], "failed")
         self.assertEqual(sorted(p.name for p in (self.home / "exports").iterdir()), [])
         self.assertNotIn("unpack", view["message"])
+        self.assertIn("nothing was packed", view["message"])
+        self.assertIn("more than the Launcher takes", view["message"])
+
+    def test_a_mod_under_the_size_limit_still_exports_and_pack_refuses_one_past_it_too(self):
+        """Control of FE-12: an ordinary mod exports; package.pack itself refuses a mod past the limit, writing no
+        file."""
+        folder = self.make("Small")
+        self.assertEqual(self.export("1.0.0")["state"], "done")
+        out = self.root / "packed"
+        with mock.patch.object(package, "SIZE_LIMIT", 100):
+            with self.assertRaises(package.PackageError) as caught:
+                package.pack(folder, out)
+        self.assertIn("nothing was packed", str(caught.exception))
+        self.assertFalse(out.exists() and any(out.iterdir()))
+
 
     @unittest.skipUnless(sys.platform == "win32", "Windows' file locks")
     def test_FE13_a_file_another_program_holds(self):

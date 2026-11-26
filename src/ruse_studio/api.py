@@ -10674,6 +10674,10 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             manifest["description"] = description.strip()
 
         def work(say):
+            big = package.too_big(folder)   # (before anything is built or packed: a file no Launcher takes)
+            if big:
+                raise StudioError(f"This mod is {big[0]} MB of files, more than the Launcher takes ({big[1]} MB); "
+                                  f"nothing was packed.")
             self._clear_waiting(folder)   # (a deleted unit's file another program had open: rusemod.holding)
             with self._saving:
                 package.update_manifest(folder, mod=manifest)
