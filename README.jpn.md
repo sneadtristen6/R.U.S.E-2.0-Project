@@ -70,7 +70,7 @@ R.U.S.E. 2.0 は、私が空いた時間に作っている、はじめての MOD
 
 | 選択肢 | 金額 | お礼 |
 | --- | --- | --- |
-| [コーヒーをおごる](https://www.patreon.com/c/sneadtristen6/shop) | 1 回 $5 | プロジェクトを続ける助けになる、ささやかなチップです。 |
+| [Buy me a coffee](https://www.patreon.com/c/sneadtristen6/shop) | 1 回 $5 | プロジェクトを続ける助けになる、ささやかなチップです。 |
 | [Above & Beyond Supporter](https://www.patreon.com/SneadTristen6/posts/171328212) | 1 回 $20 | あなたが選んだ名前が、GitHub と MOD のクレジットの Above & Beyond Supporters の欄に載ります。 |
 | [Monumental Supporter](https://www.patreon.com/SneadTristen6/posts/monumental-100-171328695) | 1 回 $100 | あなたが選んだ名前が、クレジットの Monumental Supporters の欄の先頭に載ります。私たちの最高の支援者クレジットです。 |
 
