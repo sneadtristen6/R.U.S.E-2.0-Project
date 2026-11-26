@@ -12157,7 +12157,7 @@ fa = "تصویرهای خودتان را در Blender بسازید"
 [menu_blender_how]
 us = "Blender opens with this map's own 3D model, both pictures' cameras set like the game's. Change anything you like, click Save menu pictures at the top of Blender, then Bring back here."
 fr = "Blender s'ouvre avec le modèle 3D de cette carte, les caméras des deux images réglées comme celles du jeu. Changez ce que vous voulez, cliquez sur Save menu pictures en haut de Blender, puis sur Récupérer ici."
-ger = "Blender öffnet sich mit dem eigenen 3D-Modell dieser Karte, die Kameras beider Bilder wie die des Spiels eingestellt. Ändern Sie, was Sie möchten, klicken Sie oben in Blender auf Save menu pictures und dann hier auf Zurückholen."
+ger = "Blender öffnet sich mit dem eigenen 3D-Modell dieser Karte, die Kameras beider Bilder wie die des Spiels eingestellt. Ändere, was du möchtest, klicke oben in Blender auf Save menu pictures und dann hier auf Zurückholen."
 ita = "Blender si apre con il modello 3D di questa mappa, le camere di entrambe le immagini impostate come quelle del gioco. Cambia ciò che vuoi, clicca Save menu pictures in alto in Blender, poi Riporta qui."
 spa = "Blender se abre con el modelo 3D de este mapa y las cámaras de las dos imágenes puestas como las del juego. Cambia lo que quieras, pulsa Save menu pictures arriba en Blender y luego Traer aquí."
 pol = "Blender otwiera się z modelem 3D tej mapy, a kamery obu obrazów są ustawione jak w grze. Zmień, co chcesz, kliknij Save menu pictures u góry Blendera, a potem Przenieś tutaj."
@@ -50567,7 +50567,7 @@ fa = "ارسالِ کنارگذاشته اکنون در سطل بازیافت ا
 [decoy_blender_open_choose]
 us = "Use Choose Blender… on this page to show the Studio where blender.exe is, then click Change its animations in Blender again."
 fr = "Utilisez Choisir Blender… sur cette page pour indiquer au Studio où se trouve blender.exe, puis cliquez de nouveau sur Changer ses animations dans Blender."
-ger = "Zeigen Sie dem Studio mit Blender auswählen… auf dieser Seite, wo blender.exe liegt, und klicken Sie dann erneut auf Seine Animationen in Blender ändern."
+ger = "Zeige dem Studio mit Blender auswählen… auf dieser Seite, wo blender.exe liegt, und klicke dann erneut auf Seine Animationen in Blender ändern."
 ita = "Usa Scegli Blender… in questa pagina per mostrare allo Studio dove si trova blender.exe, poi fai di nuovo clic su Cambia le sue animazioni in Blender."
 spa = "Usa Elegir Blender… en esta página para mostrar al Studio dónde está blender.exe y luego vuelve a hacer clic en Cambiar sus animaciones en Blender."
 pol = "Użyj Wybierz Blendera… na tej stronie, aby wskazać Studiu, gdzie jest blender.exe, a potem znów kliknij Zmień jego animacje w Blenderze."
