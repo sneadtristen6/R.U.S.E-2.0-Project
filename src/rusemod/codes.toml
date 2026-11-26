@@ -293,6 +293,42 @@ old = "(nothing)"
 what = "entries of the fresh mod list skipped as bad (n: how many)"
 since = "0.9.8.23/0.4.8.23"
 
+[LIST-06]
+place = "mod_index.download"
+old = "install_mods:ruse_launcher.api:<line> / install_from_index:... (ModIndexError, every reason one key)"
+what = "a mod from the list couldn't be downloaded, after one more try unless the web server refused it (http: its answer; win: the Windows error number, of the connection or the download folder)"
+since = "0.9.8.23/0.4.8.23"
+
+[LIST-07]
+place = "mod_index.download"
+old = "install_mods:ruse_launcher.api:<line> / install_from_index:... (ModIndexError, every reason one key)"
+what = "a mod's download came cut off (it broke off, or fewer bytes than the list promises), twice"
+since = "0.9.8.23/0.4.8.23"
+
+[LIST-08]
+place = "mod_index.download"
+old = "install_mods:ruse_launcher.api:<line> / install_from_index:... (ModIndexError, every reason one key)"
+what = "a mod's downloaded file isn't the one the list promises: bigger, or the same size with another SHA-256"
+since = "0.9.8.23/0.4.8.23"
+
+[LIST-09]
+place = "launcher.api._install_one"
+old = "install_mods:ruse_launcher.api:<line> / install_from_index:... (ModIndexError, every reason one key)"
+what = "the library refused a downloaded mod from the list (not a mod, an edit under the original's name, an id not allowed)"
+since = "0.9.8.23/0.4.8.23"
+
+[LIST-10]
+place = "launcher.api._install_one"
+old = "install_mods:ruse_launcher.api:<line> / install_from_index:... (OSError: a moving line key)"
+what = "a disk error in the download folder or the library while a mod from the list was installed (win)"
+since = "0.9.8.23/0.4.8.23"
+
+[LIST-11]
+place = "launcher.api._not_all_installed"
+old = "install_mods:ruse_launcher.api:674 at 0.4.8.22 (ModIndexError)"
+what = "an install of ticked mods in which some didn't come through (n: how many; each one's own code is counted beside it)"
+since = "0.9.8.23/0.4.8.23"
+
 [UPD-01]
 place = "update.latest"
 old = "(nothing: the update check goes well)"

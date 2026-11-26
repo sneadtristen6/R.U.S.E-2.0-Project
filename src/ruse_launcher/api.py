@@ -662,14 +662,19 @@ class LauncherApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedC
 
     def _install_one(self, entry: dict, say) -> None:
         say(f"Downloading {entry['name']} {entry['version']} ({size_text(entry['size'])})…")
-        file = mod_index.download(entry, self._home / "downloads")
-        say("The file matches the mod list (size and checksum).")
+        file = None
         try:
+            file = mod_index.download(entry, self._home / "downloads")
+            say("The file matches the mod list (size and checksum).")
             info, replaced = self._library.add(file)
-        except LibraryError as exc:
-            raise ModIndexError(str(exc)) from None
+        except LibraryError as exc:   # (Bug Watch: the library refused the downloaded file)
+            raise coded(ModIndexError(str(exc)), "LIST-09") from None
+        except OSError as exc:        # (Bug Watch: a disk error in the download folder or the library, its number)
+            coded(exc, "LIST-10")
+            raise
         finally:
-            file.unlink(missing_ok=True)
+            if file is not None:
+                file.unlink(missing_ok=True)
         folder = self._library.path_of(info["id"])
         if fairplay.ON and folder is not None and entry.get("tags"):
             fairplay.save_tags(folder, entry["tags"])  # a cheat stays one in the library: its copies are offline
@@ -714,13 +719,22 @@ class LauncherApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedC
                 except (ModIndexError, OSError) as exc:
                     say(str(exc))
                     failed.append(f"{entry['name']} ({str(exc).rstrip('.')})")
+                    from rusemod import bugwatch
+                    from rusemod.codes import code_of
+                    bugwatch.failure(code_of(exc), exc)  # Bug Watch: each mod's own reason, with its numbers
             if failed:
-                raise ModIndexError(f"{len(entries) - len(failed)} of {len(entries)} mods were installed. Not "
-                                    f"installed: {'; '.join(failed)}.")
+                raise self._not_all_installed(len(entries), failed)
 
         if len(entries) == 1:   # (each said as it is here, so rusemod.buildtext lists it: in the player's language)
             return self._install_job(work, f"{entries[0]['name']} is in the library.")
         return self._install_job(work, f"The {len(entries)} mods are in the library.")
+
+    @staticmethod
+    def _not_all_installed(total: int, failed: list[str]) -> ModIndexError:
+        """The error of an install of ticked mods that some didn't come through (Bug Watch: its code, and how many
+        didn't, n; each one's own reason is counted where it failed, install_mods)."""
+        return coded(ModIndexError(f"{total - len(failed)} of {total} mods were installed. Not installed: "
+                                   f"{'; '.join(failed)}."), "LIST-11", n=len(failed))
 
     # --- the first run: choosing the mods to start with ---
     FIRST_RUN_KEY = "launcher_mods_chosen"  # settings.json: the player has chosen (or skipped) once

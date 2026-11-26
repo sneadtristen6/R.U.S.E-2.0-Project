@@ -6,6 +6,7 @@ server of ours: GitHub serves the file, and GitHub Releases the packages.
 from __future__ import annotations
 
 import hashlib
+import http.client
 import json
 import re
 import socket
@@ -18,6 +19,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from . import net
+from .codes import coded
 from .resolve import parse_version
 
 REPO = "sneadtristen6/Ruse-Mods"
@@ -281,33 +283,52 @@ def plain(exc: BaseException, timeout: float = TIMEOUT) -> str:
 
 
 # --- installing from it ---
-def download(entry: dict, into, timeout: float = TIMEOUT) -> Path:
+def download(entry: dict, into, timeout: float = TIMEOUT, tries: int = 2) -> Path:
     """Download the entry's package into the folder `into`, as `<id>-<version>.rusemod`, and check the size and the
-    SHA-256 the index promises. Anything else is deleted and refused, so a changed or cut-off file never installs."""
+    SHA-256 the index promises. Anything else is deleted and refused, so a changed or cut-off file never installs.
+
+    A download that doesn't come whole (the connection couldn't be made or was lost on the way, the answer broke off,
+    fewer bytes than promised, a server error 5xx) is tried once more before it is refused (FL-123, the owner
+    2026-11-26: "places a mod install can fail. fix"); a refusal of the web server (4xx) and a file that is bigger
+    or has another checksum are refused at once. Bug Watch (rusemod.codes): LIST-06 it couldn't be downloaded (http,
+    win), LIST-07 it came cut off, LIST-08 it isn't the file the list promises."""
+    from . import bugwatch
     into = Path(into)
     into.mkdir(parents=True, exist_ok=True)
     target = into / f"{entry['id']}-{entry['version']}.rusemod"
     part = target.with_name(target.name + ".part")
-    digest, got = hashlib.sha256(), 0
-    try:
-        req = urllib.request.Request(entry["download"], headers=_HEADERS)
-        with net.urlopen(req, timeout) as r, part.open("wb") as f:
-            while chunk := r.read(65536):
-                got += len(chunk)
-                if got > entry["size"]:
-                    break  # bigger than promised: no point reading on
-                digest.update(chunk)
-                f.write(chunk)
-    except (OSError, ValueError) as exc:
+    for attempt in range(1, max(1, tries) + 1):
+        digest, got, broke = hashlib.sha256(), 0, False
+        try:
+            req = urllib.request.Request(entry["download"], headers=_HEADERS)
+            with net.urlopen(req, timeout) as r, part.open("wb") as f:
+                while chunk := r.read(65536):
+                    got += len(chunk)
+                    if got > entry["size"]:
+                        break  # bigger than promised: no point reading on
+                    digest.update(chunk)
+                    f.write(chunk)
+        except http.client.HTTPException:  # (IncompleteRead and the like: the answer broke off on the way)
+            broke = True
+        except (OSError, ValueError) as exc:
+            part.unlink(missing_ok=True)
+            refused = isinstance(exc, urllib.error.HTTPError) and exc.code < 500
+            if isinstance(exc, urllib.error.HTTPError):
+                exc.close()  # the server's answer, read: nothing left open
+            if attempt < tries and not refused:
+                continue
+            raise coded(ModIndexError(f"{entry['name']} couldn't be downloaded ({plain(exc, timeout)})."), "LIST-06",
+                        http=exc.code if isinstance(exc, urllib.error.HTTPError) else None,
+                        win=bugwatch.os_number(exc)) from None
+        cut = broke or got < entry["size"]
+        if not cut or attempt >= tries:
+            break
         part.unlink(missing_ok=True)
-        if isinstance(exc, urllib.error.HTTPError):
-            exc.close()  # the server's answer, read: nothing left open
-        raise ModIndexError(f"{entry['name']} couldn't be downloaded ({plain(exc, timeout)}).") from None
-    if got != entry["size"] or digest.hexdigest() != entry["sha256"]:
+    if cut or got != entry["size"] or digest.hexdigest() != entry["sha256"]:
         part.unlink(missing_ok=True)
-        raise ModIndexError(f"The file for {entry['name']} isn't the one the mod list promises (its size or checksum "
-                            f"differs), so it wasn't installed. The download may have been cut off, or the file "
-                            f"changed since it was listed.")
+        raise coded(ModIndexError(f"The file for {entry['name']} isn't the one the mod list promises (its size or "
+                                  f"checksum differs), so it wasn't installed. The download may have been cut off, or "
+                                  f"the file changed since it was listed."), "LIST-07" if cut else "LIST-08")
     part.replace(target)
     return target
 
