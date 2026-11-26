@@ -567,7 +567,9 @@ _WORDS_NOT_A_NAME = re.compile(r"[,;!?.]\s|[^\s.]\.[A-Za-z][A-Za-z0-9]{0,7}\s")
 # text, and so do a ! or ' after it and a bracket it closes: the sentence's own. Export lists each path it took out.
 USERS_FOLDERS = frozenset({"users", "home", "documents and settings"})   # (user_of's, as casefold() gives them)
 WINDOWS_USERS = frozenset({"users", "documents and settings"})          # (at the top of a Windows drive, casefold)
-UNIX_USERS = frozenset({"home", "Users"})          # (at the top of a Linux or Mac disk: as Linux and a Mac write them)
+WINDOWS_USERS_DEEP = frozenset({"Users", "Documents and Settings"})    # (below a drive's top: as Windows writes them, so
+#                                                     D:\Mods\users, a folder of a mod's own, is not taken for one)
+UNIX_USERS = frozenset({"home", "Users"})        # (at the top of a Linux or Mac disk: as Linux and a Mac write them)
 USERS_UNDER = frozenset({"var", "usr", "export"})   # (a Linux or Unix disk's /var/home, /usr/home, /export/home)
 UNIX_ON_WINDOWS = frozenset({"cygwin", "cygwin64", "msys32", "msys64"})   # (Cygwin's, MSYS2's own folders, casefold,
 #                                                     at the top of a drive where they install: their users' home)
@@ -581,6 +583,7 @@ _DRIVE_END = re.compile(r"(?:^|[\\/])[A-Za-z]:[\\/]+$")   # (a root that ends at
 # (a path's start that _ROOT reads only up to its drive's colon: \\.\C:\, file://localhost/C:/, file:///C|/)
 _DRIVE_AFTER = re.compile(r"(?:\\\\\.\\|file:/{2,3}(?:localhost/+)?)[A-Za-z][:|][\\/]+", re.IGNORECASE)
 _DRIVE_VARS = frozenset({"systemdrive", "homedrive"})   # (%SystemDrive%, %HomeDrive%: a drive's top)
+_DRIVE_START = re.compile(r"(?:\\\\[?.]\\)?[A-Za-z]:")     # (a path written from a Windows drive: C:\, C:/, \\?\C:\)
 _LETTER = re.compile(r"[a-z]")                       # (a drive's letter, as casefold() gives it)
 _SHARE_OF_A_DRIVE = re.compile(r"[a-z]\$")           # (a drive's own share, C$)
 _WINE_DRIVE = re.compile(r"drive_[a-z]")             # (Wine's C: drive, a folder of its own: drive_c)
@@ -642,10 +645,12 @@ def _quoted_name(text: str, j: int, before: str) -> str | None:
     return None
 
 
-def _user_name_end(text: str, j: int, before: str, known: list) -> int | None:
+def _user_name_end(text: str, j: int, before: str, known: list, windows: bool = False) -> int | None:
     """Where the name of a user's own folder that starts at text[j], a path's last name, ends (see above): `before`,
-    the character just before the path; `known`, the users' names known exactly, longest first. None when no user's
-    name starts there."""
+    the character just before the path; `known`, the users' names known exactly, longest first; `windows`, the path
+    is a Windows one, where a name in small letters that is not known goes on with each word after it, as far as
+    Windows lets a name go (the owner's pick 35: privacy first, the whole name out). None when no user's name starts
+    there."""
     first = _USER_WORD.match(text, j)
     if first is None:
         return None
@@ -673,8 +678,18 @@ def _user_name_end(text: str, j: int, before: str, known: list) -> int | None:
     for name in known:
         k = j + len(name)
         if text[j:k].casefold() == name.casefold() and not _name_goes_on(text, k):
-            end = max(end, k)
-            break
+            return max(end, k)
+    if windows and word and not word[0].isupper():
+        k = end                                         # (kim lee: not known, so the words after it as far as 20
+        while text.startswith(" ", k):                  # letters go with it)
+            more = _USER_WORD.match(text, k + 1)
+            part = _name_part(more.group(0)) if more is not None else ""
+            stop = k + 1 + len(part)
+            if not part or stop - j > USER_NAME_MOST or text[stop:stop + 1] in (":", "/", "\\"):
+                break                                   # (a word that runs into a path's start is not the name's)
+            end = k = stop
+            if part != more.group(0):
+                break
     return end if end > j else None
 
 
@@ -765,6 +780,9 @@ def _users_places(kind: str, root: str, folders: list) -> set:
             win.append(server + 2)                                  # \\server\C$\: a drive's own share
         elif share.rstrip("$") in SHARE_USERS:
             places.add(server + 1)                                  # \\server\Users\, \\server\users$\, \\nas\homes\
+    if 0 in win and win[0] == 0:                                    # a Windows path: Users at any depth is one's, as
+        places.update(k for k, n in enumerate(names) if k > 0 and n in WINDOWS_USERS_DEEP)   # Windows writes it
+        #                                                           (E:\Backup\Users\Jane; D:\Mods\users stays a folder)
     win += [k + 1 for k, n in enumerate(low) if _WINE_DRIVE.fullmatch(n)]   # .../drive_c/: Wine's C: drive
     for t in win:
         if t < len(low) and low[t] in WINDOWS_USERS:
@@ -802,7 +820,9 @@ def _user_folder_end(text: str, m, known: list) -> int | None:
         if len(folders) - 1 not in places or not _user_at(text, j):
             return None
         start = m.start()
-        return _user_name_end(text, j, text[start - 1] if start else "", known)
+        path = text[start:j]
+        windows = _DRIVE_START.match(path) is not None and folders[-1][0].casefold() in WINDOWS_USERS   # C:\Users\kim lee
+        return _user_name_end(text, j, text[start - 1] if start else "", known, windows)
     if len(folders) >= 2 and len(folders) - 2 in places and _names_a_user(folders[-1][0]):
         return folders[-1][2]
     return None
