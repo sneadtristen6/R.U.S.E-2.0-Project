@@ -116,8 +116,14 @@ class NewUnitOfEveryKind(Player):
                 self.assertEqual(self.english_left(said), [])
         self.assertEqual(self.files(folder), before)
         self.assertEqual(self.new(H1, "虎")["address"], U + "New_1")
-        self.assertEqual(self.new(H1, "虎")["address"], U + "New_2")
+        self.assertEqual(self.new(H1, "тигр")["address"], U + "New_2")   # another name, with no Latin letter: made
         self.assertEqual(self.build(folder)[0], [])
+        before = self.files(folder)
+        for name in ("虎", " 虎 ", "тигр", "Тигр", "ТИГР"):   # the same name again, in every alphabet: refused
+            with self.subTest(name=name):
+                said = self.refusal("new_unit", H1, name, 40, -1, -1, False, None)
+                self.assertEqual(self.english_left(said), [])
+        self.assertEqual(self.files(folder), before)
         self.assertEqual(first, U + "Tiger_II")
 
     def test_a_name_differing_only_in_capitals_is_refused_as_taken(self):

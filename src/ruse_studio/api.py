@@ -243,6 +243,12 @@ def search_finds(words: list[str], tags: list[str], said: list[str], tags_of: se
     return all(w in text for w in words) and all(any(o.startswith(t) for o in tags_of) for t in tags)
 
 
+def _name_key(name: str) -> str:
+    """A unit's name as two of them are compared: its letters in one form (NFKC) with capitals and spaces at the ends
+    set aside, so Тигр and тигр, or a full-width name and its plain one, are the same name."""
+    return unicodedata.normalize("NFKC", name).strip().casefold()
+
+
 def _tail(address: str) -> str:
     return address.rsplit("/", 1)[-1]
 
@@ -10078,6 +10084,13 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                 except KeyError:
                     return False
 
+            if not unique:
+                # the same name again is refused in every alphabet: a name with no Latin letter (虎, Тигр) makes a
+                # numbered address, so the address never shows it twice (the board's copies are named alike on purpose)
+                same = _name_key(name)
+                twin = next((u.name for u in edits.new_units.values() if u.named and _name_key(u.name) == same), None)
+                if twin is not None:
+                    raise StudioError(f"There's already a unit called {twin}. Pick another name.")
             stem = safe_name(name)
             if stem:
                 target = f"{namespace}/{prefix}{stem}"
