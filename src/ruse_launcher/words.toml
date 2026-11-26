@@ -2427,6 +2427,19 @@ jpn = "アプリは {path} に書き込めません（{why}）。そのフォル
 sc = "应用无法写入 {path}（{why}）。请检查该文件夹的权限，或是否被杀毒软件拦截，或者在设置中为模组版副本选择另一个文件夹。"
 fa = "برنامه نمی‌تواند در {path} بنویسد ({why}). مجوزهای آن پوشه را بررسی کنید، یا ببینید آیا آنتی‌ویروسی جلویش را می‌گیرد، یا در «تنظیمات» پوشهٔ دیگری برای نسخه‌های مادشده انتخاب کنید."
 
+[doc_app_files_missing]
+us = "The app's install is incomplete: {n} of its own files are missing or can't be read ({files}), so a modded game can't be built. Reinstall the app."
+fr = "L'installation de l'application est incomplète : {n} de ses propres fichiers sont absents ou illisibles ({files}), donc un jeu avec mods ne peut pas être construit. Réinstallez l'application."
+ger = "Die Installation der App ist unvollständig: {n} ihrer eigenen Dateien fehlen oder sind nicht lesbar ({files}), daher lässt sich kein Spiel mit Mods erstellen. Installieren Sie die App neu."
+ita = "L'installazione dell'app è incompleta: {n} dei suoi file mancano o non sono leggibili ({files}), quindi non si può creare un gioco con le mod. Reinstalla l'app."
+spa = "La instalación de la aplicación está incompleta: faltan {n} de sus propios archivos o no se pueden leer ({files}), así que no se puede crear un juego con mods. Reinstala la aplicación."
+pol = "Instalacja aplikacji jest niekompletna: brakuje {n} jej własnych plików lub nie można ich odczytać ({files}), więc nie da się zbudować gry z modami. Zainstaluj aplikację ponownie."
+ru = "Установка приложения неполная: {n} его собственных файлов отсутствуют или не читаются ({files}), поэтому игру с модами собрать нельзя. Переустановите приложение."
+cz = "Instalace aplikace je neúplná: {n} jejích vlastních souborů chybí nebo je nelze přečíst ({files}), takže hru s módy nelze sestavit. Nainstalujte aplikaci znovu."
+jpn = "アプリのインストールが不完全です。アプリ自身のファイル {n} 個が見つからないか読み取れないため（{files}）、MOD入りのゲームを作れません。アプリを再インストールしてください。"
+sc = "应用的安装不完整：它自己的 {n} 个文件缺失或无法读取（{files}），因此无法构建带模组的游戏。请重新安装该应用。"
+fa = "نصب برنامه ناقص است: {n} فایل از فایل‌های خود برنامه گم شده یا خوانده نمی‌شود ({files})، برای همین ساخت بازی مددار ممکن نیست. برنامه را دوباره نصب کنید."
+
 [doc_copies_recommended]
 us = "Modded copies go to {path}, the recommended place."
 fr = "Les copies avec les mods vont dans {path}, l'emplacement recommandé."
