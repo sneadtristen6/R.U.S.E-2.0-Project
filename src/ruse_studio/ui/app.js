@@ -1028,6 +1028,31 @@ function modeNames() {
   return (knownNumbers && knownNumbers.modes && knownNumbers.modes.length === 5) ? knownNumbers.modes : MODES_EN;
 }
 
+// The Factory row: the building that builds the unit, picked from the unit's nation's own buildings (api.menus, named by
+// their buildings as the New unit form does) in place of a typed number (the owner, 2026-11-26, "3 A"). It stands in
+// the row's number box: its value is the factory number, read as one. A value that isn't in the list shows as an extra
+// option.
+let knownMenus = null;
+function factoryBox(u, r, value) {
+  const box = el("select", { disabled: !state.mod, title: state.words.tip_value });
+  box.setAttribute("aria-label", r.label);
+  const nationRow = u.groups.flatMap((g) => g.rows).find((x) => x.prop === "Nationalite");
+  const nation = nationRow ? Number([].concat(nationRow.numbers)[0]) : u.nation;
+  const showList = (menus) => {
+    const mine = menus.nations.find((n) => n.nation === nation);
+    const options = (mine ? mine.factories : []).map((f) => [String(f.factory), factoryLabel(f)]);
+    const now = String(box.value || value);
+    if (!options.some(([v]) => v === now)) options.unshift([now, now]);
+    box.replaceChildren(...options.map(([v, text]) => el("option", { value: v, textContent: text })));
+    box.value = now;
+  };
+  box.replaceChildren(el("option", { value: String(value), textContent: String(value) }));
+  box.value = String(value);
+  if (knownMenus && knownMenus.lang === state.lang) showList(knownMenus.menus);
+  else api().menus(state.lang).then((menus) => { knownMenus = { lang: state.lang, menus }; showList(menus); }).catch(() => {});
+  return box;
+}
+
 function row(u, r, mode) {
   const w = state.words;
   // a value with no name of its own in labels.toml is called by the number guide's ("Statistics id", not TrackingId)
@@ -1046,7 +1071,8 @@ function row(u, r, mode) {
   // a price or shown-in-menu list holds one value per game mode (1945, 1942, 1939, Total War, Nuclear: the game's own
   // order): each box gets its mode's name, as the game's lobby says it
   const modes = MODE_LISTS.has(r.prop) && r.list && shown.length === 5 ? modeNames() : null;
-  const boxes = shown.map((n, i) => numberBox(r, n, r.list ? `${r.label} [${modes ? modes[i] : i}]` : r.label));
+  const boxes = shown.map((n, i) => r.prop === "Factory" && !r.list ? factoryBox(u, r, n)
+    : numberBox(r, n, r.list ? `${r.label} [${modes ? modes[i] : i}]` : r.label));
   const cells = modes ? boxes.map((b, i) => el("label", { className: "mode-box" },
     el("small", { textContent: modes[i] }), b)) : boxes;
   const ranged = RANGE_PROPS.has(r.prop) && !r.list && r.type !== "bool";

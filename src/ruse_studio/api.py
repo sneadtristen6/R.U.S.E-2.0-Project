@@ -6602,6 +6602,12 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             if not ok:
                 raise StudioError(f"{address} can't be edited here ({why})")
             where, how = self._where(ix, o, mode, via, address, edits)
+            nation, menus = None, set()
+            if prop == "Factory":  # the build menus the unit's nation has (the Units tab offers them as a list)
+                units = {u["address"]: u for u in self._all_units(ix)}
+                menus = {(u["nation"], u["factory"]) for u in units.values() if u["factory"] is not None}
+                if real in units:
+                    nation = self._menu_of(edits, units, address)[0]
         finally:
             ix.close()
         p = _props(o).get(prop)
@@ -6621,6 +6627,11 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         if prop == "ProductionPrice" and any(v < 0 for v in values):
             # not a game rule: a price below nothing means nothing (a research price is refused the same way)
             raise StudioError(f"{prop}: {next(v for v in values if v < 0)} is below 0", prop=prop)
+        if nation is not None and not p["list"] and (nation, values[0]) not in menus:
+            # not a game rule: the build menus the game has (the owner, 2026-11-26, "3 A": the building that builds a
+            # unit is picked from the nation's own, not typed; the All values tab still takes a typed number)
+            raise StudioError(f"No build menu for nation {nation} and factory {values[0]}: pick one of the menus "
+                              f"the game has")
         with self._saving:
             edits = ModEdits(edits.folder)  # read again: another change may have been saved meanwhile
             before = edits.get(o["address"], prop, "shared") if how == "own" else None  # what "all of them" got
