@@ -200,11 +200,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ```
 
-## The R.U.S.E. 2.0 intro's engine sound
-
-The engine sound in the R.U.S.E. 2.0 intro (played only for players who tick the R.U.S.E. 2.0 title and intro), cut to
-length for the intro. Source: not applicable.
-
 ## Downloaded when you pick them: era units, textures and aerial photos
 
 - Era units: 3D models by their makers on Sketchfab, under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/),

@@ -76,8 +76,7 @@ jeu (une minute environ) ; ensuite, seulement ce qui a changé. Puis R.U.S.E. d�
 vidéo du logo d'Eugen. Pour l'activer, cochez **Utiliser le titre doré et l'intro de R.U.S.E. 2.0** sous **Le titre du
 jeu** dans les **Réglages** (l'accord que le Launcher montre à sa première ouverture a lui aussi une case pour cela). Le
 jeu s'ouvre alors sur une scène de bataille, avec ou sans mods, et son menu principal, ses menus et ses écrans de
-chargement portent le titre doré. Il est fabriqué sur votre PC à partir des fichiers de votre propre jeu et d'une image
-et d'un son fournis avec les applications, la première fois (quelques minutes, une seule fois).
+chargement portent le titre doré. Il est fabriqué sur votre PC à partir des fichiers de votre propre jeu et d'une image fournie avec les applications, la première fois (quelques minutes, une seule fois).
 
 **Jeu d'origine** (sans mods) est aussi notre copie : **Jouer** construit une copie simple du jeu avec RUSE Guard dedans. Pour jouer à R.U.S.E. sans nos applications, lancez-le depuis Steam.
 

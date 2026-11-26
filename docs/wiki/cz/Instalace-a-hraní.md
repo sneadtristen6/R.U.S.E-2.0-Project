@@ -73,7 +73,7 @@ co se změnilo. Pak se spustí R.U.S.E. s vašimi mody.
 video s logem Eugen Systems. Zapnete to zaškrtnutím **Používat zlatý název a intro R.U.S.E. 2.0** v části **Název hry**
 v **Nastavení** (dohoda, kterou Launcher ukáže při prvním otevření, má pro to také políčko). Hra se pak otevře bitevní
 scénou, s mody i bez nich, a její hlavní menu, menu a načítací obrazovky nesou zlatý název. Vytvoří se na vašem PC z
-vlastních souborů vaší hry a z obrázku a zvuku, které jsou součástí aplikací, při prvním použití (několik minut,
+vlastních souborů vaší hry a z obrázku, který je součástí aplikací, při prvním použití (několik minut,
 jednou).
 
 **Původní hra** (bez módů) je také naše kopie: **Hrát** sestaví prostou kopii hry s RUSE Guard uvnitř. Chcete-li hrát R.U.S.E. bez našich aplikací, spusťte ji ze Steamu.

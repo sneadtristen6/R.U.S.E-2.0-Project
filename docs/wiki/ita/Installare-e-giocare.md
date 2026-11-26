@@ -75,8 +75,7 @@ circa); dopo, solo ciò che è cambiato. Poi R.U.S.E. si avvia, con le tue mod.
 logo di Eugen. Per attivarlo, metti la spunta a **Usa il titolo in oro e l'intro di R.U.S.E. 2.0** sotto **Il titolo del
 gioco** in **Impostazioni** (anche l'accordo che il Launcher mostra alla prima apertura ha una casella per questo). Il
 gioco allora si apre su una scena di battaglia, con le mod o senza, e il suo menu principale, i menu e le schermate di
-caricamento portano il titolo in oro. Viene creato sul tuo PC dai file del tuo gioco e da un'immagine e un suono che
-vengono con le app, la prima volta (qualche minuto, una volta sola).
+caricamento portano il titolo in oro. Viene creato sul tuo PC dai file del tuo gioco e da un'immagine che viene con le app, la prima volta (qualche minuto, una volta sola).
 
 **Originale** (senza mod) è anch'essa una nostra copia: **Gioca** costruisce una copia semplice del gioco con RUSE Guard dentro. Per giocare a R.U.S.E. senza le nostre app, avvialo da Steam.
 

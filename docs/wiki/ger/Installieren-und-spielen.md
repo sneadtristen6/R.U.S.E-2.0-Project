@@ -75,7 +75,7 @@ Logo-Video von Eugen. Zum Einschalten setz in den **Einstellungen** unter **Der 
 goldenen Titel und das Intro von R.U.S.E. 2.0 verwenden** (die Vereinbarung, die der Launcher beim ersten Öffnen zeigt,
 hat dafür auch ein Kästchen). Dann öffnet sich das Spiel mit einer Schlachtszene, mit Mods oder ohne, und sein
 Hauptmenü, die Menüs und die Ladebildschirme tragen den goldenen Titel. Er wird beim ersten Mal auf deinem PC aus den
-Dateien deines eigenen Spiels und einem Bild und einem Sound gemacht, die mit den Apps kommen (ein paar Minuten,
+Dateien deines eigenen Spiels und einem Bild gemacht, das mit den Apps kommt (ein paar Minuten,
 einmal).
 
 **Original** (ohne Mods) ist auch unsere Kopie: **Spielen** baut eine einfache Kopie des Spiels mit RUSE Guard darin. Um R.U.S.E. ohne unsere Apps zu spielen, starte es über Steam.

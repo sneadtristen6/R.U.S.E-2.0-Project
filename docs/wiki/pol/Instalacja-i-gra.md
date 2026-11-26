@@ -75,7 +75,7 @@ minutę); potem tylko to, co się zmieniło. Następnie R.U.S.E. startuje z twoi
 i film z logo Eugen Systems. Aby to włączyć, zaznacz **Używaj złotego tytułu i filmu wprowadzającego R.U.S.E. 2.0** w
 sekcji **Tytuł gry** w **Ustawieniach** (umowa, którą Launcher pokazuje przy pierwszym otwarciu, też ma na to pole). Gra
 otwiera się wtedy na scenie bitwy, z modami lub bez, a jej menu główne, menu i ekrany wczytywania mają złoty tytuł.
-Powstaje on na twoim PC z plików twojej własnej gry oraz obrazu i dźwięku dołączonych do aplikacji, za pierwszym razem
+Powstaje on na twoim PC z plików twojej własnej gry oraz obrazu dołączonego do aplikacji, za pierwszym razem
 (kilka minut, raz).
 
 **Oryginał** (bez modów) to też nasza kopia: **Graj** buduje zwykłą kopię gry z RUSE Guard w środku. Aby grać w R.U.S.E. bez naszych aplikacji, uruchom grę ze Steam.

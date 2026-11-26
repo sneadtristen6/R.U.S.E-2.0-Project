@@ -73,7 +73,7 @@ after that only what changed. Then R.U.S.E. starts, with your mods.
 To turn it on, tick **Use the gold R.U.S.E. 2.0 title and intro** under **The game's title** in **Settings** (the
 agreement the Launcher shows when it first opens has a box for it too). The game then opens on a battle scene, with mods
 or without, and its main menu, menus and loading screens carry the gold title. It's made on your PC from your own game's
-files and a picture and a sound that come with the apps, the first time (a few minutes, once).
+files and a picture that comes with the apps, the first time (a few minutes, once).
 
 **Vanilla** (no mods) is our copy too: **Play** builds a plain copy of the game with RUSE Guard in it. To play R.U.S.E. without our apps, start it from Steam.
 
