@@ -428,6 +428,14 @@ class Index:
     def meta(self) -> dict:
         return dict(self.db.execute("SELECT key, value FROM meta"))
 
+    def has(self, address: str) -> bool:
+        """Whether the game has an object at `address` (the mod check's quick look, before a build)."""
+        try:
+            self._object(address)
+        except KeyError:
+            return False
+        return True
+
     def _object(self, address: str):
         row = self.db.execute("SELECT id FROM object WHERE address = ? OR export = ? ORDER BY shadow, id LIMIT 1",
                               (address, address)).fetchone()

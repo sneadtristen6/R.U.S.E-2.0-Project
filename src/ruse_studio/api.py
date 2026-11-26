@@ -61,6 +61,7 @@ from rusemod.uilang import LanguageCalls
 from rusemod.build import find_pack
 from rusemod.edat import Edat
 from rusemod.menupicture import PictureError
+from rusemod import modcheck
 from rusemod.modcheck import check_mod_folder
 from rusemod.newmap import NewMapError
 from rusemod.players import PlayersError
@@ -2376,6 +2377,37 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                 shutil.rmtree(target, ignore_errors=True)
                 raise
         return {"pack": new, "maps": self.maps()["maps"]}
+
+    def rename_map(self, pack: str, name: str) -> dict:
+        """A new map (one made with Duplicate map) called `name` in the menus from now on, in the current map project.
+        The owner's 12 A (2026-11-26): Rename changes the menu name only; the folder and the pack name stay (other
+        players' sets and join codes see them), so only map.toml's name changes, to `name` in every language. The same
+        checks as Duplicate map's: a name, its length, and not a name the game's map list has. The game's own maps
+        can't be renamed. Returns {"pack": the map's own name (unchanged), "maps": maps()}."""
+        from rusemod import newmap
+        name = " ".join(str(name or "").split())
+        if not name:
+            raise EntryError("Give the new map a name.")
+        if len(name) > newmap.NAME_LONGEST:
+            raise StudioError(f"The name is {len(name)} characters; the menus take {newmap.NAME_LONGEST}.")
+        copy = self._new_maps().get(str(pack or "").lower())
+        if copy is None:
+            # not a game rule: the Studio renames only what it made; the game's own maps are never touched
+            raise StudioError(f"{pack} isn't a new map made in these map changes, so it can't be renamed here: the "
+                              "game's own maps stay.")
+        folder_name, spec = copy
+        battles = [e["name"] for e in self.duplicate_options(spec.copy_of)["entries"] if e["kind"] == "battles"]
+        source_entry = spec.entry if spec.entry is not None else (battles[0] if len(battles) == 1 else None)
+        if source_entry is not None and not newmap.name_fits(source_entry, name, folder_name, self._map_list_names()):
+            raise StudioError(f"The game already has a map called {name!r}. Give the new map another name.")
+        players = self._read_players(folder_name)
+        header = (f"A new map: a copy of {spec.copy_of} called {name!r} in the menus (MOD_FORMAT §8).\n"
+                  "Made in the RUSE Studio, which rewrites this file.")
+        with self._saving:
+            _save_checked(self._map_dir() / "maps" / folder_name / "map.toml",
+                          newmap.map_toml(replace(spec, names={"us": name}), players.count if players else None, header),
+                          lambda d: newmap.parse(d, "map.toml", folder_name))
+        return {"pack": folder_name, "maps": self.maps()["maps"]}
 
     # --- a map's own pictures in the game's menus (map.toml picture, wide_picture, start_dots; rusemod.menupicture,
     # MOD_FORMAT §8): any map's, a shipped one's too, so a themed mod can picture every map its own way. The owner,
@@ -5812,15 +5844,41 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         folder = self._mod_dir()
         found = []
         from rusemod.plainproblems import explain
-        for where, checked in (("mod", folder), ("map", self._mod_dir("map"))):
-            if checked is None or (where == "map" and folder is not None and checked.resolve() == folder.resolve()):
-                continue  # (a mod that holds its maps: checked once, as the mod)
-            problems = check_mod_folder(checked, self._game()) + (self._research_problems() if where == "mod" else [])
-            for p in (explain(p) for p in problems):
-                pack = p["plain"].get("map")
-                if pack:  # the map's name as the menus say it, in each language, for the plain words
-                    p["plain"]["map_titles"] = self._map_titles(pack, checked)
-                found.append(p | {"where": where})
+        folders = [(where, checked) for where, checked in (("mod", folder), ("map", self._mod_dir("map")))
+                   if checked is not None and not (where == "map" and folder is not None
+                                                   and checked.resolve() == folder.resolve())]
+        # the build's quick checks (the owner's 11 A, 2026-11-26: seconds, never a full dry build): against the game's
+        # index, which Test in game has anyway; without one the build says them as before
+        game_index = None
+        try:
+            game_index = self._open()
+        except (OSError, sqlite3.Error):
+            pass
+        try:
+            made = set()
+            for _where, checked in folders:  # (what the mod makes may be what the map's folder copies, or the reverse)
+                made |= modcheck.made_by(checked)
+                try:
+                    made |= set(ModEdits(checked).new_units)
+                except EditsFileError:
+                    pass   # (the file check says what is wrong with it)
+            for where, checked in folders:
+                problems = check_mod_folder(checked, self._game()) + (self._research_problems() if where == "mod" else [])
+                if game_index is not None:
+                    lang = self.prefs().get("lang") or schema.BASE
+                    for q in modcheck.build_problems(checked, game_index.has, made):
+                        q["problem"] = buildtext.worded(q["problem"], lang)
+                        problems.append(q)
+                for p in (explain(p) for p in problems):
+                    pack = p["plain"].get("map")
+                    if pack:  # the map's name as the menus say it, in each language, for the plain words
+                        p["plain"]["map_titles"] = self._map_titles(pack, checked)
+                    if p.get("leftover"):  # what a deleted unit left: the same fix Test in game's mistake offers
+                        p["fixes"] = [{"fix": "unit_leftovers", "unit": p["leftover"], "file": p["file"]}]
+                    found.append(p | {"where": where})
+        finally:
+            if game_index is not None:
+                game_index.close()
         return {"mod": str(folder) if folder is not None else None, "problems": found}
 
     def _map_titles(self, pack: str, folder: Path) -> dict:
@@ -5892,6 +5950,15 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         if kind == "set_aside":
             return self.set_aside(fix.get("file"), fix.get("where", "mod"))
         folder = self._checked_dir(fix.get("where", "mod"))
+        if kind == "unit_leftovers":   # what a unit deleted from the mod left behind (the same fix as Test in game's)
+            unit = str(fix.get("unit", ""))
+            with self._saving:
+                left = self._take_leftovers(ModEdits(folder), f"$/GFX/Everything/{unit}")
+            if not left:
+                # not a game rule: nothing of that unit is left in the mod, or it's a unit the game or the mod has
+                raise StudioError(f"Nothing that {unit} left behind is in the mod any more, or it is a unit the mod or "
+                                  f"the game has.")
+            return self.check_mod() | {"message": None}
         path = folder / str(fix.get("file") or "")
         if path.name not in MAP_FILES or path.parent.parent != folder / "maps" or not path.is_file():
             raise StudioError(f"{fix.get('file')} isn't one of this mod's map files")

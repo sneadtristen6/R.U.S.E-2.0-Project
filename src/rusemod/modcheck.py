@@ -10,6 +10,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from .build import MAP_FILES, BuildError, load_mod, read_map_file
+from .patch import PROP_KINDS
 from .rndf import RndfError
 from .terrain import map_list, pack_for
 
@@ -77,3 +78,66 @@ def _new_map(folder: Path) -> bool:
         return f.is_file() and "copy_of" in tomllib.loads(f.read_text(encoding="utf-8"))
     except (OSError, UnicodeDecodeError, tomllib.TOMLDecodeError):
         return False  # the file check says what's wrong with it
+
+
+def made_by(folder: Path) -> set:
+    """The objects the mod in `folder` makes (the names its files create or clone), empty when it can't be read (the
+    check of its files says what is wrong with it)."""
+    try:
+        _info, ops = load_mod(Path(folder))
+    except (BuildError, RndfError, OSError):
+        return set()
+    return {op.target.partition(":")[0] for op in ops if op.kind in ("create", "clone") and op.target}
+
+
+def build_problems(folder: Path, has, also_made=()) -> list[dict]:
+    """The two mistakes the build stops on that the files' check above doesn't find, looked for the quick way (the
+    owner's 11 A, 2026-11-26: the quick checks only, before the build starts; never a full dry build): a change to an
+    object the game hasn't got and no mod makes (the build's own words: patch.Engine._missing), and a copy of a model
+    left by a unit nobody makes any more (the build's words, rusemod.build unit_own_copies). `has(name)`: whether the
+    game has the object `name` ("$/GFX/Everything/..."); `also_made`: what the other folders built with this one make.
+    [{"file", "problem", "set_aside": False}] and, for a left-over copy, "leftover": the unit. Left out: a mod that
+    depends on or optionally uses another (what it patches may be that one's: the build says), a change guarded by
+    `when`, and one that names its objects by class (`@Class`, `every`); the build still stops on those, as before."""
+    folder = Path(folder)
+    try:
+        info, ops = load_mod(folder)
+    except (BuildError, RndfError, OSError):
+        return []   # (the files' check says what is wrong with it)
+    made = {op.target.partition(":")[0] for op in ops if op.kind in ("create", "clone") and op.target} | set(also_made)
+    out = []
+    if not (info.depends or info.optional):
+        for op in ops:
+            if op.when or op.every:
+                continue
+            if op.kind in PROP_KINDS:
+                verb, target = "patches", op.target
+            elif op.kind == "delobj":
+                verb, target = "deletes", op.target
+            elif op.kind == "clone":
+                verb, target = "clones", op.source
+            else:
+                continue
+            if not target or target.startswith("@"):
+                continue
+            name = target.partition(":")[0]
+            if name in made or has(name):
+                continue
+            out.append({"file": op.file or None, "set_aside": False,
+                        "problem": f"{op.at()} {verb} {name}, which doesn't exist in this game build (after a game "
+                                   f"update, this needs a rebase)"})
+    from .holding import skip_of
+    from .unitmodel import COPY, MODELS
+    tails = {n.rsplit("/", 1)[-1] for n in made}
+    skip = skip_of(folder)
+    models = folder / MODELS
+    for f in sorted(models.glob("*" + COPY)) if models.is_dir() else []:
+        unit = f.name[:-len(COPY)]
+        if (skip and skip(f)) or unit in tails or has(f"$/GFX/Everything/{unit}"):
+            continue
+        out.append({"file": f"{MODELS.as_posix()}/{f.name}", "set_aside": False, "leftover": unit,
+                    "problem": f"{info.id}: {MODELS.as_posix()}/{f.name}: no mod in the set makes a unit {unit}, and "
+                               f"the game has none of that name. If {unit} was deleted from this mod, this file was "
+                               f"left behind: in the Studio, click Take out what it left under this mistake in Test "
+                               f"in game's log, or delete this file"})
+    return out

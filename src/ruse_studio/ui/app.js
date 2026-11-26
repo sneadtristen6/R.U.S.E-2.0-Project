@@ -442,8 +442,10 @@ function fixButton(p, f) {
   const label = f.fix === "fill" ? (w["pp_fix_fill_" + f.key] || fillText(w.pp_fix_fill, { key: problemKey(f.key) }))
     : f.fix === "remove_key" ? fillText(w.pp_fix_remove_key, { key: f.key })
     : f.fix === "remove_item" ? fillText(w.pp_fix_remove_item, { item })
+    : f.fix === "unit_leftovers" ? w.test_fix_unit_leftovers  // what a deleted unit left (the same words as Test in game's)
     : w.check_set_aside;
-  const tip = { fill: w.tip_pp_fill, remove_key: w.tip_pp_remove_key, remove_item: w.tip_pp_remove_item }[f.fix] || w.tip_check_set_aside;
+  const tip = { fill: w.tip_pp_fill, remove_key: w.tip_pp_remove_key, remove_item: w.tip_pp_remove_item,
+    unit_leftovers: w.tip_test_fix_unit_leftovers }[f.fix] || w.tip_check_set_aside;
   const button = el("button", { type: "button", className: f.fix === "set_aside" ? "small ghost" : "small", textContent: label, title: tip || "" });
   button.addEventListener("click", async () => {
     button.disabled = true;
@@ -6279,6 +6281,8 @@ window.addEventListener("map-duplicated", async (e) => {
 });
 // Delete map (maps.js) sent a new map to the Recycle Bin: the status line says so
 window.addEventListener("map-deleted", (e) => say(e.detail.text, "ok"));
+// Rename map (maps.js) changed a new map's name in the menus: the status line says so
+window.addEventListener("map-renamed", (e) => say(e.detail.text, "ok"));
 
 // --- "Choose your language" (rusemod.uilang.LanguageCalls): opens by itself until the player has picked a language
 // there (the Studio used to start on the code names, and a French player stayed on them, not knowing it speaks

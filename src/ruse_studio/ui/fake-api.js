@@ -3310,6 +3310,8 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
     return { value: kind === "list" || kind === "map" || kind === "pair" ? null : String(value), text: String(value),
       same: String(value) === String(kind === "list" || kind === "map" || kind === "pair" ? row[5] : game) };
   };
+  // Rename map (words.toml rename_map, tip_rename_map, rename_map_name, map_renamed)
+  Object.assign(words.us, {"rename_map": "Rename map", "tip_rename_map": "Change the name this new map has in the game's menus. Its folder and its pack name stay as they are, so sets and join codes that use it keep working. The game's own maps can't be renamed.", "rename_map_name": "New name in the menus", "map_renamed": "The map is now called {name} in the menus. Its folder and pack name stayed."});
   // Delete map (words.toml delete_map, tip_delete_map, really_delete_map, map_deleted)
   Object.assign(words.us, {"delete_map": "Delete map", "tip_delete_map": "Take this new map out of your map changes, with everything changed on it. Its folder goes to the Recycle Bin, so it can be put back from there. The game's own maps can't be deleted.", "really_delete_map": "Delete {name}? Everything changed on it goes to the Recycle Bin with it.", "map_deleted": "{name} was deleted: its folder is in the Recycle Bin, if you want it back."});
   const exported = { path: "C:\\Users\\You\\Documents\\sherman-test-0.1.0.rusemod", file: "sherman-test-0.1.0.rusemod",
@@ -5430,6 +5432,15 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
         if (!s.saved) return { ...fakeMenu(pack), message: "Nothing saved in Blender yet: click Save menu pictures at the top of Blender's 3D view first (it takes a minute or two), then Bring back." };
         Object.assign(s, { picture: "menu.png", wide_picture: "menu-wide.png", start_dots: true, saved: false });
         return { ...fakeMenu(pack), message: "Brought back both pictures. Click Test in game to see them in the menus." };
+      },
+      rename_map: async (pack, name) => {
+        const m = fakeMaps.find((x) => x.pack === pack);
+        if (!m || !m.copy_of) throw new Error(`${pack} isn't a new map made in these map changes, so it can't be renamed here: the game's own maps stay.`);
+        const said = String(name || "").split(/\s+/).filter(Boolean).join(" ");
+        if (!said) throw new Error("Give the new map a name.");
+        for (const lang of Object.keys(m.titles || {})) m.titles[lang] = [said];
+        m.names = [said];
+        return { pack: m.pack, maps: fakeMaps };
       },
       delete_map: async (pack) => {
         const at = fakeMaps.findIndex((x) => x.pack === pack);

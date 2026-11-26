@@ -166,6 +166,14 @@
           <button id="map-delete-yes" type="button" class="ghost danger"></button>
           <button id="map-delete-no" type="button" class="ghost"></button>
         </div>
+        <!-- a new map's name in the menus (maps.js renameMap, StudioApi.rename_map): the folder and pack name stay -->
+        <button id="map-rename" type="button" class="ghost map-delete hidden"></button>
+        <div id="map-rename-form" class="map-delete-sure hidden">
+          <input id="map-rename-name" type="text" class="small" maxlength="60" autocomplete="off" spellcheck="false">
+          <button id="map-rename-yes" type="button" class="small"></button>
+          <button id="map-rename-no" type="button" class="ghost"></button>
+          <span id="map-rename-err" class="small"></span>
+        </div>
         <div class="map-controls">
           <button id="map-detail" type="button" class="chip"></button>
           <label class="small"><input id="map-water" type="checkbox" checked> <span id="map-water-label"></span></label>

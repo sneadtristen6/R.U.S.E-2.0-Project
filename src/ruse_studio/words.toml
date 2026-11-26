@@ -11311,6 +11311,59 @@ jpn = "{name} を削除しました。元に戻したいときは、フォルダ
 sc = "已删除 {name}：如需找回，它的文件夹在回收站中。"
 fa = "{name} حذف شد: اگر آن را دوباره می‌خواهید، پوشه‌اش در سطل بازیافت است."
 
+# --- Rename map (maps.js renameMap, StudioApi.rename_map): a new map's name in the menus; folder and pack name stay ---
+[rename_map]
+us = "Rename map"
+fr = "Renommer la carte"
+ger = "Karte umbenennen"
+ita = "Rinomina mappa"
+spa = "Renombrar mapa"
+pol = "Zmień nazwę mapy"
+ru = "Переименовать карту"
+cz = "Přejmenovat mapu"
+jpn = "マップ名を変更"
+sc = "重命名地图"
+fa = "تغییر نام نقشه"
+
+[tip_rename_map]
+us = "Change the name this new map has in the game's menus. Its folder and its pack name stay as they are, so sets and join codes that use it keep working. The game's own maps can't be renamed."
+fr = "Changer le nom que cette nouvelle carte porte dans les menus du jeu. Son dossier et le nom de son pack restent tels quels : les ensembles et les codes de connexion qui l'utilisent continuent de fonctionner. Les cartes du jeu ne peuvent pas être renommées."
+ger = "Ändert den Namen, den diese neue Karte in den Menüs des Spiels hat. Ihr Ordner und ihr Paketname bleiben, wie sie sind, damit Sets und Beitrittscodes, die sie nutzen, weiter funktionieren. Die Karten des Spiels selbst lassen sich nicht umbenennen."
+ita = "Cambia il nome che questa nuova mappa ha nei menu del gioco. La sua cartella e il nome del suo pacchetto restano come sono, così gli insiemi e i codici di accesso che la usano continuano a funzionare. Le mappe del gioco non si possono rinominare."
+spa = "Cambia el nombre que este mapa nuevo tiene en los menús del juego. Su carpeta y el nombre de su paquete se quedan como están, así que los conjuntos y los códigos de unión que la usan siguen funcionando. Los mapas del propio juego no se pueden renombrar."
+pol = "Zmienia nazwę, jaką ta nowa mapa ma w menu gry. Jej folder i nazwa jej paczki zostają bez zmian, więc zestawy i kody dołączania, które jej używają, nadal działają. Map samej gry nie można przemianować."
+ru = "Меняет название, под которым эта новая карта показана в меню игры. Её папка и имя её пакета остаются прежними, поэтому наборы и коды присоединения, которые её используют, продолжают работать. Карты самой игры переименовать нельзя."
+cz = "Změní název, který má tato nová mapa v nabídkách hry. Její složka a název jejího balíčku zůstávají, jak jsou, takže sady a kódy pro připojení, které ji používají, dál fungují. Mapy samotné hry přejmenovat nelze."
+jpn = "この新しいマップがゲームのメニューで使う名前を変えます。フォルダーとパック名はそのままなので、このマップを使うセットや参加コードも引き続き使えます。ゲーム本来のマップは名前を変えられません。"
+sc = "更改这张新地图在游戏菜单中的名称。它的文件夹和包名保持不变，所以使用它的组合和加入码仍然有效。游戏自带的地图无法重命名。"
+fa = "نامی را که این نقشهٔ تازه در منوهای بازی دارد تغییر می‌دهد. پوشه و نام بستهٔ آن همان‌طور می‌مانند، پس مجموعه‌ها و کدهای پیوستنی که از آن استفاده می‌کنند به کار خود ادامه می‌دهند. نقشه‌های خودِ بازی را نمی‌توان تغییر نام داد."
+
+[rename_map_name]
+us = "New name in the menus"
+fr = "Nouveau nom dans les menus"
+ger = "Neuer Name in den Menüs"
+ita = "Nuovo nome nei menu"
+spa = "Nuevo nombre en los menús"
+pol = "Nowa nazwa w menu"
+ru = "Новое название в меню"
+cz = "Nový název v nabídkách"
+jpn = "メニューでの新しい名前"
+sc = "菜单中的新名称"
+fa = "نام تازه در منوها"
+
+[map_renamed]
+us = "The map is now called {name} in the menus. Its folder and pack name stayed."
+fr = "La carte s'appelle maintenant {name} dans les menus. Son dossier et le nom de son pack n'ont pas changé."
+ger = "Die Karte heißt in den Menüs jetzt {name}. Ordner und Paketname sind geblieben."
+ita = "La mappa ora si chiama {name} nei menu. La sua cartella e il nome del pacchetto sono rimasti."
+spa = "El mapa ahora se llama {name} en los menús. Su carpeta y el nombre de su paquete se quedaron."
+pol = "Mapa nazywa się teraz {name} w menu. Jej folder i nazwa paczki zostały bez zmian."
+ru = "Теперь карта называется в меню {name}. Её папка и имя пакета остались прежними."
+cz = "Mapa se v nabídkách nyní jmenuje {name}. Její složka a název balíčku zůstaly."
+jpn = "マップのメニュー上の名前は {name} になりました。フォルダーとパック名はそのままです。"
+sc = "这张地图在菜单中现在叫 {name}。它的文件夹和包名没有变。"
+fa = "نقشه اکنون در منوها {name} نامیده می‌شود. پوشه و نام بستهٔ آن ماند."
+
 [dup_lead]
 us = "Makes a new map: a full copy of {map} with a name of its own, in the game's menus next to the original. Everything you change on the copy (ground, buildings, roads, starting points, players) is the copy's alone: {map} stays as it is."
 fr = "Crée une nouvelle carte : une copie complète de {map} avec son propre nom, dans les menus du jeu à côté de l'originale. Tout ce que vous changez sur la copie (sol, bâtiments, routes, points de départ, joueurs) ne concerne qu'elle : {map} reste tel quel."
