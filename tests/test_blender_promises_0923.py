@@ -109,6 +109,16 @@ class Item11BonesBoxLink(InElevenLanguages):
         self.assertIn('troubleLink("bones")', function_text(js("app.js"), "ownAnimationsBox"))
 
 
+class Item12ImportTooltips(InElevenLanguages):
+    ITEM = "12"
+
+    def test_52b_the_soldiers_import_tooltips_say_open_in_blender_opens_him_with_his_bones(self):
+        self.words_in_eleven_languages(["tip_squad_import", "tip_squad_import_all"])
+        for key in ("tip_squad_import", "tip_squad_import_all"):
+            self.names_in_every_language(key, ["look_open"])
+        self.assertIn("Open in Blender opens him with his bones", WORDS["tip_squad_import"]["us"])
+
+
 class WikiPages(InElevenLanguages):
     def topic_opens_each_language_s_page(self, topic, us, fr):
         self.assertEqual(sorted(WIKI_TOPICS[topic]), sorted(LANGS))
