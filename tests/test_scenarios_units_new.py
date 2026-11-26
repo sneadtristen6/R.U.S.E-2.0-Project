@@ -14,7 +14,7 @@ import unittest
 from pathlib import Path
 
 from rusemod import menugroups
-from test_scenarios_units_base import (A1, ARMOR_US, E, G1, G2, GAME_LANGS, H1, L1, M1, M2, P1, P2, PYTHON_WORDS, S1,
+from test_scenarios_units_base import (A1, ARMOR_US, E, G1, G2, GAME_LANGS, H1, L1, LANGS, M1, M2, P1, P2, PYTHON_WORDS, S1,
                                        T1, U, Player, Refused)
 
 KINDS = (("tank", M1, "ground"), ("squad", S1, "infantry"), ("plane", P1, "air"), ("artillery", A1, "ground"),
@@ -415,12 +415,32 @@ class CopiesOfUpgrades(Player):
 
     # U-7: the page says nothing when a copy stops being an upgrade (new_unit's research_parent_dropped is never read
     # by newUnitForm): the player made a copy of G2, an upgrade of G1, and gets a unit bought from the start
-    @unittest.expectedFailure
     def test_the_page_says_when_a_copy_stops_being_an_upgrade(self):
         page = (Path(__file__).parents[1] / "src" / "ruse_studio" / "ui" / "app.js").read_text(encoding="utf-8")
         start = page.index("function newUnitForm(")
         form = page[start:page.index("\nfunction ", start + 10)]
         self.assertIn("research_parent_dropped", form)
+        self.assertIn("copy_not_upgrade", form)
+
+    def test_the_word_for_a_copy_that_stops_being_an_upgrade_is_in_every_language(self):
+        import tomllib
+        said = tomllib.loads((Path(__file__).parents[1] / "src" / "ruse_studio" / "words.toml")
+                             .read_text(encoding="utf-8"))["copy_not_upgrade"]
+        self.assertEqual(sorted(said), sorted(LANGS))
+        for lang, text in said.items():
+            with self.subTest(lang=lang):
+                self.assertIn("{name}", text)
+                self.assertIn("{parent}", text)
+        self.assertEqual(len(set(said.values())), len(said))   # none the English left in
+
+    def test_the_parent_a_copy_stopped_being_researched_from_is_named(self):
+        self.mod("Parent named")
+        moved = self.call("new_unit", M2, "M2 at the AT base", 40, 0, 11, False, None)
+        self.assertEqual(moved["research_parent_dropped"], M1)
+        self.assertTrue(moved["research_parent_name"])
+        kept = self.call("new_unit", M2, "M2 where it was", 40, -1, -1, False, None)   # control: in its own menu
+        self.assertIsNone(kept["research_parent_dropped"])
+        self.assertIsNone(kept["research_parent_name"])
 
 
 class CopyOfACopy(Player):

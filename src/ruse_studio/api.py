@@ -10058,6 +10058,8 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             menus |= self._own_menus(ix, edits)  # the mod's buildings with units of their own (board.py)
             parent = ix.links(UPGRADE).get(source)      # the unit the source is researched from, if any (the copy gets the game's link)
             gone = self._hidden_by_mod(edits) | set(edits.deleted)   # (U-15: a parent the mod hid or took out)
+            parent_name = (self._names(ix, {parent}, self.prefs().get("lang") or schema.BASE, edits.new_units)[parent]
+                           if parent else None)  # (said on a drop, in the player's language)
             parent_menu = next(((u["nation"], u["factory"]) for u in all_units if u["address"] == parent), None)
             namespace, tail = source.rsplit("/", 1)
             m = _PREFIX.match(tail)
@@ -10148,6 +10150,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             # a copy plays what the unit it copies plays, its own animations too (the owner, 2026-11-10)
             kept = self._animations_along(edits.folder, source, target)
         return {"address": target, "name": name, "saved": str(edits.file), "research_parent_dropped": dropped,
+                "research_parent_name": parent_name if dropped else None,
                 "animations_kept": kept}
 
     def _new_unit_groups(self, edits, target: str, source: str, name: str, values: dict, own: list, group,

@@ -2106,6 +2106,8 @@ function newUnitForm(u, opened) {
       await showUnit(res.address);
       say(w.unit_made.replace("{name}", res.name), "ok");
       if (res.animations_kept) say(w.actions_kept, "ok");  // (its source's own animations came along: RUSE Decoy changes them)
+      // (a copy of an upgrade that isn't researched from its unit any more, in its menu: said, not left to be found)
+      if (res.research_parent_dropped) say(fillText(w.copy_not_upgrade, { name: res.name, parent: res.research_parent_name || "" }), "ok");
     } catch (err) { problem(err); create.disabled = false; }
   });
   const box = el("div", { className: "copy" }, open, form);
