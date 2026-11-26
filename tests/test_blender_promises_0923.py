@@ -293,6 +293,17 @@ class Item26RepaintHeading(InElevenLanguages):
         self.assertEqual(WORDS["unit_look"]["us"], "Repaint in Blender")
 
 
+class Item27UntickedLine(InElevenLanguages):
+    ITEM = "27"
+
+    def test_52q_what_unticked_means_on_both_pages(self):
+        self.words_in_eleven_languages(["one_parts_unticked"], english_left_in=True)
+        self.assertEqual(WORDS["one_parts_unticked"]["us"], "Unticked: kept as it is now, whatever Blender does to it.")
+        ticks = function_text(js("app.js"), "oneBlenderTicks")    # (the unit's page and a squad's card both draw it)
+        self.assertIn("w.one_parts_unticked", ticks)
+        self.assertIn("oneBlenderTicks(", js("squad.js"))
+
+
         #                                         code says the same words, for every refusal)
 
 

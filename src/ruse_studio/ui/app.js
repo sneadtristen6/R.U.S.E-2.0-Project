@@ -2892,7 +2892,9 @@ function lookMovesBox(u, view, startNew, squadPage = false) {
 // page, 2026-11-13)
 function oneBlenderTicks(parts, before = null) {
   const w = state.words;
-  const box = el("div", { className: "one-parts" + (before && before.open ? "" : " hidden") });
+  const box = el("div", { className: "one-parts" + (before && before.open ? "" : " hidden") },
+    // (one line on what unticking does, on the unit's page and on a squad's card: 52q)
+    el("p", { className: "muted small one-parts-unticked", textContent: w.one_parts_unticked }));
   const toggle = el("button", { type: "button", className: "small ghost one-toggle", textContent: `${w.one_parts} ▾`,
     title: w.tip_one_parts });
   toggle.setAttribute("aria-expanded", String(Boolean(before && before.open)));
