@@ -32,7 +32,7 @@ _VERSIONS = {"v23660935": ("v23661872", "v23738184", "v23762668", "v24003166", "
 
 APP_FILES: tuple[str, ...] = (
     _in("rusemod", "buildtext.toml", "checkkeys.toml", "ground_presets.toml", "guard_keys.toml", "labels.toml",
-        "motions.json.gz", "ownedsignintext.toml", "ownedtext.toml", "sharedui/agreement.js")
+        "motions.json.gz", "ownedsignintext.toml", "ownedtext.toml", "release_keys.toml", "sharedui/agreement.js")
     + _in("rusemod", *(f"flaginfo{s}.toml" for s in _LANGS), *(f"numberinfo{s}.toml" for s in _LANGS))
     + _in("rusemod/gamescripts", "fairplay_lock.bin", "fairplay_watch.bin", "guard_hash.bin")
     + _in("rusemod/pictures", "blank_ocean.png", "blank_terrain.png", "startup_scene.png")
