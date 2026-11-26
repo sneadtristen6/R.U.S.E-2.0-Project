@@ -443,6 +443,7 @@
         crashTold = crashTold || Boolean(notice);
         return { watching: false, notice };
       },
+      guard_stop: async () => ({ watching: false, notice: null }),  // (app.js watchGuard: no cheat copy in the preview)
       troubleshoot: async () => {
         await new Promise((done) => setTimeout(done, 600));  // the real checks take a moment
         const list = findings();

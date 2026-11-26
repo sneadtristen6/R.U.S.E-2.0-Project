@@ -1016,6 +1016,29 @@ class LauncherApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedC
             view["message"] = errortext.worded(view["message"], self._lang())  # an install's or convert's refusal
         return buildtext.worded_view(view, self._lang())  # Play's lines in the player's language
 
+    # --- the game this Launcher started (the owner's 23, 2026-11-25) ---
+    def closing_check(self):
+        """What the window asks before it closes (rusemod.webui.ask_before_closing): while the game this Launcher
+        started is still running, {"title", "text"} in the Launcher's language, as the owner asked ("the Launcher
+        asks before it closes while a game it started is still running": closed, it can't see how the game ends, so
+        RUSE Guard's note of a cheat copy's stop would never be filed); else None, and it closes at once."""
+        if not self._starter.game_running():
+            return None
+        said = words(self._lang())
+        return {"title": said["close_game_running_title"], "text": said["close_game_running_text"]}
+
+    def guard_stop(self) -> dict:
+        """After a Play: {"watching": whether RUSE Guard's match watch still follows the game this Launcher started
+        (the page asks again while it does), "notice": once, after the game closed because its copy's lock left a
+        match and the Launcher filed the note (rusemod.guard.MatchWatch.take_stop), the line saying so in the
+        Launcher's language (the owner's 23: one Launcher line in the player's own language); else None}."""
+        watch = self._starter.guard_watch
+        if watch is None:
+            return {"watching": False, "notice": None}
+        watching = watch.is_alive()  # first: a watch that ends right after this is asked again, its line not lost
+        notice = words(self._lang())["guard_closed_game"] if watch.take_stop() else None
+        return {"watching": watching, "notice": notice}
+
     def _play(self, chosen: dict, say) -> None:
         title = title_on(self._home)  # R.U.S.E. 2.0's title, unless Settings says the game's
         if chosen["id"] == VANILLA and not title:

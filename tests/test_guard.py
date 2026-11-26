@@ -3,13 +3,16 @@ manifests, the in-game record, the process scan, and a match's evidence bundle k
 import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import json
 import os
+import re
 import shutil
+import sys
 import tempfile
 import threading
 import time
 import unittest
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
+from unittest import mock
 
 from rusemod import ed25519, guard
 
@@ -225,65 +228,6 @@ class Bundle(unittest.TestCase):
         self.assertEqual(said, "sent 0; 1 waiting")
         self.assertFalse((self.home / guard.REFUSED).exists())
 
-    # the offline lock's crash evidence. The dump deliberately plants a Steam ID, an account number and a path both
-    # inside and outside the RUSEGUARD mark, so the test proves they're stripped before anything leaves the PC.
-    DUMP = (b"module list junk 76561198087654321 outside\x00"
-            b"RUSEGUARD-LOCK a cheat copy was stopped: it surrendered and left the match. multi 1 coop 0 local 0; "
-            b"steam 76561198012345678 at C:\\Users\\bob\\AppData\\Local\\Temp\\x.dmp acct 226593310 RUSEGUARD-END"
-            b" trailing junk 76561198011112222")
-
-    def _dump(self, data: bytes) -> Path:
-        p = self.dir / "report.dmp"
-        p.write_bytes(data)
-        return p
-
-    def test_read_stop_extracts_the_mark_and_strips_identifiers(self):
-        stop = guard.read_stop(self._dump(self.DUMP))
-        self.assertIsNotNone(stop)
-        self.assertIn("a cheat copy was stopped", stop["text"])
-        self.assertEqual(stop["code"], "0x29a")
-        for secret in ("76561198012345678", "76561198087654321", "226593310", "bob", "C:\\Users"):
-            self.assertNotIn(secret, stop["text"])
-        self.assertIn("<id>", stop["text"])
-        self.assertIn("multi 1 coop 0 local 0", stop["text"])  # the team numbers stay (short digits)
-
-    def test_read_stop_is_none_without_a_mark(self):
-        self.assertIsNone(guard.read_stop(self._dump(b"a normal crash, no guard mark, 76561198012345678")))
-
-    # the static format template, as it sits in a guard copy's script memory for ANY crash (the real 10-31 dump had it)
-    TEMPLATE = (b"RUSEGUARD-LOCK a cheat copy was stopped: it surrendered and left the match. "
-                b"multi %d coop %d local %s RUSEGUARD-END")
-    FILLED = (b"RUSEGUARD-LOCK a cheat copy was stopped: it surrendered and left the match. "
-              b"multi 1 coop 0 local 0 RUSEGUARD-END")
-
-    def test_read_stop_prefers_the_filled_in_mark_over_the_template(self):
-        # a real lock-crash report holds both; the filled-in line is the evidence, the template is a useless constant
-        stop = guard.read_stop(self._dump(b"junk " + self.TEMPLATE + b" ... " + self.FILLED + b" junk"))
-        self.assertIsNotNone(stop)
-        self.assertIn("multi 1 coop 0 local 0", stop["text"])
-        self.assertNotIn("%", stop["text"])
-
-    def test_read_stop_ignores_a_template_only_dump(self):
-        # only the template (no lock actually fired): not a stop, so nothing is collected or sent
-        self.assertIsNone(guard.read_stop(self._dump(b"a crash of a guard copy " + self.TEMPLATE + b" and more")))
-
-    def test_collect_stops_bundles_a_lock_crash_with_no_steam_id(self):
-        local = self.dir / "LocalAppData"
-        (local / "Temp" / "CrashRpt_abc").mkdir(parents=True)
-        (local / "Temp" / "CrashRpt_abc" / "report.dmp").write_bytes(self.DUMP)
-        said = guard.collect_stops(self.home, since=0, username="Nick#4821", server="", now=1791000200,
-                                   local=str(local), say=lambda s: None)
-        self.assertEqual(len(said), 1)
-        kept = sorted((self.home / guard.OUTBOX).glob("*.json"))
-        self.assertEqual(len(kept), 1)
-        body = json.loads(kept[0].read_text(encoding="utf-8"))
-        self.assertTrue(guard.check_bundle(body))
-        self.assertIn("a cheat copy was stopped", body["evidence"]["stop"]["text"])
-        self.assertEqual((body["match"]["players"], body["evidence"]["username"]), (["Nick#4821"], "Nick#4821"))
-        whole = json.dumps(body)   # nothing Steam-shaped anywhere in what would be sent
-        for secret in ("76561198012345678", "76561198087654321", "226593310"):
-            self.assertNotIn(secret, whole)
-
     def test_every_handle_is_one_the_server_takes(self):
         # the agreement asks for a username only when the program check or Bug Watch is ticked; the server refuses
         # an empty handle (cloudflare/guard worker.js fieldsOf: 1 to 200 characters), so bundle() never sends one
@@ -302,54 +246,6 @@ class Bundle(unittest.TestCase):
         self.assertEqual(anon["evidence"]["player"], "player-" + anon["client_key"][:12])
         self.assertNotIn("#", anon["evidence"]["player"])
 
-    def test_the_match_watch_keeps_a_lock_crash_after_the_game_closes(self):
-        local = self.dir / "LocalAppData"
-        dumps = local / "Temp" / "CrashRpt_abc"
-
-        class Game:   # the game's process: the lock crashes it during the match, then it's gone
-            def __init__(self):
-                self.polls = 0
-
-            def poll(self):
-                self.polls += 1
-                if self.polls == 1:
-                    dumps.mkdir(parents=True, exist_ok=True)
-                    dump = dumps / "report.dmp"
-                    dump.write_bytes(Bundle.DUMP)
-                    # a real lock crash comes minutes after the watch starts; a file written microseconds after it
-                    # can read a hair earlier than the watch's start (72 of 500 quick writes on Windows), so it's
-                    # dated a second on, as a crash during the match would be
-                    soon = time.time() + 1
-                    os.utime(dump, (soon, soon))
-                    return None
-                return 0x29A
-
-        for terms, kept_count in ((0, 0), (guard.TERMS_VERSION, 1)):   # nothing before the terms are accepted
-            shutil.rmtree(self.home / "guard", ignore_errors=True)
-            shutil.rmtree(local, ignore_errors=True)
-            said = []
-            guard.MatchWatch(Game(), self.home, self.game, self.copy, username="Nick#4821",
-                             consent={"terms": terms, "scan": False, "server": ""}, manifests=[], say=said.append,
-                             sleep=lambda s: None, local=str(local)).run()
-            kept = sorted((self.home / guard.OUTBOX).glob("*.json"))
-            self.assertEqual(len(kept), kept_count, terms)
-        body = json.loads(kept[0].read_text(encoding="utf-8"))
-        self.assertTrue(guard.check_bundle(body))
-        self.assertEqual(body["evidence"]["player"], "Nick#4821")
-        self.assertIn("a cheat copy was stopped", body["evidence"]["stop"]["text"])
-        self.assertTrue(any("a cheat copy was stopped" in s for s in said), said)
-
-    def test_a_lock_crash_with_no_username_still_goes_out(self):
-        local = self.dir / "LocalAppData"
-        (local / "Temp" / "CrashRpt_abc").mkdir(parents=True)
-        (local / "Temp" / "CrashRpt_abc" / "report.dmp").write_bytes(self.DUMP)
-        guard.collect_stops(self.home, since=0, username="", server="", now=1791000200, local=str(local),
-                            say=lambda s: None)
-        body = json.loads(next((self.home / guard.OUTBOX).glob("*.json")).read_text(encoding="utf-8"))
-        self.assertTrue(guard.check_bundle(body))
-        self.assertEqual(body["evidence"]["player"], "player-" + body["client_key"][:12])
-        self.assertIn("a cheat copy was stopped", body["evidence"]["stop"]["text"])
-
     def _watch_scan(self, consent):
         # run a MatchWatch with the program check's module functions stubbed, and return (findings, whether it looked)
         looked = []
@@ -367,7 +263,7 @@ class Bundle(unittest.TestCase):
                 self.n += 1
                 return None if self.n == 1 else 0
         w = guard.MatchWatch(Game(), self.home, self.game, self.copy, username="Nick#4821", consent=consent,
-                             manifests=[], say=lambda s: None, sleep=lambda s: None, local=str(self.dir / "none"))
+                             manifests=[], say=lambda s: None, sleep=lambda s: None)
         w.run()
         return w.findings, bool(looked)
 
@@ -384,6 +280,205 @@ class Bundle(unittest.TestCase):
 
 def setattr_many(mod, values):
     mod.signatures, mod.live_multiplayer, mod.scan = values
+
+
+class Game:
+    """The game's process as the match watch sees it: running for `polls` looks, then closed with `code`."""
+
+    def __init__(self, code, polls=1, during=None):
+        self.code, self.polls, self.during, self.seen = code, polls, during, 0
+
+    def poll(self):
+        self.seen += 1
+        if self.seen <= self.polls:
+            if self.during:
+                self.during(self.seen)
+            return None
+        return self.code
+
+
+class Stop(unittest.TestCase):
+    """A cheat copy's stop goes only to our server (the owner, 2026-11-24: "Fine, change it to only go to our
+    server."): the copy's lock closes the game with RUSE Guard's close number, and the Launcher's match watch, which
+    started the game, files a small signed note when it sees that number; no crash report is read at all."""
+
+    def setUp(self):
+        self.dir = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, self.dir, True)
+        self.home, self.game, self.copy = self.dir / "home", self.dir / "Steam/steamapps/common/RUSE", self.dir / "copy"
+        for p in (self.home, self.game, self.copy):
+            p.mkdir(parents=True)
+        self.said = []
+
+    def cheat_record(self, lock=None, folder=None):
+        from rusemod import fairplay
+        cheat = fairplay.FairPlay([fairplay.ModCheck("dev", "Dev", cheat=True)])
+        lock = lock or fairplay.build_code("24687178", b"\1" * 32, [("dev", "1.0.0")])
+        return fairplay.write_record(folder or self.copy, "24687178", b"\1" * 32, [("dev", "1.0.0")], cheat, [], lock)
+
+    def watch(self, process, terms=None, **kw):
+        w = guard.MatchWatch(process, self.home, self.game, self.copy, username=kw.pop("username", "Nick#4821"),
+                             consent={"terms": guard.TERMS_VERSION if terms is None else terms, "server": ""},
+                             manifests=[], say=self.said.append, sleep=kw.pop("sleep", lambda s: None), **kw)
+        w.run()
+        return w
+
+    def kept(self) -> list:
+        return [json.loads(p.read_text(encoding="utf-8")) for p in sorted((self.home / guard.OUTBOX).glob("*.json"))]
+
+    def test_the_close_number_files_one_note_once_the_terms_are_accepted(self):
+        from rusemod import fairplay
+        self.cheat_record()
+        w = self.watch(Game(fairplay.LOCK_EXIT))
+        notes = self.kept()
+        self.assertEqual(len(notes), 1)
+        self.assertEqual(notes[0]["evidence"]["stop"], {"text": guard.STOP_TEXT, "code": "0x52474c4b"})
+        self.assertTrue(any(line.startswith("RUSE Guard: a cheat copy was stopped (") for line in self.said), self.said)
+        self.assertEqual((w.code, w.take_stop(), w.take_stop()), (fairplay.LOCK_EXIT, True, False))  # said once
+        # before the terms are accepted: nothing filed, nothing said to the player
+        shutil.rmtree(self.home / "guard")
+        w = self.watch(Game(fairplay.LOCK_EXIT), terms=0)
+        self.assertEqual((self.kept(), w.take_stop()), ([], False))
+
+    def test_no_crash_report_is_read(self):
+        """The stop never goes through the game's crash reporter: a crash report on this PC that carries the 0.9.8.22
+        lock's marked line (a cheat copy stopped by a crash) is not read, and nothing is filed for it (until 0.9.8.22
+        the Launcher read that line out of the report and sent it)."""
+        local = self.dir / "LocalAppData"
+        (local / "Temp" / "CrashRpt_abc").mkdir(parents=True)
+        (local / "Temp" / "CrashRpt_abc" / "report.dmp").write_bytes(
+            b"junk RUSEGUARD-LOCK a cheat copy was stopped: it surrendered and left the match. multi 1 coop 0 local 0 "
+            b"RUSEGUARD-END junk")
+        soon = time.time() + 60
+        os.utime(local / "Temp" / "CrashRpt_abc" / "report.dmp", (soon, soon))
+        self.cheat_record()
+        with mock.patch.dict("os.environ", {"LOCALAPPDATA": str(local)}):
+            self.watch(Game(0x29A))
+        self.assertEqual(self.kept(), [])
+        self.assertEqual([name for name in ("read_stop", "collect_stops", "stop_dumps_since", "GUARD_DUMPS")
+                          if hasattr(guard, name)], [])
+
+    def test_every_other_exit_code_files_nothing(self):
+        # the game's own endings (0, 1, 5, 9, -1 as 0xFFFFFFFF, the stack check's 0xC0000409), a script error's
+        # stop (0x29a, the 0.9.8.22 lock's), a Windows crash (0xC0000005): no note
+        self.cheat_record()
+        for code in (0, 1, 5, 9, 0x29A, 0xFFFFFFFF, 0xC0000005, 0xC0000409, -1):
+            w = self.watch(Game(code))
+            self.assertEqual((self.kept(), w.take_stop()), ([], False), code)
+        self.assertEqual([line for line in self.said if "stopped" in line], [])
+
+    def test_only_a_copy_whose_lock_closes_the_game_gets_a_note(self):
+        """The number alone isn't enough: no record, an honest copy's, or a 0.9.8.22 cheat copy's (a lock that crashes,
+        no stop) files nothing and says one line; a lock with no build code (thirteen zeros) is a lock."""
+        from rusemod import fairplay
+        honest = fairplay.write_record(self.copy, "24687178", b"\1" * 32, [("maps", "1.0.0")], fairplay.FairPlay(), [])
+        old = dict(self.cheat_record(), stop=None)
+        for record in (None, honest, old):
+            (self.copy / fairplay.RECORD).unlink(missing_ok=True)
+            if record is not None:
+                (self.copy / fairplay.RECORD).write_text(json.dumps(record), encoding="utf-8")
+            self.said.clear()
+            w = self.watch(Game(fairplay.LOCK_EXIT))
+            self.assertEqual((self.kept(), w.take_stop()), ([], False), record)
+            self.assertEqual(self.said, ["RUSE Guard: the game closed with RUSE Guard's close number, but this copy has "
+                                         "no lock that closes it; nothing was sent"])
+        self.cheat_record(fairplay.NO_BUILD_CODE)
+        self.watch(Game(fairplay.LOCK_EXIT))
+        self.assertEqual(len(self.kept()), 1)
+
+    def test_the_record_is_read_when_the_game_starts(self):
+        # the copy is built again (or taken away) while the game runs or right after: the note still goes out
+        from rusemod import fairplay
+        self.cheat_record()
+
+        def gone(_n):
+            (self.copy / fairplay.RECORD).unlink()
+        self.watch(Game(fairplay.LOCK_EXIT, during=gone))
+        self.assertEqual(len(self.kept()), 1)
+
+    def test_a_trouble_with_the_match_records_never_costs_the_note(self):
+        from rusemod import fairplay
+        self.cheat_record()
+        with mock.patch.object(guard, "collect", side_effect=OSError("the copy's folder went away")):
+            self.watch(Game(fairplay.LOCK_EXIT))
+        self.assertEqual(len(self.kept()), 1)
+        self.assertIn("RUSE Guard: the match records couldn't be read or sent: OSError: the copy's folder went away",
+                      self.said)
+        # and a note that can't be made is said, never silent
+        shutil.rmtree(self.home / "guard")
+        self.said.clear()
+        with mock.patch.object(guard, "bundle", side_effect=ValueError("no key")):
+            w = self.watch(Game(fairplay.LOCK_EXIT))
+        self.assertEqual((self.kept(), w.take_stop()), ([], False))
+        self.assertEqual(self.said, ["RUSE Guard: the note that a cheat copy was stopped couldn't be made: "
+                                     "ValueError: no key"])
+
+    def test_the_note_holds_only_the_handle_the_two_times_and_the_stop(self):
+        from rusemod import fairplay
+        self.cheat_record()
+        before = int(time.time())
+        line = guard.file_stop(self.home, fairplay.read_record(self.copy), before - 60, username="Nick#4821",
+                               say=self.said.append)
+        note = self.kept()[0]
+        self.assertTrue(guard.check_bundle(note))
+        self.assertIn(note["bundle_id"], line)
+        self.assertIsInstance(note["match"]["ended"], int)   # the review server's intake needs a whole number
+        self.assertTrue(before <= note["match"]["ended"] <= int(time.time()) + 1)
+        self.assertEqual(note["match"]["started"], before - 60)
+        self.assertEqual({k: v for k, v in note["match"].items() if v not in ("", [], {}, False, None)},
+                         {"is_multiplayer": True, "players": ["Nick#4821"], "mode": "multiplayer",
+                          "started": before - 60, "ended": note["match"]["ended"]})
+        self.assertEqual({k: v for k, v in note["evidence"].items() if v not in ("", [], {}, False, None)},
+                         {"player": "Nick#4821", "username": "Nick#4821",
+                          "stop": {"text": guard.STOP_TEXT, "code": "0x52474c4b"}})
+        self.assertEqual(note["replay"], "")
+        whole = json.dumps(note)
+        self.assertIsNone(re.search(r"7656\d{13}", whole))   # no Steam ID shape anywhere
+        record = fairplay.read_record(self.copy)
+        for value in (record["lock"], record["code"], record["fingerprint"]):  # no build or join code, no fingerprint
+            self.assertNotIn(value, whole)
+        # without a username: this install's anonymous id, as every bundle
+        shutil.rmtree(self.home / "guard" / "outbox")
+        guard.file_stop(self.home, fairplay.read_record(self.copy), before, username="", say=self.said.append)
+        anon = self.kept()[0]
+        self.assertEqual(anon["evidence"]["player"], "player-" + anon["client_key"][:12])
+
+    def test_the_watch_looks_every_second_and_checks_programs_every_thirty(self):
+        from rusemod import fairplay
+        self.cheat_record()
+        slept, scans = [], []
+        with mock.patch.object(guard, "signatures", lambda home, server="", *a, **k: [{"name": "x.exe"}]), \
+                mock.patch.object(guard, "live_multiplayer", lambda copy: True), \
+                mock.patch.object(guard, "scan", lambda sigs, programs=None: scans.append(len(slept)) or []):
+            self.watch(Game(fairplay.LOCK_EXIT, polls=95), sleep=slept.append)
+        self.assertEqual((guard.POLL_EVERY, set(slept), len(slept)), (1, {1}, 95))   # the close seen within a second
+        self.assertEqual(scans, [0, 30, 60, 90])                                   # the program check as before
+        self.assertEqual(len(self.kept()), 1)
+
+    def test_a_failing_program_check_never_ends_the_watch(self):
+        from rusemod import fairplay
+        self.cheat_record()
+        with mock.patch.object(guard, "signatures", lambda home, server="", *a, **k: [{"name": "x.exe"}]), \
+                mock.patch.object(guard, "live_multiplayer", mock.Mock(side_effect=OSError("tasklist is missing"))):
+            self.watch(Game(fairplay.LOCK_EXIT, polls=3))
+        self.assertEqual(len(self.kept()), 1)
+        self.assertIn("RUSE Guard: the program check couldn't look this time: OSError: tasklist is missing", self.said)
+
+    @unittest.skipUnless(sys.platform == "win32", "a Windows program's exit code")
+    def test_a_real_program_s_exit_code_reaches_the_watch(self):
+        """A real program the watch follows, started as play.start_game starts the game (Popen), ends with RUSE
+        Guard's close number through Windows' own ExitProcess: Popen reads the whole 32-bit number, and the watch
+        files the note."""
+        import subprocess
+        from rusemod import fairplay
+        self.cheat_record()
+        child = subprocess.Popen([sys.executable, "-c", "import ctypes; ctypes.windll.kernel32.ExitProcess(0x52474C4B)"])
+        w = self.watch(child, sleep=time.sleep)
+        self.assertEqual((child.returncode, w.code), (fairplay.LOCK_EXIT, fairplay.LOCK_EXIT))
+        self.assertEqual(len(self.kept()), 1)
+        ended = subprocess.Popen([sys.executable, "-c", "import sys; sys.exit(0)"])
+        self.assertEqual(self.watch(ended, sleep=time.sleep).code, 0)
+        self.assertEqual(len(self.kept()), 1)   # an ordinary end: nothing more
 
 
 class Server(unittest.TestCase):

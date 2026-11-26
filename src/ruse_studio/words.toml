@@ -14165,6 +14165,61 @@ jpn = "MOD入りのコピーがゲームとは別のドライブにあるため�
 sc = "模组版副本与游戏不在同一驱动器上，因此游戏文件只能复制过去，无法共享：本次复制了 {gb} GB。把模组版副本放在游戏所在的驱动器（{drive}）上，启动模组版游戏会快很多。"
 fa = "نسخهٔ ماددار روی درایوی غیر از درایو بازی است، پس بسته‌های بازی در آن کپی می‌شوند، نه اشتراکی: این بار {gb} GB کپی شد. اگر نسخه‌های ماددار روی درایو بازی ({drive}) باشند، شروع بازی با مادها خیلی سریع‌تر است."
 
+# The lines a cheat copy's lock says in the game, written into the copy in the player's language when Test in game
+# builds it (rusemod.fairplay.LOCK_LINES: the same English for "us"; the owner's 23, 2026-11-25: "Yes, I agree with 23
+# in every language"). Persian too: whether the game shows its letters is checked in his game test, else English
+[guard_lock_check]
+us = "RUSE Guard: this copy of R.U.S.E. was built with cheats or test tools. Checking that every player in this match has the same build..."
+fr = "RUSE Guard : cette copie de R.U.S.E. a été créée avec des triches ou des outils de test. Vérification que chaque joueur de cette partie a le même jeu et les mêmes mods..."
+ger = "RUSE Guard: Diese Kopie von R.U.S.E. wurde mit Cheats oder Testwerkzeugen erstellt. Es wird geprüft, ob jeder Spieler in dieser Partie dasselbe Spiel mit denselben Mods hat..."
+ita = "RUSE Guard: questa copia di R.U.S.E. è stata creata con trucchi o strumenti di test. Controllo che ogni giocatore di questa partita abbia lo stesso gioco con gli stessi mod..."
+spa = "RUSE Guard: esta copia de R.U.S.E. se creó con trucos o herramientas de prueba. Comprobando que todos los jugadores de esta partida tienen el mismo juego con los mismos mods..."
+pol = "RUSE Guard: ta kopia R.U.S.E. została utworzona z kodami lub narzędziami testowymi. Sprawdzanie, czy każdy gracz w tym meczu ma tę samą grę z tymi samymi modami..."
+ru = "RUSE Guard: эта копия R.U.S.E. создана с читами или тестовыми инструментами. Проверяем, что у каждого игрока в этом матче та же игра с теми же модами..."
+cz = "RUSE Guard: tato kopie R.U.S.E. byla vytvořena s cheaty nebo testovacími nástroji. Kontroluje se, že každý hráč v tomto zápase má stejnou hru se stejnými módy..."
+jpn = "RUSE Guard: この R.U.S.E. のコピーはチートまたはテスト用ツールを含めて作成されました。この対戦の全プレイヤーが同じゲームと同じ MOD を使っているか確認しています…"
+sc = "RUSE Guard：这个 R.U.S.E. 副本包含作弊或测试工具。正在检查本局每位玩家是否使用相同的游戏和相同的模组……"
+fa = "RUSE Guard: این نسخهٔ R.U.S.E. با تقلب یا ابزار آزمایش ساخته شده است. در حال بررسی این‌که همهٔ بازیکنان این نبرد همان بازی و همان مادها را دارند..."
+
+[guard_lock_same]
+us = "RUSE Guard: every player in this match has the same build as you, cheats and test tools included. The match goes on."
+fr = "RUSE Guard : chaque joueur de cette partie a le même jeu et les mêmes mods que vous, triches et outils de test compris. La partie continue."
+ger = "RUSE Guard: Jeder Spieler in dieser Partie hat dasselbe Spiel mit denselben Mods wie Sie, Cheats und Testwerkzeuge eingeschlossen. Die Partie geht weiter."
+ita = "RUSE Guard: ogni giocatore di questa partita ha il tuo stesso gioco con gli stessi mod, trucchi e strumenti di test compresi. La partita continua."
+spa = "RUSE Guard: todos los jugadores de esta partida tienen el mismo juego con los mismos mods que tú, trucos y herramientas de prueba incluidos. La partida continúa."
+pol = "RUSE Guard: każdy gracz w tym meczu ma tę samą grę z tymi samymi modami co ty, łącznie z kodami i narzędziami testowymi. Mecz trwa dalej."
+ru = "RUSE Guard: у каждого игрока в этом матче та же игра с теми же модами, что и у вас, включая читы и тестовые инструменты. Матч продолжается."
+cz = "RUSE Guard: každý hráč v tomto zápase má stejnou hru se stejnými módy jako vy, včetně cheatů a testovacích nástrojů. Zápas pokračuje."
+jpn = "RUSE Guard: この対戦の全プレイヤーが、チートやテスト用ツールも含めてあなたと同じゲームと MOD を使っています。対戦を続けます。"
+sc = "RUSE Guard：本局每位玩家的游戏和模组都与你相同，包括作弊和测试工具。对局继续。"
+fa = "RUSE Guard: همهٔ بازیکنان این نبرد همان بازی و همان مادهای شما را دارند، تقلب‌ها و ابزارهای آزمایش هم. نبرد ادامه دارد."
+
+[guard_lock_leave]
+us = "RUSE Guard: not every player in this match has the same build as you, so this copy leaves the match. A copy built with cheats or test tools only plays with players who built the same mods: compare join codes in the Launcher."
+fr = "RUSE Guard : tous les joueurs de cette partie n'ont pas le même jeu et les mêmes mods que vous, donc cette copie quitte la partie. Une copie créée avec des triches ou des outils de test ne joue qu'avec des joueurs qui ont les mêmes mods : comparez les codes dans le Launcher."
+ger = "RUSE Guard: Nicht jeder Spieler in dieser Partie hat dasselbe Spiel mit denselben Mods wie Sie, daher verlässt diese Kopie die Partie. Eine Kopie mit Cheats oder Testwerkzeugen spielt nur mit Spielern, die dieselben Mods haben: Vergleichen Sie die Beitrittscodes im Launcher."
+ita = "RUSE Guard: non tutti i giocatori di questa partita hanno il tuo stesso gioco con gli stessi mod, quindi questa copia abbandona la partita. Una copia creata con trucchi o strumenti di test gioca solo con giocatori che hanno gli stessi mod: confrontate i codici nel Launcher."
+spa = "RUSE Guard: no todos los jugadores de esta partida tienen el mismo juego con los mismos mods que tú, así que esta copia abandona la partida. Una copia creada con trucos o herramientas de prueba solo juega con jugadores que tengan los mismos mods: comparad los códigos en el Launcher."
+pol = "RUSE Guard: nie każdy gracz w tym meczu ma tę samą grę z tymi samymi modami co ty, więc ta kopia opuszcza mecz. Kopia utworzona z kodami lub narzędziami testowymi gra tylko z graczami, którzy mają te same mody: porównajcie kody dołączenia w Launcherze."
+ru = "RUSE Guard: не у всех игроков в этом матче та же игра с теми же модами, что и у вас, поэтому эта копия покидает матч. Копия с читами или тестовыми инструментами играет только с игроками, у которых те же моды: сравните коды в Launcher."
+cz = "RUSE Guard: ne každý hráč v tomto zápase má stejnou hru se stejnými módy jako vy, proto tato kopie zápas opouští. Kopie s cheaty nebo testovacími nástroji hraje jen s hráči, kteří mají stejné módy: porovnejte kódy v Launcheru."
+jpn = "RUSE Guard: この対戦には、あなたと同じゲームと MOD を使っていないプレイヤーがいるため、このコピーは対戦から退出します。チートやテスト用ツールを含むコピーは、同じ MOD を入れたプレイヤーとだけ遊べます。Launcher で参加コードを比べてください。"
+sc = "RUSE Guard：本局并非每位玩家的游戏和模组都与你相同，因此这个副本退出对局。包含作弊或测试工具的副本只能与使用相同模组的玩家一起玩：请在 Launcher 中比较加入代码。"
+fa = "RUSE Guard: همهٔ بازیکنان این نبرد همان بازی و همان مادهای شما را ندارند، پس این نسخه از نبرد بیرون می‌رود. نسخه‌ای که با تقلب یا ابزار آزمایش ساخته شده فقط با بازیکنانی بازی می‌کند که همان مادها را دارند: کدهای پیوستن را در Launcher با هم مقایسه کنید."
+
+[guard_lock_cant_close]
+us = "RUSE Guard: this copy left the match, but it couldn't close the game by itself. Please quit the game."
+fr = "RUSE Guard : cette copie a quitté la partie, mais elle n'a pas pu fermer le jeu toute seule. Veuillez quitter le jeu."
+ger = "RUSE Guard: Diese Kopie hat die Partie verlassen, konnte das Spiel aber nicht selbst schließen. Bitte beenden Sie das Spiel."
+ita = "RUSE Guard: questa copia ha abbandonato la partita, ma non è riuscita a chiudere il gioco da sola. Esci dal gioco."
+spa = "RUSE Guard: esta copia abandonó la partida, pero no pudo cerrar el juego por sí sola. Sal del juego, por favor."
+pol = "RUSE Guard: ta kopia opuściła mecz, ale nie mogła sama zamknąć gry. Wyjdź z gry."
+ru = "RUSE Guard: эта копия покинула матч, но не смогла сама закрыть игру. Пожалуйста, выйдите из игры."
+cz = "RUSE Guard: tato kopie opustila zápas, ale nedokázala sama zavřít hru. Ukončete prosím hru."
+jpn = "RUSE Guard: このコピーは対戦から退出しましたが、ゲームを自動で閉じられませんでした。ゲームを終了してください。"
+sc = "RUSE Guard：这个副本已退出对局，但无法自行关闭游戏。请退出游戏。"
+fa = "RUSE Guard: این نسخه از نبرد بیرون رفت، اما نتوانست خودش بازی را ببندد. لطفاً از بازی خارج شوید."
+
 # What's selected on the map (maps.js renderSelection): the map's icons with how many of each, as the game shows a
 # selection (the owner, 2026-10-05)
 [scen_sel_count]
