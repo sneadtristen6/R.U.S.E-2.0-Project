@@ -127,6 +127,19 @@ class StudioCalls(unittest.TestCase):
         self.assertEqual(words["send"], "Send to the R.U.S.E. Studio")
         self.assertEqual(len(words["hint"]), 2)
 
+    def test_the_first_hint_says_the_model_on_a_tank_and_the_soldier_on_a_squad(self):
+        # the owner's pick 24 (2026-11-14): "Change the model, ..." for units that aren't squads, in every language
+        from ruse_studio.api import words
+        for lang in ("us", "fr", "ger", "ita", "spa", "pol", "ru", "cz", "jpn", "sc", "fa"):
+            for soldiers in (False, True):
+                self.api._soldiers = lambda address, s=soldiers: s
+                self._open(lang)
+                hint = json.loads((self.work / "words.json").read_text(encoding="utf-8"))["hint"][0]
+                key = "blender_model_hint1" if soldiers else "blender_model_hint1_model"
+                self.assertEqual(hint, words(lang)[key], (lang, soldiers))
+            self.assertNotEqual(words(lang)["blender_model_hint1"], words(lang)["blender_model_hint1_model"], lang)
+        self.assertTrue(words("us")["blender_model_hint1_model"].startswith("Change the model"))
+
     def test_the_words_blender_shows_are_in_the_studio_s_language(self):
         self._open("fr")
         words = json.loads((self.work / "words.json").read_text(encoding="utf-8"))

@@ -51045,3 +51045,17 @@ cz = "Tyto soubory jsou otevřené v jiném programu, a proto zatím zůstávaj�
 jpn = "これらのファイルは別のプログラムで開かれているため、しばらくMODのフォルダーに残ります：{files}。「ゲームでテスト」と「MODを書き出す…」はこれらを含めず、そのプログラムが手放したあとでStudioが自動で消します。"
 sc = "这些文件正被另一个程序打开，所以暂时留在模组文件夹中：{files}。“在游戏中测试”和“导出模组…”不会包含它们；等那个程序放开它们之后，Studio 会自行将其删除。"
 fa = "این فایل‌ها در برنامهٔ دیگری باز هستند، پس فعلاً در پوشهٔ ماد می‌مانند: {files}. «آزمایش در بازی» و «خروجی گرفتن از ماد…» آن‌ها را کنار می‌گذارند، و Studio بعداً، وقتی آن برنامه رهایشان کرد، خودش آن‌ها را پاک می‌کند."
+
+# --- 0923 squads-blender: words added or changed for the 0.9.8.22 promises (squads, Blender, animations) ---
+[blender_model_hint1_model]
+us = "Change the model, or bring in your own model (File > Import) and put it on its bones: click your model, Shift+click the bones, Ctrl+P > With Automatic Weights."
+fr = "Modifiez le modèle, ou importez votre propre modèle (File > Import) et posez-le sur ses os : clic sur votre modèle, Maj+clic sur les os, Ctrl+P > With Automatic Weights."
+ger = "Ändere das Modell, oder hole dein eigenes Modell herein (File > Import) und setze es auf seine Knochen: dein Modell anklicken, Umschalt+Klick auf die Knochen, Strg+P > With Automatic Weights."
+ita = "Modifica il modello, oppure importa il tuo modello (File > Import) e mettilo sulle sue ossa: clic sul tuo modello, Maiusc+clic sulle ossa, Ctrl+P > With Automatic Weights."
+spa = "Cambia el modelo, o trae tu propio modelo (File > Import) y ponlo sobre sus huesos: clic en tu modelo, Mayús+clic en los huesos, Ctrl+P > With Automatic Weights."
+pol = "Zmień model albo wczytaj swój własny model (File > Import) i załóż go na jego kości: klik na swój model, Shift+klik na kości, Ctrl+P > With Automatic Weights."
+ru = "Измените модель или загрузите свою собственную модель (File > Import) и посадите её на её кости: щелчок по модели, Shift+щелчок по костям, Ctrl+P > With Automatic Weights."
+cz = "Změň model, nebo načti svůj vlastní model (File > Import) a nasaď ho na jeho kosti: klik na svůj model, Shift+klik na kosti, Ctrl+P > With Automatic Weights."
+jpn = "モデルを変えるか、自分のモデルを読み込み（File > Import）骨に付けます：モデルをクリック、Shift+クリックで骨、Ctrl+P > With Automatic Weights。"
+sc = "修改模型，或导入你自己的模型（File > Import）并放到它的骨骼上：点击你的模型，Shift+点击骨骼，Ctrl+P > With Automatic Weights。"
+fa = "مدل را تغییر دهید، یا مدل خودتان را بیاورید (File > Import) و روی استخوان‌هایش بگذارید: کلیک روی مدل، Shift+کلیک روی استخوان‌ها، Ctrl+P > With Automatic Weights."

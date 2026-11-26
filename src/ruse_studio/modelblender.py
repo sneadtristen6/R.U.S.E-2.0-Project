@@ -601,9 +601,12 @@ class ModelBlenderCalls:
             _write(work / ALPHA, {"format": 1, "start": start.name, "alpha": self._alphas_out(start, summary)})
         self._opened(work, send, going if renew else None, state, session)
         w = words(lang)
+        # a soldier (his own kind, or a squad's) is changed "on his bones"; a tank, a plane or any other unit is
+        # "the model" (the owner's pick 24 of 2026-11-14: Change the model, ...)
+        first = "blender_model_hint1" if kind or self._soldiers(address) else "blender_model_hint1_model"
         (work / "words.json").write_text(json.dumps(
             {"send": w["blender_model_send"], "sent": w["blender_model_sent"],
-             "hint": [w["blender_model_hint1"], w["blender_model_hint2"]], "session": session},
+             "hint": [w[first], w["blender_model_hint2"]], "session": session},
             ensure_ascii=False), encoding="utf-8")
         self._blenders[str(work)] = open_model_to_change(blender, start, send, work / "words.json")
         return {**self.look(address), "work": str(work), "file": str(start), "kind": kind}
