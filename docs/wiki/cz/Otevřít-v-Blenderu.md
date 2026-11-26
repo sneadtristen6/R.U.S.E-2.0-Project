@@ -81,7 +81,7 @@ přeneseš poslední odeslání:
 - **Jakákoli jiná jednotka se zaškrtnutým modelem:** nic se neodkládá: další **Otevřít v Blenderu** začne z toho, co jsi
   poslal naposledy.
 - **Animace v RUSE Decoy:** každé odložené odeslání je vypsané nad animacemi jednotky („Odesláno z Blenderu, nikdy
-  nepřeneseno, odloženo ...“), s **Přenést odložené odeslání**, abys ho převzal, nebo **Přesunout do Koše**.
+  nepřeneseno, odloženo ...“), s **Přenést je zpět**, abys ho převzal, nebo **Přesunout je do Koše**.
 
 ## Kde jsou tvoje soubory Blenderu
 

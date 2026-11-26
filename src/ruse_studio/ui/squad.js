@@ -194,6 +194,8 @@
       // (its help line ends with the "Having trouble? Read the guide" link: app.js helpLine)
       const out = [el("div", { className: "squad-go" }, big, test, ...(S.ticks ? [S.ticks.toggle] : [])),
         ...(S.ticks ? [S.ticks.box] : []), ...(S.said ? [S.said] : []),
+        // while Blender is open: what Bring my changes back does and what to click before closing it (52s)
+        ...(open ? [el("p", { className: "muted small squad-open-line", textContent: w.squad_blender_open_line })] : []),
         helpLine(open ? w.squad_blender_open_how : S.parts && S.parts.route === "kinds" ? w.one_how_model
           : w.one_how_squad, "blender", "squad-how")];   // (one model, or the ticked)
       if (missing) {
@@ -214,7 +216,7 @@
         // Blender closed with a sending not brought back yet (squad_info's blender.waiting; without that field, its
         // folder being there): what was last sent from it can still come back (a bring-back takes a closed
         // Blender's last sending; one brought back already changes nothing)
-        const again = el("button", { type: "button", className: "ghost squad-again", textContent: w.squad_blender_back,
+        const again = el("button", { type: "button", className: "ghost squad-again", textContent: w.squad_blender_back_last,
           title: w.tip_squad_blender_back_closed, disabled: S.busy || !can.blender });
         again.addEventListener("click", bringBack);
         out.push(el("div", { className: "squad-go" }, again));
@@ -579,8 +581,8 @@
       const models = modelNotes();
       if (models.length) parts.push(el("h4", { textContent: w.squad_more_models }), ...models);
       if (mine()) {
-        parts.push(el("p", { className: "squad-note", textContent: w.squad_more_asset }),
-          el("p", { className: "squad-note", textContent: w.squad_more_bones }));
+        parts.push(helpLine(w.squad_more_asset, "squad", "squad-note"),   // (with the Having trouble? link: Change a squad)
+          helpLine(w.squad_more_bones, "import", "squad-note"));   // (and Import a model: bones and animations of its own)
       }
       moreBody.replaceChildren(...parts);
       showMore();
@@ -601,9 +603,9 @@
           if (own.missing && own.missing.length) {
             notes.push(el("p", { className: "notice warn", textContent: fill(w.model_missing, { names: own.missing.join(", ") }) }));
           }
-          if (own.no_bone) notes.push(el("p", { className: "notice warn", textContent: fill(w.model_no_bone, { n: own.no_bone }) }));
+          if (own.no_bone) notes.push(helpLine(fill(w.model_no_bone, { n: own.no_bone }), "bones", "notice warn"));   // (with the Having trouble? link)
           notes.push(el("p", { className: "muted small", textContent: own.own_skeleton ? w.model_own_bones_fit : w.model_squad_fit }));
-          if (look.own_copy) notes.push(el("p", { className: "notice warn", textContent: fill(w.squad_both, { who: s.label }) }));
+          if (look.own_copy) notes.push(helpLine(fill(w.squad_both, { who: s.label }), "squad", "notice warn"));   // (with the Having trouble? link: models or a uniform)
           if (own.rigged) notes.push(fitBox(address, () => reload(true), "problems"));   // (what of it won't work in the game)
         }
         if (row && row.same_bones === false) notes.push(el("p", { className: "notice warn", textContent: w.model_kind_bones_other }));

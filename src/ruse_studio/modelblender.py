@@ -138,6 +138,26 @@ def back_state(work: Path) -> dict:
             "took": {k: v for k, v in took.items() if isinstance(k, str) and isinstance(v, str)}}
 
 
+def played_as_sent(raw: bytes, went: dict, given: dict, settled: dict) -> dict:
+    """`given` (what rusemod.rig.with_went_out stores as what Blender was given of each animation that went out) for a
+    Bring back with Its bones unticked: each animation that went out, and that the Studio didn't change since
+    (`settled`: _settled's), is set as given what Blender sent back of it (`raw`, its bones already put back as the mod
+    has them), so rusemod.rig.kept_clip finds it unchanged and keeps the clip that went out, byte for byte: with the
+    bones unticked nothing of what Blender did to the animations on a bone it moved is kept (the owner's pick 29). Each
+    clip of `raw` is made as the import makes it (rusemod.unitmodel.own_clips). `given` itself when `raw` can't be read
+    so (the import then says what is wrong with it)."""
+    from rusemod import rig, unitmodel
+    from rusemod.modelin import ModelError, glb_document
+    try:
+        doc, binary = glb_document(raw)
+        r = rig.rig_of(doc, binary, "sent.glb")
+        record, _notes = unitmodel.own_skeleton(r)
+        made, _notes = unitmodel.own_clips(r, record)
+    except (ModelError, ValueError, KeyError, IndexError, TypeError, struct.error):
+        return dict(given)
+    return {n: (made[n] if n in made and n not in settled else g) for n, g in given.items()}
+
+
 def studio_changed(mine: dict, went: dict, took: dict) -> set:
     """Of the animations that went out to Blender (`went`: {name: the clip as the mod had it}), those the Studio changed
     since Blender last gave the mod a clip of them (`mine`: the mod's clips now): the mod's clip is neither the one the
@@ -230,7 +250,69 @@ def keep_said(before, report: dict) -> None:
     report["notes"] = notes + [n for n in blender_notes(report) if n not in notes]
 
 
+ASIDE = "-set-aside-"   # <work folder>-set-aside-<time>: Blender work a new unit of the same name must not pick up
+
+
+def set_aside_work(mod, name: str, kinds: bool = False, keep: tuple = ()) -> tuple[list, list]:
+    """The Blender work a unit had, <mod>/blender/<name>/ (and with `kinds` its soldiers' <name>@...), set aside under
+    another name, <folder>-set-aside-<time>, so a unit made again under the same name, or a model imported over the
+    one that went to Blender, never picks it up (the owner's picks 21 and 22 of 2026-11-14: "New unit starts clean",
+    "set aside under another name, not picked up silently"). `keep`: what stays in the folder (the page of RUSE Decoy's
+    animations, for an import: the model isn't its). Returns ([the folders made, by name], [the folders that couldn't
+    be moved because another program holds a file of them, by name]); nothing of it is lost, and what couldn't be moved
+    is said, never left silently."""
+    import time
+    base = Path(mod) / WORK
+    if not base.is_dir():
+        return [], []
+    stamp = time.strftime("%Y%m%d-%H%M%S")
+    aside, held = [], []
+    for folder in sorted(base.iterdir()):
+        if not folder.is_dir() or not (folder.name == name or (kinds and folder.name.startswith(f"{name}@"))) \
+                or ASIDE in folder.name:
+            continue
+        target, k = base / f"{folder.name}{ASIDE}{stamp}", 2
+        while target.exists():
+            target, k = base / f"{folder.name}{ASIDE}{stamp}-{k}", k + 1
+        moved = []
+        try:
+            if not keep:
+                folder.rename(target)
+            else:
+                children = [c for c in sorted(folder.iterdir()) if c.name not in keep]
+                if not children:
+                    continue
+                target.mkdir()
+                for child in children:
+                    child.rename(target / child.name)
+                    moved.append(child)
+            aside.append(target.name)
+        except OSError:
+            for child in reversed(moved):   # (all or nothing: what was moved goes back)
+                try:
+                    (target / child.name).rename(child)
+                except OSError:
+                    pass
+            if keep:
+                try:
+                    target.rmdir()
+                except OSError:
+                    pass
+            held.append(folder.name)
+    return aside, held
+
+
 class ModelBlenderCalls:
+    def _blender_work_gone(self, mod, name: str, kinds: bool = False, keep: tuple = ()) -> tuple[list, list]:
+        """set_aside_work, and the Blenders this Studio started on those folders forgotten (a closed one is only a
+        handle; a folder another program holds stays where it was, in the second list)."""
+        aside, held = set_aside_work(mod, name, kinds, keep)
+        for work in list(getattr(self, "_blenders", {})):
+            folder = Path(work)
+            if folder.parent == Path(mod) / WORK and not folder.exists():
+                self._blenders.pop(work, None)
+        return aside, held
+
     def _blender_kind(self, address: str, kind: str | None) -> str | None:
         """Which of a squad's soldiers Change it in Blender is for: None for its riflemen (no kind given, or the
         first: the Model row's buttons), the kind for another (its heavy-weapon soldier: his own buttons under Its
@@ -601,9 +683,12 @@ class ModelBlenderCalls:
             _write(work / ALPHA, {"format": 1, "start": start.name, "alpha": self._alphas_out(start, summary)})
         self._opened(work, send, going if renew else None, state, session)
         w = words(lang)
+        # a soldier (his own kind, or a squad's) is changed "on his bones"; a tank, a plane or any other unit is
+        # "the model" (the owner's pick 24 of 2026-11-14: Change the model, ...)
+        first = "blender_model_hint1" if kind or self._soldiers(address) else "blender_model_hint1_model"
         (work / "words.json").write_text(json.dumps(
             {"send": w["blender_model_send"], "sent": w["blender_model_sent"],
-             "hint": [w["blender_model_hint1"], w["blender_model_hint2"]], "session": session},
+             "hint": [w[first], w["blender_model_hint2"]], "session": session},
             ensure_ascii=False), encoding="utf-8")
         self._blenders[str(work)] = open_model_to_change(blender, start, send, work / "words.json")
         return {**self.look(address), "work": str(work), "file": str(start), "kind": kind}
@@ -713,8 +798,15 @@ class ModelBlenderCalls:
                     settled, studio = self._settled(raw, went_out, given, state["took"], work, mine)
                 # (the mod's clip of one settled so goes into the file as the clip kept when it comes back as it came
                 # back now, set against what it came back as: the import, and every Resize or Move after, keep it so)
+                given_now = {n: settled[n][1] if n in settled else g for n, g in given.items()}
+                if keep_bones:
+                    # (Its bones unticked: the bones stay as the mod has them, so the animations stay as they went out
+                    # too, never as Blender played them on a bone it moved: 3 of the Generic Horse's bones in all 25 of
+                    # its animations, its spine 5 cm off in the game; the owner's pick 29 of 2026-11-14)
+                    given_now = played_as_sent(raw, went_out, given_now, settled)
+                    kept_words["animations"] = "kept"
                 raw = rig.with_went_out(raw, {n: settled[n][0] if n in settled else c for n, c in went_out.items()},
-                                        {n: settled[n][1] if n in settled else g for n, g in given.items()})
+                                        given_now)
             except (ValueError, struct.error):   # (a file that isn't a .glb: Import model says what it is, in words)
                 pass
         went = self._alphas_back(work, send, raw)

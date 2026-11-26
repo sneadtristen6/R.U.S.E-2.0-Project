@@ -2778,8 +2778,13 @@ function lookMovesBox(u, view, startNew, squadPage = false) {
     if (squad) more.push(uniformBox(address, info, drawLook, changed));
     // a unit that isn't a squad: the one Blender button (the owner, 2026-11-13: "Tanks too"), its model and its paint
     // in one Blender; a squad shown here without its card keeps the paint's own box
-    if (!squad) more.push(oneBlenderBox(address, info, drawLook, changed));
-    else if (paintable) more.push(repaintBox(address, info, drawLook, changed));
+    if (!squad) {
+      // Open in Blender (then Bring my changes back) is the Model row's own button, as on a squad's card, not behind
+      // More (52o): the box under More keeps what to tick and how it goes
+      const head = el("span", { className: "one-blender-head" });
+      more.push(oneBlenderBox(address, info, drawLook, changed, head));
+      main = [...main, head];
+    } else if (paintable) more.push(repaintBox(address, info, drawLook, changed));
     if (info.painted && info.painted.length) {
       more.push(el("p", { className: paintable ? "small" : "notice warn",
         textContent: fill(paintable ? w.look_painted : w.uniform_shared_paint, { n: info.painted.length }) }));
@@ -2889,7 +2894,9 @@ function lookMovesBox(u, view, startNew, squadPage = false) {
 // page, 2026-11-13)
 function oneBlenderTicks(parts, before = null) {
   const w = state.words;
-  const box = el("div", { className: "one-parts" + (before && before.open ? "" : " hidden") });
+  const box = el("div", { className: "one-parts" + (before && before.open ? "" : " hidden") },
+    // (one line on what unticking does, on the unit's page and on a squad's card: 52q)
+    el("p", { className: "muted small one-parts-unticked", textContent: w.one_parts_unticked }));
   const toggle = el("button", { type: "button", className: "small ghost one-toggle", textContent: `${w.one_parts} ▾`,
     title: w.tip_one_parts });
   toggle.setAttribute("aria-expanded", String(Boolean(before && before.open)));
@@ -2944,6 +2951,7 @@ function oneKeptSaid(r) {
   const out = [];
   if (bones.includes("differ")) out.push(w.one_kept_bones_differ);
   else if (bones.includes("kept") || bones.includes("same")) out.push(w.one_kept_bones);
+  if (kept.animations === "kept") out.push(w.one_kept_animations);   // (Its bones unticked: its animations too)
   if (paint.length) out.push(w.one_kept_paint);
   const differs = differsSaid(r);
   if (differs) out.push(differs);
@@ -2963,10 +2971,10 @@ function differsSaid(r) {
 // (StudioApi.blender_parts: a new unit's model, its bones when they are its own, its paint; a game unit's paint alone,
 // as Repaint in Blender painted it), reading Bring my changes back while that Blender has the unit (blender_open,
 // blender_back). Without Blender on the PC, the way to get it or to show where it is
-function oneBlenderBox(address, info, draw, changed) {
+function oneBlenderBox(address, info, draw, changed, head = null) {
   const w = state.words;
-  const box = el("div", { className: "model-own repaint one-blender" },
-    el("h3", { textContent: w.model_blender, title: w.tip_one_open }));
+  const heading = el("h3", { textContent: w.model_blender, title: w.tip_one_open });
+  const box = el("div", { className: "model-own repaint one-blender" }, heading);
   if (!info.blender) {   // (Blender not found: get it, or show the Studio where it is)
     const get = el("button", { type: "button", textContent: w.look_get_blender, title: w.tip_look_get_blender });
     get.addEventListener("click", () => api().get_blender().catch(problem));
@@ -2993,9 +3001,14 @@ function oneBlenderBox(address, info, draw, changed) {
     big.addEventListener("click", open ? bringBack : openBlender);
     // (the ticks when there's more than one thing to choose; kept as they were when the box is drawn again)
     ticks = !open && parts && parts.can && parts.parts.length > 1 ? oneBlenderTicks(parts, ticks ? ticks.ticks() : null) : null;
-    const how = parts && !parts.can ? parts.why_not || "" : ((parts && (parts.door || parts.route)) === "paint"
-      ? w.one_how_paint : w.one_how_unit);
-    body.replaceChildren(el("div", { className: "actions" }, big, ...(ticks ? [ticks.toggle] : [])),
+    const paintOnly = Boolean(parts) && (parts.door || parts.route) === "paint";
+    const how = parts && !parts.can ? parts.why_not || "" : (paintOnly ? w.one_how_paint : w.one_how_unit);
+    // a game unit has its paint alone to bring back: the box says Repaint in Blender, not Change it in Blender (52p)
+    heading.textContent = paintOnly ? w.unit_look : w.model_blender;
+    // the big button is the Model row's own (`head`), or this box's when it is drawn alone
+    if (head) head.replaceChildren(big);
+    const acts = [...(head ? [] : [big]), ...(ticks ? [ticks.toggle] : [])];
+    body.replaceChildren(...(acts.length ? [el("div", { className: "actions" }, ...acts)] : []),
       ...(ticks ? [ticks.box] : []), helpLine(how, "blender"));
   };
   const reload = async () => {
@@ -3144,6 +3157,12 @@ function notKeptSaid(lost) {
   if (lost.animations && lost.animations.length) said.push(fill(w.model_kept_not_anims, { names: lost.animations.join(", ") }));
   if (lost.picks && lost.picks.length) said.push(fill(w.model_kept_not_picks, { actions: lost.picks.map(action).join(", ") }));
   if (lost.record) said.push(w.model_kept_not_record);   // (its record couldn't be read: what else it held)
+  // (the file's own animations, left out of a model drawn on the unit's own bones: StudioApi.model_import)
+  if (lost.left_out && lost.left_out.length) said.push(fill(w.model_kept_not_left_out, { names: lost.left_out.join(", ") }));
+  // (the Blender work of the model another file took the place of: set aside under another name, or held by another
+  // program and left where it was: StudioApi.model_import, ruse_studio.modelblender.set_aside_work)
+  if (lost.blender_aside && lost.blender_aside.length) said.push(fill(w.model_kept_not_blender_aside, { folders: lost.blender_aside.join(", ") }));
+  if (lost.blender_held && lost.blender_held.length) said.push(fill(w.blender_aside_held, { folders: lost.blender_held.join(", ") }));
   // (an era unit's model a newer download of its era replaced since it was made: fitted from the new one, said;
   // StudioApi._era_said)
   if (lost.file) said.push(fill(w.model_kept_not_file, { file: lost.file }));
@@ -3514,7 +3533,7 @@ function modelBox(address, info, draw, changed) {
       points: (own.vertices || 0).toLocaleString(), triangles: (own.triangles || 0).toLocaleString() }) }));
     // its record in the mod can't be read or is missing (look()'s record_unread): said, with what mends it, Import
     // model again (this row's main button), never Python's own words (the one check, finding 3)
-    if (own.record_unread) box.append(el("p", { className: "notice warn", textContent: w.model_record_unread }));
+    if (own.record_unread) box.append(el("p", { className: "notice warn", textContent: w.model_record_unread_own }));
     // (a model on bones of its own: what came in with it is in the Sounds and animation row, ownAnimationsBox)
     const turret = Object.entries(own.parts || {}).filter(([, role]) => role === "turret" || role === "gun").map(([name]) => name);
     if (turret.length) box.append(el("p", { className: "muted small", textContent: fill(w.model_turret, { parts: turret.join(", ") }) }));
@@ -3530,12 +3549,13 @@ function modelBox(address, info, draw, changed) {
     }
     // points the model file gave no bone (Blender's automatic weights leave some): they follow the hips
     // (rusemod.modelin.BLENDER_NO_BONE; item 4, 2026-11-10)
-    if (own.no_bone) box.append(el("p", { className: "notice warn", textContent: fill(w.model_no_bone, { n: own.no_bone }) }));
+    if (own.no_bone) box.append(helpLine(fill(w.model_no_bone, { n: own.no_bone }), "bones", "notice warn"));   // (with the Having trouble? link)
     // parts without their own shine and side colour, and why (a Bring back from Blender, a picture of another size),
     // for as long as the model has them
     for (const line of alphaLostLines(own)) box.append(el("p", { className: "notice warn", textContent: line }));
     // a mod made with both (by an older Studio, or by hand): the build stops on it (rusemod.build.unit_own_copies)
-    if (info.own_copy) box.append(el("p", { className: "notice warn", textContent: squad ? w.model_both_squad : w.model_both }));
+    if (info.own_copy) box.append(squad ? helpLine(w.model_both_squad, "squad", "notice warn")   // (with the link: 52v)
+      : el("p", { className: "notice warn", textContent: w.model_both }));
     const drop = el("button", { type: "button", className: "ghost", textContent: w.model_remove,
       title: kinds ? w.tip_model_remove_kinds : squad ? w.tip_model_remove_squad : w.tip_model_remove });
     drop.addEventListener("click", async () => {
@@ -3650,7 +3670,9 @@ function halvesBox(address, r, draw, changed) {
     el("p", { className: "small", textContent: w.fit_halves_how }),
     el("label", { className: "small" }, w.fit_split, " ", pick),
     el("p", { className: "small", textContent: fill(w.fit_halves_counts, { top: h.top.length, bottom: h.bottom.length }) }),
-    helpLine(w.fit_halves_example, "bones"), tree);
+    helpLine(w.fit_halves_example, "bones"),
+    // (one line above the bone list: when the suggested bone is the one to keep)
+    el("p", { className: "muted small fit-split-leave", textContent: w.fit_split_leave }), tree);
 }
 
 // each problem: what doesn't fit, what the game does with it, how to fix it
@@ -3743,7 +3765,9 @@ function ownAnimationsBox(address) {
       box.append(el("p", { className: "muted small", textContent: fill(w.model_anim_empty, { n: a.empty.length,
         all: a.actions }), title: w.tip_model_anim_empty }));
     }
-    box.append(el("p", { className: "muted small", textContent: w.model_anim_next, title: w.tip_model_anim_next }));
+    // (the box's help line ends with Having trouble? Read the guide: the field manual's Models and bones page)
+    box.append(el("p", { className: "muted small", title: w.tip_model_anim_next }, w.model_anim_next || "", " ",
+      troubleLink("bones")));
   }).catch(() => box.remove());  // (no answer: the box above still says what the model is)
   return box;
 }
@@ -3792,8 +3816,10 @@ function uniformBox(address, info, draw, changed, squadPage = false) {
       title: owned ? (squadPage ? w.tip_squad_uniform_custom_own_model : w.tip_uniform_custom_own_model)
         : w.tip_uniform_custom, disabled: !state.mod || owned });
     custom.addEventListener("click", act("model_copy", custom));
-    box.append(el("p", { className: "muted small",
-      textContent: owned ? (squadPage ? w.squad_uniform_own_model : w.uniform_own_model) : w.uniform_default }),
+    // (a squad wears your models or a uniform, not both: said here with the Having trouble? link, as in its card's
+    // notes; 52v)
+    box.append(owned ? helpLine(squadPage ? w.squad_uniform_own_model : w.uniform_own_model, "squad")
+      : el("p", { className: "muted small", textContent: w.uniform_default }),
       el("div", { className: "actions" }, custom));
     if (!state.mod) box.append(el("p", { className: "notice", textContent: w.no_mod }));
   }
@@ -4005,7 +4031,11 @@ function researchTold(res, done) {
   if (left.length) lines.push(fill(w.research_left, { names: left.map((c) => c.name).join(", ") }));
   const waiting = waitingTold(res);
   if (waiting) lines.push(waiting);
-  say(lines.join(" "), left.length ? "warn" : "ok");
+  // (the Blender work it had, set aside under another name so a unit made again under its name starts clean, or held
+  // by another program and left in the mod's blender folder: StudioApi.delete_unit "blender_aside", "blender_held")
+  if ((res.blender_aside || []).length) lines.push(fill(w.blender_aside_deleted, { folders: res.blender_aside.join(", ") }));
+  if ((res.blender_held || []).length) lines.push(fill(w.blender_aside_held, { folders: res.blender_held.join(", ") }));
+  say(lines.join(" "), left.length || (res.blender_held || []).length ? "warn" : "ok");
   if (left.length || (res.relinked || []).length) checkMod();
 }
 

@@ -139,7 +139,7 @@ que vous changez prend sa place : chaque action qui la jouait la joue changée.
 |---|---|---|
 | Un changement pour toutes les unités | **Revenir à celle du jeu** | La ligne de l'animation dans RUSE Decoy, ou sa fenêtre |
 | La propre copie de cette unité (**Cette unité seulement**) | **Revenir à ce que jouent toutes les unités** | La ligne de l'animation dans la liste de l'unité, ou sa fenêtre |
-| Les changements d'une copie (son nom et ses coches restent) | **Revenir à l'animation du jeu** | La fenêtre de la copie |
+| Les changements d'une copie (son nom et ses coches restent) | **Annuler les changements de la copie** | La fenêtre de la copie |
 | Une copie, en entier | **Supprimer la copie** | **Vos copies** |
 | Un changement fait dans Blender | Annulez-le dans Blender tant que ce Blender est encore ouvert, puis **Ramener mes changements** : il est aussi annulé dans votre mod | Blender, puis RUSE Decoy |
 
@@ -173,8 +173,7 @@ Les boutons ci-dessus ne retirent pas un changement fait dans Blender.
   Faites d'abord une nouvelle unité à partir d'elle (**Nouvelle unité à partir de celle-ci…** sur sa page).
 - **Ses animations manque sur la page :** le tableau n'existe que pour une unité qui a ses propres animations (un modèle
   avec ses propres os). Toutes les autres unités jouent celles du jeu : changez-les dans RUSE Decoy.
-- **Un envoi que vous n'avez jamais ramené :** rouvrir Blender le met de côté. RUSE Decoy le montre avec **Ramener
-  l'envoi mis de côté** et **Le mettre à la Corbeille** (voir [[Ouvrir dans Blender|Ouvrir-dans-Blender]]).
+- **Un envoi que vous n'avez jamais ramené :** rouvrir Blender le met de côté. RUSE Decoy le montre avec **Les ramener** et **Les mettre à la Corbeille** (voir [[Ouvrir dans Blender|Ouvrir-dans-Blender]]).
 
 ## Ce qui a été essayé dans le jeu
 

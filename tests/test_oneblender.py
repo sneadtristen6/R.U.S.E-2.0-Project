@@ -291,7 +291,10 @@ class TheUnitPage(unittest.TestCase):
         self.words = tomllib.loads((SRC / "words.toml").read_text(encoding="utf-8"))
 
     def test_a_unit_that_isnt_a_squad_has_the_one_button_in_its_model_row(self):
-        self.assertIn("if (!squad) more.push(oneBlenderBox(address, info, drawLook, changed));", self.look)
+        # (Open in Blender is the Model row's own button, not behind More: 52o; the box under More keeps the ticks)
+        self.assertIn("if (!squad) {", self.look)
+        self.assertIn("more.push(oneBlenderBox(address, info, drawLook, changed, head));\n      main = [...main, head];",
+                      self.look)
         self.assertIn("else if (paintable) more.push(repaintBox(address, info, drawLook, changed));", self.look)
         for call in ("api().blender_parts(address, state.lang)", "api().blender_open(address, t, state.lang)",
                      "api().blender_back(address, state.lang)"):

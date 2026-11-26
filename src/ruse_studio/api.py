@@ -8534,6 +8534,11 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         2026-11-11: "when you copy a fucking unit, it should copy the unit"). The bazooka man's model is
         files/models/<unit>@bazooka.glb, on the same bones as the riflemen's: their animations are the unit's."""
         copy_out = []
+        try:    # (the file the model was made from before this import: a different one sets the Blender work aside)
+            was = self._model_came_from(self._kind_file(address, kind) if kind is not None
+                                        else self._own_model_file(address))
+        except (StudioError, OSError):
+            was = None
 
         def fits(hold):
             report = self._fit_model(address, file, size, aircraft, facing, own_turret, own_propellers, move, kind,
@@ -8554,7 +8559,43 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                     copy_out.append(True)
             return report
         report = self._fitted_together(fits)
+        self._blender_work_replaced(address, kind, report, was)
         return {"model": report, "copy_out": bool(copy_out), "kind": kind, **self.look(address)}
+
+    @staticmethod
+    def _model_came_from(target: Path | None):
+        """The file a model of the mod was made from, as its record (files/models/<unit>.json) names it; None for none."""
+        if target is None:
+            return None
+        record = read_record(target.with_suffix(".json"))
+        return record.get("from") if isinstance(record, dict) else None
+
+    def _blender_work_replaced(self, address: str, kind: str | None, report, before=None) -> None:
+        """A model imported from a file of the modder's own (not one Bring back brought in from <mod>/blender): what
+        went to Blender for the model it replaces is of that model, so Open in Blender would open it again and Bring my
+        changes back put it in the new model's place, without a word. It is set aside under another name (pick 22 of
+        2026-11-14), RUSE Decoy's animations page kept, and said in the report's "not_kept" ("blender_aside"; a folder
+        another program holds stays: "blender_held")."""
+        mod = self._mod_dir()
+        target = self._kind_file(address, kind) if kind is not None else self._own_model_file(address)
+        if not isinstance(report, dict) or mod is None or target is None:
+            return
+        came = self._model_came_from(target)
+        if not isinstance(came, str) or came == before:   # (the same file again: the model is the one it was)
+            return
+        try:
+            Path(came).resolve().relative_to((Path(mod) / "blender").resolve())
+            return      # (Bring back's own import: the sending was just taken in)
+        except ValueError:
+            pass
+        from .decoyblender import WORK as DECOY_WORK
+        aside, held = self._blender_work_gone(mod, target.stem, keep=(DECOY_WORK,))
+        if aside or held:
+            lost = report.setdefault(NOT_KEPT, {"animations": [], "picks": []})
+            if aside:
+                lost["blender_aside"] = aside
+            if held:
+                lost["blender_held"] = held
 
     @staticmethod
     def _kind_skeleton(target: Path, report: dict) -> dict:
@@ -8694,11 +8735,19 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                         continue
                     raise StudioError(f"{Path(file).name}: {exc}") from None
             clips: dict = {}
+            on_the_unit_s_bones = report is not None   # (a still model drawn on the unit's own bones: no animation of its own)
             if report is None:   # a model on bones of its own (a horse, any creature), its animations with it (item 5)
                 report = self._own_bones_fit(address, Path(file), found, target, size, clips)
             if report is None:
                 raise StudioError(f"{Path(file).name}: {first_error}")
             report["file"] = Path(file).name
+            if on_the_unit_s_bones:
+                # the file's own animations (a creature's run, a turret's own turning) aren't in the mod: a model drawn
+                # on the unit's own bones plays the unit's; said, never dropped quietly (51f, the owner's 2026-11-26)
+                from .animblender import file_animations
+                left_out = [n or f"#{i}" for i, n in enumerate(file_animations(Path(file)), 1)]
+                if left_out:
+                    report.setdefault(NOT_KEPT, {"animations": [], "picks": []})["left_out"] = left_out
             from .modelfit import kept_choices
             if refit and str(before.get("from") or "") == str(file):
                 # (the same file fitted again: the parts that came back from Blender with the plain 144 still have it, so
@@ -8718,10 +8767,8 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                     main_file = self._own_model_file(address)
                     main_key = skeleton_key(main_file) if main_file is not None and main_file.is_file() else None
                     if main_key is None or skeleton_key(target) != main_key:
-                        report.setdefault("notes", []).append(
-                            "This model is on bones of its own, and the riflemen's model isn't on the same bones, so these "
-                            "soldiers play what the copied unit's played, made on the game soldier's bones: that can stop "
-                            "the game. Import a model on the same bones for the riflemen too.")
+                        # (the page's own line, in English as the report's other notes: words.toml model_kind_bones_other)
+                        report.setdefault("notes", []).append(words(schema.BASE)["model_kind_bones_other"])
             else:
                 more = self._record_more(address, report, Path(file), clips, before, refit=refit, carried=carried,
                                          lost=lost)
@@ -9702,7 +9749,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         root, mod = self._paint_root(address), self._mod_dir()
         return paint_in(root) if root is not None else mod_textures(mod) if mod is not None else {}
 
-    def model_copy(self, address: str) -> dict:
+    def model_copy(self, address: str, lang: str | None = None) -> dict:
         """Give the unit at `address` its own copy of the models it draws (files/models/<its name>.copy.toml, `of`
         listing them): built as the same models with textures of its own. A squad's custom uniform: its soldiers,
         its bazooka man and its token's figure. A new unit's or one of the game's. Returns look() and a "message"."""
@@ -9743,19 +9790,18 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         copy.parent.mkdir(parents=True, exist_ok=True)
         copy.write_text(f"# Made by the RUSE Studio: {copy.name[:-len('.copy.toml')]} has {what}; its paint is in the "
                         f"folder of its name beside this file.\nof = {json.dumps(models)}\n", encoding="utf-8")
-        return {**self.look(address), "message": "It has a uniform of its own now: Repaint in Blender changes only "
-                                                 "this squad." if soldiers else
-                "It has its own copy of the model now: Repaint in Blender changes only this unit."}
+        w = words(lang or self.prefs().get("lang") or schema.BASE)   # (said in the Studio's language: SQ-11)
+        return {**self.look(address), "message": w["uniform_custom_done" if soldiers else "copy_own_done"]}
 
-    def model_copy_remove(self, address: str) -> dict:
+    def model_copy_remove(self, address: str, lang: str | None = None) -> dict:
         """The unit draws the game's models again (its .copy.toml goes; its paint stays in the mod, for a copy made
-        again). Returns look() and a "message"."""
+        again). Returns look() and a "message" in `lang` (the Studio's language when none is given)."""
         copy = self._own_copy_file(address)
         if copy is not None:
             copy.unlink(missing_ok=True)
-        return {**self.look(address), "message": "It wears the default uniform again. Your paint is kept in the mod, "
-                                                 "for when it gets a custom one again." if self._soldiers(address) else
-                "It draws the model it copies again. Its paint is kept in the mod, for when it gets a copy again."}
+        w = words(lang or self.prefs().get("lang") or schema.BASE)
+        return {**self.look(address),
+                "message": w["uniform_default_done" if self._soldiers(address) else "copy_default_done"]}
 
     def _copy_models(self, address: str) -> list[str]:
         """The models a unit's own copy copies: every model the unit draws that the mesh packs hold (_look_models: a
@@ -10286,6 +10332,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                 return {"deleted": None, "leftovers": left, "relinked": [], "left": []}
             raise EntryError(f"{address} isn't a unit made in this mod, so it can't be deleted here")
         folder = edits.folder
+        own = self._own_model_file(address)   # (its Blender work, <mod>/blender/<its name>/, is set aside once it's gone)
         # a list file another program holds for a moment (a sync program, an antivirus) is tried again as long as a file
         # of the unit itself is: the whole take-out, put back in between (the owner: "it should through")
         end = time.monotonic() + edits_module.HOLD_WAIT
@@ -10319,7 +10366,10 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                 raise worded from exc
             break
         take.done()
-        return {"deleted": address, "source": source, "saved": str(edits.file), **research, "waiting": waiting}
+        # the Blender work it had stays out of a unit made again under its name (picks 21 and 22): set aside, said
+        aside, held = self._blender_work_gone(folder, own.stem, kinds=True) if own is not None else ([], [])
+        told = {**({"blender_aside": aside} if aside else {}), **({"blender_held": held} if held else {})}
+        return {"deleted": address, "source": source, "saved": str(edits.file), **research, "waiting": waiting, **told}
 
     def _take_error(self, exc: BaseException, folder: Path) -> BaseException:
         """A take-out's failure (delete_unit) in words: a file that couldn't be read or written names the file and

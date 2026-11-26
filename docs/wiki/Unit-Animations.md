@@ -125,7 +125,7 @@ takes its place: every action that played it plays it changed.
 |---|---|---|
 | A change for every unit | **Back to the game's** | The animation's line in RUSE Decoy, or its window |
 | This unit's own copy (**Only this unit**) | **Back to what every unit plays** | The animation's line on the unit's list, or its window |
-| A copy's changes (its name and ticks stay) | **Back to the game's animation** | The copy's window |
+| A copy's changes (its name and ticks stay) | **Undo the copy's changes** | The copy's window |
 | A copy, all of it | **Delete the copy** | **Your copies** |
 | A change made in Blender | Undo it in Blender while that Blender is still open, then **Bring my changes back**: it's undone in your mod too | Blender, then RUSE Decoy |
 
@@ -158,8 +158,7 @@ The buttons above don't take out a change made in Blender.
   it first (**New unit from this one…** on its page).
 - **Its animations is missing on the page:** the table is only for a unit with animations of its own (a model on bones
   of its own). Every other unit plays the game's: change them in RUSE Decoy.
-- **A sending you never brought back:** opening Blender again sets it aside. RUSE Decoy shows it with **Bring back
-  the set-aside sending** and **Put it in the Recycle Bin** (see [[Open in Blender|Open-in-Blender]]).
+- **A sending you never brought back:** opening Blender again sets it aside. RUSE Decoy shows it with **Bring them back** and **Put them in the Recycle Bin** (see [[Open in Blender|Open-in-Blender]]).
 
 ## What has been tried in the game
 

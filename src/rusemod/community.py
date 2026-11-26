@@ -43,6 +43,16 @@ WIKI_TOPICS = {
     "blender": {"us": "Open-in-Blender", "fr": "Ouvrir-dans-Blender", "ger": "In-Blender-öffnen", "ita": "Apri-in-Blender",
                 "spa": "Abrir-en-Blender", "pol": "Otwórz-w-Blenderze", "ru": "Открыть-в-Blender",
                 "cz": "Otevřít-v-Blenderu", "jpn": "Blenderで開く", "sc": "在-Blender-中打开", "fa": "باز-کردن-در-Blender"},
+    # squad: Change a squad (a helmet, backpack or bazooka on one soldier, models or a uniform), import: Import a model
+    # (a model with bones and animations of its own); the 0.9.8.22 promises 52e, 52f, 52v
+    "squad": {"us": "Change-a-Squad", "fr": "Changer-une-escouade", "ger": "Einen-Trupp-ändern",
+              "ita": "Cambiare-una-squadra", "spa": "Cambiar-un-pelotón", "pol": "Zmiana-oddziału",
+              "ru": "Изменение-отряда", "cz": "Změna-družstva", "jpn": "分隊の変更", "sc": "修改小队",
+              "fa": "تغییر-جوخه"},
+    "import": {"us": "Import-a-Model", "fr": "Importer-un-modèle", "ger": "Ein-Modell-importieren",
+               "ita": "Importare-un-modello", "spa": "Importar-un-modelo", "pol": "Importowanie-modelu",
+               "ru": "Импорт-модели", "cz": "Import-modelu", "jpn": "モデルの取り込み", "sc": "导入模型",
+               "fa": "وارد-کردن-مدل"},
 }
 BUG_CATEGORY = "bug-reports"      # the category's slug: .github/DISCUSSION_TEMPLATE/bug-reports.yml is its form
 APP_NAMES = {"studio": "RUSE Studio", "launcher": "RUSE Launcher"}  # as the form's "Which app?" lists them

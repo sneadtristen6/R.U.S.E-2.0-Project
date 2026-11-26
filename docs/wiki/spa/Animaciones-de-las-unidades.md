@@ -131,7 +131,7 @@ que cambies ocupa su lugar: cada acción que la usaba la usa cambiada.
 |---|---|---|
 | Un cambio para todas las unidades | **Volver a la del juego** | La línea de la animación en RUSE Decoy, o su ventana |
 | La copia propia de esta unidad (**Solo esta unidad**) | **Volver a la de todas las unidades** | La línea de la animación en la lista de la unidad, o su ventana |
-| Los cambios de una copia (su nombre y sus marcas se quedan) | **Volver a la animación del juego** | La ventana de la copia |
+| Los cambios de una copia (su nombre y sus marcas se quedan) | **Deshacer los cambios de la copia** | La ventana de la copia |
 | Una copia, entera | **Borrar la copia** | **Tus copias** |
 | Un cambio hecho en Blender | Deshazlo en Blender mientras ese Blender siga abierto, y luego **Traer mis cambios**: también se deshace en tu mod | Blender, luego RUSE Decoy |
 
@@ -164,8 +164,7 @@ Los botones de arriba no quitan un cambio hecho en Blender.
   unidad nueva a partir de ella (**Nueva unidad a partir de esta…** en su página).
 - **Falta Sus animaciones en la página:** la tabla solo existe para una unidad con animaciones propias (un modelo con
   huesos propios). Todas las demás unidades usan las del juego: cámbialas en RUSE Decoy.
-- **Un envío que nunca trajiste:** volver a abrir Blender lo guarda aparte. RUSE Decoy lo muestra con **Traer el envío
-  guardado aparte** y **Llevarlo a la Papelera de reciclaje** (mira [[Abrir en Blender|Abrir-en-Blender]]).
+- **Un envío que nunca trajiste:** volver a abrir Blender lo guarda aparte. RUSE Decoy lo muestra con **Traerlos** y **Llevarlos a la Papelera de reciclaje** (mira [[Abrir en Blender|Abrir-en-Blender]]).
 
 ## Qué se ha probado en el juego
 

@@ -129,7 +129,7 @@ zajmuje swoje miejsce: każda czynność, która jej używała, używa jej zmien
 |---|---|---|
 | Zmianę dla wszystkich jednostek | **Wróć do wersji z gry** | Wiersz animacji w RUSE Decoy albo jej okno |
 | Własną kopię tej jednostki (**Tylko ta jednostka**) | **Wróć do tego, czego używają wszystkie jednostki** | Wiersz animacji na liście jednostki albo jej okno |
-| Zmiany kopii (nazwa i zaznaczenia zostają) | **Wróć do animacji z gry** | Okno kopii |
+| Zmiany kopii (nazwa i zaznaczenia zostają) | **Cofnij zmiany kopii** | Okno kopii |
 | Kopię, całą | **Usuń kopię** | **Twoje kopie** |
 | Zmianę zrobioną w Blenderze | Cofnij ją w Blenderze, dopóki ten Blender jest jeszcze otwarty, potem **Przenieś moje zmiany**: cofa się też w twoim modzie | Blender, potem RUSE Decoy |
 
@@ -162,8 +162,7 @@ Przyciski wyżej nie usuwają zmiany zrobionej w Blenderze.
   nową jednostkę (**Nowa jednostka z tej…** na jej stronie).
 - **Na stronie brakuje Jej animacje:** tabela jest tylko dla jednostki z własnymi animacjami (model z własnymi kośćmi).
   Wszystkie inne jednostki używają animacji z gry: zmieniaj je w RUSE Decoy.
-- **Wysyłka, której nigdy nie przeniosłeś:** ponowne otwarcie Blendera ją odkłada. RUSE Decoy pokazuje ją z **Przenieś
-  odłożoną wysyłkę** i **Przenieś do Kosza** (zobacz [[Otwórz w Blenderze|Otwórz-w-Blenderze]]).
+- **Wysyłka, której nigdy nie przeniosłeś:** ponowne otwarcie Blendera ją odkłada. RUSE Decoy pokazuje ją z **Przenieś je z powrotem** i **Przenieś je do Kosza** (zobacz [[Otwórz w Blenderze|Otwórz-w-Blenderze]]).
 
 ## Co sprawdzono w grze
 

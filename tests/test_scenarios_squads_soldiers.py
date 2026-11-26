@@ -192,8 +192,7 @@ class ACustomUniform(SquadScenario):
         self.assertEqual(self.errors(result), [])
         self.assertEqual(self.problems(), [])
 
-    @unittest.expectedFailure    # finding SQ-11: Custom uniform and Back to the default uniform said in English only
-    def test_the_uniform_s_words_in_every_language(self):
+    def test_the_uniform_s_words_in_every_language(self):   # (finding SQ-11, mended: the words are in words.toml)
         """The Uniform row's two buttons (app.js uniformBox) say the call's own "message" (say(r.message)): model_copy's
         and model_copy_remove's are English sentences in the code (api.model_copy), with no entry in the words, so the
         page says them in English in every language."""
