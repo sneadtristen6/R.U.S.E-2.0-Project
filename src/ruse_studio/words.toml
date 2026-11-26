@@ -8753,6 +8753,33 @@ jpn = "{path} はゲーム（{drive}）とは別のドライブにあります�
 sc = "{path} 与游戏（{drive}）不在同一驱动器上：每个模组版副本都是游戏的完整副本，构建更慢，和游戏一样大。推荐位置是 {recommended}。"
 fa = "{path} روی درایوی غیر از درایو بازی ({drive}) است: هر نسخهٔ ماددار یک نسخهٔ کامل از بازی است، ساختش کندتر است و به بزرگی خود بازی است. جای پیشنهادی {recommended} است."
 
+# the troubleshooter's line for Bug Watch's list of known crashes (rusemod.knowncrashes.findings: with Bug Watch on)
+[doc_crashlist_on]
+us = "Bug Watch's list of known crashes is on this PC (number {n}, last checked {checked})."
+fr = "La liste des plantages connus de Bug Watch est sur ce PC (numéro {n}, vérifiée le {checked})."
+ger = "Die Liste bekannter Abstürze von Bug Watch ist auf diesem PC (Nummer {n}, zuletzt geprüft {checked})."
+ita = "La lista dei crash conosciuti di Bug Watch è su questo PC (numero {n}, ultimo controllo {checked})."
+spa = "La lista de fallos conocidos de Bug Watch está en este PC (número {n}, comprobada por última vez {checked})."
+pol = "Lista znanych awarii Bug Watch jest na tym komputerze (numer {n}, ostatnio sprawdzona {checked})."
+ru = "Список известных вылетов Bug Watch есть на этом ПК (номер {n}, последняя проверка {checked})."
+cz = "Seznam známých pádů Bug Watch je v tomto počítači (číslo {n}, naposledy ověřen {checked})."
+jpn = "Bug Watch の既知のクラッシュの一覧はこの PC にあります（番号 {n}、最終確認 {checked}）。"
+sc = "Bug Watch 的已知崩溃列表已在这台电脑上（编号 {n}，上次核对 {checked}）。"
+fa = "فهرست خرابی‌های شناخته‌شدهٔ Bug Watch روی این رایانه است (شمارهٔ {n}، آخرین بررسی {checked})."
+
+[doc_crashlist_missing]
+us = "Bug Watch's list of known crashes isn't on this PC yet: it comes from our server when you start a game with the internet on."
+fr = "La liste des plantages connus de Bug Watch n'est pas encore sur ce PC : elle vient de notre serveur quand vous lancez une partie avec Internet."
+ger = "Die Liste bekannter Abstürze von Bug Watch ist noch nicht auf diesem PC: Sie kommt von unserem Server, wenn Sie ein Spiel mit Internetverbindung starten."
+ita = "La lista dei crash conosciuti di Bug Watch non è ancora su questo PC: arriva dal nostro server quando avvii una partita con Internet attivo."
+spa = "La lista de fallos conocidos de Bug Watch aún no está en este PC: llega de nuestro servidor cuando inicias una partida con Internet."
+pol = "Listy znanych awarii Bug Watch nie ma jeszcze na tym komputerze: przychodzi z naszego serwera, gdy uruchamiasz grę z włączonym internetem."
+ru = "Списка известных вылетов Bug Watch ещё нет на этом ПК: он приходит с нашего сервера, когда вы запускаете игру с подключённым интернетом."
+cz = "Seznam známých pádů Bug Watch v tomto počítači ještě není: přijde z našeho serveru, když spustíte hru s připojením k internetu."
+jpn = "Bug Watch の既知のクラッシュの一覧はまだこの PC にありません。インターネットにつないだ状態でゲームを始めると、私たちのサーバーから届きます。"
+sc = "这台电脑上还没有 Bug Watch 的已知崩溃列表：当你在联网状态下开始游戏时，它会从我们的服务器下载。"
+fa = "فهرست خرابی‌های شناخته‌شدهٔ Bug Watch هنوز روی این رایانه نیست: وقتی بازی را با اینترنت روشن شروع کنید، از سرور ما می‌آید."
+
 [doc_troubleshoot_link]
 us = "Troubleshoot"
 fr = "Dépannage"

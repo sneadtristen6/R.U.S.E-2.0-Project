@@ -5,9 +5,10 @@ tracked file is something that belongs only there:
 - what describes the game's own files rather than the apps: lists of its files, notes on their layout, working notes,
   and tools that go through its data (`listings/`, `docs/FORMATS.md`, ..., every tool but the four named below);
 - game files or data taken out of the game (packs, NDF, texts, textures, meshes, scenery, scripts; `.rmod` mods);
-- details of the game's program: code addresses (`FUN_14xxxxxx`, `0x14xxxxxxx`) or disassembly-tool notes; one file
-  alone holds the few its table needs, on the owner's word: the table of the game crashes we know (PROGRAM_TABLE),
-  which may say "in the game's program" and is checked for everything else as any file is.
+- details of the game's program: code addresses (`FUN_14xxxxxx`, `0x14xxxxxxx`) or disassembly-tool notes, in every
+  file alike;
+- the list of the game crashes we know, which is the private repo's: its old file (`crashplaces.py`) and the file the
+  apps keep it in (`known-crashes*.json`), refused by name in any folder (CRASH_LIST_NAMES).
 
     py -3 tools/check_public.py            # the files git tracks here
     py -3 tools/check_public.py FILE ...   # just these (a pre-commit check)
@@ -36,7 +37,10 @@ KEPT_PRIVATE = re.compile(r"^(?:listings/|prototypes/|ruse_edat\.py$|"
 GAME_FILES = {".dat", ".ndfbin", ".gladndfbin", ".dic", ".tgv", ".tgv_pc", ".spk", ".spkpc", ".ppk", ".ipk", ".xyz",
               ".boobspc", ".kdt", ".tms", ".tmst", ".tmst_pc", ".tmst_chunk_pc", ".scenario", ".ess", ".win", ".sdb",
               ".rmod", ".ase2ndfbin", ".exe", ".dll", ".pdb", ".idb", ".i64", ".gzf"}
-PROGRAM = re.compile(r"\bFUN_[0-9A-Fa-f]{6,}\b|\b0x14[0-9A-Fa-f]{7}\b|\bsub_14[0-9A-Fa-f]{7}\b")
+# (an address also as a debugger prints it: zeros before the 14 of the load address, "_" between digits, or split by
+# a backtick after the eighth digit)
+PROGRAM = re.compile(r"\bFUN_[0-9A-Fa-f]{6,}\b|\b0x[0_]*14(?:_?[0-9A-Fa-f]){7}\b|\bsub_14[0-9A-Fa-f]{7}\b|"
+                     r"\b0*1`4[0-9A-Fa-f]{7}\b")
 # words that say what the game's program does or holds (the owner: "NO do not mention exe in public"): public text
 # says what the game does with its data, never what's inside RUSE.exe
 WORDING = re.compile(r"RUSE\.exe'?s\b|RUSE\.exe (?:does|reads|checks|holds|keeps|decides|loads|has|uses|calls)\b|"
@@ -93,26 +97,19 @@ WORDING_SPOTS = {
 }
 
 
-# THE ONE EXCEPTION FOR DETAILS OF THE GAME'S PROGRAM (item 25). The owner, 2026-11-13, asked "The unit the game was
-# making when it crashed: (a) put game program details in the public app, which your rules forbid; (b) keep them on
-# our private server and have the app fetch them; (c) take the unit out of the wording", answered: "It should tell
-# them the unit that it was making when it crashed. So while yes, I don't want people knowing how the exact exe code
-# works, if their unit was crashing the game, they should be told that." and later "For 25, they should also be told
-# why that unit made the game crash. For 25, I don't care. You can put it in the app. Like, I thought we've already
-# addressed that we have moved past the point of like certain things like something like that. How is anybody ever
-# going to really go and fucking take it out of the code? Like, that's going to be really difficult." So the table of
-# the game crashes we know (the places, the reasons, how the unit is found) is in the public apps, in this one file
-# only, and the check lets it say where they are, "in the game's program" (PROGRAM_TABLE_WORDS), and nothing more:
-# code addresses, how anything was studied (the owner, 2026-10-02: nothing public may point at it) and every other
-# word the check refuses are refused there as in any other file.
-PROGRAM_TABLE = "src/rusemod/crashplaces.py"
-PROGRAM_TABLE_WORDS = ("in the game's program",)
+# THE LIST OF THE GAME CRASHES WE KNOW IS THE PRIVATE REPO'S (item 25). From 0.9.8.20 to 0.9.8.22 its table was in the
+# public apps, in one file the check let say "in the game's program" (the owner's word of 2026-11-13). On 2026-11-24
+# he took Robbie's point: "Okay, fine. We can move it to the private repo." and on 2026-11-25 "Okay, yes for 15 sign."
+# So the list is the private repo's, signed by him, and the apps get it from the Bug Watch server (rusemod.knowncrashes;
+# none of its numbers is in the public code). No file of the public repo may say "in the game's program" any more, and
+# the table's old file name and the name of the file the apps keep the list in are refused in any folder, whatever they
+# hold: a copy of the list put back here by mistake is caught by its name as well as by its words.
+CRASH_LIST_NAMES = re.compile(r"^(?:crashplaces\.py|known-crashes[^/]*\.json)$", re.I)
 
 
 def _without_spots(path: str, text: str) -> str:
-    """The text with the words its file may hold (WORDING_SPOTS; the crash table's PROGRAM_TABLE_WORDS) blanked out,
-    the lines kept where they are."""
-    for word in WORDING_SPOTS.get(path, ()) + (PROGRAM_TABLE_WORDS if path == PROGRAM_TABLE else ()):
+    """The text with the words its file may hold (WORDING_SPOTS) blanked out, the lines kept where they are."""
+    for word in WORDING_SPOTS.get(path, ()):
         text = text.replace(word, " " * len(word))
     return text
 TEXT_LIMIT = 4_000_000
@@ -130,6 +127,10 @@ def problems(paths: list[str], read=lambda p: (ROOT / p).read_bytes()) -> list[s
             continue
         if PRIVATE_NAMES.search(PurePosixPath(low).name):
             out.append(f"{p}: the research handover stays in the private repo")
+            continue
+        if CRASH_LIST_NAMES.match(PurePosixPath(low).name):
+            out.append(f"{p}: the list of the game crashes we know is the private repo's; the apps get it from the Bug "
+                       f"Watch server")
             continue
         if KEPT_PRIVATE.search(p):
             out.append(f"{p}: describes the game's own files (a list of them, notes on them, or a tool that goes "

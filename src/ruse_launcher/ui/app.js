@@ -47,9 +47,11 @@ function saveLang(lang) {
 }
 
 // --- messages ---
-function setMessage(message, kind) {
+// parts: the same words as nodes, with controls in them (the crash notice: sayCrash), shown in place of the plain text
+function setMessage(message, kind, parts) {
   const node = $("play-message"), w = state.words || {};
   text(node, message);
+  if (parts) node.replaceChildren(...parts);
   node.className = "message" + (kind ? " " + kind : "");
   if (kind === "bad" && message && w.doc_troubleshoot_link) {  // the troubleshooter may find what stopped it
     const doc = el("button", { type: "button", className: "link", textContent: w.doc_troubleshoot_link });
@@ -1581,13 +1583,17 @@ async function play() {
 }
 
 // --- the game's crash, told (the owner's item 25: "... if their unit was crashing the game, they should be told
-// that." and "For 25, they should also be told why that unit made the game crash. ..."; his words whole are in
-// rusemod.crashplaces). Bug Watch watches the game a Play started (rusemod.bugwatch.GameWatch); at a crash we know
-// (rusemod.crashplaces) api.bugwatch_crash hands over its notice once: the plain reason and, when the crash report kept
-// it, the unit the game was making, by its name as its card says. Asked a few seconds after a Play and when the page
-// opens (a page opened again, as a browser tab reloaded, still tells the game it started), then again every few
-// seconds while the game is watched, and again after a call that failed; nothing when Bug Watch is off (no game is
-// watched then). A notice the page never took is dropped when the next game starts (GameWatch) ---
+// that." and "For 25, they should also be told why that unit made the game crash. ..."). Bug Watch watches the game a
+// Play started (rusemod.bugwatch.GameWatch); at a crash on our list of known crashes (rusemod.knowncrashes: from our
+// server, kept on the PC) api.bugwatch_crash hands over its notice once: the plain reason and, when the crash report
+// kept it, the unit the game was making, by its name as its card says; with no list on the PC, that it couldn't
+// check (notice.list false). A crash gets a crash code to send us (notice.code; rusemod.crashcode): without Bug Watch
+// since the owner's 2026-11-14 "some sort of code that they can tell me", and for every player since 2026-11-26 ("send
+// this report to me on either GitHub or Discord. ... Send this screenshot. And then be like, copy code."), alone or
+// under the unit's line, with a Copy code button (sayCrash). Asked a few seconds after a Play and when the page opens
+// (a page opened again, as a browser tab reloaded, still tells the game it started), then again every few seconds
+// while the game is watched, and again after a call that failed. A notice the page never took is dropped when the
+// next game starts (GameWatch, CodeWatch) ---
 let crashWatch = null;
 const CRASH_TRIES = 5;   // calls in a row that may fail before the page stops asking
 
@@ -1604,17 +1610,81 @@ function watchCrash(first = 3000) {
       if (failed < CRASH_TRIES) crashWatch = setTimeout(tick, 3000);
       return;
     }
-    if (seen && seen.notice) { setMessage(crashText(seen.notice), "bad"); return; }
+    if (seen && seen.notice) { sayCrash(seen.notice); return; }
     if (seen && seen.watching) crashWatch = setTimeout(tick, 3000);
   };
   crashWatch = setTimeout(tick, first);
 }
 
-// One sentence: "The game crashed while making the unit “Horse Squad”." and why, in the player's language
+// One sentence: "The game crashed while making the unit “Horse Squad”." and why, in the player's language, or that
+// the crash couldn't be checked; with a crash code, the code and where to send it on a line of its own under that one
+// (crash_code_under, without its "The game crashed."), or alone (crash_code: Bug Watch off, or a crash not on our list)
 function crashText(notice) {
   const w = state.words, why = w["crash_why_" + notice.why] || "";
-  if (!notice.unit) return fill(w.crash_no_unit, { why });
-  return fill(notice.added ? w.crash_mod_unit : w.crash_unit, { unit: notice.unit, why });
+  if (notice.code && !notice.why && notice.list !== false) return fill(w.crash_code, { code: notice.code });
+  let said;
+  if (notice.list === false) said = w.crash_no_list;
+  else if (!notice.unit) said = fill(w.crash_no_unit, { why });
+  else said = fill(notice.added ? w.crash_mod_unit : w.crash_unit, { unit: notice.unit, why });
+  return notice.code ? said + "\n" + fill(w.crash_code_under, { code: notice.code }) : said;
+}
+
+// The notice in the message line: crashText's words, the same as the Report link's bug report carries. With a crash
+// code, crashParts shows them with the code as one piece, the word GitHub as a link and a Copy code button
+function sayCrash(notice) {
+  const said = crashText(notice);
+  setMessage(said, "bad", notice.code ? crashParts(notice, said) : null);
+}
+
+// crashText's words as nodes: the line above the code's (when there is one) and a line break; the code's line, its
+// code in a piece of its own (one click selects it whole), the word GitHub (with the ending a language gives it, as
+// "GitHubie") a link to a new issue on the project's GitHub (api.open_help("issues")); then the Copy code button
+function crashParts(notice, said) {
+  const w = state.words, code = notice.code, alone = fill(w.crash_code, { code });
+  const line = said === alone ? alone : fill(w.crash_code_under, { code });
+  const parts = said === alone ? [] : [said.slice(0, said.length - line.length).replace(/\n$/, ""), el("br")];
+  const shown = el("code", { className: "crash-code", textContent: code });
+  const at = line.indexOf(code);
+  for (const piece of at < 0 ? [line] : [line.slice(0, at), shown, line.slice(at + code.length)]) {
+    const word = typeof piece === "string" ? piece.match(/GitHub[A-Za-z]*/) : null;
+    if (!word) { parts.push(piece); continue; }
+    const link = el("button", { type: "button", className: "link crash-github", textContent: word[0],
+      title: w.tip_crash_github || "" });
+    // (a browser that won't open leaves the notice as it is, as the Report link does)
+    link.addEventListener("click", () => api().open_help("issues").catch(() => {}));
+    parts.push(piece.slice(0, word.index), link, piece.slice(word.index + word[0].length));
+  }
+  const copy = el("button", { type: "button", className: "small crash-copy", textContent: w.crash_copy,
+    title: w.tip_crash_copy || "" });
+  copy.addEventListener("click", () => copyCrashCode(code, copy, shown));
+  parts.push(" ", copy);
+  return parts.filter((p) => p !== "");
+}
+
+// Copy code: the code alone on the clipboard, through the clipboard API, else the old way (as owned.js copies the
+// folder code: a window without the API), then "Copied" on the button for a moment. Where neither copies, no
+// "Copied": the code is selected on the page instead, so Ctrl+C copies it
+async function copyCrashCode(code, button, shown) {
+  const w = state.words;
+  let copied = false;
+  try {
+    await navigator.clipboard.writeText(code);
+    copied = true;
+  } catch {
+    const box = el("textarea", { value: code, readOnly: true });
+    box.style.position = "fixed";
+    box.style.opacity = "0";
+    document.body.append(box);
+    box.select();
+    try { copied = document.execCommand("copy") === true; } catch { copied = false; }
+    box.remove();
+  }
+  if (!copied) {
+    try { window.getSelection().selectAllChildren(shown); } catch { /* nothing more to do: the code is on screen */ }
+    return;
+  }
+  text(button, w.crash_copied);
+  setTimeout(() => text(button, w.crash_copy), 1500);
 }
 
 // --- fair play (rusemod.fairplay through api.fair_play): the modded copy's join code to send to the people you play

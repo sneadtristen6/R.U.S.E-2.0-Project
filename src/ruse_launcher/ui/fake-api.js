@@ -4,7 +4,8 @@
 // copy, ?fake=installfail one mod of several that fails its check; ?fake=backup,
 // ?fake=oldbackup, ?fake=nospace and ?fake=running the clean game backup's states, in Settings; ?fake=firstbackup the
 // installer's "Keep a clean copy" ask, made on the first start; ?fake=lang "Choose your language" with the game set to
-// French in Steam; ?fake=crash a game crash we know, told a few seconds after Play). Only English, French
+// French in Steam; ?fake=crash a game crash we know with its crash code, told a few seconds after Play, as a player
+// with Bug Watch on sees it; ?fake=crashcode the crash code alone, as a player without Bug Watch). Only English, French
 // and Chinese words are included here; the real launcher has all ten languages. It does nothing in the real window.
 "use strict";
 
@@ -186,8 +187,13 @@
     crash_why_turret: "A turret looked for its part on the unit's model, and that part was never built: the model had no skeleton in that battle.",
     crash_why_setup: "A model had no skeleton when the game first set it up.",
     crash_why_part: "A turret couldn't find its part on its unit's model: the model has no part of that name, that part was never built, or the unit had no model.",
-    crash_why_mesh: "A model had no mesh (its 3D shape) when the game measured its size." });
-  let crashTold = false, crashPlayed = false;   // (?fake=crash: told once, after a Play)
+    crash_why_mesh: "A model had no mesh (its 3D shape) when the game measured its size.",
+    crash_code: "The game crashed. Its crash code is {code}. Please send this code and a screenshot of this message to XUL on Discord (XUL6x3) or on GitHub, so we can look into why.",
+    crash_code_under: "The crash code is {code}. Please send this code and a screenshot of this message to XUL on Discord (XUL6x3) or on GitHub, so we can look into why.",
+    crash_copy: "Copy code", crash_copied: "Copied",
+    tip_crash_copy: "Puts only the crash code on the clipboard, to paste into your message.",
+    tip_crash_github: "Opens a new ticket on GitHub in your browser. What you post there is public." });
+  let crashTold = false, crashPlayed = false;   // (?fake=crash, ?fake=crashcode: told once, after a Play)
   let fakeBugwatch = { available: true, on: false, name: "", code: "" };  // ?fake=bugoff hides the card, as bugwatch.ON = False does
   // Settings' WebView2 card (rusemod.webview2): a PC without it, so the preview shows the card and an install
   // (words.toml set_webview2_*, webview2_*, tip_webview2_install)
@@ -446,11 +452,13 @@
         app: "launcher", version: "0.4.8.9", day: new Date().toISOString().slice(0, 10), setup: { windows: "11", language: "us" },
         calls: { play: { n: 2, failed: 0, time: [0, 2, 0, 0, 0] } } }, waiting: [] }),
       bugwatch_seen: async () => ({ ok: true }),
-      // ?fake=crash: after a Play, the game stops at a crash we know while making a mod's unit (app.js watchCrash; the
-      // page also asks when it opens, before any Play: nothing then)
+      // ?fake=crash: after a Play, the game stops at a crash we know while making a mod's unit, its crash code under it
+      // (Bug Watch on); ?fake=crashcode: the crash code alone (Bug Watch off). app.js watchCrash; the page also asks
+      // when it opens, before any Play: nothing then. (A made-up crash's code, as the tests make it.)
       bugwatch_crash: async () => {
-        const notice = mode === "crash" && crashPlayed && !crashTold ? { why: "made", unit: "Horse Squad", added: true }
-          : null;
+        const due = crashPlayed && !crashTold, code = "8G00-0004-68C0";
+        const notice = mode === "crash" && due ? { why: "made", unit: "Horse Squad", added: true, list: true, code }
+          : mode === "crashcode" && due ? { code } : null;
         crashTold = crashTold || Boolean(notice);
         return { watching: false, notice };
       },

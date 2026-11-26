@@ -1,7 +1,8 @@
 """The public-repo guard (tools/check_public.py): private material, game files and program addresses are refused.
 
 Checked our_tools.json: none of its tools runs this check; these tests read no program, only made-up lines that name
-the words the check refuses, and the crash table's own numbers, by name, to look for them in the other files."""
+the words the check refuses, and the crash table as 0.9.8.22 released it, from this repository's history, never
+written out (its numbers are looked for in every public file by the private leak scan instead)."""
 import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import sys
 import unittest
@@ -117,62 +118,53 @@ class Guard(unittest.TestCase):
         self.assertEqual(sorted(f.split(":")[0] for f in found), sorted(bad))
         self.assertIn("strictly data", found[0])
 
-    def test_the_crash_table_may_say_where_in_the_program_and_nothing_more(self):
-        """Item 25 (the owner, 2026-11-13, his words whole in check_public's PROGRAM_TABLE note: "... if their unit
-        was crashing the game, they should be told that." ... "You can put it in the app. ..."): the table of the game
-        crashes we know is in the public apps in one file, which may say
-        where they are, "in the game's program", and nothing more than any other file: a code address, a word on how
-        anything was studied (in any language) or on what the program does is refused there as in bugwatch.py. Made-up
-        lines only."""
+    def test_no_file_may_say_where_in_the_program_any_more(self):
+        """The list of the game crashes we know is the private repo's (the owner, 2026-11-24: "Okay, fine. We can
+        move it to the private repo."): from 0.9.8.20 to 0.9.8.22 one file of the apps (src/rusemod/crashplaces.py)
+        could say "in the game's program"; now none can, that old path included, and a code address, a word on how
+        anything was studied or on what the program does is refused everywhere alike. Made-up lines only."""
         import check_public
-        table_file = check_public.PROGRAM_TABLE
-        self.assertIsInstance(table_file, str)                      # one file, not a list
-        table = (Path(__file__).resolve().parents[1] / table_file).read_bytes()
-        self.assertEqual(check({table_file: table}), [])
-        for elsewhere in ("src/rusemod/bugwatch.py", "src/rusemod/crashplaces2.py", "docs/crashes.md"):
-            self.assertEqual(len(check({elsewhere: table})), 1, elsewhere)   # the very same text: refused there
+        self.assertFalse(hasattr(check_public, "PROGRAM_TABLE"))   # the one exception is gone
         where = b"# the place in the game's program where it stops\n"
-        self.assertEqual(check({table_file: where}), [])            # the one thing it may say
-        self.assertEqual(len(check({"src/rusemod/bugwatch.py": where})), 1)
+        for path in ("src/rusemod/knowncrashes.py", "src/rusemod/bugwatch.py", "src/rusemod/crashplaces.py",
+                     "docs/crashes.md"):
+            self.assertEqual(len(check({path: where})), 1, path)
         refused = [b"# FUN_1400abc00 makes the parts\n", b"PLACE = 0x1400abd00\n",
+                   b"PLACE = 0x00000001400abd00\n", b"at 0x14_00ab_d00\n", b"at 00000001`400abd00\n",
                    b"# found by decompiling the program in Ghidra, with a debugger and a minidump\n",
-                   b"# we reverse-engineered the game for this table\n",
                    b"# the RTTI and vtables, read with a hex editor\n",
-                   "# trouvé en décompilant le jeu\n".encode("utf-8"), "# 逆コンパイルで見つけた\n".encode("utf-8"),
-                   b"# the program reads it here\n", b"# the game's program holds it\n",
-                   b"# a part kept in the program\n", b"# a count of the whole game\n"]
+                   "# trouvé en décompilant le jeu\n".encode("utf-8"), b"# the game's program holds it\n"]
         for line in refused:
-            self.assertEqual(len(check({table_file: line})), 1, line)                    # refused in the table
-            self.assertEqual(len(check({"src/rusemod/bugwatch.py": line})), 1, line)     # as anywhere else
-        self.assertEqual(len(check({"private/" + table_file: table})), 1)
+            self.assertEqual(len(check({"src/rusemod/knowncrashes.py": line})), 1, line)
+        self.assertEqual(check({"src/rusemod/knowncrashes.py": b"# our list of the game crashes we know\n"}), [])
 
-    def test_the_crash_tables_details_stand_in_no_other_file(self):
-        """Item 25: the details of the game's program the crash table holds (its places, the functions its chains are
-        checked against and the unit descriptions' tables, as numbers, and the program's own parts it names) are in
-        no file of the apps but the table, the tests and this check's own included (they are looked for by name from
-        the table, never written out)."""
-        import re
-        from rusemod import crashplaces
+    def test_the_crash_lists_files_are_refused_by_name_in_any_folder(self):
+        """The table's old file and the file the apps keep the list in (rusemod.knowncrashes.LIST_FILE, and its
+        last result and its file on the way): refused by name anywhere, whatever they hold, so a copy put back by
+        mistake is caught even with harmless words. The apps' own code for the list is not (the control)."""
+        harmless = b"x = 1\n"
+        for path in ("src/rusemod/crashplaces.py", "crashplaces.py", "private-ish/CrashPlaces.py",
+                     "docs/known-crashes.json", "tests/data/known-crashes-last.json",
+                     "src/rusemod/known-crashes.1234.abcdef.tmp.json"):
+            self.assertEqual(len(check({path: harmless})), 1, path)
+            self.assertIn("private repo", check({path: harmless})[0])
+        for path in ("src/rusemod/knowncrashes.py", "tests/test_knowncrashes.py", "src/rusemod/crashcode.py",
+                     "docs/known-crashes.md"):
+            self.assertEqual(check({path: harmless}), [], path)
+
+    def test_the_released_table_is_refused_at_its_old_path(self):
+        """The table as 0.9.8.22 released it (6b265ec1), read from this repository's history when it has that commit
+        (a shallow copy hasn't: skipped): refused at its old path, by its name and by its words."""
+        import subprocess
         root = Path(__file__).resolve().parents[1]
-        table = (root / "src" / "rusemod" / "crashplaces.py").read_text(encoding="utf-8")
-        numbers = set(crashplaces.PLACES) | set(crashplaces.UNIT_CLASSES) | set(crashplaces.PART_BY_NAME) | \
-            set(crashplaces.CREATING) | {n for span in crashplaces.TWO_AXIS for n in span}
-        parts = set(re.findall(r"\b(T[A-Z][A-Za-z0-9]+)(?:'s)?\W{0,3}(?:its )?(?:virtual function|constructor)", table))
-        self.assertGreaterEqual(len(parts), 5)                      # (the table names them so)
-        said = re.compile("|".join([rf"\b(?:0x|FUN_14|sub_14|0x14)0*{n:x}\b" for n in sorted(numbers)]
-                                   + [rf"\b{p}\b" for p in sorted(parts)]), re.I)
-        found = []
-        for path in root.rglob("*"):
-            rel = path.relative_to(root).as_posix()
-            if not path.is_file() or rel == "src/rusemod/crashplaces.py" or \
-                    {".git", "__pycache__", "node_modules"} & set(path.relative_to(root).parts):
-                continue
-            data = path.read_bytes()
-            if b"\0" in data[:8192] or len(data) > 4_000_000:
-                continue
-            text = data.decode("utf-8", "replace")
-            found += [f"{rel}:{text.count(chr(10), 0, m.start()) + 1}: {m.group(0)}" for m in said.finditer(text)]
-        self.assertEqual(found, [])
+        ran = subprocess.run(["git", "-C", str(root), "show", "6b265ec1:src/rusemod/crashplaces.py"],
+                             capture_output=True)
+        if ran.returncode != 0 or not ran.stdout:
+            self.skipTest("this copy of the repository hasn't got 0.9.8.22's commit")
+        table = ran.stdout
+        self.assertEqual(len(check({"src/rusemod/crashplaces.py": table})), 1)
+        self.assertEqual(len(check({"src/rusemod/elsewhere.py": table})), 1)   # its words alone refuse it too
+        self.assertFalse((root / "src" / "rusemod" / "crashplaces.py").exists())
 
 
 if __name__ == "__main__":

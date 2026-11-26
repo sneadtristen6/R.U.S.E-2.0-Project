@@ -47,16 +47,27 @@ it from the game's crash report"); a day the same kinds, the most of any game th
 its own mods by format and the kinds they hold. Under version 3 a failed Play's own mods are one number
 ("play:set:L1-O2"), as version 3's words say.
 
-THE CRASHES WE KNOW, TOLD TO THE PLAYER (the owner's item 25, 2026-11-13: his two answers, whole, are in
-rusemod.crashplaces; they begin "It should tell them the unit that it was making when it crashed." and "For 25, they
-should also be told why that unit made the game crash."): a game crash at a place rusemod.crashplaces knows gets its
-plain reason (read_dump's "reason"), and under version 4 the unit the game was making (read_dump's "unit":
-crashplaces.unit_number), named from the crashed copy's own data as its card says (unit_named). Neither the reason
-nor the name is ever sent. GameWatch keeps the notice for the game it watched, before anything of Bug Watch's own is
-written (a record that can't be written never costs the player it), and drops one never taken when the next game
-starts; the window's bugwatch_crash hands it to the page once: the Launcher says it after a Play, or when its page
-opens again. Every detail of the game's program this needs is in rusemod.crashplaces, the one file of the apps
-allowed them (tools/check_public.py).
+THE CRASHES WE KNOW, TOLD TO THE PLAYER (the owner's item 25, 2026-11-13: "It should tell them the unit that it was
+making when it crashed." and "For 25, they should also be told why that unit made the game crash."): a game crash at
+a place our list of known crashes knows gets its plain reason (read_dump's "reason"), and under version 4 the unit the
+game was making (read_dump's "unit"), named from the crashed copy's own data as its card says (unit_named). Neither
+the reason nor the name is ever sent. The list is ours and private since 2026-11-24 (the owner: "Okay, fine. We can
+move it to the private repo."): the Bug Watch server hands it to the apps, signed, and each app keeps a copy on the PC
+and checks a crash against it there (rusemod.knowncrashes: fetched when a game starts, only under version 5 of the
+agreement); with no list on the PC the notice says the Launcher couldn't check the crash ("list": False), and each
+such case is counted ("crash_no_list", "crashlist:<why the download failed>", "crashlist:build-missing"). GameWatch
+keeps the notice for the game it watched, before anything of Bug Watch's own is written (a record that can't be written
+never costs the player it), and drops one never taken when the next game starts; the window's bugwatch_crash hands it
+to the page once: the Launcher says it after a Play, or when its page opens again.
+
+THE CRASH CODE (the owner, 2026-11-14, for players without Bug Watch: "they should be given some sort of code that they
+can tell me that still tells us why it crashed, but maybe not be as specific if they don't select bug watch"; and
+2026-11-26, for every player: "... send this report to me on either GitHub or Discord. ... And then be like, copy
+code."): after a game the Launcher started crashed (version 5 of the agreement accepted: crash_code_given), the
+Launcher shows a short code made from where the game stopped (rusemod.crashcode), Bug Watch on or off, for the player
+to send us with a screenshot. With Bug Watch off, CodeWatch reads the game's own crash report on the PC as read_dump
+does; with it on, GameWatch puts the same code in its notice. Nothing more is counted, kept or sent for it: the code
+goes in no report, and without Bug Watch the apps don't contact our server for it.
 
 Checked our_tools.json: crash_site.py reads a whole crash report for our own research and is private; this module
 reads only the exception record, the module list and the crashed thread's stack of the game's crash report (and, at
@@ -224,6 +235,16 @@ def allows_v4(home) -> bool:
     later accepted. A player who ticked Bug Watch under version 3 sends only what version 3 lists until the apps have
     shown version 4 and the player accepted it (the agreement screen, at the next start)."""
     return enabled(home) and agreement(home) >= AGREEMENT_V4
+
+
+AGREEMENT_V5 = 5  # the agreement's version from which the apps fetch our list of known crashes (rusemod.knowncrashes)
+#                   and the Launcher shows its player a crash code (crash_code_given)
+
+
+def allows_v5(home) -> bool:
+    """Whether our list of known crashes may be fetched from the Bug Watch server: Bug Watch on (enabled) and version 5
+    or later of the agreement accepted, the version whose words say so (rusemod.knowncrashes.refresh)."""
+    return enabled(home) and agreement(home) >= AGREEMENT_V5
 
 
 def game_maps(game) -> dict[str, str]:
@@ -1026,7 +1047,7 @@ def _kept_memory(data: bytes, streams: dict):
     return read
 
 
-def read_dump(path, exe=None, install=None, unit=False) -> dict | None:
+def read_dump(path, exe=None, install=None, unit=False, known=None) -> dict | None:
     """From a crash report file, read on this PC only: {"code", "module", "offset"}; for a bad memory access
     (0xc0000005) "access", what the game tried to do and where ("read 0x20"); with the copy's RUSE.exe (`exe`) given,
     "chain": the places in RUSE.exe the crashed thread's stack returns to, nearest first (up to CHAIN_MOST, each one
@@ -1034,11 +1055,13 @@ def read_dump(path, exe=None, install=None, unit=False) -> dict | None:
     "ignored" (the number on the game's "Previously ignored errors: N" line before it, when there is one: each of our
     script guards adds 1 when it steps in, rusemod.scriptguards) and, with the game's install (`install`) given, "map":
     the map its text names, the game's own by its name, a mod's as OWN_MAP (map_of; sent only under version 4 of the
-    agreement: Watch.game_crash). At one of the crashes we know (rusemod.crashplaces, for the game build its table is
-    for, its chain and the rest of the looked-at stack holding what that place needs: a place that needs them gets
-    none without `exe`), "reason": its plain reason's key; and with `unit` (asked only under version 4 of the
-    agreement: GameWatch) and `exe`, "unit": the number of the unit the game was making, when the report kept it
-    (crashplaces.unit_number). Neither goes out as it is (Watch.game_crash, unit_sent). None if it can't be read. The
+    agreement: Watch.game_crash). "build": the size, checksum and time stamp of the game's program when the report
+    lists it (for the crash code, rusemod.crashcode, and to tell a build our list isn't for; never sent). At one of the
+    crashes we know (`known`: our list, rusemod.knowncrashes; none without it: for the game build the list is for, its
+    chain and the rest of the looked-at stack holding what that place needs: a place that needs them gets none without
+    `exe`), "reason": its plain reason's key; and with `unit` (asked only under version 4 of the agreement: GameWatch)
+    and `exe`, "unit": the number of the unit the game was making, when the report kept it
+    (knowncrashes.unit_number). Neither goes out as it is (Watch.game_crash, unit_sent). None if it can't be read. The
     dump never leaves the PC (the plan, §2)."""
     try:
         data = Path(path).read_bytes()
@@ -1047,7 +1070,8 @@ def read_dump(path, exe=None, install=None, unit=False) -> dict | None:
     if data[:4] != b"MDMP":
         return None
     access, chain, at_offsets, words, builds, reason, number = None, [], [], [], {}, None, None
-    returns = []  # every place in RUSE.exe the looked-at stack returns to, nearest first (a crash we know: crashplaces)
+    list_error = False   # a check against our list that raised (counted by GameWatch; never sent)
+    returns = []  # every place in RUSE.exe the looked-at stack returns to, nearest first (a crash we know: knowncrashes)
     try:
         count, rva = struct.unpack_from("<II", data, 8)
         streams = {}
@@ -1071,7 +1095,7 @@ def read_dump(path, exe=None, install=None, unit=False) -> dict | None:
                 (length,) = struct.unpack_from("<I", data, name_rva)
                 name = data[name_rva + 4:name_rva + 4 + length].decode("utf-16-le", "replace")
                 modules.append((base, size, re.split(r"[\\/]", name)[-1]))
-                builds[(base, size)] = (size, checksum, stamp)  # which build of it (crashplaces.BUILD)
+                builds[(base, size)] = (size, checksum, stamp)  # which build of it (knowncrashes.Known.builds)
         module, offset = next(((name, address - base) for base, size, name in modules
                                if base <= address < base + size), ("?", address))
         game = next(((base, size) for base, size, name in modules if name.lower() == "ruse.exe"), None)
@@ -1103,19 +1127,28 @@ def read_dump(path, exe=None, install=None, unit=False) -> dict | None:
                         chain.append(place)
                         at_offsets.append(word - base)
                 break
-        if game is not None and game[0] <= address < game[0] + game[1]:  # a crash of the game itself: one we know?
-            from . import crashplaces
-            reason = crashplaces.reason(builds.get(game), address - game[0], at_offsets, returns)
+        if game is not None and game[0] <= address < game[0] + game[1] and known is not None:  # one we know?
+            from . import knowncrashes
+            try:  # (a list or a check that fails costs the notice only, never the crash's report)
+                reason = knowncrashes.reason(known, builds.get(game), address - game[0], at_offsets, returns)
+            except Exception:  # noqa: BLE001 - said below ("list_error"), never silent
+                reason, list_error = None, True
             if reason is not None and unit and after_call is not None and words:
                 try:  # (a memory list that can't be read costs the unit only, never the crash's report)
-                    number = crashplaces.unit_number(builds.get(game), game[0], words, _kept_memory(data, streams),
-                                                     after_call)
+                    number = knowncrashes.unit_number(known, builds.get(game), game[0], words,
+                                                      _kept_memory(data, streams), after_call)
                 except (struct.error, ValueError, IndexError):
-                    number = None
+                    number = None   # (a report cut short: as before the list moved)
+                except Exception:  # noqa: BLE001 - said below ("list_error"), never silent
+                    number, list_error = None, True
     except struct.error:
         return None
     module = re.sub(r"[^A-Za-z0-9_.+ -]", "_", module)[:64] or "?"
     out = {"code": f"0x{code:x}", "module": module, "offset": f"0x{offset:x}"}
+    if game is not None and builds.get(game):
+        out["build"] = list(builds[game])   # (only for the crash code and the list's builds: never sent)
+    if list_error:
+        out["list_error"] = True            # (GameWatch counts it: never sent)
     if access:
         out["access"] = access
     if chain:
@@ -1182,21 +1215,9 @@ def script_error_text(data: bytes) -> str:
 QUICK_CLOSE = 60.0  # seconds: a game started from a modded copy that closed sooner, leaving no crash report, is counted
 
 
-class GameWatch(threading.Thread):
-    """Beside the game the apps started (rusemod.play.Starter): when it closes, the minutes it ran with its mods, and
-    any crash report it left since it started; at one of the crashes we know, the notice for the player (crash_notice:
-    the plain reason, and under version 4 the unit the game was making, named as its card says). The notice is kept
-    first, before Bug Watch's own records, and each record that can't be written (a full disk, a folder held) costs
-    only itself; a notice of an earlier game the window never took goes when this game starts."""
-
-    def __init__(self, watch: Watch, process, listed: list[str], own: int, sleep=time.sleep, clock=time.time,
-                 local: str | None = None, exe=None, folders=None, game=None):
-        super().__init__(daemon=True, name="bug-watch-game")
-        self.folders = list(folders or [])  # the mods' folders: what the player's own hold (own_holds, version 4)
-        self.game = game  # the game's install: which maps are the game's own (read_dump's map), and which units
-        self.watch, self.process, self.listed, self.own = watch, process, listed, own
-        self.sleep, self.clock, self.local, self.started = sleep, clock, local, clock()
-        self.exe = exe  # the copy's program file, for a crash's chain and unit (read_dump); its folder is the copy
+class _GameWatched(threading.Thread):
+    """A watch beside a game an app started (GameWatch, CodeWatch): while it runs, the window keeps asking
+    (crash_notice's "watching"), and a notice of an earlier game the window never took goes when it starts."""
 
     def start(self) -> None:
         global _notice
@@ -1218,28 +1239,169 @@ class GameWatch(threading.Thread):
                 _watching.discard(self)
 
     def _watch(self) -> None:
+        raise NotImplementedError
+
+
+class GameWatch(_GameWatched):
+    """Beside the game the apps started (rusemod.play.Starter): when it closes, the minutes it ran with its mods, and
+    any crash report it left since it started; at one of the crashes we know, the notice for the player (crash_notice:
+    the plain reason, and under version 4 the unit the game was making, named as its card says). The notice is kept
+    first, before Bug Watch's own records, and each record that can't be written (a full disk, a folder held) costs
+    only itself; a notice of an earlier game the window never took goes when this game starts.
+
+    Our list of known crashes (rusemod.knowncrashes): under version 5 of the agreement it is fetched while the game
+    loads (`refreshing`, a thread of its own; a failure counted as "crashlist:<why>"), and read once the game has
+    closed. At a crash of the game itself with no list on the PC, the watch waits for that fetch (up to
+    knowncrashes.WAIT_AT_CRASH seconds), fetches once more when it failed or never ran, and reads the report again; with
+    still no list, the notice says the Launcher couldn't check the crash ("list": False, counted as "crash_no_list").
+    A list without this game's build is counted once a game ("crashlist:build-missing"). Each crash report is read on
+    its own: one that can't be read costs only itself, never the game's other records.
+
+    The crash code (crash_code_given: the Launcher's player under version 5; the owner, 2026-11-26): the notice of a
+    crash we know, or of one that couldn't be checked, carries the code CodeWatch would give for the same report; any
+    other crash is told by its code alone, unless this game's notice already says more (a second report of the same
+    crash, as Windows' own beside the game's). The code is for the player only: it goes in no record."""
+
+    def __init__(self, watch: Watch, process, listed: list[str], own: int, sleep=time.sleep, clock=time.time,
+                 local: str | None = None, exe=None, folders=None, game=None):
+        super().__init__(daemon=True, name="bug-watch-game")
+        self.folders = list(folders or [])  # the mods' folders: what the player's own hold (own_holds, version 4)
+        self.game = game  # the game's install: which maps are the game's own (read_dump's map), and which units
+        self.watch, self.process, self.listed, self.own = watch, process, listed, own
+        self.sleep, self.clock, self.local, self.started = sleep, clock, local, clock()
+        self.exe = exe  # the copy's program file, for a crash's chain and unit (read_dump); its folder is the copy
+        self.refreshing: threading.Thread | None = None   # the fetch of our list of known crashes, while the game runs
+        self.fetched: list[str] = []                       # what each fetch said (knowncrashes.refresh)
+        self.tried_at_crash = False                        # the one more fetch at a crash, done (once a game)
+
+    def _fetch(self) -> None:
+        """One fetch of our list of known crashes (rusemod.knowncrashes.refresh), a failure counted by its kind."""
+        from . import knowncrashes
+        said = knowncrashes.refresh(self.watch.home)
+        self.fetched.append(said)
+        if said.startswith("failed:"):
+            _record(self.watch.count, "messages", "crashlist:" + said[len("failed:"):])
+
+    def _watch(self) -> None:
+        from . import knowncrashes
+        if allows_v5(self.watch.home):   # while the game loads: the list is usually on the PC before any crash
+            self.refreshing = threading.Thread(target=self._fetch, daemon=True, name="bug-watch-crash-list")
+            self.refreshing.start()
         while self.process.poll() is None:
             self.sleep(5)
         ran = self.clock() - self.started
         v4 = allows_v4(self.watch.home)
-        crashes = []
+        coded = crash_code_given(self.watch)   # the Launcher's player under version 5: the crash code too
+        known = knowncrashes.load(self.watch.home)
+        crashes, build_said, told_more = [], False, False
         for dump in crash_dumps_since(self.started, self.local):
-            found = read_dump(dump, self.exe, install=self.game, unit=v4)  # the unit only under version 4
-            if not found:
+            try:  # (a report that can't be read costs only itself)
+                found = read_dump(dump, self.exe, install=self.game, unit=v4, known=known)  # the unit: version 4
+                if not found:
+                    continue
+                ours = str(found.get("module", "")).lower() == "ruse.exe"   # a crash of the game itself
+                if ours and known is None:
+                    known = self._list_at_crash()
+                    if known is not None:
+                        found = read_dump(dump, self.exe, install=self.game, unit=v4, known=known) or found
+                if ours and known is not None and not build_said and \
+                        not knowncrashes.knows_build(known, found.get("build")):
+                    build_said = True   # (a new game build: the list must be brought up to it)
+                    _record(self.watch.count, "messages", "crashlist:build-missing")
+                if found.get("list_error"):   # (a check against the list raised: our own fault, counted)
+                    _record(self.watch.count, "messages", "crashlist:check-error")
+                if isinstance(found.get("unit"), int) and self.exe is not None:
+                    named = unit_named(found["unit"], Path(self.exe).parent, self.game, self.watch.language())
+                    if named is not None:
+                        found["unit_name"], found["unit_added"] = named["name"], named["added"]
+                # (the code as CodeWatch makes it, kept apart from `found`: no record carries it)
+                code = _crash_code(found) if coded else None
+                if found.get("reason"):
+                    _tell(found, code)  # the player first: before any of Bug Watch's own records, which can fail
+                    told_more = True
+                elif ours and known is None:
+                    _tell_no_list(code)
+                    told_more = True
+                    _record(self.watch.count, "messages", "crash_no_list")
+                elif code and not told_more:
+                    _tell_code(code)
+                crashes.append(found)
+            except Exception:  # noqa: BLE001 - one report that can't be read: the next one, and the game's records
                 continue
-            if isinstance(found.get("unit"), int) and self.exe is not None:
-                named = unit_named(found["unit"], Path(self.exe).parent, self.game, self.watch.language())
-                if named is not None:
-                    found["unit_name"], found["unit_added"] = named["name"], named["added"]
-            if found.get("reason"):
-                _tell(found)  # the player first: before any of Bug Watch's own records, which can fail
-            crashes.append(found)
         holds = own_holds(self.folders) if self.own and self.folders and v4 else None
         _record(self.watch.played, ran / 60.0, self.listed, self.own, holds)
         for found in crashes:
             _record(self.watch.game_crash, found, self.listed, self.own, holds=holds)
         if ran < QUICK_CLOSE and not crashes:  # the game didn't get going, or was quit at once (2026-11-10)
             _record(self.watch.count, "messages", "game:closed-under-1-min")
+
+    def _list_at_crash(self):
+        """At a crash of the game itself with no list read: the fetch still running waited for (up to
+        knowncrashes.WAIT_AT_CRASH seconds), one more fetch when it failed or none ran, then the list on the PC (or
+        None). Only under version 5 of the agreement."""
+        from . import knowncrashes
+        if not allows_v5(self.watch.home):
+            return None
+        if self.refreshing is not None:
+            self.refreshing.join(knowncrashes.WAIT_AT_CRASH)
+        running = self.refreshing is not None and self.refreshing.is_alive()
+        if not self.tried_at_crash and not running and (not self.fetched or self.fetched[-1].startswith("failed:")):
+            self.tried_at_crash = True
+            self._fetch()
+        return knowncrashes.load(self.watch.home)
+
+
+class CodeWatch(_GameWatched):
+    """Beside a game the Launcher started for a player without Bug Watch (crash_code_watched): when it closes, the
+    crash code of the newest crash report the game left since it started (rusemod.crashcode: made from where the game
+    stopped, read from the game's own crash report on the PC as read_dump reads it), kept for the window as GameWatch
+    keeps its notice ({"code": ...}). A cheat copy's stop (RUSE Guard's marked lines in the report) is no crash to tell
+    us and gets none. Nothing is counted, kept on the disk or sent, and nothing contacts our server."""
+
+    def __init__(self, process, sleep=time.sleep, clock=time.time, local: str | None = None):
+        super().__init__(daemon=True, name="crash-code-watch")
+        self.process, self.sleep, self.clock, self.local, self.started = process, sleep, clock, local, clock()
+
+    def _watch(self) -> None:
+        from . import crashcode
+        while self.process.poll() is None:
+            self.sleep(5)
+        for dump in crash_dumps_since(self.started, self.local):
+            try:  # (a report that can't be read costs only itself)
+                found = read_dump(dump)
+                if not found:
+                    continue
+                from .guard import read_stop
+                if read_stop(dump) is not None:
+                    continue
+                code = crashcode.make(found)
+                if code:
+                    _tell_code(code)
+            except Exception:  # noqa: BLE001
+                continue
+
+
+def crash_code_given(watch: "Watch | None") -> bool:
+    """Whether a crash of a game the app started gets a crash code for its player (rusemod.crashcode): the Launcher's,
+    Bug Watch on or off (the owner, 2026-11-26: every player), once version 5 of the agreement is accepted, the version
+    whose words say so. With Bug Watch off CodeWatch gives it; with it on, GameWatch's notice carries it."""
+    return watch is not None and watch.app == "launcher" and agreement(watch.home) >= AGREEMENT_V5
+
+
+def crash_code_watched(watch: "Watch | None") -> bool:
+    """Whether a game the app starts gets a CodeWatch: a crash code given (crash_code_given) and Bug Watch off (with it
+    on, GameWatch gives the same code beside what it tells more)."""
+    return crash_code_given(watch) and not enabled(watch.home)
+
+
+def _crash_code(found: dict) -> str | None:
+    """GameWatch's crash code for a report as read_dump read it (rusemod.crashcode.make, as CodeWatch makes it); None
+    when it can't be made, which costs only the code, never the notice or the crash's report."""
+    from . import crashcode
+    try:
+        return crashcode.make(found)
+    except Exception:  # noqa: BLE001 - the notice is told without a code
+        return None
 
 
 def _record(write, *args, **kwargs) -> None:
@@ -1257,22 +1419,47 @@ _watching: set = set()        # the GameWatch threads still watching a game an a
 _notice: dict | None = None   # the newest crash we know, for the player, until the window has taken it
 
 
-def _tell(found: dict) -> None:
-    """Keep the notice of a crash we know (read_dump's "reason", and GameWatch's name for the unit) for the window."""
+def _tell(found: dict, code: str | None = None) -> None:
+    """Keep the notice of a crash we know (read_dump's "reason", and GameWatch's name for the unit) for the window,
+    with its crash code when one is given (crash_code_given)."""
     global _notice
     name = found.get("unit_name")
     notice = {"why": found["reason"], "unit": name if isinstance(name, str) and name else None,
-              "added": found.get("unit_added") is True}
+              "added": found.get("unit_added") is True, "list": True}
+    if code:
+        notice["code"] = code
     with _notice_lock:
         _notice = notice
 
 
+def _tell_no_list(code: str | None = None) -> None:
+    """Keep the notice of a crash of the game itself that couldn't be checked: no list of known crashes on the PC;
+    with its crash code when one is given (crash_code_given)."""
+    global _notice
+    notice = {"why": None, "unit": None, "added": False, "list": False}
+    if code:
+        notice["code"] = code
+    with _notice_lock:
+        _notice = notice
+
+
+def _tell_code(code: str) -> None:
+    """Keep the notice of a crash told by its crash code alone: a player without Bug Watch's (CodeWatch), or, with Bug
+    Watch on, a crash GameWatch tells nothing more of."""
+    global _notice
+    with _notice_lock:
+        _notice = {"code": code}
+
+
 def crash_notice() -> dict:
     """For the window (BugWatchCalls.bugwatch_crash): {"watching": whether a game an app started is still being
-    watched, so the page asks again; "notice": the newest crash we know since the window last took one, as {"why": the
-    plain reason's key (rusemod.crashplaces.REASONS; words.toml crash_why_<key>), "unit": the unit the game was
-    making, by its name as its card says, or None, "added": whether a mod added it}, else None}. A notice is handed
-    over once."""
+    watched, so the page asks again; "notice": the newest crash since the window last took one, else None}. A notice
+    is one of: a crash we know, {"why": the plain reason's key (rusemod.knowncrashes.REASONS; words.toml
+    crash_why_<key>), "unit": the unit the game was making, by its name as its card says, or None, "added": whether a
+    mod added it, "list": True}; a crash of the game itself with no list of known crashes on the PC, {"why": None,
+    "unit": None, "added": False, "list": False}; each of the two with "code", its crash code, when one is given
+    (crash_code_given: the Launcher's player under version 5); a crash told by its code alone, {"code": its crash
+    code} (CodeWatch, or GameWatch at a crash it tells nothing more of). A notice is handed over once."""
     global _notice
     with _notice_lock:
         notice, _notice = _notice, None
@@ -1493,9 +1680,11 @@ class BugWatchCalls:
 
     def bugwatch_crash(self) -> dict:
         """After a game this app started: {"watching": whether it's still watched (the page asks again while it is),
-        "notice": the crash we know it stopped at, once, or None} (crash_notice: the plain reason's key, the unit the
-        game was making by its name as its card says, whether a mod added it). Only when Bug Watch is on: it watches
-        the game (rusemod.play.Starter). Bug Watch's own call, so not counted as one of the window's."""
+        "notice": the crash it stopped at, once, or None} (crash_notice: a crash we know, with the plain reason's key,
+        the unit the game was making by its name as its card says, whether a mod added it; one that couldn't be
+        checked; and, for the Launcher's player under version 5, Bug Watch on or off, its crash code). With Bug Watch
+        on, GameWatch watches the game; with it off, the Launcher's CodeWatch (rusemod.play.Starter). Bug Watch's own
+        call, so not counted as one of the window's."""
         return crash_notice()
 
     def bugwatch_seen(self, group: str, key: str) -> dict:
