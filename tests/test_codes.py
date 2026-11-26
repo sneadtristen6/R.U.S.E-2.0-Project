@@ -842,7 +842,8 @@ class Studio(WithBugWatch):
         self.assertFalse(any(k.startswith(("scenario_turn", "export_mod")) for k in self.day()["messages"]))
         self.assertEqual(self.codes(), ["S-TST-05"])
         source = (SRC / "ruse_studio" / "api.py").read_text(encoding="utf-8")
-        self.assertEqual(source.count("raise EntryError("), 124)            # (the 125 places of B10, one a page's own)
+        # (the 126 places of B10, one a page's own; 0.9.8.23's Rename for maps adds "Give the new map a name.")
+        self.assertEqual(source.count("raise EntryError("), 125)
         self.assertIn('raise EntryError("Pick or make a mod or a map first.")', source)
         self.assertIn("raise coded(StudioError(\"A test is already being built", source)
 
