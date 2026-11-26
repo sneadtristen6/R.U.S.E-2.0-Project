@@ -155,6 +155,14 @@ class WikiPages(InElevenLanguages):
         self.words_in_eleven_languages([f"tip_help_trouble_{topic}"])
 
 
+class Item15SquadLink(WikiPages):
+    ITEM = "15"
+
+    def test_52e_own_helmet_backpack_or_bazooka_links_to_the_step_by_step(self):
+        self.topic_opens_each_language_s_page("squad", "Change-a-Squad", "Changer-une-escouade")
+        self.assertIn('helpLine(w.squad_more_asset, "squad", "squad-note")', js("squad.js"))
+
+
 AUTOMATIC = {"us": "Automatic", "fr": "Automatique", "ger": "Automatisch", "ita": "Automatica", "spa": "Automática",
              "pol": "Automatycznie", "ru": "Автоматически", "cz": "Automaticky", "jpn": "自動", "sc": "自动",
              "fa": "خودکار"}

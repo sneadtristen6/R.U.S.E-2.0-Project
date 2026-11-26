@@ -579,7 +579,7 @@
       const models = modelNotes();
       if (models.length) parts.push(el("h4", { textContent: w.squad_more_models }), ...models);
       if (mine()) {
-        parts.push(el("p", { className: "squad-note", textContent: w.squad_more_asset }),
+        parts.push(helpLine(w.squad_more_asset, "squad", "squad-note"),   // (with the Having trouble? link: Change a squad)
           el("p", { className: "squad-note", textContent: w.squad_more_bones }));
       }
       moreBody.replaceChildren(...parts);
