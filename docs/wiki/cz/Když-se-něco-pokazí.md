@@ -13,6 +13,8 @@ může zapisovat tam, kam jdou kopie. Každý problém, který umí opravit, má
 - **Kopírovat zprávu** dá text, který vložíte do [[hlášení chyby|Nahlášení-chyby]] (vaše uživatelské jméno ve Windows je
   vynecháno).
 
+- **Řešení potíží** v Launcheru řekne také, když chybí vlastní soubory aplikace (Hrát je potřebuje k sestavení hry), místo aby tvrdilo, že je vše připraveno: přeinstalujte aplikaci ze stránky [vydání](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases).
+
 ## Samotná hra se zdá změněná (jiným správcem modů nebo ruční úpravou)
 
 **Nastavení > Čistá záloha hry** uchovává čistou kopii souborů hry, kontroluje je proti ní a vrací, co se změnilo.
@@ -36,6 +38,8 @@ hodí, když žádáte o pomoc.
 > Známý případ: RUSE Studio 0.7.0 a starší ukládalo tahy **Voda** bez jejich hladiny vody („the water brush
 > needs level“). 0.7.1 to opravuje; **Odložit** starý soubor odstraní.
 
+- **Odložit** se nabízí i pro poškozený soubor skupin nabídky stavby (`menu_groups.toml`) a soubory animací (`files/anim/units.toml`, `copies.toml`, `clips.toml`). Než kliknete, řádek řekne, bez čeho bude sestavení (bez vašich skupin ve stavebních seznamech, nebo bez vlastních animací vašich jednotek; jejich soubory klipů zůstávají), a soubor se přejmenuje na `<název>.broken.toml`, nikdy se nesmaže.
+
 ## Aplikace se otevírá dlouho
 
 - **První spuštění po instalaci** se zaškrtnutým „Uchovat čistou kopii souborů hry“ tu kopii vytváří (celou složku
@@ -45,6 +49,8 @@ hodí, když žádáte o pomoc.
 - Cokoli jiného: otevřete **Řešení potíží** a **Kopírovat zprávu**. Zpráva uvádí, jak dlouho trval každý krok
   posledních spuštění aplikace, v sekundách: vložte ji do [[hlášení chyby|Nahlášení-chyby]]. Stejné řádky se ukládají
   do `%LOCALAPPDATA%\RUSE Mod Platform\logs\studio-start.log` (ty Launcheru: `launcher-start.log`).
+
+- Než se index hry sestaví, karta **Národy** ve Studiu to řekne, s tlačítkem **Sestavit index**.
 
 ## „Systém Windows ochránil váš počítač“
 
@@ -120,10 +126,19 @@ Vyzkoušet ve hře, které se ještě sestavuje...). **Ne** nechá Studio otevř
    Vyzkoušet ve hře říká, které tlačítko a mapu).
 3. Je mod v sadě a nemění stejnou věc mod, který je v pořadí níž?
 
+## Soubor se používá (Smazat, Export)
+
+**Smazat** čeká až 10 sekund na soubor, který drží jiný program (Blender, editor), a pak ho pojmenuje: zavřete ten program a klikněte znovu na **Smazat**. **Export** doběhne do konce, i když je soubor starší kopie módu v knihovně Launcheru otevřený v jiném programu: řekne, že mód nebyl přidán do knihovny, a pojmenuje soubor, který máte zavřít.
+
+## Aktualizace se nenainstaluje
+
+Aktualizace jsou podepsané: nainstaluje se jen taková, která nese náš podpis a je přesně podepsaným souborem. Pokud aplikace řekne, že novou verzi nešlo ověřit, neinstalujte ji ručně, pokud to neřekneme na našem Discordu: počkejte na další aktualizaci. Když stahování třikrát selže, aplikace to sama přestane zkoušet a odkáže na stránku vydání: stáhněte tam instalátor v prohlížeči a spusťte ho (nainstaluje se přes starou verzi, stejně jako aktualizace).
+
 ## Hra spadne
 
-Zapište si, co jste dělali těsně předtím (jaká mapa, jaký rozkaz, co bylo na obrazovce), udělejte snímek obrazovky
-a [[nahlaste to|Nahlášení-chyby]]. Díky hlášením pádů na upravených mapách jsou nástroje pro mapy spolehlivé.
+Když hra spuštěná přes **Hrát** nebo **Vyzkoušet ve hře** spadne, aplikace to řekne a dá krátký **kód pádu** s tlačítkem **Kopírovat kód**. Pošlete kód a snímek obrazovky XUL na Discordu (XUL6x3) nebo na GitHubu ([[nahlaste to|Nahlášení-chyby]]), s tím, co jste dělali těsně předtím (která mapa, který rozkaz, co bylo na obrazovce). Se zapnutým **Bug Watch** se pád, který známe, také vysvětlí: jednotka, kterou hra právě vytvářela, a proč. Hlášení pádů na upravených mapách jsou tím, co nástroje map zpevnilo.
+
+- **Nová mapa shazovala hru při načítání**, když složka hry obsahovala zbylé složky revizí (GitHub issue 25). Studio 0.9.8.23 a Launcher 0.4.8.23 sestavují z té nejnovější: aktualizujte.
 
 ## Něco jiného
 

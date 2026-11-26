@@ -67,3 +67,5 @@ sagt, welche.
 ---
 
 [[Feldhandbuch|Feldhandbuch]] · [[English|Shape-the-Ground]]
+
+Liegt Wasser, eine Klippe oder eine Sperre für alle Einheiten über dem ursprünglichen Startpunkt der Karte (dem HQ eines Spielers), warnt der Build und läuft weiter: Das Spiel würde dieses HQ dort bauen, wo es Platz findet. Verschiebe das HQ dieses Spielers oder öffne den Boden dort.

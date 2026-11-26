@@ -29,6 +29,8 @@ vous le modelez.
 
 Les nouvelles routes sont enregistrées dans votre mod tout de suite (`maps/<map>/roads.toml`).
 
+Une extrémité que vous tracez sur une route la rejoint où qu'elle se trouve le long de la route, pas seulement près d'un de ses points : une route tracée n'est plus refusée comme coupée du reste (Studio 0.9.8.23).
+
 ## Ce que fait une nouvelle route en jeu
 
 - **Les trajets de ravitaillement l'empruntent** (prouvé : le trajet d'un dépôt de ravitaillement a pris un nouveau

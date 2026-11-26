@@ -36,3 +36,7 @@ Dobrze wiedzieć:
 ---
 
 [[Podręcznik polowy|Podręcznik-polowy]] · [[English|Play-With-Friends]]
+
+- Kod z ostatniego budowania innego zestawu albo z **Testuj w grze** w Studio mówi o tym, z przyciskiem **Graj w ten zestaw**, żeby zbudować ten zestaw i dostać jego własny kod.
+- **Sprawdzanie RUSE Guard pod kątem znanych programów do oszukiwania** działa w prawdziwych meczach wieloosobowych i kooperacji. Jego lista jest w aplikacji: nic się dla niego nie pobiera.
+- Przed **Graj** sprawdzanie modów nazywa dwa mody map, które robią mapę o tej samej nazwie.

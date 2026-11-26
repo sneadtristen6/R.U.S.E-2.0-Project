@@ -11,8 +11,8 @@ You only need **RUSE Launcher** to play mods. **RUSE Studio** is for making them
 ## Step 1: Download the Launcher
 
 1. Open the [launcher releases](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases?q=launcher) page.
-2. The newest one is at the top, marked **Latest** (for example *RUSE Launcher 0.4.8.9*).
-3. Scroll down to **Assets** under it and click **RUSE-Launcher-Setup-0.4.8.9.exe** (the version number changes; take
+2. The newest one is at the top, marked **Latest** (for example *RUSE Launcher 0.4.8.23*).
+3. Scroll down to **Assets** under it and click **RUSE-Launcher-Setup-0.4.8.23.exe** (the version number changes; take
    the `.exe` that starts with `RUSE-Launcher-Setup`). Your browser downloads it.
 
 The other files there (`RUSE-Launcher-notes.json`, *Source code*) aren't needed.
@@ -37,6 +37,8 @@ The other files there (`RUSE-Launcher-notes.json`, *Source code*) aren't needed.
 > that make the game run without Steam. If they can't confirm it, a box says why and what to do (Play stays off
 > until then): see [[When something goes wrong|When-Something-Goes-Wrong]].
 
+**The first time it opens**, the app shows our **terms of use and privacy notice**: read them and click **Accept and continue**. Read them again any time in **Settings > Terms, credits and licences**. If Windows lacks **Microsoft WebView2** (the app's own window needs it), it's offered, never forced: a ticked box in the installer, a Yes/No box when the app opens, and a card in **Settings**.
+
 ## Step 3: Get mods
 
 **From our list (easiest):** click **Supported mods**, tick the mods you want and press **Install**. Each file is
@@ -53,6 +55,8 @@ It checks the file first: a file that isn't a mod, or that holds a program, is r
 **An old mod that comes as the game's own files** (`.dat` packs you were told to copy into the game folder): click
 **Convert an old mod…**, pick its folder, give it a name and click **Convert and add to the library**. Your game folder
 isn't touched.
+
+A download that comes cut off or loses its connection is tried once more, and one that fails doesn't stop the rest of an install of several mods.
 
 ## Step 4: Pick what to play
 
@@ -71,6 +75,8 @@ agreement the Launcher shows when it first opens has a box for it too). The game
 or without, and its main menu, menus and loading screens carry the gold title. It's made on your PC from your own game's
 files and a picture and a sound that come with the apps, the first time (a few minutes, once).
 
+**Vanilla** (no mods) is our copy too: **Play** builds a plain copy of the game with RUSE Guard in it. To play R.U.S.E. without our apps, start it from Steam.
+
 > [!NOTE]
 > Starting R.U.S.E. from **Steam** starts the game **without** mods, as always. To play with mods, start it from the
 > Launcher's **Play**. Play never changes your Steam install.
@@ -88,6 +94,10 @@ game**.
 
 An update installs only when it carries our signature. If the Launcher or the Studio says a new version couldn't be
 confirmed, don't install it by hand unless we say so on our Discord; wait for the next update.
+
+**The update check** waits until you've accepted the terms. If a download fails three times, the app stops trying by itself and points to the release's page: download the Setup there (Step 1) and run it.
+
+**Uninstalling** asks whether to delete the apps' settings and data too (the answer starts on No). While the other app is still installed, it asks nothing and deletes nothing.
 
 ## Problems?
 
@@ -112,7 +122,7 @@ close it to close the app. Not tried on Linux yet: please tell us how it goes in
 
 1. Open the [studio releases](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases?q=studio) page. The Studio
    is a preview, so its releases are marked **Pre-release**: take the newest.
-2. Under **Assets**, click **RUSE-Studio-Setup-0.9.8.9.exe** (the newest version), run it as in Step 2.
+2. Under **Assets**, click **RUSE-Studio-Setup-0.9.8.23.exe** (the newest version), run it as in Step 2.
 3. Start **RUSE Studio**, then follow [[Your first mod|Your-First-Mod]] (10 minutes).
 
 **Next:** [[Play with friends|Play-With-Friends]]

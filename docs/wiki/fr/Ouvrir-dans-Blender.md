@@ -93,6 +93,8 @@ ramené le dernier envoi :
 - **Les animations de RUSE Decoy :** chaque envoi mis de côté est listé au-dessus des animations de l'unité (« Envoyé
   depuis Blender, jamais ramené, mis de côté le ... »), avec **Les ramener** pour le prendre, ou **Les mettre à la Corbeille**.
 
+- **Une escouade sur ses propres os** (l'Escouade à cheval générique) qu'un ancien Studio a envoyée dans Blender à l'ancienne manière n'est pas reprise : cet envoi est mis de côté de la même façon, et la page dit d'utiliser **Ouvrir dans Blender**, puis **Ramener mes changements**. Le bouton Blender propre à **Ajouter un soldat** revient toujours comme avant.
+
 ## Où sont vos fichiers Blender
 
 Dans le dossier de votre mod, `Documents\RUSE 2.0\Mods\<votre mod>\blender\<le nom de l'unité>\` : ceux de l'escouade

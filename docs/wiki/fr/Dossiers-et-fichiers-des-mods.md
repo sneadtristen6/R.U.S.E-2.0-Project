@@ -59,6 +59,8 @@ N'importe quelle carte listée dans BATAILLES peut être copiée ; les cartes de
 joueurs ont besoin du même mod pour y jouer ensemble, comme pour n'importe quel mod. Les nouvelles cartes se jouent en jeu
 (2026-10-03), et **Dupliquer la carte** dans le Studio crée ce dossier pour vous.
 
+**Renommer** change le nom qu'une nouvelle carte a dans les menus du jeu. Son dossier et son nom de pack restent, donc les ensembles et les codes de partie qui l'utilisent continuent de marcher (les cartes du jeu ne peuvent pas être renommées). Une copie nommée comme une carte du jeu est refusée tout de suite, avant que rien ne soit fait, et une nouvelle carte faite avec seulement un mod d'unités choisi reçoit un mod de carte à elle.
+
 ## Erreurs courantes
 
 | Erreur | Ce qui se passe | Correction |
@@ -74,3 +76,5 @@ côté** le renomme `<name>.broken.toml` à côté de l'original.
 ---
 
 [[Manuel de terrain|Manuel-de-terrain]] · [[English|Mod-Folders-and-Files]]
+
+**Mettre de côté** prend aussi `menu_groups.toml` et les fichiers des animations sous `files/anim/` (`units.toml`, `copies.toml`, `clips.toml`) : la ligne dit d'abord de quoi la construction se passera.

@@ -70,3 +70,5 @@ la parte de abajo del Studio dice cuál.
 ---
 
 [[Manual de campaña|Manual-de-campaña]] · [[English|Shape-the-Ground]]
+
+Si agua, un acantilado o un bloqueo para todas las unidades quedan sobre el punto de partida propio del mapa (el cuartel general de un jugador), la compilación te avisa y sigue: el juego construiría ese cuartel general donde encuentre sitio. Mueve el cuartel general de ese jugador, o despeja el terreno allí.

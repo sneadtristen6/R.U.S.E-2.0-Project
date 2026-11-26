@@ -68,3 +68,5 @@ nello Studio dice quale.
 ---
 
 [[Manuale da campo|Manuale-da-campo]] · [[English|Shape-the-Ground]]
+
+Se acqua, una scogliera o un blocco per tutte le unità finiscono sopra il punto di partenza originale della mappa (il QG di un giocatore), la build ti avvisa e va avanti: il gioco costruirebbe quel QG dove trova spazio. Sposta il QG di quel giocatore, o libera il terreno lì.

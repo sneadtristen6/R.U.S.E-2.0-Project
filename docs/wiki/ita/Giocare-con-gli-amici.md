@@ -37,3 +37,7 @@ Buono a sapersi:
 ---
 
 [[Manuale da campo|Manuale-da-campo]] · [[English|Play-With-Friends]]
+
+- Un codice dell'ultima build di un altro set, o di un **Prova in gioco** dello Studio, lo dice, con **Gioca questo set** per costruire questo set e avere il suo codice.
+- **Il controllo di RUSE Guard sui programmi di trucchi conosciuti** funziona nelle vere partite multigiocatore e cooperative. La sua lista è dentro l'app: non si scarica nulla.
+- Prima di **Gioca**, il controllo delle mod nomina due mod di mappe che fanno una mappa con lo stesso nome.

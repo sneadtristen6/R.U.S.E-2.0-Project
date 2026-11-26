@@ -49,8 +49,8 @@ tabulku: **Vzhled a pohyb**, řádek **Zvuky a animace**, **Více**, pak **Její
 
 - **Stojí na místě**, **Jde** a **Běží** jsou první: to je minimum, které model potřebuje. Nemá-li některá nic
   vlastního, stránka to řekne, a co hraje místo ní.
-- Každá činnost má seznam animací modelu. Vyber jednu, nebo nech první řádek, **Nejbližší**: pak hraje nejbližší, kterou
-  model má, a řádek řekne kterou. Nejbližší znamená, v tomto pořadí: animace pojmenovaná podle té činnosti (stand nebo
+- Každá činnost má seznam animací modelu. Vyber jednu, nebo nech první řádek, **Automaticky**: pak hraje nejbližší, kterou
+  model má, a řádek řekne kterou. Automaticky znamená, v tomto pořadí: animace pojmenovaná podle té činnosti (stand nebo
   idle, walk, run nebo gallop, fire, death...), jinak to, co hraje nejbližší činnost (chůze hraje běh, střelba míření
   nebo stání). Hra hraje to, co říká stránka: sestavení se řídí stejným pravidlem.
 - **Všechny ostatní činnosti** vypíše zbytek, po skupinách.
@@ -164,7 +164,7 @@ Tlačítka výše neodebírají změnu udělanou v Blenderu.
 - **Kopírovat tuto animaci…**: kopie, kterou hraje jedno družstvo a jeden voják jiného (listopad 2026).
 - **Změnit jeho animace v Blenderu**: družstvo stojící a běžící se zdviženou paží a Univerzální jízdní družstva, jejichž
   koně drží hlavu nahoře (listopad 2026).
-- Vlastní animace Univerzálního jízdního družstva vybrané přes **Nejbližší** a jízda sama za sebe na dlouhých přesunech
+- Vlastní animace Univerzálního jízdního družstva vybrané přes **Automaticky** a jízda sama za sebe na dlouhých přesunech
   (listopad 2026).
 - Ve hře zatím nevyzkoušeno: rychlost, náhrada nebo kost změněná jen pro jednu jednotku, a jiná animace vybraná ručně
   v **Její animace**.

@@ -59,6 +59,8 @@ KÄMPFE listet, lässt sich kopieren; Karten von Kampagne und Operationen nicht.
 sie zusammen zu spielen, wie bei jedem Mod. Neue Karten laufen im Spiel (2026-10-03), und **Karte duplizieren** im
 Studio legt diesen Ordner für dich an.
 
+**Umbenennen** ändert den Namen, den eine neue Karte in den Menüs des Spiels hat. Ihr Ordner und ihr Pack-Name bleiben, sodass Sets und Beitrittscodes, die sie nutzen, weiter funktionieren (die Karten des Spiels selbst lassen sich nicht umbenennen). Eine Kopie, die wie eine Karte des Spiels heißt, wird sofort abgelehnt, bevor etwas gemacht wird, und eine neue Karte, die mit nur einem gewählten Einheiten-Mod gemacht wird, bekommt einen eigenen Karten-Mod.
+
 ## Häufige Fehler
 
 | Fehler | Was passiert | Lösung |
@@ -74,3 +76,5 @@ benennt sie in `<name>.broken.toml` neben dem Original um.
 ---
 
 [[Feldhandbuch|Feldhandbuch]] · [[English|Mod-Folders-and-Files]]
+
+**Beiseitelegen** nimmt auch `menu_groups.toml` und die Animationsdateien unter `files/anim/` (`units.toml`, `copies.toml`, `clips.toml`): Die Zeile sagt zuerst, worauf der Build verzichtet.

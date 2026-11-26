@@ -14,6 +14,8 @@ quoi faire.
 - **Copier le rapport** donne un texte à coller dans un [[rapport de bug|Signaler-un-bug]] (votre nom d'utilisateur Windows
   en est retiré).
 
+- Le **Dépannage** du Launcher dit aussi quand des fichiers de l'application elle-même manquent (Jouer en a besoin pour construire le jeu) au lieu de dire que tout est prêt : réinstallez l'application depuis les [versions](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases).
+
 ## Le jeu lui-même semble changé (par un autre gestionnaire de mods ou une modification à la main)
 
 **Réglages > Sauvegarde propre du jeu** garde une copie propre des fichiers du jeu, les vérifie par rapport à elle, et
@@ -39,6 +41,8 @@ côté. **Détails** montre les propres mots de la construction, pratique pour d
 > Cas connu : RUSE Studio 0.7.0 et les versions antérieures enregistraient les coups de pinceau **Eau** sans leur niveau
 > d'eau (« the water brush needs level »). La 0.7.1 corrige ça ; **Mettre de côté** débarrasse d'un ancien fichier.
 
+- **Mettre de côté** est aussi proposé pour un fichier des groupes du menu de construction cassé (`menu_groups.toml`) et pour les fichiers des animations (`files/anim/units.toml`, `copies.toml`, `clips.toml`). Avant que vous cliquiez, la ligne dit de quoi la construction se passera (vos groupes dans les listes de construction, ou les animations propres de vos unités ; leurs fichiers de clips restent), et le fichier est renommé `<nom>.broken.toml`, jamais supprimé.
+
 ## L'application met longtemps à s'ouvrir
 
 - **Le premier démarrage après l'installation**, avec « Garder une copie propre des fichiers de mon jeu » coché, fait
@@ -51,6 +55,8 @@ côté. **Détails** montre les propres mots de la construction, pratique pour d
   démarrages de l'application a pris à chaque étape, en secondes : collez-le dans un [[rapport de bug|Signaler-un-bug]].
   Les mêmes lignes sont gardées dans `%LOCALAPPDATA%\RUSE Mod Platform\logs\studio-start.log` (celles du Launcher :
   `launcher-start.log`).
+
+- Avant que l'index du jeu soit construit, l'onglet **Nations** du Studio le dit, avec un bouton **Construire l'index**.
 
 ## « Windows a protégé votre ordinateur »
 
@@ -134,11 +140,19 @@ ferme et perd cela.
    choisissez-la (le message du Studio après Tester en jeu dit quel bouton et quelle carte).
 3. Le mod est-il dans l'ensemble, et un mod plus bas dans l'ordre change-t-il la même chose ?
 
+## Un fichier est utilisé (Supprimer, Exporter)
+
+**Supprimer** attend jusqu'à 10 secondes un fichier qu'un autre programme tient (Blender, un éditeur), puis le nomme : fermez ce programme et cliquez à nouveau sur **Supprimer**. **Exporter** va jusqu'au bout même quand un fichier de l'ancienne copie du mod dans la bibliothèque du Launcher est ouvert dans un autre programme : il dit que le mod n'a pas été ajouté à la bibliothèque et nomme le fichier à fermer.
+
+## La mise à jour ne s'installe pas
+
+Les mises à jour sont signées : une mise à jour ne s'installe que si elle porte notre signature et est exactement le fichier signé. Si l'application dit qu'une nouvelle version n'a pas pu être confirmée, ne l'installez pas à la main sauf si nous le disons sur notre Discord : attendez la mise à jour suivante. Si le téléchargement échoue trois fois, l'application arrête d'essayer d'elle-même et renvoie à la page de la version : téléchargez-y l'installateur dans votre navigateur et lancez-le (il s'installe par-dessus l'ancien, comme la mise à jour).
+
 ## Le jeu plante
 
-Notez ce que vous avez fait juste avant (quelle carte, quel ordre, ce qu'il y avait à l'écran), faites une capture
-d'écran, et [[signalez-le|Signaler-un-bug]]. Les rapports de plantage sur des cartes modifiées, c'est ce qui a rendu les
-outils de carte solides.
+Quand un jeu lancé par **Jouer** ou **Tester en jeu** plante, l'application le dit et donne un court **code de plantage**, avec **Copier le code**. Envoyez le code et une capture d'écran à XUL sur Discord (XUL6x3) ou sur GitHub ([[signalez-le|Signaler-un-bug]]), avec ce que vous faisiez juste avant (quelle carte, quel ordre, ce qu'il y avait à l'écran). Avec **Bug Watch** activé, un plantage que nous connaissons est aussi expliqué : l'unité que le jeu créait, et pourquoi. Les rapports de plantage sur des cartes modifiées sont ce qui a rendu les outils de carte solides.
+
+- **Une nouvelle carte faisait planter le jeu au chargement** quand le dossier du jeu contenait d'anciens dossiers de révision (ticket GitHub 25). Studio 0.9.8.23 et Launcher 0.4.8.23 construisent à partir du plus récent : mettez à jour.
 
 ## Autre chose
 

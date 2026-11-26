@@ -67,3 +67,5 @@ přes to, co malujete, i vlastní dekály hry s touto texturou. Ve hře zatím n
 ---
 
 [[Polní příručka|Polní-příručka]] · [[English|Shape-the-Ground]]
+
+Pokud voda, útes nebo blokace pro všechny jednotky skončí na vlastním výchozím bodě mapy (velitelství hráče), sestavení varuje a pokračuje: hra by to velitelství postavila tam, kde najde místo. Přesuňte velitelství toho hráče, nebo tam terén uvolněte.

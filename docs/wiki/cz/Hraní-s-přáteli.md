@@ -36,3 +36,7 @@ Dobré vědět:
 ---
 
 [[Polní příručka|Polní-příručka]] · [[English|Play-With-Friends]]
+
+- Kód z posledního sestavení jiné sady nebo z **Vyzkoušet ve hře** ve Studiu to řekne, s tlačítkem **Hrát tuto sadu**, které sestaví tuto sadu a dá její vlastní kód.
+- **Kontrola RUSE Guard na známé podváděcí programy** běží ve skutečných zápasech pro více hráčů i v kooperaci. Její seznam je v aplikaci: nic se pro ni nestahuje.
+- Před **Hrát** kontrola módů pojmenuje dva módy map, které dělají mapu se stejným názvem.

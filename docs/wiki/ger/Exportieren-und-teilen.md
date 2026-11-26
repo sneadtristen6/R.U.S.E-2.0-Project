@@ -23,6 +23,8 @@ Ist der Export fertig, öffnet das Studio **Teilen Sie Ihren Mod** mit der Grö�
 ihrem Eintrag für die Liste, bereit zum Kopieren. Du kannst es jederzeit wieder über das Menü **Mod** öffnen (**Mod
 teilen…**).
 
+**Was hineinkommt:** README, Danksagungen, Lizenz und der Ordner `docs` deines Mods werden mit gepackt, und dein ganzer Windows-Benutzername wird aus der README genommen. Ein Mod, der für den Launcher zu groß ist, wird abgelehnt, bevor etwas gepackt wird. Ersetzt der Export eine Datei, sagt er welche. Ist eine Datei der älteren Kopie des Mods in der Bibliothek des Launchers in einem anderen Programm offen, wird der Export trotzdem fertig, sagt, dass der Mod nicht zur Bibliothek hinzugefügt wurde, und nennt die Datei, die du schließen musst.
+
 ## 2. Teilen: zu den unterstützten Mods hinzufügen
 
 Einen Mod gemacht? Füg ihn der Liste hinzu und werde Mitwirkender. Der Reiter **Unterstützte Mods** im RUSE Launcher

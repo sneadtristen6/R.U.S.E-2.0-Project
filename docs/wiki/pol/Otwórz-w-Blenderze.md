@@ -85,6 +85,8 @@ przeniesiesz ostatnią wysyłkę:
 - **Animacje w RUSE Decoy:** każda odłożona wysyłka jest na liście nad animacjami jednostki („Wysłane z Blendera, nigdy
   nieprzeniesione, odłożone ...”), z **Przenieś je z powrotem**, żeby ją przyjąć, albo **Przenieś je do Kosza**.
 
+- **Oddział na własnych kościach** (Uniwersalny oddział konny), który starsze Studio wysłało do Blendera starym sposobem, nie jest przyjmowany z powrotem: ta wysyłka jest odkładana tak samo, a strona mówi, żeby użyć **Otwórz w Blenderze**, a potem **Przenieś moje zmiany**. Własny przycisk Blendera w **Dodaj żołnierza** dalej wraca jak dotąd.
+
 ## Gdzie są twoje pliki Blendera
 
 W folderze twojego moda, `Documents\RUSE 2.0\Mods\<twój mod>\blender\<nazwa jednostki>\`: oddziału w `squad`, RUSE Decoy

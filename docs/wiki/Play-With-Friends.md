@@ -32,3 +32,7 @@ Good to know:
   leaves any other match a few seconds in.
 - **Not fully supported yet:** we tested it in the game with one player hosting a multiplayer match alone against the computer, and outside the game with 20 simulated matches of up to four players. Nobody has played it with two people in a real match yet, so it may still be buggy: use it in multiplayer at your own discretion. Try it and tell us what happened on Discord or GitHub: which RUSE Guard message you saw, and whether the match went on.
 - **Check every file of the copy** checks that your modded copy is exactly as it was built.
+
+- A code from the last build of another set, or of a Studio **Test in game**, says so, with **Play this set** to build this set and get its own code.
+- **RUSE Guard's check for known cheat programs** runs in real multiplayer and co-op matches. Its list is inside the app: nothing is downloaded for it.
+- Before **Play**, the mod check names two map mods that make a map of one name.

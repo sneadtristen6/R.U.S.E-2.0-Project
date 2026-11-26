@@ -14,6 +14,8 @@ fare.
 - **Copia il rapporto** dà un testo da incollare in una [[segnalazione di bug|Segnalare-un-bug]] (il tuo nome utente di Windows
   viene lasciato fuori).
 
+- La **Risoluzione problemi** del Launcher dice anche quando mancano file dell'app stessa (Gioca ne ha bisogno per costruire il gioco) invece di dire che è tutto pronto: reinstalla l'app dalle [release](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases).
+
 ## Il gioco stesso sembra cambiato (da un altro gestore di mod o da una modifica a mano)
 
 **Impostazioni > Backup pulito del gioco** tiene una copia pulita dei file del gioco, li confronta con essa e rimette ciò che
@@ -37,6 +39,8 @@ quando chiedi aiuto.
 > Caso noto: RUSE Studio 0.7.0 e precedenti salvavano le pennellate di **Acqua** senza il loro livello dell'acqua ("the water
 > brush needs level"). La 0.7.1 lo corregge; **Metti da parte** sistema un vecchio file.
 
+- **Metti da parte** è offerto anche per un file dei gruppi del menu di costruzione rotto (`menu_groups.toml`) e per i file delle animazioni (`files/anim/units.toml`, `copies.toml`, `clips.toml`). Prima che tu clicchi, la riga dice di cosa farà a meno la build (i tuoi gruppi negli elenchi di costruzione, o le animazioni proprie delle tue unità; i loro file delle clip restano), e il file viene rinominato `<nome>.broken.toml`, mai eliminato.
+
 ## L'app ci mette molto ad aprirsi
 
 - **Il primo avvio dopo l'installazione** con «Conserva una copia pulita dei file del gioco» spuntato fa quella copia (tutta
@@ -47,6 +51,8 @@ quando chiedi aiuto.
 - Qualsiasi altra cosa: apri **Risoluzione problemi** e **Copia il rapporto**. Il rapporto elenca quanto ha impiegato ogni
   passo degli ultimi avvii dell'app, in secondi: incollalo in una [[segnalazione di bug|Segnalare-un-bug]]. Le stesse righe
   vengono tenute in `%LOCALAPPDATA%\RUSE Mod Platform\logs\studio-start.log` (quelle del Launcher: `launcher-start.log`).
+
+- Prima che l'indice del gioco sia creato, la scheda **Nazioni** dello Studio lo dice, con un pulsante **Crea l'indice**.
 
 ## «Windows ha protetto il PC»
 
@@ -127,11 +133,19 @@ quelle cose.
    messaggio dello Studio dopo Prova in gioco dice quale pulsante e quale mappa).
 3. La mod è nel set, e c'è una mod più in basso nell'ordine che cambia la stessa cosa?
 
+## Un file è in uso (Elimina, Esporta)
+
+**Elimina** aspetta fino a 10 secondi un file che un altro programma tiene (Blender, un editor), poi lo nomina: chiudi quel programma e premi di nuovo **Elimina**. **Esporta** arriva in fondo anche quando un file della vecchia copia della mod nella libreria del Launcher è aperto in un altro programma: dice che la mod non è stata aggiunta alla libreria e nomina il file da chiudere.
+
+## L'aggiornamento non si installa
+
+Gli aggiornamenti sono firmati: uno si installa solo se porta la nostra firma ed è esattamente il file firmato. Se l'app dice che una nuova versione non è stata confermata, non installarla a mano a meno che non lo diciamo sul nostro Discord: aspetta l'aggiornamento successivo. Se il download fallisce tre volte, l'app smette da sola di riprovare e rimanda alla pagina della versione: scarica lì l'installer nel browser e avvialo (si installa sopra il vecchio, come l'aggiornamento).
+
 ## Il gioco va in crash
 
-Scrivi cosa hai fatto appena prima (quale mappa, quale ordine, cosa c'era sullo schermo), fai uno screenshot e
-[[segnalalo|Segnalare-un-bug]]. Le segnalazioni di crash sulle mappe modificate sono il modo in cui gli strumenti per le mappe sono
-diventati solidi.
+Quando un gioco avviato con **Gioca** o **Prova in gioco** va in crash, l'app lo dice e dà un breve **codice del crash**, con **Copia il codice**. Manda il codice e uno screenshot a XUL su Discord (XUL6x3) o su GitHub ([[segnalalo|Segnalare-un-bug]]), con ciò che hai fatto subito prima (quale mappa, quale ordine, cosa c'era sullo schermo). Con **Bug Watch** attivo, un crash che conosciamo viene anche spiegato: l'unità che il gioco stava creando, e perché. Le segnalazioni di crash sulle mappe modificate sono ciò che ha reso solidi gli strumenti delle mappe.
+
+- **Una nuova mappa faceva andare in crash il gioco al caricamento** quando la cartella del gioco conteneva vecchie cartelle di revisione (issue GitHub 25). Studio 0.9.8.23 e Launcher 0.4.8.23 costruiscono dalla più recente: aggiorna.
 
 ## Qualcos'altro
 

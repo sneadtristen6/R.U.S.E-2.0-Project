@@ -38,3 +38,7 @@ Bueno saber:
 ---
 
 [[Manual de campaña|Manual-de-campaña]] · [[English|Play-With-Friends]]
+
+- Un código de la última compilación de otro conjunto, o de un **Probar en el juego** del Studio, lo dice, con **Jugar este conjunto** para construir este conjunto y obtener su propio código.
+- **La comprobación de RUSE Guard de programas de trampas conocidos** funciona en partidas multijugador y cooperativas reales. Su lista está dentro de la aplicación: no se descarga nada para ella.
+- Antes de **Jugar**, la comprobación de mods nombra dos mods de mapa que crean un mapa con el mismo nombre.

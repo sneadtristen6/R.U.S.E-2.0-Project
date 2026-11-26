@@ -123,8 +123,8 @@ En la página de la unidad, **Sus animaciones** muestra qué reproduce la unidad
 
 - **Se queda quieto**, **Camina** y **Corre** van primero: lo mínimo que necesita un modelo. Si alguna no tiene nada
   propio, la página lo dice, y qué reproduce en su lugar.
-- Cada acción es una lista de las animaciones del modelo. Elige una, o déjala en **La más cercana**: entonces
-  reproduce la más parecida que tenga el modelo, y la lista dice cuál. La más cercana es, por orden: una animación con
+- Cada acción es una lista de las animaciones del modelo. Elige una, o déjala en **Automática**: entonces
+  reproduce la más parecida que tenga el modelo, y la lista dice cuál. Automática es, por orden: una animación con
   el nombre de esa acción (stand o idle, walk, run o gallop, fire, death...), si no, lo que reproduce la acción más
   cercana (caminar el correr, correr el caminar, luego el estar quieto; disparar el apuntar, luego el estar quieto;
   toda muerte la muerte simple). La compilación sigue la misma regla: lo que dice la página es lo que reproduce el
@@ -134,7 +134,7 @@ En la página de la unidad, **Sus animaciones** muestra qué reproduce la unidad
 - **Todas las demás acciones** lista el resto, por tipo: quieto, en movimiento, apuntar y disparar, el arma pesada,
   recibir impactos, morir.
 - **En los trayectos largos** el juego mete a un pelotón en su camión. Una unidad con animaciones propias va por sí
-  misma en su lugar, reproduciendo la animación elegida ahí (su correr si la dejas en La más cercana), tan rápido como
+  misma en su lugar, reproduciendo la animación elegida ahí (su correr si la dejas en Automática), tan rápido como
   su camión. Elige **En su camión** para quedarte con el camión.
 
 **Una copia conserva sus animaciones:** una unidad copiada de otra con animaciones propias reproduce las mismas. Para

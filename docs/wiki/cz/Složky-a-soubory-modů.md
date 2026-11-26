@@ -57,6 +57,8 @@ fr = "Blitz jumeau"
 kterou uvádí BITVY; mapy kampaně a operací ne. Dva hráči potřebují ke společnému hraní stejný mod, jako u každého
 modu. Nové mapy se ve hře hrají (2026-10-03) a **Duplikovat mapu** ve Studiu tuto složku udělá za vás.
 
+**Přejmenovat** změní název, který má nová mapa v nabídkách hry. Její složka a název balíčku zůstanou, takže sady a kódy hry, které ji používají, dál fungují (vlastní mapy hry přejmenovat nelze). Kopie pojmenovaná jako mapa hry se odmítne hned, než se cokoli vytvoří, a nová mapa vytvořená jen s vybraným módem jednotek dostane vlastní mód mapy.
+
 ## Časté chyby
 
 | Chyba | Co se stane | Oprava |
@@ -72,3 +74,5 @@ Pokud soubor nejde přečíst, Studio ho nikdy nepřepíše: vaše práce se nik
 ---
 
 [[Polní příručka|Polní-příručka]] · [[English|Mod-Folders-and-Files]]
+
+**Odložit** bere i `menu_groups.toml` a soubory animací ve `files/anim/` (`units.toml`, `copies.toml`, `clips.toml`): řádek nejdřív řekne, bez čeho bude sestavení.

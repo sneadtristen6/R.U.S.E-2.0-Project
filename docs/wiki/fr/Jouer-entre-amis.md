@@ -39,3 +39,7 @@ Bon à savoir :
 ---
 
 [[Manuel de terrain|Manuel-de-terrain]] · [[English|Play-With-Friends]]
+
+- Un code issu de la dernière construction d'un autre ensemble, ou d'un **Tester en jeu** du Studio, le dit, avec **Jouer cet ensemble** pour construire cet ensemble et obtenir son propre code.
+- **La vérification de RUSE Guard contre les programmes de triche connus** fonctionne dans les vraies parties multijoueur et coop. Sa liste est dans l'application : rien n'est téléchargé pour elle.
+- Avant **Jouer**, la vérification des mods nomme deux mods de carte qui font une carte du même nom.

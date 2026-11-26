@@ -37,3 +37,7 @@ Gut zu wissen:
 ---
 
 [[Feldhandbuch|Feldhandbuch]] · [[English|Play-With-Friends]]
+
+- Ein Code aus dem letzten Build eines anderen Sets oder eines **Im Spiel testen** im Studio sagt das, mit **Dieses Set spielen**, um dieses Set zu bauen und seinen eigenen Code zu bekommen.
+- **RUSE Guards Prüfung auf bekannte Cheat-Programme** läuft in echten Mehrspieler- und Koop-Partien. Ihre Liste ist in der App: Dafür wird nichts heruntergeladen.
+- Vor **Spielen** nennt die Mod-Prüfung zwei Karten-Mods, die eine Karte mit demselben Namen machen.

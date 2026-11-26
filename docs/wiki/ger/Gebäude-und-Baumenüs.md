@@ -41,6 +41,8 @@ Gruppen das Gebäude hat (**7 von 10 Gruppen**).
 
 Im Spiel noch nicht ausprobiert.
 
+Hat `menu_groups.toml` einen Fehler, sagt das Studio es in einfachen Worten und bietet **Beiseitelegen** an: Der Build läuft dann ohne deine Gruppen, bis die Datei repariert ist. Nichts wird gelöscht.
+
 ## Ein Gebäude hinzufügen
 
 **Gebäude hinzufügen…** unter der Tafel einer Nation: wähl das Gebäude des Spiels, das es kopiert (**Kopie von**), gib

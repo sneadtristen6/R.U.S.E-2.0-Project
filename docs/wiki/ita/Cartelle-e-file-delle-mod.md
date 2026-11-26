@@ -59,6 +59,8 @@ BATTAGLIE si può copiare; le mappe della campagna e delle Operazioni no. Due gi
 giocarla insieme, come per qualsiasi mod. Le nuove mappe funzionano nel gioco (2026-10-03), e **Duplica mappa** dello Studio
 crea questa cartella per te.
 
+**Rinomina** cambia il nome che una nuova mappa ha nei menu del gioco. La sua cartella e il nome del pack restano, quindi i set e i codici partita che la usano continuano a funzionare (le mappe del gioco non si possono rinominare). Una copia con il nome di una mappa del gioco viene rifiutata subito, prima di creare qualsiasi cosa, e una nuova mappa fatta con solo una mod di unità scelta riceve una mod di mappa tutta sua.
+
 ## Errori comuni
 
 | Errore | Cosa succede | Soluzione |
@@ -74,3 +76,5 @@ rinomina `<name>.broken.toml` accanto all'originale.
 ---
 
 [[Manuale da campo|Manuale-da-campo]] · [[English|Mod-Folders-and-Files]]
+
+**Metti da parte** prende anche `menu_groups.toml` e i file delle animazioni in `files/anim/` (`units.toml`, `copies.toml`, `clips.toml`): la riga dice prima di cosa farà a meno la build.

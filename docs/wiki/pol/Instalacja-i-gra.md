@@ -12,8 +12,8 @@ strony).
 ## Krok 1: Pobierz Launcher
 
 1. Otwórz stronę [wydań launchera](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases?q=launcher).
-2. Najnowsze jest na górze, oznaczone **Latest** (na przykład *RUSE Launcher 0.4.8.9*).
-3. Przewiń w dół do **Assets** pod nim i kliknij **RUSE-Launcher-Setup-0.4.8.9.exe** (numer wersji się zmienia; weź plik
+2. Najnowsze jest na górze, oznaczone **Latest** (na przykład *RUSE Launcher 0.4.8.23*).
+3. Przewiń w dół do **Assets** pod nim i kliknij **RUSE-Launcher-Setup-0.4.8.23.exe** (numer wersji się zmienia; weź plik
    `.exe`, który zaczyna się od `RUSE-Launcher-Setup`). Twoja przeglądarka go pobierze.
 
 Pozostałe pliki (`RUSE-Launcher-notes.json`, *Source code*) nie są potrzebne.
@@ -39,6 +39,8 @@ Pozostałe pliki (`RUSE-Launcher-notes.json`, *Source code*) nie są potrzebne.
 > które pozwalają uruchomić grę bez Steama. Jeśli nie mogą tego potwierdzić, okienko mówi dlaczego i co zrobić (Graj
 > pozostaje wyłączone do tego czasu): zobacz [[Gdy coś pójdzie nie tak|Gdy-coś-pójdzie-nie-tak]].
 
+**Przy pierwszym uruchomieniu** aplikacja pokazuje nasze **warunki korzystania i informację o prywatności**: przeczytaj je i kliknij **Akceptuj i kontynuuj**. Możesz je przeczytać ponownie w każdej chwili w **Ustawienia > Warunki, autorzy i licencje**. Jeśli w Windows brakuje **Microsoft WebView2** (potrzebuje go okno aplikacji), jest proponowany, nigdy wymuszany: zaznaczone pole w instalatorze, pytanie Tak/Nie przy uruchomieniu aplikacji i karta w **Ustawieniach**.
+
 ## Krok 3: Zdobądź mody
 
 **Z naszej listy (najłatwiej):** kliknij **Obsługiwane mody**, zaznacz mody, które chcesz, i naciśnij **Zainstaluj**.
@@ -55,6 +57,8 @@ Najpierw sprawdza plik: plik, który nie jest modem albo zawiera program, jest o
 **Stary mod w postaci własnych plików gry** (paczki `.dat`, które miałeś skopiować do folderu gry): kliknij
 **Przekształć stary mod…**, wybierz jego folder, nadaj mu nazwę i kliknij **Przekształć i dodaj do biblioteki**. Folder
 twojej gry nie jest ruszany.
+
+Pobieranie, które przyjdzie ucięte albo straci połączenie, jest ponawiane raz, a jedno nieudane nie zatrzymuje reszty instalacji kilku modów.
 
 ## Krok 4: Wybierz, w co grać
 
@@ -74,6 +78,8 @@ otwiera się wtedy na scenie bitwy, z modami lub bez, a jej menu główne, menu 
 Powstaje on na twoim PC z plików twojej własnej gry oraz obrazu i dźwięku dołączonych do aplikacji, za pierwszym razem
 (kilka minut, raz).
 
+**Oryginał** (bez modów) to też nasza kopia: **Graj** buduje zwykłą kopię gry z RUSE Guard w środku. Aby grać w R.U.S.E. bez naszych aplikacji, uruchom grę ze Steam.
+
 > [!NOTE]
 > Uruchomienie R.U.S.E. ze **Steama** uruchamia grę **bez** modów, jak zawsze. Aby grać z modami, uruchom ją przyciskiem
 > **Graj** w Launcherze. Graj nigdy nie zmienia twojej instalacji Steam.
@@ -88,6 +94,10 @@ w przeglądarce i uruchom go: instaluje się na starym i zachowuje twoje mody.
 
 Aktualizacja instaluje się tylko wtedy, gdy ma nasz podpis. Jeśli Launcher lub Studio mówi, że nowej wersji nie udało
 się potwierdzić, nie instaluj jej ręcznie, chyba że powiemy tak na naszym Discordzie; poczekaj na następną aktualizację.
+
+**Sprawdzanie aktualizacji** czeka, aż zaakceptujesz warunki. Jeśli pobieranie nie uda się trzy razy, aplikacja sama przestaje próbować i wskazuje stronę wydania: pobierz tam Setup (krok 1) i uruchom go.
+
+**Odinstalowanie** pyta, czy usunąć też ustawienia i dane aplikacji (odpowiedź zaczyna się na Nie). Dopóki druga aplikacja jest zainstalowana, o nic nie pyta i niczego nie usuwa.
 
 ## Problemy?
 
@@ -112,7 +122,7 @@ gry i zamknij je, by zamknąć aplikację. Jeszcze nie testowane na Linuksie: na
 
 1. Otwórz stronę [wydań Studio](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases?q=studio). Studio jest
    wersją zapoznawczą, więc jego wydania są oznaczone **Pre-release**: weź najnowsze.
-2. W **Assets** kliknij **RUSE-Studio-Setup-0.9.8.9.exe** (najnowsza wersja) i uruchom go jak w kroku 2.
+2. W **Assets** kliknij **RUSE-Studio-Setup-0.9.8.23.exe** (najnowsza wersja) i uruchom go jak w kroku 2.
 3. Uruchom **RUSE Studio**, potem postępuj według [[Twój pierwszy mod|Twój-pierwszy-mod]] (10 minut).
 
 **Dalej:** [[Gra ze znajomymi|Gra-ze-znajomymi]]

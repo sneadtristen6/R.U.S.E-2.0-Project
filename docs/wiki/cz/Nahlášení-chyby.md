@@ -30,3 +30,7 @@ discussion**. Krátký formulář se zeptá na podrobnosti.
 ---
 
 [[Polní příručka|Polní-příručka]] · [[English|Report-a-Bug]]
+
+**Po pádu** aplikace dá krátký **kód pádu** s tlačítkem **Kopírovat kód**: dejte ho do hlášení, nebo ho pošlete se snímkem obrazovky XUL na Discordu (XUL6x3).
+
+**Žádost o ochranu soukromí** (o tom, co uchovává RUSE Guard): dejte nám kód z **Nastavení > Váš kód RUSE Guard (pro žádosti o ochranu soukromí)**. Podmínky v **Nastavení > Podmínky, poděkování a licence** říkají, co uchováváme a jaká máte práva.

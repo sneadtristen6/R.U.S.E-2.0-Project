@@ -124,8 +124,8 @@ avec lui. Sur la page de l'unité, **Ses animations** montre ce que l'unité jou
 
 - **Reste immobile**, **Marche** et **Court** viennent en premier : le minimum pour un modèle. Si l'une d'elles n'a
   rien en propre, la page le dit, et ce qu'elle joue à la place.
-- Chaque action est une liste des animations du modèle. Choisissez-en une, ou laissez **La plus proche** : elle joue
-  alors celle du modèle qui s'en rapproche le plus, et la liste dit laquelle. La plus proche, c'est, dans l'ordre : une
+- Chaque action est une liste des animations du modèle. Choisissez-en une, ou laissez **Automatique** : elle joue
+  alors celle du modèle qui s'en rapproche le plus, et la liste dit laquelle. Automatique, c'est, dans l'ordre : une
   animation nommée pour cette action (stand ou idle, walk, run ou gallop, fire, death...), sinon ce que joue l'action
   la plus proche (une marche la course, une course la marche, puis l'attente ; un tir la visée, puis l'attente ; toute
   mort la mort simple). La construction suit la même règle : ce que dit la page est ce que joue le jeu.
@@ -134,7 +134,7 @@ avec lui. Sur la page de l'unité, **Ses animations** montre ce que l'unité jou
 - **Toutes les autres actions** liste le reste, par sorte : à l'arrêt, en mouvement, viser et tirer, l'arme lourde,
   être touché, mourir.
 - **Sur les longs trajets**, le jeu met une escouade dans son camion. Une unité avec ses propres animations y va
-  elle-même à la place, en jouant l'animation choisie là (sa course si vous laissez La plus proche), aussi vite que son
+  elle-même à la place, en jouant l'animation choisie là (sa course si vous laissez Automatique), aussi vite que son
   camion. Choisissez **Dans son camion** pour garder le camion.
 
 **Une copie garde ses animations :** une unité copiée d'une unité qui a ses propres animations joue les mêmes. Pour en

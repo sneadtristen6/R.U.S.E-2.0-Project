@@ -62,6 +62,8 @@ The Units tab has two buttons at the top: **Change a unit** (the list, then the 
 **New unit (import a model)**. With **New unit**, pick the unit to start from, give it a name, and click **Create**;
 then change it like any other. Or pick the unit and choose **New unit…** on its page.
 
+- **Checked as you make it:** a price below 0 is refused (as a research price is), and so is a second unit with exactly the same name, in any alphabet; a limit says its number plainly ("too big: the game takes at most 2,147,483,647"). The building that builds a new unit is picked from a list of the nation's own buildings, and a copy of an upgrade says so when it stops being an upgrade.
+
 ## Change how a unit looks
 
 The unit's page shows its **3D model**: drag to turn it, scroll to zoom.
@@ -165,6 +167,8 @@ against tanks shot at tanks with their rifles and damaged them. The button itsel
 
 **Shot speed:** an ammo's shot speed and drag decide when the hit lands: a slower shot hits later, and a moving target
 is aimed ahead by the flight time (known from how the game works; not tried in a test yet).
+
+- **Deleting a copied ammo** that a weapon still fires warns you first; **Delete anyway** puts those weapons back on the game's ammo.
 
 ## Change a plane's role (Studio 0.9.8.5)
 

@@ -21,6 +21,8 @@ Po zakończeniu eksportu Studio otwiera **Udostępnij swój mod** z rozmiarem pl
 wpisem na listę, gotowymi do skopiowania. Możesz to otworzyć znowu w każdej chwili z menu **Mod** (**Udostępnij swój
 mod…**).
 
+**Co trafia do środka:** README, lista autorów, licencja i folder `docs` twojego modu są pakowane razem z nim, a cała twoja nazwa użytkownika Windows jest usuwana z README. Mod za duży dla Launchera jest odrzucany, zanim cokolwiek zostanie spakowane. Jeśli eksport zastępuje plik, mówi który. Jeśli plik starszej kopii modu w bibliotece Launchera jest otwarty w innym programie, eksport i tak się kończy, mówi, że mod nie został dodany do biblioteki, i nazywa plik do zamknięcia.
+
 ## 2. Udostępnij: dodaj go do obsługiwanych modów
 
 Zrobiłeś mod? Dodaj go do listy i zostań współtwórcą. Zakładka **Obsługiwane mody** w RUSE Launcher pokazuje mody z listy

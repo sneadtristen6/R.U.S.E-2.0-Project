@@ -21,6 +21,8 @@ Když je export hotový, Studio otevře **Sdílejte svůj mód** s velikostí so
 záznamem pro seznam, připraveným ke zkopírování. Kdykoli ho můžete znovu otevřít z nabídky **módu** (**Sdílet svůj
 mód…**).
 
+**Co se přibalí:** README, poděkování, licence a složka `docs` vašeho módu se zabalí s ním a celé vaše uživatelské jméno ve Windows se z README odstraní. Mód příliš velký pro Launcher se odmítne dřív, než se cokoli zabalí. Když export nahradí soubor, řekne který. Když je soubor starší kopie módu v knihovně Launcheru otevřený v jiném programu, export přesto doběhne, řekne, že mód nebyl přidán do knihovny, a pojmenuje soubor, který máte zavřít.
+
 ## 2. Sdílení: přidejte ho mezi podporované mody
 
 Udělali jste mod? Přidejte ho do seznamu a staňte se přispěvatelem. Záložka **Podporované módy** v RUSE Launcheru

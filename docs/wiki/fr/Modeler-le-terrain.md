@@ -68,3 +68,5 @@ en bas du Studio dit laquelle.
 ---
 
 [[Manuel de terrain|Manuel-de-terrain]] · [[English|Shape-the-Ground]]
+
+Si de l'eau, une falaise ou un blocage pour toutes les unités se retrouve sur le point de départ propre à la carte (le QG d'un joueur), la construction vous avertit et continue : le jeu construirait ce QG là où il trouve de la place. Déplacez le QG de ce joueur, ou dégagez le terrain à cet endroit.

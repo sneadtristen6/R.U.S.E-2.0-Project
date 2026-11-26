@@ -90,6 +90,8 @@ l'ultimo invio:
 - **Le animazioni di RUSE Decoy:** ogni invio messo da parte è elencato sopra le animazioni dell'unità («Inviato da
   Blender, mai riportato, messo da parte il ...»), con **Riportale** per prenderlo, o **Mettile nel Cestino**.
 
+- **Una squadra sulle proprie ossa** (la Squadra a cavallo generica) che uno Studio più vecchio ha mandato in Blender nel modo vecchio non viene ripresa: quell'invio viene messo da parte allo stesso modo, e la pagina dice di usare **Apri in Blender**, poi **Riporta le mie modifiche**. Il pulsante Blender proprio di **Aggiungi un soldato** torna ancora come prima.
+
 ## Dove sono i tuoi file di Blender
 
 Nella cartella della tua mod, `Documents\RUSE 2.0\Mods\<la tua mod>\blender\<nome dell'unità>\`: quelli della squadra

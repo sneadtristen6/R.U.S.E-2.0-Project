@@ -62,3 +62,5 @@ the Studio says which.
 > soft shapes look best.
 
 **Next:** [[Cover and movement|Cover-and-Movement]]
+
+If water, a cliff or a block for every unit ends up over the map's own starting point (a player's HQ), the build warns you and goes on: the game would build that HQ wherever it finds room. Move that player's HQ, or open the ground there.

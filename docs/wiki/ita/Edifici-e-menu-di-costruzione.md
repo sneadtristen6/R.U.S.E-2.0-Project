@@ -38,6 +38,8 @@ gruppi ha l'edificio (**7 gruppi su 10**).
 
 Non ancora provato in gioco.
 
+Se `menu_groups.toml` contiene un errore, lo Studio lo dice in parole semplici e offre **Metti da parte**: la build va avanti senza i tuoi gruppi finché il file non è sistemato. Non si elimina nulla.
+
 ## Aggiungere un edificio
 
 **Aggiungi un edificio…** sotto la tavola di una nazione: scegli l'edificio del gioco che copia (**Copia di**), dagli un

@@ -28,6 +28,8 @@ Spunta **Strade** in cima alla mappa: le strade proprie della mappa compaiono in
 
 Le nuove strade vengono salvate subito nella tua mod (`maps/<map>/roads.toml`).
 
+Un'estremità che disegni su una strada la raggiunge ovunque si trovi lungo la strada, non solo vicino a uno dei suoi punti, così una strada disegnata non viene più rifiutata come isolata (Studio 0.9.8.23).
+
 ## Cosa fa una nuova strada nel gioco
 
 - **Le rotte di rifornimento la usano** (provato: la rotta di un deposito di rifornimenti ha preso una nuova scorciatoia

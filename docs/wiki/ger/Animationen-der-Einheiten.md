@@ -52,8 +52,8 @@ hat auf ihrer Seite eine Tabelle: **Aussehen und Bewegung**, die Zeile **Geräus
 
 - **Steht still**, **Geht** und **Läuft** kommen zuerst: das Mindeste, was ein Modell braucht. Hat eine davon nichts
   Eigenes, sagt die Seite es, und was sie stattdessen spielt.
-- Jede Handlung hat eine Liste der Animationen des Modells. Wähle eine oder lass die erste Zeile, **Nächste**: Sie
-  spielt dann die nächstliegende, die das Modell hat, und die Zeile sagt, welche. Nächste heißt, in dieser Reihenfolge:
+- Jede Handlung hat eine Liste der Animationen des Modells. Wähle eine oder lass die erste Zeile, **Automatisch**: Sie
+  spielt dann die nächstliegende, die das Modell hat, und die Zeile sagt, welche. Automatisch heißt, in dieser Reihenfolge:
   eine Animation, die nach dieser Handlung benannt ist (stand oder idle, walk, run oder gallop, fire, death...), sonst
   das, was die nächstliegende Handlung spielt (Gehen spielt das Laufen, Schießen das Zielen oder das Stehen). Das Spiel
   spielt, was die Seite sagt: Das Erstellen folgt derselben Regel.
@@ -181,7 +181,7 @@ Die Knöpfe oben nehmen keine Änderung aus Blender heraus.
   2026).
 - **Seine Animationen in Blender ändern**: ein Trupp, der mit erhobenem Arm steht und läuft, und Generische
   Reitertrupps, deren Pferde den Kopf hochhalten (November 2026).
-- Die eigenen Animationen des Generischen Reitertrupps, gewählt mit **Nächste**, und das Reisen als er selbst auf langen
+- Die eigenen Animationen des Generischen Reitertrupps, gewählt mit **Automatisch**, und das Reisen als er selbst auf langen
   Wegen (November 2026).
 - Im Spiel noch nicht ausprobiert: ein Tempo, ein Ersatz oder ein Knochen, nur für eine Einheit geändert, und eine
   andere Animation, von Hand unter **Seine Animationen** gewählt.

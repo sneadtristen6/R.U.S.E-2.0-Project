@@ -59,6 +59,8 @@ BATALLAS se puede copiar; los mapas de campaña y de Operación, no. Dos jugador
 juntos, como con cualquier mod. Los mapas nuevos se juegan en el juego (2026-10-03), y **Duplicar mapa** del Studio crea
 esta carpeta por ti.
 
+**Cambiar nombre** cambia el nombre que un mapa nuevo tiene en los menús del juego. Su carpeta y su nombre de paquete se quedan, así que los conjuntos y los códigos de partida que lo usan siguen funcionando (los mapas propios del juego no se pueden renombrar). Una copia con el nombre de un mapa del juego se rechaza al momento, antes de crear nada, y un mapa nuevo hecho con solo un mod de unidades elegido recibe un mod de mapa propio.
+
 ## Errores habituales
 
 | Error | Qué pasa | Arreglo |
@@ -74,3 +76,5 @@ nombre a `<name>.broken.toml` junto al original.
 ---
 
 [[Manual de campaña|Manual-de-campaña]] · [[English|Mod-Folders-and-Files]]
+
+**Apartar** también acepta `menu_groups.toml` y los archivos de animaciones de `files/anim/` (`units.toml`, `copies.toml`, `clips.toml`): la línea dice primero sin qué sigue la compilación.

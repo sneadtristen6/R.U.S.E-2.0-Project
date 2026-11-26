@@ -50,8 +50,8 @@ stronie tabelę: **Wygląd i ruch**, wiersz **Dźwięki i animacje**, **Więcej*
 
 - **Stoi w miejscu**, **Idzie** i **Biegnie** są pierwsze: to minimum, którego model potrzebuje. Jeśli któraś nie ma
   nic własnego, strona to mówi, i co odtwarza zamiast tego.
-- Każda czynność ma listę animacji modelu. Wybierz jedną albo zostaw pierwszy wiersz, **Najbliższa**: wtedy odtwarza
-  najbliższą, jaką ma model, a wiersz mówi którą. Najbliższa znaczy, w tej kolejności: animacja nazwana tak jak ta
+- Każda czynność ma listę animacji modelu. Wybierz jedną albo zostaw pierwszy wiersz, **Automatycznie**: wtedy odtwarza
+  najbliższą, jaką ma model, a wiersz mówi którą. Automatycznie znaczy, w tej kolejności: animacja nazwana tak jak ta
   czynność (stand albo idle, walk, run albo gallop, fire, death...), a jeśli nie ma, to co odtwarza najbliższa czynność
   (chodzenie odtwarza bieg, strzał celowanie albo stanie). Gra odtwarza to, co mówi strona: budowanie stosuje tę samą
   regułę.
@@ -171,7 +171,7 @@ Przyciski wyżej nie usuwają zmiany zrobionej w Blenderze.
 - **Kopiuj tę animację…**: kopia używana przez jeden oddział i przez jednego żołnierza innego (listopad 2026).
 - **Zmień jego animacje w Blenderze**: oddział stojący i biegnący z podniesioną ręką, i Uniwersalne oddziały konne,
   których konie trzymają głowy w górze (listopad 2026).
-- Własne animacje Uniwersalnego oddziału konnego, wybrane przez **Najbliższa**, i jazda samemu na długich trasach
+- Własne animacje Uniwersalnego oddziału konnego, wybrane przez **Automatycznie**, i jazda samemu na długich trasach
   (listopad 2026).
 - Jeszcze nie sprawdzone w grze: tempo, zamiennik albo kość zmienione tylko dla jednej jednostki, i inna animacja
   wybrana ręcznie w **Jej animacje**.

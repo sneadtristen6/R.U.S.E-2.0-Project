@@ -28,6 +28,8 @@ Setz oben auf der Karte ein Häkchen bei **Straßen**: die eigenen Straßen der 
 
 Neue Straßen werden sofort in deinem Mod gespeichert (`maps/<map>/roads.toml`).
 
+Ein Ende, das du auf eine Straße zeichnest, schließt an, wo immer es entlang der Straße liegt, nicht nur nahe einem ihrer Punkte, sodass eine gezeichnete Straße nicht mehr als abgeschnitten abgelehnt wird (Studio 0.9.8.23).
+
 ## Was eine neue Straße im Spiel bewirkt
 
 - **Versorgungsrouten benutzen sie** (bestätigt: die Route eines Versorgungsdepots nahm eine neue Abkürzung über offene Felder).

@@ -31,3 +31,7 @@ discussion**. Un breve modulo ti chiede i dettagli.
 ---
 
 [[Manuale da campo|Manuale-da-campo]] · [[English|Report-a-Bug]]
+
+**Dopo un crash** l'app dà un breve **codice del crash** con **Copia il codice**: mettilo nella tua segnalazione, o mandalo con uno screenshot a XUL su Discord (XUL6x3).
+
+**Una richiesta sulla privacy** (su ciò che RUSE Guard conserva): dacci il codice in **Impostazioni > Il tuo codice RUSE Guard (per le richieste sulla privacy)**. I termini in **Impostazioni > Termini, crediti e licenze** dicono cosa conserviamo e quali sono i tuoi diritti.

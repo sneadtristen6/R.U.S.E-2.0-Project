@@ -83,6 +83,8 @@ přeneseš poslední odeslání:
 - **Animace v RUSE Decoy:** každé odložené odeslání je vypsané nad animacemi jednotky („Odesláno z Blenderu, nikdy
   nepřeneseno, odloženo ...“), s **Přenést je zpět**, abys ho převzal, nebo **Přesunout je do Koše**.
 
+- **Družstvo na vlastních kostech** (Univerzální jízdní družstvo), které starší Studio poslalo do Blenderu starým způsobem, se nepřevezme zpět: to odeslání se odloží stejně a stránka řekne, ať použijete **Otevřít v Blenderu** a pak **Přenést moje změny**. Vlastní tlačítko Blenderu u **Přidat vojáka** se dál vrací jako dřív.
+
 ## Kde jsou tvoje soubory Blenderu
 
 Ve složce tvého modu, `Documents\RUSE 2.0\Mods\<tvůj mod>\blender\<název jednotky>\`: soubory družstva ve `squad`, RUSE

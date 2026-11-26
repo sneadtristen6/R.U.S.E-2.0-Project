@@ -51,8 +51,8 @@ on its page: **Look and moves**, the **Sounds and animation** row, **More**, the
 
 - **Stands still**, **Walks** and **Runs** come first: the least a model needs. If one has nothing of its own, the
   page says so, and what it plays instead.
-- Each action has a list of the model's animations. Pick one, or leave it on the first line, **Nearest**: it then
-  plays the closest one the model has, and the line says which. Nearest means, in this order: an animation named for
+- Each action has a list of the model's animations. Pick one, or leave it on the first line, **Automatic**: it then
+  plays the closest one the model has, and the line says which. Automatic means, in this order: an animation named for
   that action (stand or idle, walk, run or gallop, fire, death...), else what the nearest action plays (a walk plays the
   run, a fire the aim or the stand). The game plays what the page says: the build uses the same rule.
 - **Every other action** lists the rest, by group.
@@ -167,7 +167,7 @@ The buttons above don't take out a change made in Blender.
 - **Copy this animation…**: a copy played by one squad and by one soldier of another (November 2026).
 - **Change its animations in Blender**: a squad standing and running with an arm raised, and Generic Horses holding
   their heads up (November 2026).
-- The Generic Horse's own animations, picked by **Nearest**, and riding as itself on long moves (November 2026).
+- The Generic Horse's own animations, picked by **Automatic**, and riding as itself on long moves (November 2026).
 - Not tried in the game yet: a speed, a stand-in or a bone changed for one unit only, and another animation picked by
   hand under **Its animations**.
 

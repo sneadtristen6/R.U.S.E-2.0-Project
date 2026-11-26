@@ -27,6 +27,8 @@ Tick **Roads** at the top of the map: the map's own roads show in gold, on the g
 
 New roads are saved in your mod at once (`maps/<map>/roads.toml`).
 
+An end you draw onto a road joins it wherever it lies along the road, not only near one of its points, so a drawn road is no longer refused as cut off (Studio 0.9.8.23).
+
 ## What a new road does in the game
 
 - **Supply routes use it** (proven: a supply depot's route took a new shortcut through open fields).

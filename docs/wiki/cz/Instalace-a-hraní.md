@@ -11,8 +11,8 @@ Ke hraní modů potřebujete jen **RUSE Launcher**. **RUSE Studio** je na jejich
 ## Krok 1: Stáhněte Launcher
 
 1. Otevřete stránku [vydání launcheru](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases?q=launcher).
-2. Nejnovější je nahoře, označené **Latest** (například *RUSE Launcher 0.4.8.9*).
-3. Sjeďte pod ním dolů k **Assets** a klikněte na **RUSE-Launcher-Setup-0.4.8.9.exe** (číslo verze se mění; vezměte
+2. Nejnovější je nahoře, označené **Latest** (například *RUSE Launcher 0.4.8.23*).
+3. Sjeďte pod ním dolů k **Assets** a klikněte na **RUSE-Launcher-Setup-0.4.8.23.exe** (číslo verze se mění; vezměte
    `.exe`, který začíná na `RUSE-Launcher-Setup`). Prohlížeč ho stáhne.
 
 Ostatní soubory tam (`RUSE-Launcher-notes.json`, *Source code*) nepotřebujete.
@@ -37,6 +37,8 @@ Ostatní soubory tam (`RUSE-Launcher-notes.json`, *Source code*) nepotřebujete.
 > soubory, které nechají hru běžet bez Steamu. Pokud to nedokážou ověřit, okno řekne proč a co dělat (**Hrát** zůstane
 > vypnuté, dokud se to nevyřeší): viz [[Když se něco pokazí|Když-se-něco-pokazí]].
 
+**Při prvním otevření** aplikace ukáže naše **podmínky použití a oznámení o ochraně soukromí**: přečtěte si je a klikněte na **Přijmout a pokračovat**. Znovu si je můžete kdykoli přečíst v **Nastavení > Podmínky, poděkování a licence**. Pokud Windows chybí **Microsoft WebView2** (potřebuje ho okno aplikace), je nabídnut, nikdy vnucen: zaškrtnuté políčko v instalátoru, otázka Ano/Ne při otevření aplikace a karta v **Nastavení**.
+
 ## Krok 3: Získejte mody
 
 **Z našeho seznamu (nejsnazší):** klikněte na **Podporované módy**, zaškrtněte mody, které chcete, a stiskněte
@@ -53,6 +55,8 @@ Nejdřív soubor zkontroluje: soubor, který není mod nebo který obsahuje prog
 **Starý mod, který přichází jako vlastní soubory hry** (balíky `.dat`, které jste měli zkopírovat do složky hry):
 klikněte na **Převést starý mod…**, vyberte jeho složku, dejte mu název a klikněte na **Převést a přidat do knihovny**.
 Složky vaší hry se to nedotkne.
+
+Stahování, které dorazí useknuté nebo ztratí spojení, se zkusí ještě jednou, a jedno neúspěšné nezastaví zbytek instalace více módů.
 
 ## Krok 4: Vyberte, co hrát
 
@@ -72,6 +76,8 @@ scénou, s mody i bez nich, a její hlavní menu, menu a načítací obrazovky n
 vlastních souborů vaší hry a z obrázku a zvuku, které jsou součástí aplikací, při prvním použití (několik minut,
 jednou).
 
+**Původní hra** (bez módů) je také naše kopie: **Hrát** sestaví prostou kopii hry s RUSE Guard uvnitř. Chcete-li hrát R.U.S.E. bez našich aplikací, spusťte ji ze Steamu.
+
 > [!NOTE]
 > Spuštění R.U.S.E. ze **Steamu** spustí hru **bez** modů, jako vždy. Chcete-li hrát s mody, spusťte ji tlačítkem
 > **Hrát** v Launcheru. Hrát nikdy nemění vaši instalaci Steamu.
@@ -86,6 +92,10 @@ nainstaluje se přes starou verzi a vaše mody zachová.
 
 Aktualizace se nainstaluje, jen když nese náš podpis. Pokud Launcher nebo Studio řekne, že novou verzi nebylo možné
 potvrdit, neinstalujte ji ručně, pokud to neřekneme na našem Discordu; počkejte na další aktualizaci.
+
+**Kontrola aktualizací** čeká, dokud nepřijmete podmínky. Když stahování třikrát selže, aplikace to sama přestane zkoušet a odkáže na stránku vydání: stáhněte tam Setup (krok 1) a spusťte ho.
+
+**Odinstalace** se zeptá, zda smazat i nastavení a data aplikací (odpověď začíná na Ne). Dokud je druhá aplikace ještě nainstalovaná, na nic se neptá a nic nemaže.
 
 ## Problémy?
 
@@ -110,7 +120,7 @@ v [Discussions](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/discussions
 
 1. Otevřete stránku [vydání studia](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases?q=studio). Studio
    je ukázková verze, proto jsou jeho vydání označená **Pre-release**: vezměte nejnovější.
-2. Pod **Assets** klikněte na **RUSE-Studio-Setup-0.9.8.9.exe** (nejnovější verze) a spusťte ho jako v kroku 2.
+2. Pod **Assets** klikněte na **RUSE-Studio-Setup-0.9.8.23.exe** (nejnovější verze) a spusťte ho jako v kroku 2.
 3. Spusťte **RUSE Studio**, pak postupujte podle [[Váš první mod|Váš-první-mod]] (10 minut).
 
 **Další:** [[Hraní s přáteli|Hraní-s-přáteli]]

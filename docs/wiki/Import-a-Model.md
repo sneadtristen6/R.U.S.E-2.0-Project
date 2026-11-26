@@ -118,8 +118,8 @@ unit's page, **Its animations** shows what the unit plays for each thing it does
 
 - **Stands still**, **Walks** and **Runs** come first: the least a model needs. If one of them has nothing of its own,
   the page says so, and what it plays instead.
-- Each action is a list of the model's animations. Pick one, or leave it on **Nearest**: it then plays the closest one
-  the model has, and the list says which. Nearest means, in order: an animation named for that action (stand or idle,
+- Each action is a list of the model's animations. Pick one, or leave it on **Automatic**: it then plays the closest one
+  the model has, and the list says which. Automatic means, in order: an animation named for that action (stand or idle,
   walk, run or gallop, fire, death...), else what the nearest action plays (a walk the run, a run the walk, then the
   stand; a fire the aim, then the stand; any death the plain death). The build uses the same rule, so what the page
   says is what the game plays.
@@ -128,7 +128,7 @@ unit's page, **Its animations** shows what the unit plays for each thing it does
 - **Every other action** lists the rest, by kind: standing still, moving, aiming and firing, the heavy weapon,
   getting hit, dying.
 - **On long moves** the game puts a squad in its truck. A unit with animations of its own goes as itself instead,
-  playing the animation picked there (its run, when left on Nearest), as fast as its truck. Pick **In its truck** to
+  playing the animation picked there (its run, when left on Automatic), as fast as its truck. Pick **In its truck** to
   keep the truck.
 
 **A copy keeps its animations:** a unit copied from one with animations of its own plays the same ones. To change one

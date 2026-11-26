@@ -21,6 +21,8 @@ non ancora visto in gioco.
 Quando l'esportazione è finita, lo Studio apre **Condividi la tua mod** con la dimensione del file, il suo checksum SHA-256 e la
 sua voce per l'elenco, pronta da copiare. Puoi riaprirlo quando vuoi dal menu **Mod** (**Condividi la tua mod…**).
 
+**Cosa entra:** il README, i crediti, la licenza e la cartella `docs` della tua mod vengono impacchettati con essa, e tutto il tuo nome utente di Windows viene tolto dal README. Una mod troppo grande per il Launcher viene rifiutata prima di impacchettare qualsiasi cosa. Se l'esportazione sostituisce un file, dice quale. Se un file della vecchia copia della mod nella libreria del Launcher è aperto in un altro programma, l'esportazione arriva comunque in fondo, dice che la mod non è stata aggiunta alla libreria e nomina il file da chiudere.
+
 ## 2. Condividi: aggiungila alle mod supportate
 
 Hai fatto una mod? Aggiungila all'elenco e diventa un contributore. La scheda **Mod supportate** di RUSE Launcher mostra le

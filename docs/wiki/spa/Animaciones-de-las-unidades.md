@@ -52,8 +52,7 @@ criatura) tiene una tabla en su página: **Aspecto y movimientos**, la fila **So
 
 - **Se queda quieto**, **Camina** y **Corre** van primero: lo mínimo que necesita un modelo. Si una no tiene nada
   propio, la página lo dice, y qué usa en su lugar.
-- Cada acción tiene una lista de las animaciones del modelo. Elige una, o déjala en la primera línea, **La más
-  cercana**: entonces usa la más cercana que tenga el modelo, y la línea dice cuál. La más cercana significa, en este
+- Cada acción tiene una lista de las animaciones del modelo. Elige una, o déjala en la primera línea, **Automática**: entonces usa la más cercana que tenga el modelo, y la línea dice cuál. Automática significa, en este
   orden: una animación con el nombre de esa acción (stand o idle, walk, run o gallop, fire, death...), y si no, lo que
   usa la acción más cercana (andar usa la carrera, disparar el apuntar o el estar de pie). El juego hace lo que dice la
   página: la compilación sigue la misma regla.
@@ -174,7 +173,7 @@ Los botones de arriba no quitan un cambio hecho en Blender.
 - **Copiar esta animación…**: una copia usada por un pelotón y por un soldado de otro (noviembre de 2026).
 - **Cambiar sus animaciones en Blender**: un pelotón de pie y corriendo con un brazo levantado, y Pelotones a caballo
   genéricos cuyos caballos llevan la cabeza alta (noviembre de 2026).
-- Las animaciones propias del Pelotón a caballo genérico, elegidas por **La más cercana**, y el viaje como él mismo en
+- Las animaciones propias del Pelotón a caballo genérico, elegidas por **Automática**, y el viaje como él mismo en
   los trayectos largos (noviembre de 2026).
 - Aún no probado en el juego: una velocidad, un sustituto o un hueso cambiados para una sola unidad, y otra animación
   elegida a mano en **Sus animaciones**.

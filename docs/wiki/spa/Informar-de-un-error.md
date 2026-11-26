@@ -31,3 +31,7 @@ discussion**. Un formulario corto te pide los detalles.
 ---
 
 [[Manual de campaña|Manual-de-campaña]] · [[English|Report-a-Bug]]
+
+**Tras un fallo**, la aplicación da un **código del fallo** corto con **Copiar código**: ponlo en tu informe, o envíalo con una captura a XUL en Discord (XUL6x3).
+
+**Una solicitud de privacidad** (sobre lo que guarda RUSE Guard): danos el código de **Ajustes > Tu código de RUSE Guard (para solicitudes de privacidad)**. Los términos en **Ajustes > Términos, créditos y licencias** dicen qué guardamos y cuáles son tus derechos.

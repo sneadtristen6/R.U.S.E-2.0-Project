@@ -51,8 +51,8 @@ tabella nella sua pagina: **Aspetto e movimenti**, la riga **Suoni e animazioni*
 
 - **Sta fermo**, **Cammina** e **Corre** vengono per prime: il minimo che serve a un modello. Se una non ha niente di
   suo, la pagina lo dice, e cosa usa al suo posto.
-- Ogni azione ha un elenco delle animazioni del modello. Scegline una, o lasciala sulla prima riga, **Più vicina**: usa
-  allora la più vicina che il modello ha, e la riga dice quale. Più vicina vuol dire, in quest'ordine: un'animazione con
+- Ogni azione ha un elenco delle animazioni del modello. Scegline una, o lasciala sulla prima riga, **Automatica**: usa
+  allora la più vicina che il modello ha, e la riga dice quale. Automatica vuol dire, in quest'ordine: un'animazione con
   il nome di quell'azione (stand o idle, walk, run o gallop, fire, death...), altrimenti ciò che usa l'azione più vicina
   (un cammino usa la corsa, uno sparo la mira o lo stare fermo). Il gioco fa ciò che dice la pagina: la build segue la
   stessa regola.
@@ -173,7 +173,7 @@ I pulsanti sopra non tolgono una modifica fatta in Blender.
 - **Copia questa animazione…**: una copia usata da una squadra e da un soldato di un'altra (novembre 2026).
 - **Cambia le sue animazioni in Blender**: una squadra in piedi e in corsa con un braccio alzato, e Squadre a cavallo
   generiche i cui cavalli tengono la testa alta (novembre 2026).
-- Le animazioni proprie della Squadra a cavallo generica, scelte da **Più vicina**, e il viaggio come se stessa nei
+- Le animazioni proprie della Squadra a cavallo generica, scelte da **Automatica**, e il viaggio come se stessa nei
   lunghi spostamenti (novembre 2026).
 - Non ancora provato nel gioco: una velocità, una sostituzione o un osso cambiati per una sola unità, e un'altra
   animazione scelta a mano sotto **Le sue animazioni**.

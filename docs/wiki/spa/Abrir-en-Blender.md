@@ -89,6 +89,8 @@ Un **envío** es lo que Blender mandó con **Enviar a R.U.S.E. Studio**. Si vuel
   («Enviado desde Blender, nunca traído, guardado aparte el ...»), con **Traerlos** para tomarlo, o
   **Llevarlos a la Papelera de reciclaje**.
 
+- **Un pelotón con huesos propios** (el Pelotón a caballo genérico) que un Studio anterior envió a Blender a la manera antigua no se recoge: ese envío se aparta de la misma forma, y la página dice que uses **Abrir en Blender** y luego **Traer mis cambios**. El botón de Blender propio de **Añadir un soldado** sigue volviendo como antes.
+
 ## Dónde están tus archivos de Blender
 
 En la carpeta de tu mod, `Documents\RUSE 2.0\Mods\<tu mod>\blender\<nombre de la unidad>\`: los del pelotón en `squad`,

@@ -53,8 +53,7 @@ créature) a un tableau sur sa page : **Apparence et mouvements**, la ligne **So
 
 - **Reste immobile**, **Marche** et **Court** viennent en premier : le minimum pour un modèle. Si l'une n'a rien en
   propre, la page le dit, et ce qu'elle joue à la place.
-- Chaque action a une liste des animations du modèle. Choisissez-en une, ou laissez-la sur la première ligne, **La plus
-  proche** : elle joue alors la plus proche que le modèle a, et la ligne dit laquelle. La plus proche, c'est, dans cet
+- Chaque action a une liste des animations du modèle. Choisissez-en une, ou laissez-la sur la première ligne, **Automatique** : elle joue alors la plus proche que le modèle a, et la ligne dit laquelle. Automatique, c'est, dans cet
   ordre : une animation nommée pour cette action (stand ou idle, walk, run ou gallop, fire, death...), sinon ce que joue
   l'action la plus proche (une marche joue la course, un tir la visée ou l'immobile). Le jeu joue ce que dit la page : la
   construction suit la même règle.
@@ -183,7 +182,7 @@ Les boutons ci-dessus ne retirent pas un changement fait dans Blender.
 - **Copier cette animation…** : une copie jouée par une escouade et par un soldat d'une autre (novembre 2026).
 - **Changer ses animations dans Blender** : une escouade debout et courant un bras levé, et des Escouades à cheval
   génériques dont les chevaux tiennent la tête haute (novembre 2026).
-- Les propres animations de l'Escouade à cheval générique, choisies par **La plus proche**, et le voyage comme
+- Les propres animations de l'Escouade à cheval générique, choisies par **Automatique**, et le voyage comme
   elle-même sur les longs trajets (novembre 2026).
 - Pas encore essayé dans le jeu : une vitesse, un remplacement ou un os changés pour une seule unité, et une autre
   animation choisie à la main sous **Ses animations**.

@@ -57,6 +57,8 @@ fr = "Blitz jumeau"
 mapę z listy BITWY; map kampanii i Operacji nie. Dwóch graczy potrzebuje tego samego moda, by zagrać na niej razem, jak
 przy każdym modzie. Nowe mapy działają w grze (2026-10-03), a **Duplikuj mapę** w Studio robi ten folder za ciebie.
 
+**Zmień nazwę** zmienia nazwę, jaką nowa mapa ma w menu gry. Jej folder i nazwa paczki zostają, więc zestawy i kody gry, które jej używają, dalej działają (map samej gry nie można przemianować). Kopia nazwana jak mapa gry jest odrzucana od razu, zanim cokolwiek powstanie, a nowa mapa zrobiona przy wybranym tylko modzie jednostek dostaje własny mod mapy.
+
 ## Częste błędy
 
 | Błąd | Co się dzieje | Poprawka |
@@ -72,3 +74,5 @@ nazwę na `<name>.broken.toml` obok oryginału.
 ---
 
 [[Podręcznik polowy|Podręcznik-polowy]] · [[English|Mod-Folders-and-Files]]
+
+**Odłóż** obejmuje też `menu_groups.toml` i pliki animacji w `files/anim/` (`units.toml`, `copies.toml`, `clips.toml`): wiersz najpierw mówi, bez czego obejdzie się budowanie.

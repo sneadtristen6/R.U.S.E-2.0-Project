@@ -26,3 +26,7 @@ discussion**. A short form asks for the details.
 > [!WARNING]
 > Paths to your files contain your Windows user name (`C:\Users\<you>\...`). Write `%LOCALAPPDATA%\...` instead.
 > The apps' Report buttons do this for you.
+
+**After a crash**, the app gives a short **crash code** with **Copy code**: put it in your report, or send it with a screenshot to XUL on Discord (XUL6x3).
+
+**A privacy request** (about what RUSE Guard keeps): give us the code under **Settings > Your RUSE Guard code (for privacy requests)**. The terms in **Settings > Terms, credits and licences** say what we keep and your rights.

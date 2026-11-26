@@ -20,6 +20,8 @@ own file for that map: it opens only on a PC that has the game. Movement only so
 When the export is done, the Studio opens **Share your mod** with the file's size, its SHA-256 checksum and its entry
 for the list, ready to copy. You can open it again any time from the **Mod** menu (**Share your mod...**).
 
+**What goes in:** your mod's README, credits, licence and `docs` folder are packed with it, and your whole Windows user name is taken out of the README. A mod too big for the Launcher is refused before anything is packed. If the export replaces a file, it says which. If a file of the mod's older copy in the Launcher's library is open in another program, the export still finishes, says the mod wasn't added to the library and names the file to close.
+
 ## 2. Share: add it to the supported mods
 
 Made a mod? Add it to the list and become a contributor. RUSE Launcher's **Supported mods** tab shows the mods on

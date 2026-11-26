@@ -94,6 +94,8 @@ die letzte Sendung zurückgeholt ist:
   gesendet, nie zurückgeholt, am ... beiseitegelegt“), mit **Sie zurückholen**, um sie zu
   übernehmen, oder **Sie in den Papierkorb legen**.
 
+- **Ein Trupp auf eigenen Knochen** (der Generische Reitertrupp), den ein älteres Studio auf seine ältere Art an Blender geschickt hat, wird nicht zurückgeholt: Diese Sendung wird genauso beiseitegelegt, und die Seite sagt, **In Blender öffnen** und dann **Meine Änderungen zurückholen** zu nutzen. Die eigene Blender-Schaltfläche von **Einen Soldaten hinzufügen** kommt weiter zurück wie bisher.
+
 ## Wo deine Blender-Dateien sind
 
 Im Ordner deines Mods, `Documents\RUSE 2.0\Mods\<dein Mod>\blender\<Name der Einheit>\`: die des Trupps in `squad`, die

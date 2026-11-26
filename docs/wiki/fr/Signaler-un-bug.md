@@ -31,3 +31,7 @@ discussion**. Un court formulaire demande les détails.
 ---
 
 [[Manuel de terrain|Manuel-de-terrain]] · [[English|Report-a-Bug]]
+
+**Après un plantage**, l'application donne un court **code de plantage** avec **Copier le code** : mettez-le dans votre rapport, ou envoyez-le avec une capture d'écran à XUL sur Discord (XUL6x3).
+
+**Une demande de confidentialité** (sur ce que garde RUSE Guard) : donnez-nous le code de **Réglages > Votre code RUSE Guard (pour les demandes de confidentialité)**. Les conditions dans **Réglages > Conditions, crédits et licences** disent ce que nous gardons et quels sont vos droits.

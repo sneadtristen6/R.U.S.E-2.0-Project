@@ -12,6 +12,8 @@ write where copies go. Each problem it can fix has a button; the rest say what t
   problem message (Studio 0.8.0, Launcher 0.3.0).
 - **Copy report** gives a text to paste in a [[bug report|Report-a-Bug]] (your Windows user name is left out).
 
+- The Launcher's **Troubleshoot** also says when the app's own files are missing (Play needs them to build the game) instead of saying you're good to go: reinstall the app from the [releases](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases).
+
 ## The game itself seems changed (by another mod manager or a hand edit)
 
 **Settings > Clean game backup** keeps a clean copy of the game's files, checks them against it, and puts back what
@@ -35,6 +37,8 @@ help.
 > Known case: RUSE Studio 0.7.0 and earlier saved **Water** strokes without their water level ("the water brush
 > needs level"). 0.7.1 fixes it; **Set aside** clears an old file.
 
+- **Set aside** is offered for a broken build-menu groups file (`menu_groups.toml`) and the animations files (`files/anim/units.toml`, `copies.toml`, `clips.toml`) too. Before you click, the line says what the build goes without (your groups in the build lists, or your units' own animations; their clip files stay), and the file is renamed `<name>.broken.toml`, never deleted.
+
 ## The app takes a long time to open
 
 - **The first start after installing** with "Keep a clean copy of my game's files" ticked makes that copy (the whole
@@ -45,6 +49,8 @@ help.
 - Anything else: open **Troubleshoot** and **Copy report**. The report lists how long each of the app's last starts
   took at each step, in seconds: paste it in a [[bug report|Report-a-Bug]]. The same lines are kept in
   `%LOCALAPPDATA%\RUSE Mod Platform\logs\studio-start.log` (the Launcher's: `launcher-start.log`).
+
+- Before the game index is built, the Studio's **Nations** tab says so, with a **Build the index** button.
 
 ## "Windows protected your PC"
 
@@ -119,10 +125,19 @@ saved, Test in game still building...). **No** keeps the Studio open; **Yes** cl
    Test in game says which button and map).
 3. Is the mod in the set, and is a mod lower in the order changing the same thing?
 
+## A file is in use (Delete, Export)
+
+**Delete** waits up to 10 seconds for a file another program holds (Blender, an editor), then names it: close that program and **Delete** again. **Export** finishes even when a file of the mod's older copy in the Launcher's library is open in another program: it says the mod wasn't added to the library and names the file to close.
+
+## The update won't install
+
+Updates are signed: one installs only when it carries our signature and is exactly the signed file. If the app says a new version couldn't be confirmed, don't install it by hand unless we say so on our Discord: wait for the next update. If the download fails three times, the app stops trying by itself and points to the release's page: download the installer there in your browser and run it (it installs over the old one, as the update does).
+
 ## The game crashes
 
-Write down what you did just before (which map, which order, what was on screen), take a screenshot, and
-[[report it|Report-a-Bug]]. Crash reports on edited maps are how the map tools got solid.
+When a game started by **Play** or **Test in game** crashes, the app says so and gives a short **crash code**, with **Copy code**. Send the code and a screenshot to XUL on Discord (XUL6x3) or on GitHub ([[report it|Report-a-Bug]]), with what you did just before (which map, which order, what was on screen). With **Bug Watch** on, a crash we know is also explained: the unit the game was making and why. Crash reports on edited maps are how the map tools got solid.
+
+- **A new map crashed the game on load** when the game folder held leftover revision folders (GitHub issue 25). Studio 0.9.8.23 and Launcher 0.4.8.23 build from the newest: update.
 
 ## Something else
 

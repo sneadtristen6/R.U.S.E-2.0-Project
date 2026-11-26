@@ -22,6 +22,8 @@ Cuando termina la exportación, el Studio abre **Comparte tu mod** con el tamañ
 SHA-256 y su entrada para la lista, listos para copiar. Puedes volver a abrirlo cuando quieras desde el menú **Mod**
 (**Compartir tu mod…**).
 
+**Qué va dentro:** el README, los créditos, la licencia y la carpeta `docs` de tu mod se empaquetan con él, y tu nombre de usuario de Windows completo se quita del README. Un mod demasiado grande para el Launcher se rechaza antes de empaquetar nada. Si la exportación reemplaza un archivo, dice cuál. Si un archivo de la copia anterior del mod en la biblioteca del Launcher está abierto en otro programa, la exportación termina igualmente, dice que el mod no se añadió a la biblioteca y nombra el archivo que hay que cerrar.
+
 ## 2. Compartir: añádelo a los mods compatibles
 
 ¿Has hecho un mod? Añádelo a la lista y pasa a ser colaborador. La pestaña **Mods compatibles** de RUSE Launcher muestra

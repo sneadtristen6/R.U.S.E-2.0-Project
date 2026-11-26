@@ -36,6 +36,8 @@ Tabule ukazuje skupiny každé budovy, každou s jejím počtem (**4 z 6**), a k
 
 Ve hře zatím nevyzkoušeno.
 
+Pokud má `menu_groups.toml` chybu, Studio to řekne jednoduchými slovy a nabídne **Odložit**: sestavení pak proběhne bez vašich skupin, dokud se soubor neopraví. Nic se nemaže.
+
 ## Přidání budovy
 
 **Přidat budovu…** pod tabulí národa: vyberte budovu hry, kterou kopíruje (**Kopie budovy**), dejte jí **Název**, pak

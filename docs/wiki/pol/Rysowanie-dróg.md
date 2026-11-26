@@ -28,6 +28,8 @@ Zaznacz **Drogi** u góry mapy: własne drogi mapy pokazują się na złoto, na 
 
 Nowe drogi zapisują się w twoim modzie od razu (`maps/<map>/roads.toml`).
 
+Koniec narysowany na drodze łączy się z nią w dowolnym miejscu wzdłuż drogi, nie tylko przy jednym z jej punktów, więc narysowana droga nie jest już odrzucana jako odcięta (Studio 0.9.8.23).
+
 ## Co nowa droga robi w grze
 
 - **Trasy zaopatrzenia jej używają** (sprawdzone: trasa składu zaopatrzenia poszła nowym skrótem przez otwarte pola).

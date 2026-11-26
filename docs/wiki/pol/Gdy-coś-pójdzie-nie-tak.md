@@ -14,6 +14,8 @@ ma przycisk; przy reszcie jest napisane, co zrobić.
 - **Kopiuj raport** daje tekst do wklejenia w [[zgłoszenie błędu|Zgłaszanie-błędu]] (twoja nazwa użytkownika Windows jest
   pominięta).
 
+- **Rozwiązywanie problemów** w Launcherze mówi też, gdy brakuje własnych plików aplikacji (Graj potrzebuje ich do zbudowania gry), zamiast mówić, że wszystko gotowe: zainstaluj aplikację ponownie ze strony [wydań](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases).
+
 ## Sama gra wygląda na zmienioną (przez inny menedżer modów lub ręczną zmianę)
 
 **Ustawienia > Czysta kopia zapasowa gry** przechowuje czystą kopię plików gry, porównuje z nią pliki i przywraca to, co
@@ -38,6 +40,8 @@ budowania, przydatne, gdy prosisz o pomoc.
 > Znany przypadek: RUSE Studio 0.7.0 i starsze zapisywały pociągnięcia pędzla **Woda** bez poziomu wody („the water brush
 > needs level”). 0.7.1 to naprawia; **Odłóż** usuwa stary plik.
 
+- **Odłóż** jest też proponowane dla uszkodzonego pliku grup menu budowy (`menu_groups.toml`) i plików animacji (`files/anim/units.toml`, `copies.toml`, `clips.toml`). Zanim klikniesz, wiersz mówi, bez czego obejdzie się budowanie (twoich grup na listach budowy albo własnych animacji twoich jednostek; ich pliki klipów zostają), a plik dostaje nazwę `<nazwa>.broken.toml`, nigdy nie jest usuwany.
+
 ## Aplikacja długo się otwiera
 
 - **Pierwsze uruchomienie po instalacji** z zaznaczonym „Zachowaj czystą kopię plików gry” robi tę kopię (cały folder
@@ -48,6 +52,8 @@ budowania, przydatne, gdy prosisz o pomoc.
 - Cokolwiek innego: otwórz **Rozwiązywanie problemów** i kliknij **Kopiuj raport**. Raport podaje, ile trwał każdy krok
   ostatnich uruchomień aplikacji, w sekundach: wklej go w [[zgłoszenie błędu|Zgłaszanie-błędu]]. Te same wiersze są zapisywane
   w `%LOCALAPPDATA%\RUSE Mod Platform\logs\studio-start.log` (Launchera: `launcher-start.log`).
+
+- Zanim indeks gry zostanie zbudowany, karta **Nacje** w Studio to mówi, z przyciskiem **Zbuduj indeks**.
 
 ## „System Windows ochronił ten komputer”
 
@@ -123,10 +129,19 @@ zapisywana, Testuj w grze wciąż budujące...). **Nie** zostawia Studio otwarte
    mówi, który przycisk i którą mapę).
 3. Czy mod jest w zestawie i czy mod niżej w kolejności nie zmienia tego samego?
 
+## Plik jest w użyciu (Usuń, Eksport)
+
+**Usuń** czeka do 10 sekund na plik, który trzyma inny program (Blender, edytor), a potem go nazywa: zamknij ten program i kliknij **Usuń** jeszcze raz. **Eksport** kończy się, nawet gdy plik starszej kopii modu w bibliotece Launchera jest otwarty w innym programie: mówi, że mod nie został dodany do biblioteki, i nazywa plik do zamknięcia.
+
+## Aktualizacja się nie instaluje
+
+Aktualizacje są podpisane: instaluje się tylko taka, która ma nasz podpis i jest dokładnie podpisanym plikiem. Jeśli aplikacja mówi, że nowej wersji nie udało się potwierdzić, nie instaluj jej ręcznie, chyba że powiemy o tym na naszym Discordzie: poczekaj na następną aktualizację. Jeśli pobieranie nie uda się trzy razy, aplikacja sama przestaje próbować i wskazuje stronę wydania: pobierz tam instalator w przeglądarce i uruchom go (instaluje się na starej wersji, tak jak aktualizacja).
+
 ## Gra się wywraca
 
-Zapisz, co robiłeś tuż przedtem (która mapa, jaki rozkaz, co było na ekranie), zrób zrzut ekranu i
-[[zgłoś to|Zgłaszanie-błędu]]. To dzięki zgłoszeniom awarii na edytowanych mapach narzędzia map stały się solidne.
+Gdy gra uruchomiona przyciskiem **Graj** albo **Testuj w grze** się zawiesi, aplikacja to mówi i podaje krótki **kod awarii**, z **Kopiuj kod**. Wyślij kod i zrzut ekranu do XUL na Discordzie (XUL6x3) albo na GitHubie ([[zgłoś to|Zgłaszanie-błędu]]), razem z tym, co robiłeś tuż przed (która mapa, który rozkaz, co było na ekranie). Z włączonym **Bug Watch** znana nam awaria jest też wyjaśniona: jednostka, którą gra właśnie tworzyła, i dlaczego. Zgłoszenia awarii na edytowanych mapach sprawiły, że narzędzia map są solidne.
+
+- **Nowa mapa zawieszała grę przy wczytywaniu**, gdy folder gry miał pozostałe foldery rewizji (zgłoszenie GitHub 25). Studio 0.9.8.23 i Launcher 0.4.8.23 budują z najnowszego: zaktualizuj.
 
 ## Coś innego
 

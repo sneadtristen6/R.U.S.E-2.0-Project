@@ -38,6 +38,8 @@ has (**7 of 10 groups**).
 
 Not tried in the game yet.
 
+If `menu_groups.toml` has a mistake, the Studio says so in plain words and offers **Set aside**: the build then goes without your groups until the file is fixed. Nothing is deleted.
+
 ## Add a building
 
 **Add a building…** under a nation's board: pick the game's building it copies (**Copy of**), give it a **Name**,

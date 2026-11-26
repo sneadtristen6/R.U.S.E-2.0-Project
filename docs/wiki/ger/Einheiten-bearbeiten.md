@@ -66,6 +66,8 @@ der Einheit und Blender) und **Neue Einheit (Modell importieren)**. Wähle mit *
 ausgehst, gib ihr einen Namen und klicke auf **Erstellen**; dann ändere sie wie jede andere. Oder wähle die Einheit und
 dann **Neue Einheit…** auf ihrer Seite.
 
+- **Beim Erstellen geprüft:** Ein Preis unter 0 wird abgelehnt (wie ein Forschungspreis), ebenso eine zweite Einheit mit genau demselben Namen, in jedem Alphabet; eine Grenze nennt ihre Zahl klar („zu groß: das Spiel nimmt höchstens 2.147.483.647“). Das Gebäude, das eine neue Einheit baut, wird aus einer Liste der eigenen Gebäude der Nation gewählt, und eine Kopie eines Upgrades sagt es, wenn sie kein Upgrade mehr ist.
+
 ## Ändern, wie eine Einheit aussieht
 
 Die Seite der Einheit zeigt ihr **3D-Modell**: zum Drehen ziehen, zum Zoomen scrollen.
@@ -184,6 +186,8 @@ selbst wurde im Studio noch nicht angeklickt.
 **Schussgeschwindigkeit:** Schussgeschwindigkeit und Luftwiderstand einer Munition bestimmen, wann der Treffer landet:
 ein langsamerer Schuss trifft später, und auf ein bewegtes Ziel wird um die Flugzeit vorgehalten (aus der
 Funktionsweise des Spiels bekannt; noch nicht in einem Test ausprobiert).
+
+- **Das Löschen einer kopierten Munition**, die eine Waffe noch feuert, warnt dich zuerst; **Trotzdem löschen** setzt diese Waffen wieder auf die Munition des Spiels.
 
 ## Die Rolle eines Flugzeugs ändern (Studio 0.9.8.5)
 

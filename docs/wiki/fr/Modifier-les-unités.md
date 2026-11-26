@@ -68,6 +68,8 @@ l'unité et Blender) et **Nouvelle unité (importer un modèle)**. Avec **Nouvel
 donnez-lui un nom, et cliquez sur **Créer** ; puis changez-la comme n'importe quelle autre. Ou choisissez l'unité et
 prenez **Nouvelle unité…** sur sa page.
 
+- **Vérifié pendant que vous la créez :** un prix inférieur à 0 est refusé (comme l'est un prix de recherche), tout comme une deuxième unité avec exactement le même nom, dans n'importe quel alphabet ; une limite dit son nombre clairement (« trop grand : le jeu accepte au plus 2 147 483 647 »). Le bâtiment qui construit une nouvelle unité se choisit dans une liste des bâtiments de la nation, et une copie d'amélioration le dit quand elle cesse d'être une amélioration.
+
 ## Changer l'apparence d'une unité
 
 La page de l'unité montre son **Modèle 3D** : faites glisser pour le tourner, utilisez la molette pour zoomer.
@@ -185,6 +187,8 @@ leurs fusils et les ont endommagés. Le bouton lui-même n'a pas encore été cl
 **Vitesse du tir :** la vitesse du projectile d'une munition et sa traînée décident du moment où le coup arrive : un tir
 plus lent touche plus tard, et une cible en mouvement est visée en avance, du temps de vol (connu par le fonctionnement
 du jeu ; pas encore essayé dans un test).
+
+- **Supprimer une munition copiée** qu'une arme tire encore vous avertit d'abord ; **Supprimer quand même** remet ces armes sur la munition du jeu.
 
 ## Changer le rôle d'un avion (Studio 0.9.8.5)
 

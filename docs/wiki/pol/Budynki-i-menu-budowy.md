@@ -37,6 +37,8 @@ Tablica pokazuje grupy każdego budynku, każdą z jej liczbą (**4 z 6**), i il
 
 Jeszcze nie sprawdzone w grze.
 
+Jeśli `menu_groups.toml` ma błąd, Studio mówi o tym prostymi słowami i proponuje **Odłóż**: budowanie idzie wtedy bez twoich grup, dopóki plik nie zostanie poprawiony. Nic nie jest usuwane.
+
 ## Dodaj budynek
 
 **Dodaj budynek…** pod tablicą nacji: wybierz budynek gry, który kopiuje (**Kopia budynku**), w polu **Nazwa**

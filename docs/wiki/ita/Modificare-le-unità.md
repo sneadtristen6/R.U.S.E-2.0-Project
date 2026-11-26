@@ -63,6 +63,8 @@ La scheda Unità ha due pulsanti in alto: **Modifica un'unità** (l'elenco, poi 
 **Nuova unità (importa un modello)**. Con **Nuova unità**, scegli l'unità da cui partire, dalle un nome e clicca su **Crea**;
 poi cambiala come qualsiasi altra. Oppure scegli l'unità e scegli **Nuova unità…** nella sua pagina.
 
+- **Controllato mentre la crei:** un prezzo sotto 0 viene rifiutato (come un prezzo di ricerca), e così una seconda unità con esattamente lo stesso nome, in qualsiasi alfabeto; un limite dice chiaramente il suo numero ("troppo grande: il gioco accetta al massimo 2.147.483.647"). L'edificio che costruisce una nuova unità si sceglie da un elenco degli edifici della nazione, e una copia di un miglioramento lo dice quando smette di essere un miglioramento.
+
 ## Cambia l'aspetto di un'unità
 
 La pagina dell'unità mostra il suo **Modello 3D**: trascina per ruotarlo, usa la rotellina per lo zoom.
@@ -173,6 +175,8 @@ sé non è ancora stato cliccato nello Studio.
 **Velocità del colpo:** la velocità del colpo di una munizione e la sua resistenza dell'aria decidono quando arriva il
 colpo: un colpo più lento colpisce più tardi, e un bersaglio in movimento viene puntato in anticipo, in base al tempo di
 volo (noto da come funziona il gioco; non ancora provato in un test).
+
+- **Eliminare una munizione copiata** che un'arma spara ancora ti avvisa prima; **Elimina comunque** rimette quelle armi sulla munizione del gioco.
 
 ## Cambia il ruolo di un aereo (Studio 0.9.8.5)
 

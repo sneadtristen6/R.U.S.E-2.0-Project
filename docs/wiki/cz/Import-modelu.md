@@ -118,8 +118,8 @@ ukazují **Její animace**, co jednotka hraje pro každou činnost ve hře:
 
 - **Stojí na místě**, **Jde** a **Běží** jsou první: to nejmenší, co model potřebuje. Když některá nemá nic
   vlastního, stránka to řekne a ukáže, co hraje místo toho.
-- Každá činnost je seznam animací modelu. Vyberte jednu, nebo nechte **Nejbližší**: pak hraje tu nejpodobnější,
-  kterou model má, a seznam řekne kterou. Nejbližší znamená popořadě: animaci pojmenovanou podle té činnosti (stand
+- Každá činnost je seznam animací modelu. Vyberte jednu, nebo nechte **Automaticky**: pak hraje tu nejpodobnější,
+  kterou model má, a seznam řekne kterou. Automaticky znamená popořadě: animaci pojmenovanou podle té činnosti (stand
   nebo idle, walk, run nebo gallop, fire, death...), jinak to, co hraje nejbližší činnost (chůze běh, běh chůzi, pak
   stání; výstřel míření, pak stání; každá smrt obyčejnou smrt). Sestavení se řídí stejným pravidlem: co řekne stránka,
   to hra hraje.
@@ -128,7 +128,7 @@ ukazují **Její animace**, co jednotka hraje pro každou činnost ve hře:
 - **Všechny ostatní činnosti** vypíše zbytek, podle druhu: na místě, pohyb, míření a střelba, těžká zbraň, zásahy,
   smrt.
 - **Na dlouhých přesunech** hra posadí četu do jejího auta. Jednotka s vlastními animacemi jde místo toho sama a hraje
-  animaci tam vybranou (svůj běh, když necháte Nejbližší), stejně rychle jako její auto. Vyberte **Ve svém autě**,
+  animaci tam vybranou (svůj běh, když necháte Automaticky), stejně rychle jako její auto. Vyberte **Ve svém autě**,
   chcete-li auto ponechat.
 
 **Kopie si nechává animace:** jednotka zkopírovaná z jednotky s vlastními animacemi hraje tytéž. Chcete-li některou

@@ -67,3 +67,5 @@ tej mapie.
 ---
 
 [[Podręcznik polowy|Podręcznik-polowy]] · [[English|Shape-the-Ground]]
+
+Jeśli woda, klif albo blokada dla wszystkich jednostek znajdzie się na własnym punkcie startowym mapy (HQ gracza), budowanie ostrzega i idzie dalej: gra zbudowałaby to HQ tam, gdzie znajdzie miejsce. Przenieś HQ tego gracza albo odblokuj tam teren.

@@ -65,6 +65,8 @@ Zakładka Jednostki ma u góry dwa przyciski: **Zmień jednostkę** (lista, pote
 **Nowa jednostka (import modelu)**. Przy **Nowa jednostka** wybierz jednostkę, od której zaczynasz, nadaj jej nazwę
 i kliknij **Utwórz**; potem zmieniaj ją jak każdą inną. Albo wybierz jednostkę i na jej stronie wybierz **Nowa jednostka…**.
 
+- **Sprawdzane podczas tworzenia:** cena poniżej 0 jest odrzucana (tak jak cena badania), podobnie druga jednostka o dokładnie tej samej nazwie, w dowolnym alfabecie; limit podaje swoją liczbę wprost („za duża: gra przyjmuje najwyżej 2 147 483 647”). Budynek, który buduje nową jednostkę, wybiera się z listy budynków danej nacji, a kopia ulepszenia mówi o tym, gdy przestaje być ulepszeniem.
+
 ## Zmień wygląd jednostki
 
 Strona jednostki pokazuje jej **Model 3D**: przeciągnij, by go obrócić, przewiń, by przybliżyć.
@@ -173,6 +175,8 @@ z karabinów i je uszkadzały. Samego przycisku nie kliknięto jeszcze w Studio.
 **Prędkość pocisku:** prędkość pocisku amunicji i jego opór decydują, kiedy trafienie nastąpi: wolniejszy pocisk
 trafia później, a do ruchomego celu celuje się z wyprzedzeniem o czas lotu (wiadomo to z tego, jak działa gra; jeszcze
 nie sprawdzone w teście).
+
+- **Usunięcie skopiowanej amunicji**, którą broń nadal strzela, najpierw ostrzega; **Usuń mimo to** przywraca tym broniom amunicję gry.
 
 ## Zmień rolę samolotu (Studio 0.9.8.5)
 

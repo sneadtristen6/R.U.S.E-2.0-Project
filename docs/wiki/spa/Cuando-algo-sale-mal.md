@@ -14,6 +14,8 @@ arreglar tiene un botón; los demás dicen qué hacer.
 - **Copiar informe** da un texto para pegar en un [[informe de error|Informar-de-un-error]] (tu nombre de usuario de Windows
   queda fuera).
 
+- **Solucionar problemas** del Launcher también dice cuándo faltan archivos de la propia aplicación (Jugar los necesita para construir el juego) en vez de decir que todo está listo: reinstala la aplicación desde las [versiones](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases).
+
 ## El propio juego parece cambiado (por otro gestor de mods o por un cambio a mano)
 
 **Ajustes > Copia de seguridad limpia del juego** guarda una copia limpia de los archivos del juego, los comprueba con
@@ -39,6 +41,8 @@ las palabras de la propia construcción, útiles para pedir ayuda.
 > Caso conocido: RUSE Studio 0.7.0 y anteriores guardaban los trazos de **Agua** sin su nivel de agua ("the water brush
 > needs level"). La 0.7.1 lo arregla; **Apartar** limpia un archivo antiguo.
 
+- **Apartar** se ofrece también para un archivo de grupos del menú de construcción roto (`menu_groups.toml`) y para los archivos de animaciones (`files/anim/units.toml`, `copies.toml`, `clips.toml`). Antes de que hagas clic, la línea dice sin qué sigue la compilación (tus grupos en las listas de construcción, o las animaciones propias de tus unidades; sus archivos de clips se quedan), y el archivo se renombra `<nombre>.broken.toml`, nunca se borra.
+
 ## La aplicación tarda mucho en abrirse
 
 - **El primer arranque tras instalar**, con «Conservar una copia limpia de los archivos de mi juego» marcada, hace esa
@@ -51,6 +55,8 @@ las palabras de la propia construcción, útiles para pedir ayuda.
   los últimos arranques de la aplicación, en segundos: pégalo en un [[informe de error|Informar-de-un-error]]. Las mismas
   líneas se guardan en
   `%LOCALAPPDATA%\RUSE Mod Platform\logs\studio-start.log` (las del Launcher: `launcher-start.log`).
+
+- Antes de que se cree el índice del juego, la pestaña **Naciones** del Studio lo dice, con un botón **Crear el índice**.
 
 ## «Windows protegió su PC»
 
@@ -133,11 +139,19 @@ se pierde.
    del Studio después de Probar en el juego dice qué botón y qué mapa).
 3. ¿Está el mod en el conjunto, y hay un mod más abajo en el orden que cambia lo mismo?
 
+## Un archivo está en uso (Eliminar, Exportar)
+
+**Eliminar** espera hasta 10 segundos a un archivo que otro programa tiene abierto (Blender, un editor) y luego lo nombra: cierra ese programa y pulsa **Eliminar** otra vez. **Exportar** termina aunque un archivo de la copia anterior del mod en la biblioteca del Launcher esté abierto en otro programa: dice que el mod no se añadió a la biblioteca y nombra el archivo que hay que cerrar.
+
+## La actualización no se instala
+
+Las actualizaciones están firmadas: una solo se instala si lleva nuestra firma y es exactamente el archivo firmado. Si la aplicación dice que no se pudo confirmar una versión nueva, no la instales a mano salvo que lo digamos en nuestro Discord: espera a la siguiente actualización. Si la descarga falla tres veces, la aplicación deja de intentarlo por sí sola y te lleva a la página de la versión: descarga allí el instalador con tu navegador y ejecútalo (se instala encima del anterior, como la actualización).
+
 ## El juego se cierra
 
-Anota lo que hiciste justo antes (qué mapa, qué orden, qué había en pantalla), haz una captura de pantalla e
-[[infórmalo|Informar-de-un-error]]. Los informes de cierres en mapas editados son la forma en que las herramientas de mapas se
-volvieron sólidas.
+Cuando un juego iniciado con **Jugar** o **Probar en el juego** se cierra por un fallo, la aplicación lo dice y da un **código del fallo** corto, con **Copiar código**. Envía el código y una captura a XUL en Discord (XUL6x3) o en GitHub ([[infórmalo|Informar-de-un-error]]), con lo que hiciste justo antes (qué mapa, qué orden, qué había en pantalla). Con **Bug Watch** activado, un fallo que conocemos también se explica: la unidad que el juego estaba creando y por qué. Los informes de fallos en mapas editados son lo que hizo sólidas las herramientas de mapas.
+
+- **Un mapa nuevo hacía fallar el juego al cargar** cuando la carpeta del juego tenía carpetas de revisión sobrantes (issue 25 de GitHub). Studio 0.9.8.23 y Launcher 0.4.8.23 construyen desde la más nueva: actualiza.
 
 ## Otra cosa
 

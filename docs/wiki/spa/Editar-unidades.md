@@ -65,6 +65,8 @@ unidad y Blender) y **Nueva unidad (importar un modelo)**. Con **Nueva unidad**,
 un nombre y haz clic en **Crear**; luego cámbiala como cualquier otra. O elige la unidad y pulsa **Nueva unidad…** en
 su página.
 
+- **Comprobado mientras la creas:** un precio por debajo de 0 se rechaza (como un precio de investigación), y también una segunda unidad con exactamente el mismo nombre, en cualquier alfabeto; un límite dice su número con claridad («demasiado grande: el juego admite como mucho 2.147.483.647»). El edificio que construye una unidad nueva se elige de una lista de los edificios de la nación, y una copia de una mejora lo dice cuando deja de ser una mejora.
+
 ## Cambiar el aspecto de una unidad
 
 La página de la unidad muestra su **Modelo 3D**: arrastra para girarlo, usa la rueda para acercarlo.
@@ -179,6 +181,8 @@ tanques dispararon a los tanques con sus fusiles y los dañaron. El botón en s�
 **Velocidad del disparo:** la velocidad y la resistencia del disparo de una munición deciden cuándo llega el impacto:
 un disparo más lento impacta más tarde, y a un objetivo en movimiento se le apunta por delante según el tiempo de vuelo
 (se sabe por cómo funciona el juego; aún no se ha comprobado en una prueba).
+
+- **Borrar una munición copiada** que un arma aún dispara te avisa primero; **Borrar de todos modos** devuelve esas armas a la munición del juego.
 
 ## Cambiar la función de un avión (Studio 0.9.8.5)
 

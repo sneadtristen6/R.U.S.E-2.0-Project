@@ -28,6 +28,8 @@ Zaškrtněte **Silnice** nahoře nad mapou: vlastní silnice mapy se ukážou zl
 
 Nové silnice se hned ukládají do vašeho modu (`maps/<map>/roads.toml`).
 
+Konec, který nakreslíte na silnici, se k ní připojí kdekoli podél silnice, ne jen u jednoho z jejích bodů, takže nakreslená silnice už není odmítnuta jako odříznutá (Studio 0.9.8.23).
+
 ## Co nová silnice dělá ve hře
 
 - **Zásobovací trasy ji používají** (ověřeno: trasa zásobovacího skladu vzala novou zkratku přes otevřená pole).

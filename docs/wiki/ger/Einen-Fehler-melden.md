@@ -30,3 +30,7 @@ discussion**. Ein kurzes Formular fragt nach den Details.
 ---
 
 [[Feldhandbuch|Feldhandbuch]] · [[English|Report-a-Bug]]
+
+**Nach einem Absturz** gibt die App einen kurzen **Absturzcode** mit **Code kopieren**: Schreib ihn in deinen Bericht oder schick ihn mit einem Screenshot an XUL auf Discord (XUL6x3).
+
+**Eine Datenschutzanfrage** (zu dem, was RUSE Guard speichert): Gib uns den Code unter **Einstellungen > Ihr RUSE-Guard-Code (für Datenschutzanfragen)**. Die Bedingungen unter **Einstellungen > Bedingungen, Danksagungen und Lizenzen** sagen, was wir speichern und welche Rechte du hast.

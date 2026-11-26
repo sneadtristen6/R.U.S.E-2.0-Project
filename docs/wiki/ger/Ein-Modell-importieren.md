@@ -127,8 +127,8 @@ Seite der Einheit zeigt **Seine Animationen**, was die Einheit für jede Handlun
 
 - **Steht still**, **Geht** und **Läuft** kommen zuerst: das Mindeste, was ein Modell braucht. Hat eine davon nichts
   Eigenes, sagt die Seite das und was sie stattdessen spielt.
-- Jede Handlung ist eine Liste der Animationen des Modells. Wähle eine oder lass **Nächste**: Dann spielt sie die
-  ähnlichste, die das Modell hat, und die Liste sagt welche. Nächste heißt, der Reihe nach: eine Animation, die nach
+- Jede Handlung ist eine Liste der Animationen des Modells. Wähle eine oder lass **Automatisch**: Dann spielt sie die
+  ähnlichste, die das Modell hat, und die Liste sagt welche. Automatisch heißt, der Reihe nach: eine Animation, die nach
   der Handlung benannt ist (stand oder idle, walk, run oder gallop, fire, death...), sonst was die nächste Handlung
   spielt (ein Gehen das Laufen, ein Laufen das Gehen, dann das Stehen; ein Schuss das Zielen, dann das Stehen; jeder
   Tod den einfachen Tod). Der Build folgt derselben Regel: Was die Seite sagt, spielt das Spiel.
@@ -137,7 +137,7 @@ Seite der Einheit zeigt **Seine Animationen**, was die Einheit für jede Handlun
 - **Alle anderen Handlungen** listet den Rest auf, nach Art: Stillstehen, in Bewegung, Zielen und Schießen, die schwere
   Waffe, Getroffen werden, Sterben.
 - **Auf langen Wegen** setzt das Spiel einen Trupp in seinen Lastwagen. Eine Einheit mit eigenen Animationen geht
-  stattdessen selbst und spielt die dort gewählte Animation (ihr Laufen bei Nächste), so schnell wie ihr Lastwagen.
+  stattdessen selbst und spielt die dort gewählte Animation (ihr Laufen bei Automatisch), so schnell wie ihr Lastwagen.
   Wähle **In seinem Lastwagen**, um den Lastwagen zu behalten.
 
 **Eine Kopie behält ihre Animationen:** Eine Einheit, die von einer mit eigenen Animationen kopiert wurde, spielt

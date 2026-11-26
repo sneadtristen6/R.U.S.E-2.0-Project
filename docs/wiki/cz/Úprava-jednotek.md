@@ -62,6 +62,8 @@ originál. Záložka Jednotky má nahoře dvě tlačítka: **Upravit jednotku** 
 a **Nová jednotka (import modelu)**. U **Nová jednotka** vyberte jednotku, ze které začnete, dejte jí název a klikněte
 na **Vytvořit**; pak ji měňte jako kteroukoli jinou. Nebo vyberte jednotku a na její stránce zvolte **Nová jednotka…**.
 
+- **Kontroluje se při vytváření:** cena pod 0 je odmítnuta (stejně jako cena výzkumu), stejně tak druhá jednotka s přesně stejným názvem, v jakékoli abecedě; limit řekne své číslo jasně („příliš velké: hra bere nejvýše 2 147 483 647“). Budova, která novou jednotku staví, se vybírá ze seznamu budov daného národa, a kopie vylepšení to řekne, když přestane být vylepšením.
+
 ## Změňte, jak jednotka vypadá
 
 Stránka jednotky ukazuje její **3D model**: tažením ho otočíte, kolečkem myši přiblížíte.
@@ -168,6 +170,8 @@ a poškodila je. Samotné tlačítko zatím ve Studiu nikdo nestiskl.
 
 **Rychlost střely:** rychlost střely munice a její odpor rozhodují, kdy zásah dopadne: pomalejší střela zasáhne
 později a na pohyblivý cíl se míří s předstihem o dobu letu (známo z toho, jak hra funguje; zatím neověřeno testem).
+
+- **Smazání zkopírované munice**, kterou zbraň ještě střílí, nejdřív varuje; **Přesto smazat** vrátí těm zbraním munici hry.
 
 ## Změna role letadla (Studio 0.9.8.5)
 

@@ -30,3 +30,7 @@ discussion**. Krótki formularz pyta o szczegóły.
 ---
 
 [[Podręcznik polowy|Podręcznik-polowy]] · [[English|Report-a-Bug]]
+
+**Po awarii** aplikacja podaje krótki **kod awarii** z **Kopiuj kod**: wpisz go w zgłoszenie albo wyślij ze zrzutem ekranu do XUL na Discordzie (XUL6x3).
+
+**Prośba dotycząca prywatności** (o to, co przechowuje RUSE Guard): podaj nam kod z **Ustawienia > Twój kod RUSE Guard (do próśb dotyczących prywatności)**. Warunki w **Ustawienia > Warunki, autorzy i licencje** mówią, co przechowujemy i jakie masz prawa.

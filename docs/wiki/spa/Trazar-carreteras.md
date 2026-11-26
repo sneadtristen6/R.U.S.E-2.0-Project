@@ -29,6 +29,8 @@ das forma.
 
 Las carreteras nuevas se guardan en tu mod al momento (`maps/<map>/roads.toml`).
 
+Un extremo que dibujas sobre una carretera se une a ella esté donde esté a lo largo de la carretera, no solo cerca de uno de sus puntos, así que una carretera dibujada ya no se rechaza por quedar aislada (Studio 0.9.8.23).
+
 ## Lo que hace una carretera nueva en el juego
 
 - **Las rutas de suministro la usan** (probado: la ruta de un depósito de suministros tomó un atajo nuevo a campo

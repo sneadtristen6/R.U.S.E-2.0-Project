@@ -84,6 +84,8 @@ last sending back:
 - **RUSE Decoy's animations:** each sending set aside is listed above the unit's animations ("Changes you sent from
   Blender on ... and never brought back"), with **Bring them back** to take it in, or **Put them in the Recycle Bin**.
 
+- **A squad on bones of its own** (the Generic Horse) that an older Studio sent to Blender its older way isn't taken back: that sending is set aside the same way, and the page says to use **Open in Blender**, then **Bring my changes back**. **Add a soldier**'s own Blender button still comes back as before.
+
 ## Where your Blender files are
 
 In your mod's folder, `Documents\RUSE 2.0\Mods\<your mod>\blender\<the unit's name>\`: the squad's in `squad`, RUSE

@@ -14,6 +14,8 @@ beheben kann, hat eine Schaltfläche; die übrigen sagen, was zu tun ist.
 - **Bericht kopieren** gibt einen Text zum Einfügen in einen [[Fehlerbericht|Einen-Fehler-melden]] (dein Windows-Benutzername
   wird weggelassen).
 
+- Die **Fehlersuche** des Launchers sagt jetzt auch, wenn eigene Dateien der App fehlen (Spielen braucht sie, um das Spiel zu bauen), statt zu sagen, dass alles bereit ist: Installiere die App neu von den [Releases](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases).
+
 ## Das Spiel selbst scheint verändert (durch einen anderen Mod-Manager oder eine Änderung von Hand)
 
 **Einstellungen > Saubere Sicherung des Spiels** behält eine saubere Kopie der Dateien des Spiels, prüft sie dagegen und
@@ -39,6 +41,8 @@ war, bleibt daneben erhalten. **Details** zeigt die eigenen Worte des Builds, pr
 > Bekannter Fall: RUSE Studio 0.7.0 und älter speicherten **Wasser**-Striche ohne ihren Wasserstand („the water brush
 > needs level“). 0.7.1 behebt das; **Beiseitelegen** räumt eine alte Datei weg.
 
+- **Beiseitelegen** gibt es auch für eine kaputte Datei der Baumenü-Gruppen (`menu_groups.toml`) und die Animationsdateien (`files/anim/units.toml`, `copies.toml`, `clips.toml`). Bevor du klickst, sagt die Zeile, worauf der Build verzichtet (deine Gruppen in den Baulisten oder die eigenen Animationen deiner Einheiten; ihre Clip-Dateien bleiben), und die Datei wird in `<Name>.broken.toml` umbenannt, nie gelöscht.
+
 ## Die App braucht lange zum Öffnen
 
 - **Der erste Start nach der Installation** mit angehaktem „Eine saubere Kopie der Spieldateien behalten“ erstellt diese
@@ -51,6 +55,8 @@ war, bleibt daneben erhalten. **Details** zeigt die eigenen Worte des Builds, pr
   der App bei jedem Schritt gedauert hat, in Sekunden: füg ihn in einen [[Fehlerbericht|Einen-Fehler-melden]] ein. Dieselben
   Zeilen werden in `%LOCALAPPDATA%\RUSE Mod Platform\logs\studio-start.log` aufbewahrt (die des Launchers:
   `launcher-start.log`).
+
+- Bevor der Spielindex erstellt ist, sagt der Reiter **Nationen** im Studio das, mit einer Schaltfläche **Index erstellen**.
 
 ## „Der Computer wurde durch Windows geschützt“
 
@@ -135,11 +141,19 @@ es, und das geht verloren.
    Studios nach Im Spiel testen sagt, welche Schaltfläche und welche Karte).
 3. Ist der Mod im Set, und ändert ein Mod weiter unten in der Reihenfolge dasselbe?
 
+## Eine Datei ist in Benutzung (Löschen, Exportieren)
+
+**Löschen** wartet bis zu 10 Sekunden auf eine Datei, die ein anderes Programm festhält (Blender, ein Editor), und nennt sie dann: Schließe dieses Programm und klicke erneut auf **Löschen**. **Exportieren** wird fertig, auch wenn eine Datei der älteren Kopie des Mods in der Bibliothek des Launchers in einem anderen Programm offen ist: Es sagt, dass der Mod nicht zur Bibliothek hinzugefügt wurde, und nennt die Datei, die du schließen musst.
+
+## Das Update installiert sich nicht
+
+Updates sind signiert: Eines wird nur installiert, wenn es unsere Signatur trägt und genau die signierte Datei ist. Sagt die App, dass eine neue Version nicht bestätigt werden konnte, installiere sie nicht von Hand, außer wir sagen es auf unserem Discord: Warte auf das nächste Update. Scheitert der Download dreimal, hört die App von selbst auf und verweist auf die Seite der Version: Lade dort den Installer im Browser herunter und starte ihn (er installiert sich über den alten, wie das Update).
+
 ## Das Spiel stürzt ab
 
-Schreib auf, was du kurz davor getan hast (welche Karte, welcher Befehl, was auf dem Bildschirm war), mach einen
-Screenshot und [[melde es|Einen-Fehler-melden]]. Absturzberichte zu bearbeiteten Karten haben die Kartenwerkzeuge stabil
-gemacht.
+Wenn ein mit **Spielen** oder **Im Spiel testen** gestartetes Spiel abstürzt, sagt die App das und gibt einen kurzen **Absturzcode**, mit **Code kopieren**. Schicke den Code und einen Screenshot an XUL auf Discord (XUL6x3) oder auf GitHub ([[melde es|Einen-Fehler-melden]]), mit dem, was du kurz vorher gemacht hast (welche Karte, welcher Befehl, was auf dem Bildschirm war). Mit **Bug Watch** an wird ein Absturz, den wir kennen, auch erklärt: die Einheit, die das Spiel gerade erzeugte, und warum. Absturzberichte auf bearbeiteten Karten haben die Karten-Werkzeuge stabil gemacht.
+
+- **Eine neue Karte ließ das Spiel beim Laden abstürzen**, wenn der Spielordner übrig gebliebene Revisionsordner enthielt (GitHub-Issue 25). Studio 0.9.8.23 und Launcher 0.4.8.23 bauen aus dem neuesten: Aktualisiere.
 
 ## Etwas anderes
 

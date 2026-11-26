@@ -39,6 +39,8 @@ grupos tiene el edificio (**7 de 10 grupos**).
 
 Aún no probado en el juego.
 
+Si `menu_groups.toml` tiene un error, el Studio lo dice con palabras sencillas y ofrece **Apartar**: la compilación sigue entonces sin tus grupos hasta que el archivo se arregle. No se borra nada.
+
 ## Añade un edificio
 
 **Añadir un edificio…**, bajo el tablero de una nación: elige el edificio del juego que copia (**Copia de**), dale un

@@ -57,6 +57,8 @@ fr = "Blitz jumeau"
 copied; campaign and Operation maps can't. Two players need the same mod to play it together, like any mod. New
 maps play in the game (2026-10-03), and the Studio's **Duplicate map** makes this folder for you.
 
+**Rename** changes the name a new map has in the game's menus. Its folder and pack name stay, so sets and join codes that use it keep working (the game's own maps can't be renamed). A copy named like one of the game's maps is refused at once, before anything is made, and a new map made with only a units mod picked gets a map mod of its own.
+
 ## Common mistakes
 
 | Mistake | What happens | Fix |
@@ -68,3 +70,5 @@ maps play in the game (2026-10-03), and the Studio's **Duplicate map** makes thi
 
 If a file can't be read, the Studio never writes over it: your work is never lost. **Set aside** renames it
 `<name>.broken.toml` next to the original.
+
+**Set aside** also takes `menu_groups.toml` and the animations files under `files/anim/` (`units.toml`, `copies.toml`, `clips.toml`): the line says first what the build goes without.

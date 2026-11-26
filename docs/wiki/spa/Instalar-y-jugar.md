@@ -12,8 +12,8 @@ página).
 ## Paso 1: Descarga el Launcher
 
 1. Abre la página de [versiones del launcher](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases?q=launcher).
-2. La más reciente está arriba, marcada **Latest** (por ejemplo *RUSE Launcher 0.4.8.9*).
-3. Baja hasta **Assets**, debajo de ella, y haz clic en **RUSE-Launcher-Setup-0.4.8.9.exe** (el número de versión
+2. La más reciente está arriba, marcada **Latest** (por ejemplo *RUSE Launcher 0.4.8.23*).
+3. Baja hasta **Assets**, debajo de ella, y haz clic en **RUSE-Launcher-Setup-0.4.8.23.exe** (el número de versión
    cambia; coge el `.exe` que empieza por `RUSE-Launcher-Setup`). Tu navegador lo descarga.
 
 Los demás archivos de ahí (`RUSE-Launcher-notes.json`, *Source code*) no hacen falta.
@@ -40,6 +40,8 @@ Los demás archivos de ahí (`RUSE-Launcher-notes.json`, *Source code*) no hacen
 > confirmarlo, un cuadro dice por qué y qué hacer (Jugar sigue desactivado hasta entonces): consulta
 > [[Cuando algo sale mal|Cuando-algo-sale-mal]].
 
+**La primera vez que se abre**, la aplicación muestra nuestros **términos de uso y aviso de privacidad**: léelos y haz clic en **Aceptar y continuar**. Puedes volver a leerlos cuando quieras en **Ajustes > Términos, créditos y licencias**. Si a Windows le falta **Microsoft WebView2** (la ventana de la aplicación lo necesita), se ofrece, nunca se impone: una casilla marcada en el instalador, una pregunta Sí/No al abrir la aplicación y una tarjeta en **Ajustes**.
+
 ## Paso 3: Consigue mods
 
 **De nuestra lista (lo más fácil):** haz clic en **Mods compatibles**, marca los mods que quieras y pulsa **Instalar**.
@@ -56,6 +58,8 @@ Primero comprueba el archivo: un archivo que no es un mod, o que contiene un pro
 **Un mod antiguo que viene como archivos propios del juego** (paquetes `.dat` que te dijeron que copiaras en la carpeta
 del juego): haz clic en **Convertir un mod antiguo…**, elige su carpeta, dale un nombre y haz clic en **Convertir y
 añadir a la biblioteca**. La carpeta de tu juego no se toca.
+
+Una descarga que llega cortada o pierde la conexión se intenta una vez más, y una que falla no detiene el resto de una instalación de varios mods.
 
 ## Paso 4: Elige a qué jugar
 
@@ -75,6 +79,8 @@ casilla para ello). El juego entonces se abre con una escena de batalla, con mod
 menús y sus pantallas de carga llevan el título dorado. Se hace en tu PC a partir de los archivos de tu propio juego y
 de una imagen y un sonido que vienen con las aplicaciones, la primera vez (unos minutos, una sola vez).
 
+**Original** (sin mods) también es nuestra copia: **Jugar** construye una copia sencilla del juego con RUSE Guard dentro. Para jugar a R.U.S.E. sin nuestras aplicaciones, inícialo desde Steam.
+
 > [!NOTE]
 > Iniciar R.U.S.E. desde **Steam** inicia el juego **sin** mods, como siempre. Para jugar con mods, inícialo con
 > **Jugar** en el Launcher. Jugar nunca cambia tu instalación de Steam.
@@ -89,6 +95,10 @@ navegador y ejecútalo: se instala sobre el antiguo y conserva tus mods.
 
 Una actualización solo se instala cuando lleva nuestra firma. Si el Launcher o el Studio dice que no se pudo confirmar
 una versión nueva, no la instales a mano salvo que lo digamos en nuestro Discord; espera a la siguiente actualización.
+
+**La comprobación de actualizaciones** espera a que hayas aceptado los términos. Si una descarga falla tres veces, la aplicación deja de intentarlo por sí sola y te lleva a la página de la versión: descarga allí el Setup (paso 1) y ejecútalo.
+
+**Desinstalar** pregunta si borrar también los ajustes y los datos de las aplicaciones (la respuesta empieza en No). Mientras la otra aplicación siga instalada, no pregunta nada y no borra nada.
 
 ## ¿Problemas?
 
@@ -113,7 +123,7 @@ abierto mientras juegas, y ciérralo para cerrar la aplicación. Aún no probado
 
 1. Abre la página de [versiones del studio](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases?q=studio). El
    Studio es una versión preliminar, así que sus versiones están marcadas **Pre-release**: coge la más reciente.
-2. En **Assets**, haz clic en **RUSE-Studio-Setup-0.9.8.9.exe** (la versión más reciente) y ejecútalo como en el Paso 2.
+2. En **Assets**, haz clic en **RUSE-Studio-Setup-0.9.8.23.exe** (la versión más reciente) y ejecútalo como en el Paso 2.
 3. Inicia **RUSE Studio** y luego sigue [[Tu primer mod|Tu-primer-mod]] (10 minutos).
 
 **Siguiente:** [[Jugar con amigos|Jugar-con-amigos]]

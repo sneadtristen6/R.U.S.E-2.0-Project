@@ -42,6 +42,8 @@ et combien de groupes a le bâtiment (**7 groupes sur 10**).
 
 Pas encore essayé en jeu.
 
+Si `menu_groups.toml` contient une erreur, le Studio le dit en mots simples et propose **Mettre de côté** : la construction se fait alors sans vos groupes jusqu'à ce que le fichier soit réparé. Rien n'est supprimé.
+
 ## Ajouter un bâtiment
 
 **Ajouter un bâtiment…** sous le tableau d'une nation : choisissez le bâtiment du jeu qu'il copie (**Copie de**),
