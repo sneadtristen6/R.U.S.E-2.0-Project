@@ -369,7 +369,15 @@ class LauncherApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedC
 
 
     def _fair_view(self, mod: dict, trusted: dict) -> dict:
-        check = self._fair_of(mod.get("path")) if fairplay.ON else None
+        """A library mod's fair play marks for the lists. A mod whose files change while they are read (a mod being
+        installed or replaced meanwhile, so a file listed is gone at its stat) is shown without them this once and
+        read again at the next refresh: before, that one mod failed every list call, so a mod set that WAS saved came
+        back as a failure and saving it again made a second set (FL-97's path 12, round 4's codes page). Play's own
+        checks (_untrusted, the build) still read it, and still stop on it."""
+        try:
+            check = self._fair_of(mod.get("path")) if fairplay.ON else None
+        except OSError:
+            check = None
         if check is None:
             return {"scripts": False, "trusted": False, "cheat": False, "offline": None}
         return {"scripts": bool(check.scripts), "trusted": trusted.get(check.id) == check.version,

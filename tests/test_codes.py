@@ -264,6 +264,20 @@ class ModSets(WithBugWatch):
         self.assertTrue((self.home / "sets" / "tanks.toml").is_file())   # (saved)
         self.assertEqual(self.failures(), [{"code": "L-SET-15", "detail": {"win": 13}}])
 
+    def test_a_mod_whose_files_change_while_listed_doesn_t_fail_a_saved_set(self):
+        """FL-97's path 12, its cause in the code: one library mod's files changing while the lists are read (a mod
+        installed meanwhile: a file listed is gone at its stat) failed the whole list, so a set that WAS saved came
+        back as a failure, and saving it again made tanks-2. The lists now come; Play's own check still stops."""
+        from rusemod import fairplay
+        gone = FileNotFoundError(2, "gone while it was listed")
+        with mock.patch.object(fairplay, "ON", True), mock.patch.object(self.api, "_fair_of", side_effect=gone):
+            got = self.page.new_set("Tanks", ["tanks"])
+            with self.assertRaises(FileNotFoundError):
+                self.api._untrusted({"folders": [str(self.home / "library" / "tanks")]})
+        self.assertEqual((got["set"], [m["id"] for m in got["library"]]), ("tanks", ["tanks"]))
+        self.assertEqual(sorted(p.name for p in (self.home / "sets").iterdir()), ["tanks.toml"])   # (one set)
+        self.assertEqual(self.failures(), [])
+
     def test_a_play_refused_by_a_set_file_s_mistake_says_which(self):
         sets = self.home / "sets"
         sets.mkdir()
