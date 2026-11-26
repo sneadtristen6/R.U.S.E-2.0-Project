@@ -194,6 +194,8 @@
       // (its help line ends with the "Having trouble? Read the guide" link: app.js helpLine)
       const out = [el("div", { className: "squad-go" }, big, test, ...(S.ticks ? [S.ticks.toggle] : [])),
         ...(S.ticks ? [S.ticks.box] : []), ...(S.said ? [S.said] : []),
+        // while Blender is open: what Bring my changes back does and what to click before closing it (52s)
+        ...(open ? [el("p", { className: "muted small squad-open-line", textContent: w.squad_blender_open_line })] : []),
         helpLine(open ? w.squad_blender_open_how : S.parts && S.parts.route === "kinds" ? w.one_how_model
           : w.one_how_squad, "blender", "squad-how")];   // (one model, or the ticked)
       if (missing) {

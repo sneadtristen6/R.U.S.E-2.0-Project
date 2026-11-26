@@ -313,6 +313,16 @@ class Item28BringBackLast(InElevenLanguages):
         self.assertEqual(WORDS["squad_blender_back_last"]["us"], "Bring back what I sent last")
 
 
+class Item29OpenLine(InElevenLanguages):
+    ITEM = "29"
+
+    def test_52s_while_blender_is_open_a_line_on_the_card(self):
+        self.words_in_eleven_languages(["squad_blender_open_line"], english_left_in=True)
+        self.assertIn('...(open ? [el("p", { className: "muted small squad-open-line", textContent: w.squad_blender_open_line })] : [])',
+                      js("squad.js"))
+        self.names_in_every_language("squad_blender_open_line", ["squad_blender_back", "blender_model_send"])
+
+
         #                                         code says the same words, for every refusal)
 
 
