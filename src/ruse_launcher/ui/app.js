@@ -317,17 +317,20 @@ async function loadTerms() {
 }
 
 function renderTerms() {
-  const w = state.words, t = state.terms || {};
+  const w = state.words, t = state.terms, answered = !!t;   // (until terms_info answers, nothing is said about the version or the files)
   text($("set-terms-help"), w.set_terms_help);
-  text($("terms-accepted"), t.failed ? t.failed : t.accepted ? fill(w.terms_accepted, { version: t.accepted, current: t.current })
-    : w.terms_accepted_none);
+  // a version older than this app's is said so (the owner, 2026-11-25: "Eleven, yes.")
+  const newer = answered && !t.failed && t.accepted && t.current && t.accepted < t.current ? " " + w.terms_newer : "";
+  text($("terms-accepted"), !answered ? "" : t.failed ? t.failed : t.accepted
+    ? fill(w.terms_accepted, { version: t.accepted, current: t.current }) + newer : w.terms_accepted_none);
   const folds = [["agreement", w.terms_read_agreement, w.agree_full, w.tip_terms_agreement],
-    ["notices", w.terms_read_credits, t.notices, w.tip_terms_credits],
-    ["licence", w.terms_read_licence, t.licence, w.tip_terms_licence]];
+    ["notices", w.terms_read_credits, t && t.notices, w.tip_terms_credits],
+    ["licence", w.terms_read_licence, t && t.licence, w.tip_terms_licence]];
   for (const [id, label, body, tip] of folds) {
     text($(`terms-${id}-sum`), label);
     $(`terms-${id}-sum`).title = tip || "";
-    text($(`terms-${id}-text`), body == null ? w.terms_missing : body);   // (a missing file is said, never replaced)
+    // (a missing file is said, never replaced; before the answer, not said at all)
+    text($(`terms-${id}-text`), id !== "agreement" && !answered ? "" : body == null ? w.terms_missing : body);
   }
 }
 

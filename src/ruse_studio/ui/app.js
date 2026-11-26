@@ -6234,8 +6234,10 @@ const SETTINGS = [  // the language isn't here: it has its own button at the top
     const w = state.words;
     let t;
     try { t = await api().terms_info(); } catch (err) { t = { failed: errorText(err) }; }
+    // a version older than this app's is said so (the owner, 2026-11-25: "Eleven, yes.")
+    const newer = !t.failed && t.accepted && t.current && t.accepted < t.current ? " " + w.terms_newer : "";
     $("terms-accepted").textContent = t.failed ? t.failed : t.accepted
-      ? fillText(w.terms_accepted, { version: t.accepted, current: t.current }) : w.terms_accepted_none;
+      ? fillText(w.terms_accepted, { version: t.accepted, current: t.current }) + newer : w.terms_accepted_none;
     const folds = [["agreement", w.terms_read_agreement, w.agree_full, w.tip_terms_agreement],
       ["notices", w.terms_read_credits, t.notices, w.tip_terms_credits],
       ["licence", w.terms_read_licence, t.licence, w.tip_terms_licence]];

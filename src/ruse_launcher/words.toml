@@ -4315,6 +4315,19 @@ jpn = "契約にはまだ同意していません。"
 sc = "你还没有接受协议。"
 fa = "شما هنوز توافق‌نامه را نپذیرفته‌اید."
 
+[terms_newer]
+us = "This is a newer version than the one you accepted."
+fr = "Cette version est plus récente que celle que vous avez acceptée."
+ger = "Das ist eine neuere Version als die, die du akzeptiert hast."
+ita = "Questa è una versione più recente di quella che hai accettato."
+spa = "Esta es una versión más nueva que la que aceptaste."
+pol = "To jest nowsza wersja niż ta, którą zaakceptowałeś."
+ru = "Это более новая версия, чем та, которую вы приняли."
+cz = "Toto je novější verze, než kterou jste přijali."
+jpn = "これは、同意したバージョンより新しいバージョンです。"
+sc = "这是比你已接受的版本更新的版本。"
+fa = "این نسخه‌ای جدیدتر از نسخه‌ای است که پذیرفته‌اید."
+
 [terms_read_agreement]
 us = "Read the full agreement (the text this app shows now)"
 fr = "Lire l'accord complet (le texte que cette application affiche maintenant)"

@@ -27,7 +27,7 @@ ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / "src"
 APPS = ("ruse_launcher", "ruse_studio")
 LANGS = ("us", "fr", "ger", "ita", "spa", "pol", "ru", "cz", "jpn", "sc", "fa")
-KEYS = ("set_terms_title", "set_terms_help", "terms_accepted", "terms_accepted_none", "terms_read_agreement",
+KEYS = ("set_terms_title", "set_terms_help", "terms_accepted", "terms_accepted_none", "terms_newer", "terms_read_agreement",
         "terms_read_credits", "terms_read_licence", "terms_missing", "tip_terms_agreement", "tip_terms_credits",
         "tip_terms_licence")
 TMP = os.environ.get("RUSE_TEST_TMP") or None
@@ -118,6 +118,63 @@ class Pages(unittest.TestCase):
         for lang in LANGS:   # the placeholder the page fills is kept in every language
             self.assertIn("{version}", words["ruse_studio"]["terms_accepted"][lang])
             self.assertNotIn("{current}", words["ruse_studio"]["terms_accepted"][lang])
+
+
+NODE = Path("D:/RUSE-2.0/tools/node-v24.22.2-win-x64/node.exe")
+NEWER = "This is a newer version than the one you accepted."
+
+
+@unittest.skipUnless(NODE.is_file(), "Node is not on this PC")
+class Drawn(unittest.TestCase):
+    """The section's own drawing code (ui/app.js) run in Node (tests/terms_render_in_node.mjs): what each app writes
+    for each answer of terms_info, and in the Launcher before any answer."""
+
+    def draw(self, app, info, lang="us"):
+        import json
+        import subprocess
+        words = tomllib.loads((SRC / app / "words.toml").read_text(encoding="utf-8"))
+        flat = {k: v[lang] for k, v in words.items() if isinstance(v, dict) and lang in v}
+        tmp = tempfile.TemporaryDirectory(dir=TMP)
+        self.addCleanup(tmp.cleanup)
+        scenario = Path(tmp.name, "scenario.json")
+        scenario.write_text(json.dumps({"words": flat, "info": info}), encoding="utf-8")
+        run = subprocess.run([str(NODE), str(ROOT / "tests" / "terms_render_in_node.mjs"), str(SRC / app / "ui" / "app.js"),
+                              "launcher" if app == "ruse_launcher" else "studio", str(scenario)],
+                             capture_output=True, text=True, encoding="utf-8", timeout=60)
+        self.assertEqual(run.returncode, 0, run.stderr)
+        return json.loads(run.stdout), flat
+
+    def test_an_older_version_accepted_says_this_one_is_newer_in_both_apps_and_every_language(self):
+        for app in APPS:
+            for lang in LANGS:
+                with self.subTest(app=app, lang=lang):
+                    out, w = self.draw(app, {"accepted": 3, "current": 4, "notices": "n", "licence": "l"}, lang)
+                    self.assertEqual(out["terms-accepted"], w["terms_accepted"].replace("{version}", "3") + " " + w["terms_newer"])
+                    self.assertTrue(w["terms_newer"].strip())
+            out, w = self.draw(app, {"accepted": 3, "current": 4, "notices": "n", "licence": "l"})
+            self.assertIn(NEWER, out["terms-accepted"])
+
+    def test_the_current_version_none_and_a_failure_do_not_say_newer(self):
+        for app in APPS:
+            for info in ({"accepted": 4, "current": 4}, {"accepted": 0, "current": 4}, {"failed": "no"}):
+                with self.subTest(app=app, info=info):
+                    out, w = self.draw(app, info)
+                    self.assertNotIn(NEWER, out["terms-accepted"])
+        out, w = self.draw("ruse_studio", {"accepted": 0, "current": 4})
+        self.assertEqual(out["terms-accepted"], w["terms_accepted_none"])
+
+    def test_the_launcher_writes_nothing_about_the_version_or_the_files_before_terms_info_answers(self):
+        out, w = self.draw("ruse_launcher", None)
+        self.assertEqual(out["terms-accepted"], "")   # not "You haven't accepted the agreement yet"
+        self.assertEqual(out["terms-notices-text"], "")   # not "isn't on this PC"
+        self.assertEqual(out["terms-licence-text"], "")
+        self.assertTrue(out["terms-agreement-text"])   # the agreement's words are the app's own, not an answer
+
+    def test_the_launcher_after_the_answer_says_what_it_is(self):
+        out, w = self.draw("ruse_launcher", {"accepted": 0, "current": 4, "notices": None, "licence": "L"})
+        self.assertEqual(out["terms-accepted"], w["terms_accepted_none"])
+        self.assertEqual(out["terms-notices-text"], w["terms_missing"])   # a missing file is still said, once answered
+        self.assertEqual(out["terms-licence-text"], "L")
 
 
 class Installer(unittest.TestCase):
