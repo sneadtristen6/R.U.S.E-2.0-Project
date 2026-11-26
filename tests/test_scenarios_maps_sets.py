@@ -103,7 +103,6 @@ class Sets(MapGame):
     # FINDING F8: the Launcher's mod set check (shown while a set is edited and before Play) says nothing of two map
     # mods making a new map of one folder name; Play then stops: "mine and friend both make a new map called
     # BlitzAtDusk ... give one another folder name, or leave one mod out" (a player can't rename a downloaded mod's map).
-    @unittest.expectedFailure
     def test_f8_the_set_check_names_two_maps_of_one_name(self):
         for project in ("Mine", "Friend"):
             self.api.new_mod(project, "map")
@@ -112,7 +111,10 @@ class Sets(MapGame):
         launcher = self.launcher()
         ids = {m["name"]: m["id"] for m in launcher.library()}
         launcher.new_set("Both", [ids["Mine"], ids["Friend"]])
-        self.assertTrue(launcher.set_check("both")["hard"])
+        hard = launcher.set_check("both")["hard"]
+        self.assertTrue(hard)
+        self.assertEqual([(c["kind"], c["what"].lower(), c["mods"]) for c in hard],
+                         [("map", "blitzatdusk", ["Mine", "Friend"])])
 
 
 class DownloadedMap(MapGame):

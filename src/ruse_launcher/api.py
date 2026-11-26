@@ -879,7 +879,34 @@ class LauncherApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedC
                              "mods": [names[o["a"]], names[o["b"]]], "move": o["a"], "below": o["b"], "count": 1,
                              "message": f"{names[o['a']]} and {names[o['b']]} both change {o['file']}: "
                                         f"{names[o['b']]}'s is used"} for o in overlaps(ours)]
+            out["hard"] += self._map_name_clashes([(names[entry], folder) for entry, folder in ours])
         return self._best_order(out, mods, entries, folders, found)
+
+    @staticmethod
+    def _map_name_clashes(ours: list) -> list[dict]:
+        """Two mods of the set each making a new map of one name (maps/<name>/map.toml copy_of; the case doesn't
+        matter): the build stops at Play (rusemod.build.new_maps), so the check names it first as a hard clash.
+        `ours`: [(the mod's name, its folder)] in the set's order. A mod whose map.toml can't be read is skipped here:
+        the build says what is wrong with it."""
+        from rusemod.build import _read_maps
+        from rusemod.newmap import NewMap
+        seen: dict = {}
+        found = []
+        for name, folder in ours:
+            try:
+                made = {pack for pack, rows in _read_maps(folder, "map.toml").items()
+                        if any(isinstance(r, NewMap) for r in rows)}
+            except (BuildError, OSError):
+                continue
+            for pack in sorted(made, key=str.lower):
+                first = seen.get(pack.lower())
+                if first is None:
+                    seen[pack.lower()] = name
+                elif first != name:
+                    found.append({"kind": "map", "hard": True, "what": pack, "a": first, "b": name,
+                                  "mods": [first, name], "count": 1,
+                                  "message": f"{first} and {name} both make a new map called {pack}"})
+        return found
 
     def _best_order(self, out: dict, mods: list, entries: list, folders: list, found: list) -> dict:
         if any(not c.hard for c in found):
