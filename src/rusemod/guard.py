@@ -770,9 +770,8 @@ class MatchWatch(threading.Thread):
                         for f in scan(tools):
                             if f not in found:
                                 found.append(f)
-                except (OSError, ValueError, subprocess.SubprocessError):
-                    pass  # the task list couldn't be read this time: the next scan tries again
-                except Exception as exc:  # noqa: BLE001  (a failed look must not end the watch: the close is next)
+                except Exception as exc:  # noqa: BLE001  (a failed look, said; it must not end the watch: the next
+                    # scan tries again, and the close is still seen)
                     self.say(f"RUSE Guard: the program check couldn't look this time: {type(exc).__name__}: {exc}")
             looked += 1
             self.sleep(POLL_EVERY)

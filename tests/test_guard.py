@@ -361,6 +361,12 @@ class ProgramCheck(unittest.TestCase):
         self.home, self.game, self.copy = self.dir / "home", self.dir / "Steam/steamapps/common/RUSE", self.dir / "copy"
         for p in (self.home, self.game, self.copy):
             p.mkdir(parents=True)
+        # these stand-in games count one poll as one scan time (the check slept SCAN_EVERY between polls); the
+        # watch now polls every POLL_EVERY and scans every SCAN_EVERY // POLL_EVERY polls: that timing is pinned
+        # by Stop.test_the_watch_looks_every_second_and_checks_programs_every_thirty
+        patch = mock.patch.object(guard, "SCAN_EVERY", guard.POLL_EVERY)
+        patch.start()
+        self.addCleanup(patch.stop)
 
     def test_nothing_is_downloaded_for_the_list(self):
         """Until Launcher 0.4.8.22 the watch of every game it started fetched the list from the server set."""
