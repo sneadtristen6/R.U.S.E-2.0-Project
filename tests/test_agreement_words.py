@@ -78,20 +78,40 @@ class VersionFiveAsApproved(unittest.TestCase):
             self.assertNotIn("[fill", text, lang)                  # the release date is filled in
 
 
-class ReleaseGateForTheCleanStop(unittest.TestCase):
-    """Review finding 5 (legal/clean-stop): the lock now closes the game itself and files its stop note by the exit
-    code, so the agreement's English lines about a crash report are untrue once it ships. On legal/clean-stop
-    (4d331ce7) this was an expected failure until the version-5 words came in; with them it is a plain test."""
+class TheStopAsTheLockDoesIt(unittest.TestCase):
+    """The words follow the lock this branch ships. The owner's "A" of 2026-11-26: the release goes WITHOUT the clean
+    stop (legal/clean-stop stays out of the join), so the lock still stops a cheat copy by an error on the end-of-match
+    screen, a crash, and the Launcher sends RUSE Guard's line from the game's crash report. While the lock does that,
+    the agreement must say so and must not promise a clean close; once a lock without that error comes in (the clean
+    stop), this fails until the words change with it."""
 
-    def test_no_agreement_line_describes_the_crash_route_or_offline_play_only(self):
-        from tomllib import loads
+    CRASH_WORDS = ("the game crashes to the desktop", "takes only ruse guard's line from the game's crash report")
+    CLEAN_WORDS = ("without a crash", "closes the game at that match's end-of-match screen", "it then closes the game",
+                   "it never reads the game's crash reports")
+
+    def test_the_agreement_says_what_the_lock_does(self):
+        lock = (SRC / "rusemod" / "gamescripts" / "fairplay_lock.py25").read_text(encoding="utf-8")
+        crashes = "raise RuntimeError(mark())" in lock   # the end screen's stop: an error, so a crash
         for app in APPS:
-            data = loads((SRC / app / "words.toml").read_text(encoding="utf-8"))
-            for key in ("agree_guard", "agree_full"):
-                english = data[key]["us"].lower()
-                for old in ("offline play only", "crash report carries", "crash reporter may then send",
-                            "reads that report on your pc"):
-                    self.assertNotIn(old, english, f"{app} {key}")
+            data = tomllib.loads((SRC / app / "words.toml").read_text(encoding="utf-8"))
+            full, short = data["agree_full"]["us"].lower(), data["agree_guard"]["us"].lower()
+            if crashes:
+                for said in self.CRASH_WORDS:
+                    self.assertIn(said, full, app)
+                self.assertIn("stops the game with a crash", short, app)
+                for promise in self.CLEAN_WORDS:
+                    self.assertNotIn(promise, full, app)
+                    self.assertNotIn(promise, short, app)
+            else:
+                for said in self.CRASH_WORDS + ("stops the game with a crash",):
+                    self.assertNotIn(said, full + short, app)
+
+    def test_the_launcher_line_for_a_cheat_copy_says_it_too(self):
+        lock = (SRC / "rusemod" / "gamescripts" / "fairplay_lock.py25").read_text(encoding="utf-8")
+        line = tomllib.loads((SRC / "ruse_launcher" / "words.toml").read_text(encoding="utf-8"))["fair_offline"]["us"]
+        if "raise RuntimeError(mark())" in lock:
+            self.assertIn("stops the game with a crash", line)
+            self.assertNotIn("closes the game", line)
 
 
 if __name__ == "__main__":

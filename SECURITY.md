@@ -97,9 +97,10 @@ rules:
 2. **Cheats and test tools play only with the same build.** A modded copy built with a cheat or a test tool plays
    multiplayer and co-op only with players whose build is the same, and tells every player's game a short code for its
    build. In any other match it gives up a few seconds in. If that was a multiplayer match that isn't ranked, it then
-   closes the game at the end-of-match screen, without a crash, and the Launcher sends us a short note that it was
-   stopped, under your username. In co-op and ranked matches it only gives up the match. Honest copies are never
-   stopped.
+   stops the game on purpose at the end-of-match screen: the game crashes, and the game's own crash reporter can send
+   its report, with RUSE Guard's line saying a cheat copy was stopped, to the game's maker. The Launcher that started
+   the game sends us only that line, as a short note under your username. In co-op and ranked matches it only gives up
+   the match. Honest copies are never stopped.
 3. **You choose before scripts run.** Mods that change the game's scripts are marked, and Play waits until you tick
    "I trust this author" for each one.
 4. **Same code, same game.** Each modded copy whose mods change how the game plays gets a join code that stands for its
