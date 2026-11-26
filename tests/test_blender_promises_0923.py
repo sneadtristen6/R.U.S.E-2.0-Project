@@ -272,6 +272,18 @@ class Item24SetAsideLine(InElevenLanguages):
         self.assertNotIn("set-aside sending", wiki)
 
 
+class Item25OpenInBlenderOnTheModelRow(InElevenLanguages):
+    ITEM = "25"
+
+    def test_52o_open_in_blender_is_the_model_row_s_own_button(self):
+        app = js("app.js")
+        self.assertIn("function oneBlenderBox(address, info, draw, changed, head = null)", app)
+        self.assertIn("more.push(oneBlenderBox(address, info, drawLook, changed, head));\n      main = [...main, head];", app)
+        box = function_text(app, "oneBlenderBox")
+        self.assertIn("if (head) head.replaceChildren(big);", box)
+        self.assertIn("...(head ? [] : [big])", box)    # (drawn alone, the box keeps its own button)
+
+
         #                                         code says the same words, for every refusal)
 
 

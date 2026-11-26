@@ -2776,8 +2776,13 @@ function lookMovesBox(u, view, startNew, squadPage = false) {
     if (squad) more.push(uniformBox(address, info, drawLook, changed));
     // a unit that isn't a squad: the one Blender button (the owner, 2026-11-13: "Tanks too"), its model and its paint
     // in one Blender; a squad shown here without its card keeps the paint's own box
-    if (!squad) more.push(oneBlenderBox(address, info, drawLook, changed));
-    else if (paintable) more.push(repaintBox(address, info, drawLook, changed));
+    if (!squad) {
+      // Open in Blender (then Bring my changes back) is the Model row's own button, as on a squad's card, not behind
+      // More (52o): the box under More keeps what to tick and how it goes
+      const head = el("span", { className: "one-blender-head" });
+      more.push(oneBlenderBox(address, info, drawLook, changed, head));
+      main = [...main, head];
+    } else if (paintable) more.push(repaintBox(address, info, drawLook, changed));
     if (info.painted && info.painted.length) {
       more.push(el("p", { className: paintable ? "small" : "notice warn",
         textContent: fill(paintable ? w.look_painted : w.uniform_shared_paint, { n: info.painted.length }) }));
@@ -2961,7 +2966,7 @@ function differsSaid(r) {
 // (StudioApi.blender_parts: a new unit's model, its bones when they are its own, its paint; a game unit's paint alone,
 // as Repaint in Blender painted it), reading Bring my changes back while that Blender has the unit (blender_open,
 // blender_back). Without Blender on the PC, the way to get it or to show where it is
-function oneBlenderBox(address, info, draw, changed) {
+function oneBlenderBox(address, info, draw, changed, head = null) {
   const w = state.words;
   const box = el("div", { className: "model-own repaint one-blender" },
     el("h3", { textContent: w.model_blender, title: w.tip_one_open }));
@@ -2993,7 +2998,10 @@ function oneBlenderBox(address, info, draw, changed) {
     ticks = !open && parts && parts.can && parts.parts.length > 1 ? oneBlenderTicks(parts, ticks ? ticks.ticks() : null) : null;
     const how = parts && !parts.can ? parts.why_not || "" : ((parts && (parts.door || parts.route)) === "paint"
       ? w.one_how_paint : w.one_how_unit);
-    body.replaceChildren(el("div", { className: "actions" }, big, ...(ticks ? [ticks.toggle] : [])),
+    // the big button is the Model row's own (`head`), or this box's when it is drawn alone
+    if (head) head.replaceChildren(big);
+    const acts = [...(head ? [] : [big]), ...(ticks ? [ticks.toggle] : [])];
+    body.replaceChildren(...(acts.length ? [el("div", { className: "actions" }, ...acts)] : []),
       ...(ticks ? [ticks.box] : []), helpLine(how, "blender"));
   };
   const reload = async () => {
