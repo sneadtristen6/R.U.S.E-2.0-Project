@@ -186,7 +186,6 @@ class Unusual(Library):
         self.assertTrue(any("newer" in str(p) for p in got["problems"]), got["problems"])
 
     @unittest.skipUnless(sys.platform == "win32", "Windows keeps a folder with an open file in it in its place")
-    @unittest.expectedFailure
     def test_FE14_a_new_version_while_a_file_of_the_old_one_is_open(self):
         """FE-14: a new version added while a file of the old one is open in another program (Windows won't move the
         old folder then) stops the Launcher's Add with Windows' own words, "[WinError 5] Access is denied" (not a

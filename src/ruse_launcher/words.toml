@@ -4349,6 +4349,19 @@ jpn = "{a} と {b} は同じゲームファイル {file} を変更します。{b
 sc = "{a} 和 {b} 都修改了同一个游戏文件 {file}。因为 {b} 在列表中更靠下，所以使用 {b} 的版本。"
 fa = "{a} و {b} هر دو یک فایل بازی، {file}، را تغییر می‌دهند. فایل {b} استفاده می‌شود، چون {b} در فهرست پایین‌تر است."
 
+[clash_map]
+us = "{a} and {b} both make a new map called {example}; two maps can't share a name. Only one of them can be in a set."
+fr = "{a} et {b} créent chacun une nouvelle carte nommée {example} ; deux cartes ne peuvent pas porter le même nom. Une seule d'entre elles peut être dans un ensemble."
+ger = "{a} und {b} erstellen beide eine neue Karte namens {example}; zwei Karten können nicht denselben Namen haben. Nur eine von ihnen kann in einem Set sein."
+ita = "{a} e {b} creano entrambi una nuova mappa chiamata {example}; due mappe non possono avere lo stesso nome. Solo una delle due può stare in un set."
+spa = "{a} y {b} crean cada uno un mapa nuevo llamado {example}; dos mapas no pueden tener el mismo nombre. Solo uno de ellos puede estar en un conjunto."
+pol = "{a} i {b} tworzą nową mapę o nazwie {example}; dwie mapy nie mogą mieć tej samej nazwy. Tylko jedna z nich może być w zestawie."
+ru = "{a} и {b} создают новую карту с именем {example}; у двух карт не может быть одно имя. В наборе может быть только одна из них."
+cz = "{a} a {b} vytvářejí novou mapu jménem {example}; dvě mapy nemohou mít stejné jméno. V sadě může být jen jedna z nich."
+jpn = "{a} と {b} はそれぞれ {example} という新しいマップを作ります。同じ名前のマップは二つ存在できません。セットに入れられるのはどちらか一方だけです。"
+sc = "{a} 和 {b} 各自创建了一张名为 {example} 的新地图；两张地图不能同名。组合中只能保留其中一张。"
+fa = "{a} و {b} هر کدام نقشه جدیدی به نام {example} می‌سازند؛ دو نقشه نمی‌توانند هم‌نام باشند. فقط یکی از آن‌ها می‌تواند در یک مجموعه باشد."
+
 [clash_use]
 us = "Use the one from {a}"
 fr = "Utiliser celle de {a}"

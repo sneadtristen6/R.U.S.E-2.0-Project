@@ -233,5 +233,18 @@ class TheChecksCatchTheOldWords(unittest.TestCase):
                 self.assertIn(where, found)
 
 
+class GermanBlenderLinesSayDu(unittest.TestCase):
+    """The word slips of the 0.9.8.22 announcement ("one German line says Sie"): the Blender lines of the Studio speak
+    to the player as du, as the Studio's Blender refusals do (errors.toml); two of them said Sie."""
+
+    def test_the_two_blender_lines_have_no_sie(self):
+        for key in ("menu_blender_how", "decoy_blender_open_choose"):
+            text = STUDIO[key]["ger"]
+            self.assertNotRegex(text, r"\b(Sie|Ihr\w*|Ihnen)\b|\b(Ändern|Zeigen|Klicken|klicken) Sie\b", key)
+
+    def test_a_du_line_is_still_there_for_the_control(self):
+        self.assertIn("klicke", STUDIO["decoy_blender_open_choose"]["ger"])
+
+
 if __name__ == "__main__":
     unittest.main()

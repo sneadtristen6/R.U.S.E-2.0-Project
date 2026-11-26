@@ -10775,12 +10775,15 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             job.result = self._share_view(path)
             say(f"Size: {job.result['size']} bytes")
             say(f"SHA-256: {job.result['sha256']}")
-            from rusemod.library import Library, LibraryError
+            from rusemod.library import Library, LibraryError, LibraryHeldError
             try:
                 info, replaced = Library(self._home / "library").add(path)
                 say(f"In the Launcher's mod library as {info['name']} {info.get('version', '')}"
                     f"{' (the older version replaced)' if replaced else ''}: tick it in a mod set and press Play.")
                 job.result["library"] = info.get("id")
+            except LibraryHeldError as exc:   # (the file is saved: Export is done, and says what to close)
+                say(f"Not added to the Launcher's library: {exc.held} is open in another program, so the older copy "
+                    f"there couldn't be replaced. Close that program, then export again.")
             except LibraryError as exc:
                 say(f"Not added to the Launcher's library: {exc}")
 

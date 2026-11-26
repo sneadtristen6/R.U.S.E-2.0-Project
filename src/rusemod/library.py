@@ -28,6 +28,29 @@ class LibraryError(Exception):
     """A mod that can't be added, with a message that says what to do next."""
 
 
+class LibraryHeldError(LibraryError):
+    """A new version that can't replace the old one because a file of the old one is open in another program
+    (Windows won't move a folder with an open file in it). `held`: the file to close (the folder itself when no single
+    file could be found). The old copy is as it was, and nothing of the new one is in the library."""
+
+    def __init__(self, held, message):
+        super().__init__(message)
+        self.held = Path(held)
+
+
+def _held_file(folder: Path) -> Path:
+    """The file of `folder` another program holds open, found by trying to rename each one (a read can't tell: Windows
+    lets a held file be read, but not moved); renamed back at once. The folder itself when none is found."""
+    for f in sorted(p for p in Path(folder).rglob("*") if p.is_file()):
+        probe = f.with_name(f"{f.name}.probe-{uuid.uuid4().hex[:6]}")
+        try:
+            os.replace(f, probe)
+        except OSError:
+            return f
+        os.replace(probe, f)
+    return Path(folder)
+
+
 def read_info(folder: Path) -> dict:
     """What the library shows about a mod folder, from its mod.toml (already checked by the engine): id, name,
     version, authors, description, the game builds it was made for, its fingerprint."""
@@ -109,8 +132,19 @@ class Library:
             if old.exists():
                 shutil.rmtree(old)
             if replaced:
-                os.replace(target, old)
-            os.replace(incoming, target)
+                try:
+                    os.replace(target, old)
+                except OSError:
+                    held = _held_file(target)
+                    raise LibraryHeldError(held, f"{held} is open in another program, so the older copy of this mod "
+                                                 f"in the library couldn't be replaced and the new one wasn't added. "
+                                                 f"Close that program, then add it again.") from None
+            try:
+                os.replace(incoming, target)
+            except OSError:
+                if replaced and not target.exists() and old.exists():
+                    os.replace(old, target)   # the older copy stays, as it was
+                raise
             if old.exists():
                 shutil.rmtree(old, ignore_errors=True)
             info["path"] = str(target)

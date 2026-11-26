@@ -349,7 +349,6 @@ class Unusual(Studio):
 
 
     @unittest.skipUnless(sys.platform == "win32", "Windows keeps a folder with an open file in it in its place")
-    @unittest.expectedFailure
     def test_FE14_the_library_copy_held_while_export_adds_the_new_version(self):
         """FE-14, the Studio's side: a file of the mod's copy in the Launcher's library open in another program while
         he exports a new version: the file is saved, but the job ends "failed" with Windows' own words, "[WinError 5]

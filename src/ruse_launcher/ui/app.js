@@ -819,6 +819,7 @@ function clashText(c) {
     "game data": w.kind_game_data };
   const values = { a: c.a, b: c.b, n: c.count, example: c.what, file: c.what.split("/").pop(), kind: kinds[c.file_kind] || w.kind_game_data };
   if (c.kind === "gamefile") return fill(w.clash_gamefile, values);
+  if (c.kind === "map") return fill(w.clash_map, values);
   if (c.kind === "file" || c.kind === "script") return fill(w.clash_file, values);
   if (c.kind === "archive") return fill(w.clash_archive, values);
   if (c.kind === "create") return fill(w.clash_create, values);
