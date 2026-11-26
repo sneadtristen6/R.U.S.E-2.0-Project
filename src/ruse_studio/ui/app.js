@@ -3650,7 +3650,9 @@ function halvesBox(address, r, draw, changed) {
     el("p", { className: "small", textContent: w.fit_halves_how }),
     el("label", { className: "small" }, w.fit_split, " ", pick),
     el("p", { className: "small", textContent: fill(w.fit_halves_counts, { top: h.top.length, bottom: h.bottom.length }) }),
-    helpLine(w.fit_halves_example, "bones"), tree);
+    helpLine(w.fit_halves_example, "bones"),
+    // (one line above the bone list: when the suggested bone is the one to keep)
+    el("p", { className: "muted small fit-split-leave", textContent: w.fit_split_leave }), tree);
 }
 
 // each problem: what doesn't fit, what the game does with it, how to fix it

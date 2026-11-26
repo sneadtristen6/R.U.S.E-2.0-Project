@@ -119,6 +119,18 @@ class Item12ImportTooltips(InElevenLanguages):
         self.assertIn("Open in Blender opens him with his bones", WORDS["tip_squad_import"]["us"])
 
 
+class Item13SplitLine(InElevenLanguages):
+    ITEM = "13"
+
+    def test_52c_one_line_above_the_bone_list(self):
+        text = function_text(js("app.js"), "halvesBox")
+        self.assertIn("w.fit_split_leave", text)
+        self.assertLess(text.index("w.fit_split_leave"), text.index(", tree);"))   # (the list comes after the line)
+        self.words_in_eleven_languages(["fit_split_leave"], english_left_in=True)
+        self.assertEqual(WORDS["fit_split_leave"]["us"], "Leave it on the suggested bone unless, in the game, the top "
+                                                         "of the body walks or the legs aim.")
+
+
 class WikiPages(InElevenLanguages):
     def topic_opens_each_language_s_page(self, topic, us, fr):
         self.assertEqual(sorted(WIKI_TOPICS[topic]), sorted(LANGS))
