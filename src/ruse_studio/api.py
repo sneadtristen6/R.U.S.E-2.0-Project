@@ -10772,8 +10772,32 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             from rusemod.library import Library, LibraryError
             try:
                 info, replaced = Library(self._home / "library").add(path)
-                say(f"In the Launcher's mod library as {info['name']} {info.get('version', '')}"
-                    f"{' (the older version replaced)' if replaced else ''}: tick it in a mod set and press Play.")
+                name, now = info["name"], info.get("version", "")
+                was = info.get("replaced_mod") if replaced else None
+                if was is None:
+                    say(f"In the Launcher's mod library as {name} {now}: tick it in a mod set and press Play.")
+                else:   # (what it replaced, said: the same version again, an older or a newer one, or another mod)
+                    before = was.get("version", "")
+                    if package.name_key(was.get("name")) != package.name_key(name):
+                        who = f"{was.get('name') or info.get('id')} {before}".strip()
+                        if was.get("author"):
+                            who += f" ({was['author']})"
+                        say(f"In the Launcher's mod library as {name} {now}, replacing another mod with the same id, "
+                            f"{who}: tick it in a mod set and press Play.")
+                    elif before == now:
+                        say(f"In the Launcher's mod library as {name} {now}, replacing the same version again: tick it "
+                            f"in a mod set and press Play.")
+                    else:
+                        try:
+                            older = mod_index.parse_version(before) < mod_index.parse_version(now)
+                        except ValueError:
+                            older = True
+                        if older:
+                            say(f"In the Launcher's mod library as {name} {now}, replacing the older version "
+                                f"{before}: tick it in a mod set and press Play.")
+                        else:
+                            say(f"In the Launcher's mod library as {name} {now}, replacing the newer version "
+                                f"{before}: tick it in a mod set and press Play.")
                 job.result["library"] = info.get("id")
             except LibraryError as exc:
                 say(f"Not added to the Launcher's library: {exc}")

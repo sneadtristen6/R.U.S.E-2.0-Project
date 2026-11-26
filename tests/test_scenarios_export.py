@@ -122,8 +122,8 @@ class Usual(Studio):
         self.assertEqual(sorted(p.name for p in (self.home / "exports").iterdir()),
                          ["tank-test-1.0.0.rusemod", "tank-test-1.1.0.rusemod"])
         self.assertEqual(self.said(view, "In the Launcher's mod library"),
-                         ["In the Launcher's mod library as Tank Test 1.1.0 (the older version replaced): tick it in a "
-                          "mod set and press Play."])
+                         ["In the Launcher's mod library as Tank Test 1.1.0, replacing the older version 1.0.0: tick it "
+                          "in a mod set and press Play."])
 
     def test_the_same_version_exported_again_writes_its_file_again(self):
         folder = self.make("Tank Test")
@@ -304,15 +304,18 @@ class Unusual(Studio):
                 self.assertEqual(out[rel], (folder / rel).read_bytes())
         self.assertEqual(package.check(view["result"]["path"], read=True)["id"], "credits")   # (it still reads as a mod)
 
-    @unittest.expectedFailure
     def test_FE8_the_library_line_says_what_it_replaced(self):
-        """FE-8: Export says "(the older version replaced)" whatever was there: the same version again, a newer one
-        (3.0.0, after which he exports 2.0.0), and another mod made again under the same name."""
+        """FE-8: Export said "(the older version replaced)" whatever was there: the same version again, a newer one
+        (3.0.0, after which he exports 2.0.0), and another mod made again under the same name. Now each says what it
+        replaced (the owner's pick 51, "the rest after the release", accepted 2026-11-14)."""
         self.make("Tank Test")
         self.export("1.0.0")
         lines = [self.said(self.export(v), "In the Launcher's mod library")[0] for v in ("1.0.0", "3.0.0", "2.0.0")]
         self.assertNotIn("(the older version replaced)", lines[0])       # (the same version)
         self.assertNotIn("(the older version replaced)", lines[2])       # (3.0.0 was there: not older)
+        self.assertIn("replacing the same version again", lines[0])
+        self.assertIn("replacing the older version 1.0.0", lines[1])
+        self.assertIn("replacing the newer version 3.0.0", lines[2])
 
     def test_FE12_a_mod_past_the_size_a_launcher_takes(self):
         """FE-12: Export packed a mod past package.SIZE_LIMIT (500 MB unpacked), then its own check of the file
@@ -339,6 +342,17 @@ class Unusual(Studio):
                 package.pack(folder, out)
         self.assertIn("nothing was packed", str(caught.exception))
         self.assertFalse(out.exists() and any(out.iterdir()))
+
+    def test_FE8_a_mod_of_another_name_under_the_same_id_is_named(self):
+        """Control of FE-8: another mod with the same id (another name, another author) is said as another mod, with
+        its name and author, never as an older version."""
+        self.make("Tank Test")
+        self.export("1.0.0")
+        installed = self.home / "library" / "tank-test"          # (the same id installed, but another one's mod)
+        package.update_manifest(installed, mod={"name": "Someone Else's Tanks", "authors": ["Kim Lee"]})
+        view = self.export("1.0.0")
+        line = self.said(view, "In the Launcher's mod library")[0]
+        self.assertIn("replacing another mod with the same id, Someone Else's Tanks 1.0.0 (Kim Lee)", line)
 
     def test_FE7_a_file_that_is_none_of_his_words_is_named_and_a_script_in_docs_is_refused(self):
         """Control of FE-7: notes.psd at the top is not packed, but Export names it; a docs/ folder with a script in it

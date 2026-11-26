@@ -1837,19 +1837,6 @@ jpn = "Mod のこれらのファイルは PC のホームフォルダー（{0}�
 sc = "模组的这些文件写有你电脑的主文件夹（{0}），会原样导出，因为导出从不改动你写的内容：如果不该分享，请在模组里修改它们：{1}。"
 fa = "این فایل‌های ماد پوشهٔ خانگی رایانهٔ شما ({0}) را نام می‌برند و همان‌طور که هستند بیرون می‌روند، چون خروجی هرگز آنچه نوشته‌اید را تغییر نمی‌دهد: اگر نباید به اشتراک گذاشته شود، آن‌ها را در ماد تغییر دهید: {1}."
 
-[ef046b049f4]
-us = "In the Launcher's mod library as {0} {1}{2}: tick it in a mod set and press Play."
-fr = "Dans la bibliothèque de mods du Launcher sous {0} {1}{2} : cochez-le dans un ensemble de mods et appuyez sur Jouer."
-ger = "In der Mod-Bibliothek des Launchers als {0} {1}{2}: hake ihn in einem Mod-Set an und drücke Spielen."
-ita = "Nella libreria mod del Launcher come {0} {1}{2}: spuntala in un set di mod e premi Gioca."
-spa = "En la biblioteca de mods del Launcher como {0} {1}{2}: márcalo en un conjunto de mods y pulsa Jugar."
-pol = "W bibliotece modów Launchera jako {0} {1}{2}: zaznacz go w zestawie modów i naciśnij Graj."
-ru = "В библиотеке модов Launcher как {0} {1}{2}: отметьте его в наборе модов и нажмите «Играть»."
-cz = "V knihovně modů Launcheru jako {0} {1}{2}: zaškrtněte ho v sadě modů a stiskněte Hrát."
-jpn = "Launcher の Mod ライブラリーに {0} {1}{2} として追加：Mod セットでチェックを入れて「プレイ」を押してください。"
-sc = "已作为 {0} {1}{2} 加入 Launcher 的模组库：在模组组合中勾选它并点“开始游戏”。"
-fa = "در کتابخانهٔ ماد لانچر با نام {0} {1}{2}: آن را در یک مجموعهٔ ماد تیک بزنید و «بازی» را بزنید."
-
 # the page reads this line's first word (app.js resizeAllRow, nations.js): it stays as it is in every language
 [e5fd5eedd52]
 us = "resized\t{0}\t{1}"
@@ -4955,6 +4942,71 @@ cz = "{0} byl uložen novějším RUSE Studiem (formát {1}; tento Launcher zná
 jpn = "{0} は新しい RUSE Studio で保存されています（形式 {1}、この Launcher は {2} まで対応）：作られたとおりに遊ぶには Launcher を更新してください。"
 sc = "{0} 由较新的 RUSE Studio 保存（格式 {1}；此 Launcher 支持到 {2}）：请更新 Launcher，才能按原样游玩。"
 fa = "{0} با RUSE Studio جدیدتری ذخیره شده است (قالب {1}؛ این لانچر {2} را می‌شناسد): برای بازی کردن آن همان‌طور که ساخته شده، لانچر را به‌روز کنید."
+
+[eba126ba5ff]
+us = "In the Launcher's mod library as {0} {1}: tick it in a mod set and press Play."
+fr = "Dans la bibliothèque de mods du Launcher sous {0} {1} : cochez-le dans un ensemble de mods et appuyez sur Jouer."
+ger = "In der Mod-Bibliothek des Launchers als {0} {1}: hake ihn in einem Mod-Set an und drücke Spielen."
+ita = "Nella libreria mod del Launcher come {0} {1}: spuntala in un set di mod e premi Gioca."
+spa = "En la biblioteca de mods del Launcher como {0} {1}: márcalo en un conjunto de mods y pulsa Jugar."
+pol = "W bibliotece modów Launchera jako {0} {1}: zaznacz go w zestawie modów i naciśnij Graj."
+ru = "В библиотеке модов Launcher как {0} {1}: отметьте его в наборе модов и нажмите «Играть»."
+cz = "V knihovně modů Launcheru jako {0} {1}: zaškrtněte ho v sadě modů a stiskněte Hrát."
+jpn = "Launcher の Mod ライブラリーに {0} {1} として追加：Mod セットでチェックを入れて「プレイ」を押してください。"
+sc = "已作为 {0} {1} 加入 Launcher 的模组库：在模组组合中勾选它并点“开始游戏”。"
+fa = "در کتابخانهٔ ماد لانچر با نام {0} {1}: آن را در یک مجموعهٔ ماد تیک بزنید و «بازی» را بزنید."
+
+[e195359ea72]
+us = "In the Launcher's mod library as {0} {1}, replacing another mod with the same id, {2}: tick it in a mod set and press Play."
+fr = "Dans la bibliothèque de mods du Launcher sous {0} {1}, à la place d'un autre mod de même identifiant, {2} : cochez-le dans un ensemble de mods et appuyez sur Jouer."
+ger = "In der Mod-Bibliothek des Launchers als {0} {1}, ersetzt einen anderen Mod mit derselben ID, {2}: hake ihn in einem Mod-Set an und drücke Spielen."
+ita = "Nella libreria mod del Launcher come {0} {1}, al posto di un'altra mod con lo stesso ID, {2}: spuntala in un set di mod e premi Gioca."
+spa = "En la biblioteca de mods del Launcher como {0} {1}, en lugar de otro mod con el mismo ID, {2}: márcalo en un conjunto de mods y pulsa Jugar."
+pol = "W bibliotece modów Launchera jako {0} {1}, w miejsce innego moda o tym samym ID, {2}: zaznacz go w zestawie modów i naciśnij Graj."
+ru = "В библиотеке модов Launcher как {0} {1}, вместо другого мода с тем же ID, {2}: отметьте его в наборе модов и нажмите «Играть»."
+cz = "V knihovně modů Launcheru jako {0} {1}, místo jiného modu se stejným ID, {2}: zaškrtněte ho v sadě modů a stiskněte Hrát."
+jpn = "Launcher の Mod ライブラリーに {0} {1} として追加（同じ ID の別の Mod {2} を置き換えました）：Mod セットでチェックを入れて「プレイ」を押してください。"
+sc = "已作为 {0} {1} 加入 Launcher 的模组库，替换了同 ID 的另一个模组 {2}：在模组组合中勾选它并点“开始游戏”。"
+fa = "در کتابخانهٔ ماد لانچر با نام {0} {1}، به‌جای ماد دیگری با همان شناسه، {2}: آن را در یک مجموعهٔ ماد تیک بزنید و «بازی» را بزنید."
+
+[e879573f9c6]
+us = "In the Launcher's mod library as {0} {1}, replacing the same version again: tick it in a mod set and press Play."
+fr = "Dans la bibliothèque de mods du Launcher sous {0} {1}, à la place de la même version : cochez-le dans un ensemble de mods et appuyez sur Jouer."
+ger = "In der Mod-Bibliothek des Launchers als {0} {1}, ersetzt dieselbe Version erneut: hake ihn in einem Mod-Set an und drücke Spielen."
+ita = "Nella libreria mod del Launcher come {0} {1}, al posto della stessa versione: spuntala in un set di mod e premi Gioca."
+spa = "En la biblioteca de mods del Launcher como {0} {1}, en lugar de la misma versión: márcalo en un conjunto de mods y pulsa Jugar."
+pol = "W bibliotece modów Launchera jako {0} {1}, w miejsce tej samej wersji: zaznacz go w zestawie modów i naciśnij Graj."
+ru = "В библиотеке модов Launcher как {0} {1}, вместо той же версии: отметьте его в наборе модов и нажмите «Играть»."
+cz = "V knihovně modů Launcheru jako {0} {1}, místo téže verze: zaškrtněte ho v sadě modů a stiskněte Hrát."
+jpn = "Launcher の Mod ライブラリーに {0} {1} として追加（同じバージョンを置き換えました）：Mod セットでチェックを入れて「プレイ」を押してください。"
+sc = "已作为 {0} {1} 加入 Launcher 的模组库，替换了相同的版本：在模组组合中勾选它并点“开始游戏”。"
+fa = "در کتابخانهٔ ماد لانچر با نام {0} {1}، به‌جای همان نسخه: آن را در یک مجموعهٔ ماد تیک بزنید و «بازی» را بزنید."
+
+[e0a02fccf14]
+us = "In the Launcher's mod library as {0} {1}, replacing the older version {2}: tick it in a mod set and press Play."
+fr = "Dans la bibliothèque de mods du Launcher sous {0} {1}, à la place de l'ancienne version {2} : cochez-le dans un ensemble de mods et appuyez sur Jouer."
+ger = "In der Mod-Bibliothek des Launchers als {0} {1}, ersetzt die ältere Version {2}: hake ihn in einem Mod-Set an und drücke Spielen."
+ita = "Nella libreria mod del Launcher come {0} {1}, al posto della versione più vecchia {2}: spuntala in un set di mod e premi Gioca."
+spa = "En la biblioteca de mods del Launcher como {0} {1}, en lugar de la versión anterior {2}: márcalo en un conjunto de mods y pulsa Jugar."
+pol = "W bibliotece modów Launchera jako {0} {1}, w miejsce starszej wersji {2}: zaznacz go w zestawie modów i naciśnij Graj."
+ru = "В библиотеке модов Launcher как {0} {1}, вместо более старой версии {2}: отметьте его в наборе модов и нажмите «Играть»."
+cz = "V knihovně modů Launcheru jako {0} {1}, místo starší verze {2}: zaškrtněte ho v sadě modů a stiskněte Hrát."
+jpn = "Launcher の Mod ライブラリーに {0} {1} として追加（古いバージョン {2} を置き換えました）：Mod セットでチェックを入れて「プレイ」を押してください。"
+sc = "已作为 {0} {1} 加入 Launcher 的模组库，替换了旧版本 {2}：在模组组合中勾选它并点“开始游戏”。"
+fa = "در کتابخانهٔ ماد لانچر با نام {0} {1}، به‌جای نسخهٔ قدیمی‌تر {2}: آن را در یک مجموعهٔ ماد تیک بزنید و «بازی» را بزنید."
+
+[e863b24f6c7]
+us = "In the Launcher's mod library as {0} {1}, replacing the newer version {2}: tick it in a mod set and press Play."
+fr = "Dans la bibliothèque de mods du Launcher sous {0} {1}, à la place de la version plus récente {2} : cochez-le dans un ensemble de mods et appuyez sur Jouer."
+ger = "In der Mod-Bibliothek des Launchers als {0} {1}, ersetzt die neuere Version {2}: hake ihn in einem Mod-Set an und drücke Spielen."
+ita = "Nella libreria mod del Launcher come {0} {1}, al posto della versione più recente {2}: spuntala in un set di mod e premi Gioca."
+spa = "En la biblioteca de mods del Launcher como {0} {1}, en lugar de la versión más nueva {2}: márcalo en un conjunto de mods y pulsa Jugar."
+pol = "W bibliotece modów Launchera jako {0} {1}, w miejsce nowszej wersji {2}: zaznacz go w zestawie modów i naciśnij Graj."
+ru = "В библиотеке модов Launcher как {0} {1}, вместо более новой версии {2}: отметьте его в наборе модов и нажмите «Играть»."
+cz = "V knihovně modů Launcheru jako {0} {1}, místo novější verze {2}: zaškrtněte ho v sadě modů a stiskněte Hrát."
+jpn = "Launcher の Mod ライブラリーに {0} {1} として追加（新しいバージョン {2} を置き換えました）：Mod セットでチェックを入れて「プレイ」を押してください。"
+sc = "已作为 {0} {1} 加入 Launcher 的模组库，替换了新版本 {2}：在模组组合中勾选它并点“开始游戏”。"
+fa = "در کتابخانهٔ ماد لانچر با نام {0} {1}، به‌جای نسخهٔ جدیدتر {2}: آن را در یک مجموعهٔ ماد تیک بزنید و «بازی» را بزنید."
 
 [e97026241d0]
 us = "These files at the top of your mod are not in the exported file; it takes mod.toml, your README, credits, licence and notice files, a docs folder and the mod's own folders: {0}."

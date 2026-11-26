@@ -108,6 +108,12 @@ class Library:
                 return read_info(target), True
             if modformat.state(incoming)["state"] == "newer":   # (saved by a newer Studio: added, with a word)
                 info["newer_format"] = {k: v for k, v in modformat.state(incoming).items() if k in ("format", "current")}
+            if replaced:      # (what it replaced, for the word that names it: Export says it, the Launcher can)
+                try:
+                    was = read_info(target)
+                    info["replaced_mod"] = {k: was.get(k, "") for k in ("name", "version", "author")}
+                except (OSError, PackageError):
+                    info["replaced_mod"] = {"name": "", "version": "", "author": ""}
             old = self.folder / f".old-{info['id']}"
             if old.exists():
                 shutil.rmtree(old)

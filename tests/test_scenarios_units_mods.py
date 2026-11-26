@@ -315,8 +315,8 @@ class TheModGoesOut(Player):
         j = self.exported(NAMES["ru"], "My Tank", mine)
         self.assertEqual(package.check(other)["id"], "my-mod")
         self.assertEqual([m["name"] for m in self.launcher(mine).library()], [NAMES["ru"]])   # the other one: gone
-        self.assertIn(f"In the Launcher's mod library as {NAMES['ru']} 1.0.0 (the older version replaced): tick it "
-                      f"in a mod set and press Play.", j["lines"])
+        self.assertIn(f"In the Launcher's mod library as {NAMES['ru']} 1.0.0, replacing another mod with the same id, "
+                      f"{NAMES['sc']} 1.0.0 (A player): tick it in a mod set and press Play.", j["lines"])
 
 
 if __name__ == "__main__":
