@@ -36226,17 +36226,17 @@ sc = "给这个小队一套自己的制服(其士兵的专属副本),这样在�
 fa = "به این جوخه اونیفرمی مخصوص خودش می‌دهد (کپی جداگانه‌ای از سربازانش)، تا آنچه پس از «باز کردن در Blender» رنگ می‌کنید فقط این جوخه را تغییر دهد."
 
 [uniform_has]
-us = "Custom uniform: only this squad wears it. Paint it with Open in Blender, then bring your paint back."
-fr = "Uniforme personnalisé : seule cette escouade le porte. Peignez-le avec Ouvrir dans Blender, puis ramenez votre peinture."
-ger = "Eigene Uniform: nur dieser Trupp trägt sie. Bemale sie mit In Blender öffnen und hole deine Bemalung dann zurück."
-ita = "Uniforme personalizzata: la indossa solo questa squadra. Dipingila con Apri in Blender, poi riporta la tua pittura."
-spa = "Uniforme personalizado: solo lo lleva este pelotón. Píntalo con Abrir en Blender y luego trae tu pintura."
-pol = "Własny mundur: nosi go tylko ten oddział. Pomaluj go przez Otwórz w Blenderze, a potem przenieś swoje malowanie."
-ru = "Своя форма: её носит только этот отряд. Раскрасьте её через «Открыть в Blender», затем верните свою раскраску."
-cz = "Vlastní uniforma: nosí ji jen toto družstvo. Nabarvěte ji přes Otevřít v Blenderu a pak přeneste své barvy."
-jpn = "カスタム軍服:この分隊だけが着ています。「Blenderで開く」で塗り、それから塗装を戻してください。"
-sc = "自定义制服:只有这个小队穿。用“在 Blender 中打开”上色,然后带回你的涂装。"
-fa = "اونیفرم سفارشی: فقط این جوخه آن را می‌پوشد. با «باز کردن در Blender» رنگش کنید، سپس رنگتان را بازگردانید."
+us = "Custom uniform: only this squad wears it. To paint it, open What goes to Blender, untick Its soldiers, keep Its paint ticked, then click Open in Blender. Then bring your paint back."
+fr = "Uniforme personnalisé : seule cette escouade le porte. Pour le peindre, ouvrez Ce qui va dans Blender, décochez Ses soldats, laissez Sa peinture cochée, puis cliquez sur Ouvrir dans Blender. Ensuite, ramenez votre peinture."
+ger = "Eigene Uniform: nur dieser Trupp trägt sie. Zum Bemalen öffne Was nach Blender geht, nimm den Haken bei Seine Soldaten weg, lass Seine Bemalung angehakt und klicke auf In Blender öffnen. Hole danach deine Bemalung zurück."
+ita = "Uniforme personalizzata: la indossa solo questa squadra. Per dipingerla, apri Cosa va in Blender, togli la spunta a I suoi soldati, lascia spuntata La sua pittura, poi clicca Apri in Blender. Poi riporta la tua pittura."
+spa = "Uniforme personalizado: solo lo lleva este pelotón. Para pintarlo, abre Qué va a Blender, desmarca Sus soldados, deja marcada Su pintura y pulsa Abrir en Blender. Luego trae tu pintura."
+pol = "Własny mundur: nosi go tylko ten oddział. Aby go pomalować, otwórz Co trafia do Blendera, odznacz Jego żołnierze, zostaw zaznaczone Jego malowanie i kliknij Otwórz w Blenderze. Potem przenieś swoje malowanie."
+ru = "Своя форма: её носит только этот отряд. Чтобы раскрасить её, откройте «Что откроется в Blender», снимите галочку с «Его солдаты», оставьте отмеченной «Его раскраска» и нажмите «Открыть в Blender». Затем верните свою раскраску."
+cz = "Vlastní uniforma: nosí ji jen toto družstvo. Chceš-li ji nabarvit, otevři Co jde do Blenderu, zruš zaškrtnutí u Jeho vojáci, nech zaškrtnuté Jeho barvy a klikni na Otevřít v Blenderu. Pak přenes své barvy."
+jpn = "カスタム軍服:この分隊だけが着ています。塗るには、「Blenderに送るもの」を開いて「兵士」のチェックを外し、「塗装」のチェックは残したまま、「Blenderで開く」を押します。そのあと塗装を戻してください。"
+sc = "自定义制服:只有这个小队穿。要上色，请打开“要送到 Blender 的内容”，取消勾选“它的士兵”，保持勾选“它的涂装”，然后点击“在 Blender 中打开”。之后带回你的涂装。"
+fa = "اونیفرم سفارشی: فقط این جوخه آن را می‌پوشد. برای رنگ کردن آن، «چه چیزی به Blender می‌رود» را باز کنید، تیک «سربازانش» را بردارید، «رنگش» را تیک‌خورده نگه دارید و روی «باز کردن در Blender» کلیک کنید. بعد رنگتان را بازگردانید."
 
 [uniform_default_again]
 us = "Back to the default uniform"

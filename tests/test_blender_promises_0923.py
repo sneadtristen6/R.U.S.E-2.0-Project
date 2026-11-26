@@ -323,6 +323,14 @@ class Item29OpenLine(InElevenLanguages):
         self.names_in_every_language("squad_blender_open_line", ["squad_blender_back", "blender_model_send"])
 
 
+class Item31CustomUniformLine(InElevenLanguages):
+    ITEM = "31"
+
+    def test_52u_the_custom_uniform_line_says_how_to_paint_it(self):
+        self.words_in_eleven_languages(["uniform_has"])
+        self.names_in_every_language("uniform_has", ["one_parts", "one_part_soldiers", "one_part_paint", "look_open"])
+
+
         #                                         code says the same words, for every refusal)
 
 
