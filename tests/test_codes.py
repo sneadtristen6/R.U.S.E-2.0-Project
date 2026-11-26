@@ -611,7 +611,8 @@ const [code, casesFile] = process.argv.slice(-2);
     const ctx = vm.createContext({ console, Promise, Set, String,
       setTimeout: (fn, ms) => { timers.push({ fn, ms }); return timers.length; }, clearTimeout: () => {},
       window: { addEventListener() {} }, state: { words: c.words || {}, view: c.view || "units" },
-      say: (text, kind) => said.push([text, kind]),
+      say: (text, kind) => { said.push([text, kind]); return {}; },
+      addToastAction: (card, a) => { said.push(["button", a.label]); return {}; },
       api: () => ({ bugwatch_crash: async () => {
         const a = answers.shift();
         if (a === undefined || a === "throw") throw new Error("the window was busy");
@@ -664,7 +665,9 @@ class Studio(WithBugWatch):
         from rusemod import knowncrashes, schema
         studio = tomllib.loads((SRC / "ruse_studio" / "words.toml").read_text(encoding="utf-8"))
         launcher = tomllib.loads((SRC / "ruse_launcher" / "words.toml").read_text(encoding="utf-8"))
-        keys = [f"crash_why_{r}" for r in knowncrashes.REASONS] + ["crash_unit", "crash_mod_unit", "crash_no_unit"]
+        keys = [f"crash_why_{r}" for r in knowncrashes.REASONS] + ["crash_unit", "crash_mod_unit", "crash_no_unit",
+                                                                  "crash_code", "crash_code_under", "crash_copy",
+                                                                  "crash_copied", "tip_crash_copy"]
         for key in keys:
             self.assertEqual(studio[key], launcher[key], key)                # (the Launcher's words, all of them)
             self.assertEqual(sorted(studio[key]), sorted(schema.APP_LANGS), key)
@@ -683,6 +686,14 @@ class Studio(WithBugWatch):
         said = words["crash_mod_unit"].replace("{unit}", "Horse Squad").replace("{why}", words["crash_why_made"])
         self.assertEqual((told["delays"], told["said"]), ([0, 3000, 3000], [[said, "error"]]))
         self.assertEqual(after_test, {"delays": [3000], "said": [], "asked": []})
+        # the owner's "13, yes": with a crash code, the code after the crash's line, and a Copy code button
+        coded = dict(notice, code="R2-TEST", list=True)
+        (told,) = self.in_node(part(code, "let crashWatch = null;", "\n// --- the page's own script errors"), [
+            {"call": "watchCrash(0)", "words": words, "answers": [{"watching": False, "notice": coded}]}])
+        under = words["crash_code_under"].replace("{code}", "R2-TEST")
+        self.assertEqual(told["said"], [[said + " " + under, "error"], ["button", words["crash_copy"]]])
+        self.assertIn("crash_no_list", studio)                           # (its own words: "the Studio couldn't")
+        self.assertIn("Studio", studio["crash_no_list"]["us"])
 
     def test_b10_a_refusal_of_what_the_modder_entered_sends_nothing(self):
         from ruse_studio.api import EntryError, StudioError

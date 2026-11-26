@@ -1745,7 +1745,7 @@ class GameWatch(_GameWatched):
         self._note_done()
         ran = self.clock() - self.started
         v4 = allows_v4(self.watch.home)
-        coded = crash_code_given(self.watch)   # the Launcher's player under version 5: the crash code too
+        coded = crash_code_given(self.watch)   # under version 5, in either app: the crash code too
         known = knowncrashes.load(self.watch.home)
         crashes, unread, build_said, told_more = [], [], False, False   # (unread: why a report couldn't be read)
         for dump in crash_dumps_since(self.started, self.local):
@@ -1895,7 +1895,7 @@ def _seen_at_exit() -> None:
 
 
 class CodeWatch(_GameWatched):
-    """Beside a game the Launcher started for a player without Bug Watch (crash_code_watched): when it closes, the
+    """Beside a game an app started for a player without Bug Watch (crash_code_watched): when it closes, the
     crash code of the newest crash report the game left since it started (rusemod.crashcode: made from where the game
     stopped, read from the game's own crash report on the PC as read_dump reads it), kept for the window as GameWatch
     keeps its notice ({"code": ...}). A cheat copy's stop (RUSE Guard's marked lines in the report) is no crash to tell
@@ -1925,10 +1925,11 @@ class CodeWatch(_GameWatched):
 
 
 def crash_code_given(watch: "Watch | None") -> bool:
-    """Whether a crash of a game the app started gets a crash code for its player (rusemod.crashcode): the Launcher's,
-    Bug Watch on or off (the owner, 2026-11-26: every player), once version 5 of the agreement is accepted, the version
-    whose words say so. With Bug Watch off CodeWatch gives it; with it on, GameWatch's notice carries it."""
-    return watch is not None and watch.app == "launcher" and agreement(watch.home) >= AGREEMENT_V5
+    """Whether a crash of a game the app started gets a crash code for its player (rusemod.crashcode): the
+    Launcher's after a Play and the Studio's after a Test in game (the owner, 2026-11-26: every player; his "13,
+    yes": the Studio's too), Bug Watch on or off, once version 5 of the agreement is accepted, the version whose
+    words say so. With Bug Watch off CodeWatch gives it; with it on, GameWatch's notice carries it."""
+    return watch is not None and watch.app in ("launcher", "studio") and agreement(watch.home) >= AGREEMENT_V5
 
 
 def crash_code_watched(watch: "Watch | None") -> bool:

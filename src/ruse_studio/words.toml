@@ -53457,6 +53457,86 @@ jpn = "ゲームがモデルの大きさを測ったとき、そのモデルに�
 sc = "游戏测量某个模型的大小时，该模型没有网格（它的 3D 形状）。"
 fa = "وقتی بازی اندازهٔ یک مدل را اندازه گرفت، آن مدل مش (شکل سه‌بعدی‌اش) نداشت."
 
+# --- the owner's "13, yes" (2026-11-26): after a Test in game, the crash code, Copy code and where to send it, as
+# the Launcher's after a Play (its words; rusemod.bugwatch.crash_code_given, app.js sayCrash) ---
+[crash_code]
+us = "The game crashed. Its crash code is {code}. Please send this code and a screenshot of this message to XUL on Discord (XUL6x3) or on GitHub, so we can look into why."
+fr = "Le jeu a planté. Son code de plantage est {code}. Merci d'envoyer ce code et une capture d'écran de ce message à XUL sur Discord (XUL6x3) ou sur GitHub, pour que nous puissions chercher pourquoi."
+ger = "Das Spiel ist abgestürzt. Sein Absturzcode ist {code}. Bitte schicken Sie diesen Code und einen Screenshot dieser Meldung an XUL auf Discord (XUL6x3) oder auf GitHub, damit wir der Ursache nachgehen können."
+ita = "Il gioco è andato in crash. Il suo codice di crash è {code}. Per favore, invia questo codice e uno screenshot di questo messaggio a XUL su Discord (XUL6x3) o su GitHub, così potremo cercare il motivo."
+spa = "El juego se cerró inesperadamente. Su código de fallo es {code}. Por favor, envía este código y una captura de pantalla de este mensaje a XUL en Discord (XUL6x3) o en GitHub, para que podamos investigar por qué."
+pol = "Gra uległa awarii. Jej kod awarii to {code}. Wyślij, proszę, ten kod i zrzut ekranu tego komunikatu użytkownikowi XUL na Discordzie (XUL6x3) lub na GitHubie, żebyśmy mogli sprawdzić, dlaczego tak się stało."
+ru = "Игра вылетела. Её код вылета: {code}. Пожалуйста, отправьте этот код и скриншот этого сообщения пользователю XUL в Discord (XUL6x3) или на GitHub, чтобы мы могли разобраться в причине."
+cz = "Hra spadla. Její kód pádu je {code}. Pošlete prosím tento kód a snímek obrazovky této zprávy uživateli XUL na Discordu (XUL6x3) nebo na GitHubu, abychom mohli prověřit příčinu."
+jpn = "ゲームがクラッシュしました。クラッシュコードは {code} です。原因を調べられるように、このコードとこのメッセージのスクリーンショットを Discord の XUL（XUL6x3）か GitHub に送ってください。"
+sc = "游戏崩溃了。崩溃代码是 {code}。请把这个代码和这条消息的截图发给 Discord 上的 XUL（XUL6x3），或发到 GitHub 上，以便我们调查原因。"
+fa = "بازی از کار افتاد. کد خرابی آن {code} است. لطفاً این کد و یک اسکرین‌شات از این پیام را برای XUL در Discord (XUL6x3) یا در GitHub بفرستید تا بتوانیم علتش را بررسی کنیم."
+
+[crash_code_under]
+us = "The crash code is {code}. Please send this code and a screenshot of this message to XUL on Discord (XUL6x3) or on GitHub, so we can look into why."
+fr = "Le code de plantage est {code}. Merci d'envoyer ce code et une capture d'écran de ce message à XUL sur Discord (XUL6x3) ou sur GitHub, pour que nous puissions chercher pourquoi."
+ger = "Der Absturzcode ist {code}. Bitte schicken Sie diesen Code und einen Screenshot dieser Meldung an XUL auf Discord (XUL6x3) oder auf GitHub, damit wir der Ursache nachgehen können."
+ita = "Il codice di crash è {code}. Per favore, invia questo codice e uno screenshot di questo messaggio a XUL su Discord (XUL6x3) o su GitHub, così potremo cercare il motivo."
+spa = "El código de fallo es {code}. Por favor, envía este código y una captura de pantalla de este mensaje a XUL en Discord (XUL6x3) o en GitHub, para que podamos investigar por qué."
+pol = "Kod awarii to {code}. Wyślij, proszę, ten kod i zrzut ekranu tego komunikatu użytkownikowi XUL na Discordzie (XUL6x3) lub na GitHubie, żebyśmy mogli sprawdzić, dlaczego tak się stało."
+ru = "Код вылета: {code}. Пожалуйста, отправьте этот код и скриншот этого сообщения пользователю XUL в Discord (XUL6x3) или на GitHub, чтобы мы могли разобраться в причине."
+cz = "Kód pádu je {code}. Pošlete prosím tento kód a snímek obrazovky této zprávy uživateli XUL na Discordu (XUL6x3) nebo na GitHubu, abychom mohli prověřit příčinu."
+jpn = "クラッシュコードは {code} です。原因を調べられるように、このコードとこのメッセージのスクリーンショットを Discord の XUL（XUL6x3）か GitHub に送ってください。"
+sc = "崩溃代码是 {code}。请把这个代码和这条消息的截图发给 Discord 上的 XUL（XUL6x3），或发到 GitHub 上，以便我们调查原因。"
+fa = "کد خرابی {code} است. لطفاً این کد و یک اسکرین‌شات از این پیام را برای XUL در Discord (XUL6x3) یا در GitHub بفرستید تا بتوانیم علتش را بررسی کنیم."
+
+[crash_copy]
+us = "Copy code"
+fr = "Copier le code"
+ger = "Code kopieren"
+ita = "Copia il codice"
+spa = "Copiar código"
+pol = "Kopiuj kod"
+ru = "Копировать код"
+cz = "Kopírovat kód"
+jpn = "コードをコピー"
+sc = "复制代码"
+fa = "کپی کد"
+
+[crash_copied]
+us = "Copied"
+fr = "Copié"
+ger = "Kopiert"
+ita = "Copiato"
+spa = "Copiado"
+pol = "Skopiowano"
+ru = "Скопировано"
+cz = "Zkopírováno"
+jpn = "コピーしました"
+sc = "已复制"
+fa = "کپی شد"
+
+[tip_crash_copy]
+us = "Puts only the crash code on the clipboard, to paste into your message."
+fr = "Copie seulement le code de plantage dans le presse-papiers, pour le coller dans votre message."
+ger = "Kopiert nur den Absturzcode in die Zwischenablage, um ihn in Ihre Nachricht einzufügen."
+ita = "Copia negli appunti solo il codice di crash, da incollare nel tuo messaggio."
+spa = "Copia solo el código de fallo en el portapapeles, para pegarlo en tu mensaje."
+pol = "Kopiuje do schowka tylko kod awarii, do wklejenia w wiadomości."
+ru = "Копирует в буфер обмена только код вылета, чтобы вставить его в сообщение."
+cz = "Zkopíruje do schránky jen kód pádu, abyste ho mohli vložit do zprávy."
+jpn = "クラッシュコードだけをクリップボードにコピーします。メッセージに貼り付けてください。"
+sc = "只把崩溃代码复制到剪贴板，以便粘贴到你的消息中。"
+fa = "فقط کد خرابی را در کلیپ‌بورد کپی می‌کند تا آن را در پیامتان بچسبانید."
+
+[crash_no_list]
+us = "The game crashed. The Studio couldn't check it against our list of known crashes: that list isn't on this PC yet."
+fr = "Le jeu a planté. Le Studio n'a pas pu comparer ce plantage à notre liste des plantages connus : cette liste n'est pas encore sur ce PC."
+ger = "Das Spiel ist abgestürzt. Das Studio konnte den Absturz nicht mit unserer Liste bekannter Abstürze abgleichen: Diese Liste ist noch nicht auf diesem PC."
+ita = "Il gioco è andato in crash. Lo Studio non ha potuto confrontare il crash con la nostra lista dei crash conosciuti: quella lista non è ancora su questo PC."
+spa = "El juego se cerró inesperadamente. El Studio no pudo comparar el fallo con nuestra lista de fallos conocidos: esa lista aún no está en este PC."
+pol = "Gra uległa awarii. Studio nie mogło porównać tej awarii z naszą listą znanych awarii: tej listy nie ma jeszcze na tym komputerze."
+ru = "Игра вылетела. Studio не смогло сверить этот вылет с нашим списком известных вылетов: этого списка ещё нет на этом ПК."
+cz = "Hra spadla. Studio nemohlo porovnat tento pád s naším seznamem známých pádů: ten seznam v tomto počítači ještě není."
+jpn = "ゲームがクラッシュしました。Studio はこのクラッシュを既知のクラッシュの一覧と照合できませんでした。その一覧はまだこの PC にありません。"
+sc = "游戏崩溃了。Studio 无法将这次崩溃与我们的已知崩溃列表进行核对：这台电脑上还没有该列表。"
+fa = "بازی از کار افتاد. Studio نتوانست این خرابی را با فهرست خرابی‌های شناخته‌شدهٔ ما مقایسه کند: این فهرست هنوز روی این رایانه نیست."
+
 # --- 0923 squads-blender: words added or changed for the 0.9.8.22 promises (squads, Blender, animations) ---
 [blender_model_hint1_model]
 us = "Change the model, or bring in your own model (File > Import) and put it on its bones: click your model, Shift+click the bones, Ctrl+P > With Automatic Weights."

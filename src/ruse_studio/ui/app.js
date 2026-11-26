@@ -4377,17 +4377,56 @@ function watchCrash(first = 3000) {
       if (failed < CRASH_TRIES) crashWatch = setTimeout(tick, 3000);
       return;
     }
-    if (seen && seen.notice) { say(crashText(seen.notice), "error"); return; }
+    if (seen && seen.notice) { sayCrash(seen.notice); return; }
     if (seen && seen.watching) crashWatch = setTimeout(tick, 3000);
   };
   crashWatch = setTimeout(tick, first);
 }
 
-// One sentence: "The game crashed while making the unit “Horse Squad”." and why, in the modder's language
+// One sentence: "The game crashed while making the unit “Horse Squad”." and why, in the modder's language, or that
+// the crash couldn't be checked (our list not on the PC yet); with a crash code (the owner's "13, yes", 2026-11-26:
+// as the Launcher's after a Play), the code and where to send it after it (crash_code_under), or alone (crash_code:
+// Bug Watch off, or a crash not on our list). One card: its text has no line breaks
 function crashText(notice) {
   const w = state.words, why = w["crash_why_" + notice.why] || "";
-  if (!notice.unit) return fill(w.crash_no_unit, { why });
-  return fill(notice.added ? w.crash_mod_unit : w.crash_unit, { unit: notice.unit, why });
+  if (notice.code && !notice.why && notice.list !== false) return fill(w.crash_code, { code: notice.code });
+  let said;
+  if (notice.list === false) said = w.crash_no_list;
+  else if (!notice.unit) said = fill(w.crash_no_unit, { why });
+  else said = fill(notice.added ? w.crash_mod_unit : w.crash_unit, { unit: notice.unit, why });
+  return notice.code ? said + " " + fill(w.crash_code_under, { code: notice.code }) : said;
+}
+
+// The notice in an error card (it stays until closed, for the screenshot the words ask for), with Report (a bug
+// report on GitHub, the words' "on GitHub") and, with a crash code, Copy code: the code alone on the clipboard
+function sayCrash(notice) {
+  const card = say(crashText(notice), "error");
+  if (!card || !notice.code) return;
+  const w = state.words || {};
+  const copy = addToastAction(card, { label: w.crash_copy, tip: w.tip_crash_copy,
+    act: () => copyCrashCode(notice.code, copy) });
+}
+
+// Copy code: through the clipboard API, else the old way (a window without the API), then "Copied" on the button
+// for a moment; where neither copies, the button stays as it is (the code is in the card's text, to select)
+async function copyCrashCode(code, button) {
+  const w = state.words || {};
+  let copied = false;
+  try {
+    await navigator.clipboard.writeText(code);
+    copied = true;
+  } catch {
+    const box = el("textarea", { value: code, readOnly: true });
+    box.style.position = "fixed";
+    box.style.opacity = "0";
+    document.body.append(box);
+    box.select();
+    try { copied = document.execCommand("copy") === true; } catch { copied = false; }
+    box.remove();
+  }
+  if (!copied) return;
+  button.textContent = w.crash_copied;
+  setTimeout(() => { button.textContent = w.crash_copy; }, 1500);
 }
 
 // --- the page's own script errors, told to Bug Watch (the owner's B11 B, 2026-11-26: "the Studio page's own script

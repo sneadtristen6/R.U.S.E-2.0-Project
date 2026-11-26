@@ -67,6 +67,8 @@ class TheListAtAGame(tb.BugWatchTest):
         self.accept(5)
         server = ListServer(MadeUp.blob())
         sent, told, _ = self.crash_game(self.made_report(), program, server)
+        code = told["notice"].pop("code")   # (the Studio's watch: the crash code too, the owner's "13, yes")
+        self.assertEqual(crashcode.read(code)["module"], "game")
         self.assertEqual(told["notice"], {"why": "made", "unit": "Horse Squad", "added": True, "list": True})
         self.assertEqual([r.full_url for r in server.asked], [bugwatch.SERVER + knowncrashes.ROUTE])   # once
         self.assertEqual(sent["unit"], {"added": True})
@@ -290,13 +292,13 @@ class TheCrashCode(tb.BugWatchTest):
     def test_who_gets_a_crash_code(self):
         """The Launcher's player who accepted version 5 (the version whose words say so), Bug Watch on or off (the
         owner, 2026-11-26: every player); a CodeWatch only with Bug Watch off (with it on, GameWatch gives the same code
-        with what it tells more); the Studio's page never asks."""
+        with what it tells more); the Studio's player too, after a Test in game (the owner's "13, yes", 2026-11-26)."""
         launcher = bugwatch.Watch(self.home, "launcher", "0.4.8.22", opener=tb.Server())
         studio = bugwatch.Watch(self.home, "studio", "0.9.8.22", opener=tb.Server())
         self.assertTrue(bugwatch.crash_code_watched(launcher))
         self.assertTrue(bugwatch.crash_code_given(launcher))
-        self.assertFalse(bugwatch.crash_code_watched(studio))
-        self.assertFalse(bugwatch.crash_code_given(studio))
+        self.assertTrue(bugwatch.crash_code_watched(studio))
+        self.assertTrue(bugwatch.crash_code_given(studio))
         self.assertFalse(bugwatch.crash_code_watched(None))
         self.assertFalse(bugwatch.crash_code_given(None))
         self.accept(4)
@@ -306,7 +308,8 @@ class TheCrashCode(tb.BugWatchTest):
         bugwatch.turn_on(self.home, "Nick")
         self.assertFalse(bugwatch.crash_code_watched(launcher))   # (GameWatch watches the game)
         self.assertTrue(bugwatch.crash_code_given(launcher))      # and gives the code
-        self.assertFalse(bugwatch.crash_code_given(studio))
+        self.assertTrue(bugwatch.crash_code_given(studio))
+        self.assertFalse(bugwatch.crash_code_watched(studio))
 
 
 class TheCodeWithBugWatchOn(tb.BugWatchTest):
@@ -314,7 +317,7 @@ class TheCodeWithBugWatchOn(tb.BugWatchTest):
     notice so that these players, when their mod crashes, it's like, hey, send this report to me on either GitHub or
     Discord. ... And then be like, copy code."; settled as every player after a crash of a game the Launcher started,
     Bug Watch on or off. With Bug Watch on, GameWatch's notice carries the same code CodeWatch gives, under the unit's
-    line or alone, under version 5 only and for the Launcher only; what Bug Watch keeps and sends doesn't change."""
+    line or alone, under version 5 only, for the Launcher and the Studio (the owner's "13, yes"); what Bug Watch keeps and sends doesn't change."""
 
     BASE, UNIT = tb.KnownCrashes.BASE, tb.KnownCrashes.UNIT
     # (KnownCrashes' made-up reports and game, borrowed as TheListAtAGame borrows them; run_game asks self.watch())
@@ -431,12 +434,15 @@ class TheCodeWithBugWatchOn(tb.BugWatchTest):
                                        program)
         self.assertIsNone(told["notice"])
 
-    def test_the_studios_watch_gives_no_code(self):
-        """The Studio's crash notice is another piece of work: its watch's notice stays as it was."""
+    def test_the_studios_watch_gives_the_same_code(self):
+        """The owner's "13, yes" (2026-11-26): the Studio's notice after a Test in game carries the crash code, the
+        same the Launcher's gives for the same report."""
         program = self.program([self.create])
         self.accept(5)
         self.app = "studio"
-        _sent, told, _ = self.run_game(self.made_report(), {"name": "Horse Squad", "added": True}, program)
+        report = self.made_report()
+        _sent, told, _ = self.run_game(report, {"name": "Horse Squad", "added": True}, program)
+        self.assertEqual(told["notice"].pop("code"), self.code_of(report))
         self.assertEqual(told["notice"], {"why": "made", "unit": "Horse Squad", "added": True, "list": True})
 
     def test_what_bug_watch_keeps_and_sends_doesnt_change(self):

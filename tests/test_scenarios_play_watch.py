@@ -370,12 +370,62 @@ class TheCrashNoticeAfterTestInGame(CrashingGame):
                 for t in threading.enumerate():
                     if name in t.name and t is not threading.current_thread():
                         t.join(10)
+        code = seen["notice"].pop("code")   # the crash code too (the owner's "13, yes": as the Launcher's)
         self.assertEqual(seen["notice"], {"why": "made", "unit": "Panzer IV (fr)", "added": False, "list": True})
+        from rusemod import crashcode
+        self.assertEqual(crashcode.read(code)["module"], "game")
         self.assertEqual(len(lists.asked), 1)
         studio_ui = (Path(__file__).resolve().parents[1] / "src" / "ruse_studio" / "ui" / "app.js").read_text(
             encoding="utf-8")
         self.assertIn("seen = await api().bugwatch_crash();", studio_ui)
         self.assertIn("if (ok) watchCrash();", studio_ui)
+
+
+    def test_without_bug_watch_the_studio_gives_the_code_alone(self):
+        """The owner's "13, yes" (2026-11-26): a Studio player without Bug Watch (version 5 accepted, a username
+        only) whose Test in game stops at a crash gets the crash code alone (CodeWatch), as a Launcher player after a
+        Play; nothing is fetched (no list) or sent, and nothing of Bug Watch's is kept."""
+        import threading
+        from rusemod import bugwatch, net
+        from rusemod.home import save_settings
+        from test_knowncrashes import ListServer, MadeUp
+
+        class Closed:
+            def poll(self):
+                return 0
+        self.api._starter.start_game = lambda exe: self.started.append(exe) or Closed()
+        self.page.set_pref("lang", "fr")
+        self.addCleanup(self.page.set_pref, "lang", "us")
+        self.page.guard_accept_terms()
+        self.page.set_username("Nick")
+        bugwatch.start(self.home, "studio", "0.9.8.22")   # (as the Studio's window does at every start: app.py)
+        values = self.settings()
+        values["guard"]["terms"] = 5
+        save_settings(self.home, values)
+        self.a_mod()
+        dump = self.local / "Temp" / "CrashRpt_s" / "report.dmp"
+        dump.parent.mkdir(parents=True, exist_ok=True)
+        dump.write_bytes(self.report)
+        later = time.time() + 3600
+        os.utime(dump, (later, later))
+        lists = ListServer(MadeUp.blob())
+        with mock.patch.object(bugwatch, "unit_named", return_value={"name": "Panzer IV (fr)", "added": False}), \
+                mock.patch.object(net, "urlopen", lists):
+            self.assertEqual(self.wait(self.page.test_in_game()["job"])["state"], "done")
+            end = time.time() + 30
+            seen = self.page.bugwatch_crash()
+            while seen["watching"] and seen["notice"] is None and time.time() < end:
+                time.sleep(0.05)
+                seen = self.page.bugwatch_crash()
+            for name in ("bug-watch-game", "bug-watch-crash-list", "send_waiting"):   # (as play_and_crash)
+                for t in threading.enumerate():
+                    if name in t.name and t is not threading.current_thread():
+                        t.join(10)
+        from rusemod import crashcode
+        self.assertEqual(crashcode.read(seen["notice"]["code"])["module"], "game")
+        self.assertEqual(set(seen["notice"]), {"code"})        # the code alone: no list was read
+        self.assertEqual((lists.asked, self.server.sent), ([], []))
+        self.assertFalse((self.home / bugwatch.FOLDER).exists())
 
 
 class ARequiredUpdate(Watched):
