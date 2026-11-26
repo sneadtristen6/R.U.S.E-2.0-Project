@@ -117,5 +117,8 @@ def build_of(game_dir: Path) -> str | None:
 
 
 def data_revisions(game_dir: Path) -> list[str]:
+    """The game's data revision folders (Data\\PC\\<number>), by NUMBER, oldest first: the last is the newest, the one
+    the game reads. (FL-121, GitHub issue 25: sorted as text, a leftover "1360" came before "190852" and "99" came
+    last, so the build wrote a new map's scenario into a pack the game doesn't read.)"""
     pc = Path(game_dir) / "Data" / "PC"
-    return sorted(p.name for p in pc.iterdir() if p.is_dir() and p.name.isdigit()) if pc.is_dir() else []
+    return sorted((p.name for p in pc.iterdir() if p.is_dir() and p.name.isdigit()), key=int) if pc.is_dir() else []

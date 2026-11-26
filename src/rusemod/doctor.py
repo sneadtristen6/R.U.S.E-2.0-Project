@@ -149,6 +149,13 @@ def checks(game: Path | None, instances: Path | None, steam_running=None, proces
         else False
     out.append(_finding("game", "ok", "doc_game_ok", path=str(game)) if found
                else _finding("game", "fail", "doc_game_missing", "choose_game"))
+    if found:
+        # (FL-121, GitHub issue 25) data folders left beside the one the game reads, from an old tool or an old install:
+        # a build reads the newest, but they can still trip a mod; said, never removed (the game's folder isn't changed)
+        from .steam import data_revisions
+        revs = data_revisions(game)
+        if len(revs) > 1:
+            out.append(_finding("revisions", "warn", "doc_revisions_extra", newest=revs[-1], extra=", ".join(revs[:-1])))
     out.append(_finding("steam", "ok", "doc_steam_ok") if (steam_running or real_steam)()
                else _finding("steam", "info", "doc_steam_off"))
 

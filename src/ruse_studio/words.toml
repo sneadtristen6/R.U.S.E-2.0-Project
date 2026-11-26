@@ -8490,6 +8490,19 @@ jpn = "MOD入りのコピー用の空き容量：{gb} GB。"
 sc = "模组版副本可用空间：{gb} GB。"
 fa = "{gb} گیگابایت جای خالی برای نسخه‌های ماددار."
 
+[doc_revisions_extra]
+us = "The game's Data\\PC folder holds old data folders ({extra}) beside the one the game reads ({newest}). They aren't Steam's and can make a new map crash: delete them, or reinstall R.U.S.E. in Steam."
+fr = "Le dossier Data\\PC du jeu contient d'anciens dossiers de données ({extra}) à côté de celui que le jeu lit ({newest}). Ils ne viennent pas de Steam et peuvent faire planter une nouvelle carte : supprimez-les, ou réinstallez R.U.S.E. dans Steam."
+ger = "Der Ordner Data\\PC des Spiels enthält alte Datenordner ({extra}) neben dem, den das Spiel liest ({newest}). Sie stammen nicht von Steam und können eine neue Karte abstürzen lassen: Lösche sie oder installiere R.U.S.E. in Steam neu."
+ita = "La cartella Data\\PC del gioco contiene vecchie cartelle di dati ({extra}) accanto a quella che il gioco legge ({newest}). Non sono di Steam e possono far bloccare una nuova mappa: eliminale o reinstalla R.U.S.E. da Steam."
+spa = "La carpeta Data\\PC del juego tiene carpetas de datos antiguas ({extra}) junto a la que lee el juego ({newest}). No son de Steam y pueden hacer que un mapa nuevo se bloquee: bórralas o reinstala R.U.S.E. en Steam."
+pol = "Folder Data\\PC gry zawiera stare foldery danych ({extra}) obok tego, który gra czyta ({newest}). Nie pochodzą ze Steam i mogą powodować awarię nowej mapy: usuń je albo zainstaluj ponownie R.U.S.E. w Steam."
+ru = "В папке игры Data\\PC есть старые папки данных ({extra}) рядом с той, которую читает игра ({newest}). Они не от Steam и могут вызвать вылет новой карты: удалите их или переустановите R.U.S.E. в Steam."
+cz = "Složka hry Data\\PC obsahuje staré datové složky ({extra}) vedle té, kterou hra čte ({newest}). Nejsou ze Steamu a mohou způsobit pád nové mapy: smažte je, nebo R.U.S.E. ve Steamu přeinstalujte."
+jpn = "ゲームの Data\\PC フォルダーに、ゲームが読むフォルダー（{newest}）のほかに古いデータフォルダー（{extra}）があります。Steam のものではなく、新しいマップがクラッシュする原因になります。削除するか、Steam で R.U.S.E. を再インストールしてください。"
+sc = "游戏的 Data\\PC 文件夹里，除了游戏读取的文件夹（{newest}）之外，还有旧的数据文件夹（{extra}）。它们不是 Steam 的文件，可能导致新地图崩溃：请删除它们，或在 Steam 中重新安装 R.U.S.E.。"
+fa = "پوشهٔ Data\\PC بازی، کنار پوشه‌ای که بازی می‌خواند ({newest})، پوشه‌های دادهٔ قدیمی ({extra}) دارد. این‌ها از Steam نیستند و ممکن است باعث کرش یک نقشهٔ جدید شوند: آن‌ها را پاک کنید یا R.U.S.E. را در Steam دوباره نصب کنید."
+
 [doc_space_low]
 us = "Only {gb} GB free where modded copies go: a copy may need {need} GB."
 fr = "Seulement {gb} Go libres là où vont les copies avec mods : une copie peut demander {need} Go."
