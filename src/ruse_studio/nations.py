@@ -79,13 +79,20 @@ class NationCalls:
         "own": how many of its own game units stand in a build menu, "hidden": how many of those the current mod takes
         out of every battle date's menu (nation_units' `hidden`)}]}. own and hidden show each nation's Keep its units /
         Empty it on the tab (the owner, 2026-11-11: "Yes, add those to nations tab", once the new-mod steps that had
-        them were taken out)."""
+        them were taken out). "ready": False (with "can_build", no nations) when there is no game index yet, or no
+        game: the tab says so and builds it as the Units tab does (StudioApi.status). Before, the call failed with the
+        index's own words, "no index at ...; build it first (ruse index build)" (Bug Watch's pull of 2026-11-26:
+        nations_view failed 2 of 24, FileNotFoundError at rusemod.index:422)."""
         from .api import EditsFileError
         try:
             edits = self._edits()
         except EditsFileError:
             edits = None
-        ix = self._open()
+        try:
+            ix = self._open()
+        except FileNotFoundError:  # (no game index yet, or no game to read it from)
+            return {"mod": self._mod_dir() is not None, "ready": False, "can_build": self._game() is not None,
+                    "nations": []}
         try:
             flags = [self._nation_flag(ix, n) for n in range(len(nations.NATIONS))]
             counts = {}
@@ -107,7 +114,7 @@ class NationCalls:
                         "name": self.value_words(name_key)["words"],
                         "army": self.value_words(army_key)["words"] if army_key else None,
                         "flag": flags[n], "units": counts.get(n, 0), "own": len(own[n]), "hidden": hidden(own[n])})
-        return {"mod": self._mod_dir() is not None, "nations": out}
+        return {"mod": self._mod_dir() is not None, "ready": True, "nations": out}
 
     def nation_words_set(self, nation: int, which: str, texts: dict) -> dict:
         """Give nation `nation` new words in the current mod: `which` "name" (the lobby's nation list) or "army" (its

@@ -205,6 +205,19 @@ class StudioNations(unittest.TestCase):
         self.assertFalse(self.italy(view)["flag"]["own"])
         self.assertNotIn("NATION_4", self.mine)  # the game's words again: the row taken out
 
+    def test_no_game_index_yet_is_said_not_failed(self):
+        # (Bug Watch's pull of 2026-11-26: nations_view failed 2 of 24, FileNotFoundError at rusemod.index:422, the
+        # index's own words "no index at ...; build it first (ruse index build)" shown to the modder)
+        from rusemod.index import Index
+        self.assertTrue(self.api.nations_view()["ready"])
+        self.api._open = lambda: Index(Path(self.dir.name) / "not built" / "index.sqlite")
+        self.assertEqual(self.api.nations_view(), {"mod": True, "ready": False, "can_build": True, "nations": []})
+
+        def no_game():
+            raise FileNotFoundError("We couldn't find R.U.S.E., so there's no game index to open.")
+        self.api._open, self.api._game = no_game, lambda: None
+        self.assertEqual(self.api.nations_view(), {"mod": True, "ready": False, "can_build": False, "nations": []})
+
     def test_refused(self):
         with self.assertRaises(nations.NationError):  # Japan has no army name
             self.api.nation_words_set(6, "army", {"us": "x"})

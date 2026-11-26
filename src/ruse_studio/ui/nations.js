@@ -7,7 +7,7 @@
 // unit's page (Voice). Seen in the game (2026-10-08, Italy made China). Since 2026-11-11 also each nation's Keep its
 // units / Empty it and Research for the whole mod (the new-mod steps that had them are off). Uses app.js's $, el, fill, say, problem, api,
 // state, wordsPanel,
-// showView, renderChips and refreshList.
+// showView, renderChips, refreshList and showNoIndex.
 (function () {
   "use strict";
   const N = { words: {}, lang: "base", data: null, open: null,
@@ -35,10 +35,34 @@
     try { data = await api().nations_view(); } catch (err) { problem(err); return; }
     if (!$("nations-view") || $("nations-view").classList.contains("hidden")) return;  // another tab meanwhile
     N.data = data;
+    if (data.ready === false) {  // no game index yet (StudioApi.nations_view): said, and built as the Units tab does
+      $("nations-nomod").classList.add("hidden");
+      $("nations-research").replaceChildren();
+      $("nations-list").replaceChildren(noIndexBox(data));
+      return;
+    }
     $("nations-nomod").textContent = data.mod ? "" : w.no_mod;
     $("nations-nomod").classList.toggle("hidden", data.mod);
     $("nations-research").replaceChildren(researchBox(data.mod));
     $("nations-list").replaceChildren(...data.nations.map(card));
+  }
+
+  // No game index yet: the Studio's own words for it, and its Build the index button, which goes to the Units tab and
+  // starts the build there (app.js showNoIndex: its panel and log show there, and the status line says how it ended on
+  // every tab). Before 2026-11-26 the tab showed the index's own error (Bug Watch: nations_view failed 2 of 24,
+  // FileNotFoundError).
+  function noIndexBox(data) {
+    const w = W();
+    const build = el("button", { type: "button", className: "small", textContent: w.build_index });
+    build.disabled = !data.can_build;
+    build.addEventListener("click", async () => {
+      showView("units");
+      try {
+        await showNoIndex({ ready: false, can_build: data.can_build });
+        $("build-index").click();
+      } catch (err) { problem(err); }
+    });
+    return el("div", { className: "nations-noindex" }, el("p", { className: "small", textContent: w.no_index }), build);
   }
 
   // Research for the whole mod (StudioApi.research_clear_all / research_reset_all, ruse_studio/board.py): No research,
