@@ -5612,8 +5612,14 @@ fa = "{path} را روی رایانهٔ شما باز می‌کند."
 # --- item 25: a game crash tells the player the unit and why (rusemod.knowncrashes, rusemod.bugwatch.crash_notice;
 # app.js watchCrash). crash_why_<key> for each of knowncrashes.REASONS; {why} is one of them; a reason says no more
 # than its place shows (a place nothing ties to a unit: "a model", not "a unit's model"). crash_no_list: a crash of the
-# game itself with no list of known crashes on the PC; crash_code: the code a player without Bug Watch can tell us
-# (the owner, 2026-11-14; rusemod.crashcode, rusemod.bugwatch.CodeWatch) ---
+# game itself with no list of known crashes on the PC; crash_code: the crash code and where to send it with a
+# screenshot, said alone (the owner, 2026-11-14 for players without Bug Watch; 2026-11-26 for every player: "send this
+# report to me on either GitHub or Discord. I'm XUL on Discord ... Send this screenshot. And then be like, copy code.";
+# rusemod.crashcode, rusemod.bugwatch.crash_code_given); crash_code_under: the same on a line under crash_unit,
+# crash_mod_unit, crash_no_unit or crash_no_list, whose words already say the game crashed (the request after {code}
+# word for word the same as crash_code's); the word GitHub in both is the link to the project's GitHub issues page
+# (app.js crashParts); his Discord shown as XUL with his username, XUL6x3, never his Discord user ID; crash_copy and
+# crash_copied: the Copy code button, and what it says a moment after it copied ---
 [crash_unit]
 us = "The game crashed while making the unit “{unit}”. {why}"
 fr = "Le jeu a planté en créant l'unité « {unit} ». {why}"
@@ -5667,17 +5673,82 @@ sc = "游戏崩溃了。Launcher 无法将这次崩溃与我们的已知崩溃�
 fa = "بازی از کار افتاد. Launcher نتوانست این خرابی را با فهرست خرابی‌های شناخته‌شدهٔ ما مقایسه کند: این فهرست هنوز روی این رایانه نیست."
 
 [crash_code]
-us = "The game crashed. Its crash code is {code}. Tell us this code on Discord or GitHub so we can look into why."
-fr = "Le jeu a planté. Son code de plantage est {code}. Donnez-nous ce code sur Discord ou GitHub pour que nous puissions chercher pourquoi."
-ger = "Das Spiel ist abgestürzt. Sein Absturzcode ist {code}. Nennen Sie uns diesen Code auf Discord oder GitHub, damit wir der Ursache nachgehen können."
-ita = "Il gioco è andato in crash. Il suo codice di crash è {code}. Comunicaci questo codice su Discord o GitHub, così potremo cercare il motivo."
-spa = "El juego se cerró inesperadamente. Su código de fallo es {code}. Dinos este código en Discord o GitHub para que podamos investigar por qué."
-pol = "Gra uległa awarii. Jej kod awarii to {code}. Podaj nam ten kod na Discordzie lub GitHubie, żebyśmy mogli sprawdzić, dlaczego tak się stało."
-ru = "Игра вылетела. Её код вылета: {code}. Сообщите нам этот код в Discord или на GitHub, чтобы мы могли разобраться в причине."
-cz = "Hra spadla. Její kód pádu je {code}. Pošlete nám tento kód na Discordu nebo GitHubu, abychom mohli prověřit příčinu."
-jpn = "ゲームがクラッシュしました。クラッシュコードは {code} です。原因を調べられるように、このコードを Discord か GitHub で教えてください。"
-sc = "游戏崩溃了。崩溃代码是 {code}。请在 Discord 或 GitHub 上告诉我们这个代码，以便我们调查原因。"
-fa = "بازی از کار افتاد. کد خرابی آن {code} است. این کد را در Discord یا GitHub به ما بگویید تا بتوانیم علتش را بررسی کنیم."
+us = "The game crashed. Its crash code is {code}. Please send this code and a screenshot of this message to XUL on Discord (XUL6x3) or on GitHub, so we can look into why."
+fr = "Le jeu a planté. Son code de plantage est {code}. Merci d'envoyer ce code et une capture d'écran de ce message à XUL sur Discord (XUL6x3) ou sur GitHub, pour que nous puissions chercher pourquoi."
+ger = "Das Spiel ist abgestürzt. Sein Absturzcode ist {code}. Bitte schicken Sie diesen Code und einen Screenshot dieser Meldung an XUL auf Discord (XUL6x3) oder auf GitHub, damit wir der Ursache nachgehen können."
+ita = "Il gioco è andato in crash. Il suo codice di crash è {code}. Per favore, invia questo codice e uno screenshot di questo messaggio a XUL su Discord (XUL6x3) o su GitHub, così potremo cercare il motivo."
+spa = "El juego se cerró inesperadamente. Su código de fallo es {code}. Por favor, envía este código y una captura de pantalla de este mensaje a XUL en Discord (XUL6x3) o en GitHub, para que podamos investigar por qué."
+pol = "Gra uległa awarii. Jej kod awarii to {code}. Wyślij, proszę, ten kod i zrzut ekranu tego komunikatu użytkownikowi XUL na Discordzie (XUL6x3) lub na GitHubie, żebyśmy mogli sprawdzić, dlaczego tak się stało."
+ru = "Игра вылетела. Её код вылета: {code}. Пожалуйста, отправьте этот код и скриншот этого сообщения пользователю XUL в Discord (XUL6x3) или на GitHub, чтобы мы могли разобраться в причине."
+cz = "Hra spadla. Její kód pádu je {code}. Pošlete prosím tento kód a snímek obrazovky této zprávy uživateli XUL na Discordu (XUL6x3) nebo na GitHubu, abychom mohli prověřit příčinu."
+jpn = "ゲームがクラッシュしました。クラッシュコードは {code} です。原因を調べられるように、このコードとこのメッセージのスクリーンショットを Discord の XUL（XUL6x3）か GitHub に送ってください。"
+sc = "游戏崩溃了。崩溃代码是 {code}。请把这个代码和这条消息的截图发给 Discord 上的 XUL（XUL6x3），或发到 GitHub 上，以便我们调查原因。"
+fa = "بازی از کار افتاد. کد خرابی آن {code} است. لطفاً این کد و یک اسکرین‌شات از این پیام را برای XUL در Discord (XUL6x3) یا در GitHub بفرستید تا بتوانیم علتش را بررسی کنیم."
+
+[crash_code_under]
+us = "The crash code is {code}. Please send this code and a screenshot of this message to XUL on Discord (XUL6x3) or on GitHub, so we can look into why."
+fr = "Le code de plantage est {code}. Merci d'envoyer ce code et une capture d'écran de ce message à XUL sur Discord (XUL6x3) ou sur GitHub, pour que nous puissions chercher pourquoi."
+ger = "Der Absturzcode ist {code}. Bitte schicken Sie diesen Code und einen Screenshot dieser Meldung an XUL auf Discord (XUL6x3) oder auf GitHub, damit wir der Ursache nachgehen können."
+ita = "Il codice di crash è {code}. Per favore, invia questo codice e uno screenshot di questo messaggio a XUL su Discord (XUL6x3) o su GitHub, così potremo cercare il motivo."
+spa = "El código de fallo es {code}. Por favor, envía este código y una captura de pantalla de este mensaje a XUL en Discord (XUL6x3) o en GitHub, para que podamos investigar por qué."
+pol = "Kod awarii to {code}. Wyślij, proszę, ten kod i zrzut ekranu tego komunikatu użytkownikowi XUL na Discordzie (XUL6x3) lub na GitHubie, żebyśmy mogli sprawdzić, dlaczego tak się stało."
+ru = "Код вылета: {code}. Пожалуйста, отправьте этот код и скриншот этого сообщения пользователю XUL в Discord (XUL6x3) или на GitHub, чтобы мы могли разобраться в причине."
+cz = "Kód pádu je {code}. Pošlete prosím tento kód a snímek obrazovky této zprávy uživateli XUL na Discordu (XUL6x3) nebo na GitHubu, abychom mohli prověřit příčinu."
+jpn = "クラッシュコードは {code} です。原因を調べられるように、このコードとこのメッセージのスクリーンショットを Discord の XUL（XUL6x3）か GitHub に送ってください。"
+sc = "崩溃代码是 {code}。请把这个代码和这条消息的截图发给 Discord 上的 XUL（XUL6x3），或发到 GitHub 上，以便我们调查原因。"
+fa = "کد خرابی {code} است. لطفاً این کد و یک اسکرین‌شات از این پیام را برای XUL در Discord (XUL6x3) یا در GitHub بفرستید تا بتوانیم علتش را بررسی کنیم."
+
+[crash_copy]
+us = "Copy code"
+fr = "Copier le code"
+ger = "Code kopieren"
+ita = "Copia il codice"
+spa = "Copiar código"
+pol = "Kopiuj kod"
+ru = "Копировать код"
+cz = "Kopírovat kód"
+jpn = "コードをコピー"
+sc = "复制代码"
+fa = "کپی کد"
+
+[crash_copied]
+us = "Copied"
+fr = "Copié"
+ger = "Kopiert"
+ita = "Copiato"
+spa = "Copiado"
+pol = "Skopiowano"
+ru = "Скопировано"
+cz = "Zkopírováno"
+jpn = "コピーしました"
+sc = "已复制"
+fa = "کپی شد"
+
+[tip_crash_copy]
+us = "Puts only the crash code on the clipboard, to paste into your message."
+fr = "Copie seulement le code de plantage dans le presse-papiers, pour le coller dans votre message."
+ger = "Kopiert nur den Absturzcode in die Zwischenablage, um ihn in Ihre Nachricht einzufügen."
+ita = "Copia negli appunti solo il codice di crash, da incollare nel tuo messaggio."
+spa = "Copia solo el código de fallo en el portapapeles, para pegarlo en tu mensaje."
+pol = "Kopiuje do schowka tylko kod awarii, do wklejenia w wiadomości."
+ru = "Копирует в буфер обмена только код вылета, чтобы вставить его в сообщение."
+cz = "Zkopíruje do schránky jen kód pádu, abyste ho mohli vložit do zprávy."
+jpn = "クラッシュコードだけをクリップボードにコピーします。メッセージに貼り付けてください。"
+sc = "只把崩溃代码复制到剪贴板，以便粘贴到你的消息中。"
+fa = "فقط کد خرابی را در کلیپ‌بورد کپی می‌کند تا آن را در پیامتان بچسبانید."
+
+[tip_crash_github]
+us = "Opens a new ticket on GitHub in your browser. What you post there is public."
+fr = "Ouvre un nouveau ticket sur GitHub dans votre navigateur. Ce que vous y publiez est public."
+ger = "Öffnet ein neues Ticket auf GitHub in Ihrem Browser. Was Sie dort posten, ist öffentlich."
+ita = "Apre un nuovo ticket su GitHub nel browser. Ciò che pubblichi lì è pubblico."
+spa = "Abre un ticket nuevo en GitHub en tu navegador. Lo que publiques allí es público."
+pol = "Otwiera nowe zgłoszenie na GitHubie w przeglądarce. To, co tam opublikujesz, jest publiczne."
+ru = "Открывает новое обращение на GitHub в браузере. То, что вы там публикуете, видно всем."
+cz = "Otevře nový tiket na GitHubu v prohlížeči. Co tam zveřejníte, je veřejné."
+jpn = "ブラウザで GitHub の新しいチケットを開きます。そこに投稿した内容は公開されます。"
+sc = "在浏览器中打开 GitHub 上的新工单。你在那里发布的内容是公开的。"
+fa = "یک درخواست جدید در GitHub را در مرورگرتان باز می‌کند. هر چه آنجا بفرستید عمومی است."
 
 [crash_why_made]
 us = "The game couldn't build the unit's model: the model had no skeleton in that battle, or not the bones its parts need."

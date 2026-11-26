@@ -1,5 +1,6 @@
-"""A crash code for players without Bug Watch: twelve letters and digits the Launcher shows after a game it started
-crashed, for the player to tell us.
+"""A crash code: twelve letters and digits the Launcher shows after a game it started crashed, for the player to send
+us. First for players without Bug Watch; since 2026-11-26 for every player, Bug Watch on or off (the owner: "... send
+this report to me on either GitHub or Discord. ... And then be like, copy code."), with a Copy code button.
 
 The owner, 2026-11-14: "they should be given some sort of code that they can tell me that still tells us why it
 crashed, but maybe not be as specific if they don't select bug watch, because they're obviously choosing not to enable

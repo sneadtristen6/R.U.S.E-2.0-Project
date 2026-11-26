@@ -829,8 +829,9 @@ class KnownCrashes(BugWatchTest):
         self.assertEqual({key for key, _chain, _stack in MadeUp.PLACES.values()}, set(knowncrashes.REASONS))
         root = Path(__file__).resolve().parents[1] / "src" / "ruse_launcher"
         words = tomllib.loads((root / "words.toml").read_text(encoding="utf-8"))
-        for key in [f"crash_why_{r}" for r in knowncrashes.REASONS] + ["crash_unit", "crash_mod_unit", "crash_no_unit",
-                                                                       "crash_no_list", "crash_code"]:
+        crash_words = ["crash_unit", "crash_mod_unit", "crash_no_unit", "crash_no_list", "crash_code",
+                       "crash_code_under", "crash_copy", "crash_copied", "tip_crash_copy", "tip_crash_github"]
+        for key in [f"crash_why_{r}" for r in knowncrashes.REASONS] + crash_words:
             self.assertEqual(sorted(words[key]), sorted(schema.APP_LANGS), key)
             blanks = {tuple(sorted(re.findall(r"\{(\w+)\}", text))) for text in words[key].values()}
             self.assertEqual(len(blanks), 1, key)                 # the same {blanks} in every language

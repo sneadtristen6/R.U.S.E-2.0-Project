@@ -77,6 +77,17 @@ class Calls(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "no help page called 'nope'"):
             app.open_help("nope")
 
+    def test_the_issues_page_the_crash_notice_links(self):
+        """The Launcher's crash notice: "GitHub" opens the project's GitHub issues, a new one, at the address the apps
+        already open for the owned-copies ticket (rusemod.owned.TICKET; the owner, 2026-11-26: "everyone has my GitHub
+        because they download it"). Nothing filled in: the player pastes the code and adds the screenshot."""
+        from rusemod.owned import TICKET
+        app = self.App()
+        self.assertEqual(TICKET, "https://github.com/sneadtristen6/R.U.S.E-2.0-Project/issues/new")
+        self.assertEqual(app.open_help("issues"), {"opened": TICKET})
+        app._update_open_url.assert_called_once_with(TICKET)
+        self.assertEqual(app.help_links()["issues"], TICKET)
+
     def test_the_supported_mods_list_page(self):  # "See the list on GitHub" and the Studio's "Share your mod"
         app = self.App()
         self.assertEqual(app.open_help("mods"), {"opened": "https://github.com/sneadtristen6/Ruse-Mods"})

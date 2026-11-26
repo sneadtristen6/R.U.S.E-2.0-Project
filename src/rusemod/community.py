@@ -1,6 +1,6 @@
-"""Help and bug reports, for both apps: the wiki (the field manual), Discussions, and a bug report opened in the
-browser with the app, its version and the message filled in. Nothing is ever sent from the apps: the player reads
-the report and posts it themselves on GitHub.
+"""Help and bug reports, for both apps: the wiki (the field manual), Discussions, the project's GitHub issues, and a
+bug report opened in the browser with the app, its version and the message filled in. Nothing is ever sent from the
+apps: the player reads the report and posts it themselves on GitHub.
 
 A message can hold paths, and paths hold the Windows user name (C:\\Users\\<name>\\...): the report shortens them to
 %LOCALAPPDATA% / %USERPROFILE% first, so a public post never shows who the player is on their PC.
@@ -13,12 +13,16 @@ from pathlib import Path
 from urllib.parse import quote, urlencode
 
 from .mod_index import PAGE as MOD_LIST_PAGE
+from .owned import TICKET as ISSUES   # the project's GitHub issues, a new one (the owned-copies ticket opens there too)
 
 REPO_URL = "https://github.com/sneadtristen6/R.U.S.E-2.0-Project"
 LINKS = {"wiki": f"{REPO_URL}/wiki", "discussions": f"{REPO_URL}/discussions",
          "help": f"{REPO_URL}/discussions/categories/help",
          "mods": MOD_LIST_PAGE,  # the supported-mods list (MOD_FORMAT §15): see it, or add a mod to it
-         "guidelines": f"{MOD_LIST_PAGE}/blob/main/GUIDELINES.md"}  # what the list accepts
+         "guidelines": f"{MOD_LIST_PAGE}/blob/main/GUIDELINES.md",  # what the list accepts
+         # the Launcher's crash notice: "GitHub" (the owner, 2026-11-26: "send this report to me on either GitHub or
+         # Discord"; ruse_launcher/ui/app.js crashParts), where the player posts the code and the screenshot
+         "issues": ISSUES}
 # the wiki's first page in each of the apps' languages (the owner, 2026-10-30: "a wiki for every language we
 # support"; docs/wiki/<code>/, each page named by its title in that language); English is the wiki's Home
 WIKI_HOMES = {"fr": "Manuel-de-terrain", "ger": "Feldhandbuch", "ita": "Manuale-da-campo", "spa": "Manual-de-campaña",
@@ -110,8 +114,8 @@ class CommunityCalls:
 
     def open_help(self, what: str, topic: str | None = None) -> dict:
         """Open the wiki ("wiki", in the player's language; with `topic`, one of WIKI_TOPICS, that topic's page),
-        Discussions ("discussions"), its Help category ("help") or the supported-mods list's page ("mods") in the
-        browser."""
+        Discussions ("discussions"), its Help category ("help"), the supported-mods list's page ("mods") or a new
+        issue on the project's GitHub ("issues", the Launcher's crash notice) in the browser."""
         if what not in LINKS:
             raise ValueError(f"There's no help page called {what!r}")
         if topic is not None and (what != "wiki" or topic not in WIKI_TOPICS):

@@ -10,7 +10,8 @@ in this test's LOCALAPPDATA (the base). Our list of known crashes (rusemod.known
 agreement) comes from a fake of its address too, and anything else that reaches for the network fails the test
 (test_knowncrashes.keep_off_the_network). The made-up crash report, the made-up program file and the made-up list are
 the crash piece's tests' own (test_bugwatch KnownCrashes, test_knowncrashes MadeUp: no detail of the game's program).
-Without Bug Watch, a crash of a game the Launcher started gets a crash code (rusemod.crashcode).
+A crash of a game the Launcher started gets a crash code (rusemod.crashcode) under version 5, Bug Watch on or off (the
+owner, 2026-11-26: every player).
 
 FOR: the Test in game and Play scenarios (release 0.9.8.20, overnight 2026-11-14). USED-BY: the scenarios' run and
 report."""
@@ -234,16 +235,24 @@ class CrashingGame(Watched):
 
 
 class TheCrashNotice(CrashingGame):
+    def code_of_the_report(self) -> str:
+        """The crash code of the report this test's game left, made as for a player without Bug Watch."""
+        from rusemod import bugwatch, crashcode
+        return crashcode.make(bugwatch.read_dump(self.local / "Temp" / "CrashRpt_x" / "report.dmp"))
+
     def test_a_crash_we_know_tells_the_unit_and_why(self):
         """Usual: Bug Watch on under version 5; our list comes from the Bug Watch server while the game runs (one GET
         of its address); the game stops at a crash we know while making one of the game's own units: the page is
-        handed the reason and the unit (named in the player's language), once."""
+        handed the reason and the unit (named in the player's language), and the crash code a player without Bug Watch
+        gets (the owner, 2026-11-26: every player), once."""
         seen = self.play_and_crash(self.report, {"name": "Panzer IV (fr)", "added": False})
-        self.assertEqual(seen["notice"], {"why": "made", "unit": "Panzer IV (fr)", "added": False, "list": True})
+        self.assertEqual(seen["notice"], {"why": "made", "unit": "Panzer IV (fr)", "added": False, "list": True,
+                                          "code": self.code_of_the_report()})
         self.assertEqual(self.naming.call_args[0][3], "fr")
         from rusemod import bugwatch, knowncrashes
         self.assertIsNone(bugwatch.crash_notice()["notice"])
         self.assertEqual([r.full_url for r in self.lists.asked], [bugwatch.SERVER + knowncrashes.ROUTE])
+        self.assertNotIn(seen["notice"]["code"], json.dumps([body for _route, body in self.server.sent]))
 
     def couldnt_check(self, accepted: int) -> None:
         """Unusual: the same crash for a player who accepted an older version only (the list is fetched only under
@@ -258,9 +267,11 @@ class TheCrashNotice(CrashingGame):
     def test_under_version_3_nothing_is_fetched_and_the_launcher_says_it_couldnt_check(self):
         self.couldnt_check(3)
 
-    def test_a_crash_we_dont_know_tells_nothing(self):
+    def test_a_crash_we_dont_know_tells_its_code(self):
+        """Until 2026-11-26 it told a Bug Watch player nothing; now its crash code, as a player without Bug Watch
+        gets it."""
         seen = self.play_and_crash(self.unknown, {"name": "Panzer IV (fr)", "added": False})
-        self.assertIsNone(seen["notice"])
+        self.assertEqual(seen["notice"], {"code": self.code_of_the_report()})
 
     def test_the_page_says_it_in_every_language(self):
         """The Launcher page's own crashText (app.js, run in Node with each language's words): the game's unit, a mod's

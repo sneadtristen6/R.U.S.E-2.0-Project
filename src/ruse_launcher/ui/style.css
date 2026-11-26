@@ -403,6 +403,12 @@ button:disabled, button[aria-disabled="true"] { cursor: default; opacity: 0.45; 
 .bottom-gap { flex: 1; }
 .message .link { margin-left: 6px; padding: 0; background: none; border: 0; color: var(--accent); text-decoration: underline;
                  font-size: 12px; cursor: pointer; }
+/* the crash notice (app.js crashParts): the code as one piece (a click selects it whole), the word GitHub a link inside
+   the sentence, and the Copy code button after it */
+.message .crash-code { font: 600 1em Consolas, "Cascadia Mono", monospace; letter-spacing: 0.04em; user-select: all; }
+.message .link.crash-github { margin-left: 0; font: inherit; }
+.message .crash-copy { margin-left: 6px; padding: 2px 10px; font-size: 12px; color: var(--text);
+                       vertical-align: baseline; }
 
 /* the troubleshooter (rusemod.doctor): a dialog over the screen, one line per finding, marked by its level */
 .doc { width: min(700px, calc(100vw - 32px)); max-height: calc(100vh - 48px); padding: 22px 24px; background: var(--panel);
