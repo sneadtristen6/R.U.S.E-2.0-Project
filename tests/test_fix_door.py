@@ -199,7 +199,7 @@ class DoorFixes(Door):
         aside = Path(opened["set_aside"])
         self.assertTrue(all((aside / f).is_file() for f in ("send.glb", "animations.json", "clips/0.baf", "clips/1.baf")))
         self.assertIn(str(aside), opened["message"])
-        self.assertIn("Bring back the set-aside sending takes it in", opened["message"])
+        self.assertIn("Bring them back takes them in", opened["message"])
         self.assertFalse((self.mod / anim.UNITS).exists())             # (nothing taken in by opening again)
         st = self.api.decoy_blender_state(SQUAD)
         self.assertEqual((st["aside"], st["aside_folder"]), (aside.name, str(aside)))

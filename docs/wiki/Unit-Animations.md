@@ -158,8 +158,7 @@ The buttons above don't take out a change made in Blender.
   it first (**New unit from this one…** on its page).
 - **Its animations is missing on the page:** the table is only for a unit with animations of its own (a model on bones
   of its own). Every other unit plays the game's: change them in RUSE Decoy.
-- **A sending you never brought back:** opening Blender again sets it aside. RUSE Decoy shows it with **Bring back
-  the set-aside sending** and **Put it in the Recycle Bin** (see [[Open in Blender|Open-in-Blender]]).
+- **A sending you never brought back:** opening Blender again sets it aside. RUSE Decoy shows it with **Bring them back** and **Put them in the Recycle Bin** (see [[Open in Blender|Open-in-Blender]]).
 
 ## What has been tried in the game
 

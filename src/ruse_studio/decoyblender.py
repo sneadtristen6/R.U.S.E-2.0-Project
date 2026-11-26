@@ -60,8 +60,8 @@ Blender opened made of an animation). Each opening starts from what the mod has 
 taken out (it's in the mod; a bring back never reads it again); one never brought back is kept aside whole
 (sent-not-brought-<time>/: the sending with what went out with it), once nothing the opening can refuse is left (an
 opening refused leaves it waiting; one failing after says where it was set aside). Every sending kept aside is on the page
-(decoy_blender_state's "asides", newest first): Bring back the set-aside sending takes it in (decoy_blender_back's
-`aside`), Put it in the Recycle Bin takes it off the page (decoy_blender_recycle; it can be put back from the bin)."""
+(decoy_blender_state's "asides", newest first): Bring them back takes it in (decoy_blender_back's
+`aside`), Put them in the Recycle Bin takes it off the page (decoy_blender_recycle; it can be put back from the bin)."""
 from __future__ import annotations
 
 import hashlib
@@ -278,7 +278,7 @@ class DecoyBlenderCalls:
     def _anim_set_aside(work: Path) -> Path:
         """Blender's last sending, never brought back, kept aside whole: moved to sent-not-brought-<time>/ with what
         Send said of it, and a copy of what went out with it (animations.json and its clips), its state and its words,
-        so Bring back the set-aside sending can still take it in. Returns the folder. All or nothing: everything else
+        so Bring them back can still take it in. Returns the folder. All or nothing: everything else
         is copied first and the sending itself moved last (the folder is listed, _asides, only once it is there), and a
         set-aside stopped part way (a full disk, a file another program holds) takes its folder away again, the sending
         left where it was, waiting; the OSError is raised."""

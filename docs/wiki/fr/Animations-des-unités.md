@@ -173,8 +173,7 @@ Les boutons ci-dessus ne retirent pas un changement fait dans Blender.
   Faites d'abord une nouvelle unité à partir d'elle (**Nouvelle unité à partir de celle-ci…** sur sa page).
 - **Ses animations manque sur la page :** le tableau n'existe que pour une unité qui a ses propres animations (un modèle
   avec ses propres os). Toutes les autres unités jouent celles du jeu : changez-les dans RUSE Decoy.
-- **Un envoi que vous n'avez jamais ramené :** rouvrir Blender le met de côté. RUSE Decoy le montre avec **Ramener
-  l'envoi mis de côté** et **Le mettre à la Corbeille** (voir [[Ouvrir dans Blender|Ouvrir-dans-Blender]]).
+- **Un envoi que vous n'avez jamais ramené :** rouvrir Blender le met de côté. RUSE Decoy le montre avec **Les ramener** et **Les mettre à la Corbeille** (voir [[Ouvrir dans Blender|Ouvrir-dans-Blender]]).
 
 ## Ce qui a été essayé dans le jeu
 

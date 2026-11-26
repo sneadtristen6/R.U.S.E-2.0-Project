@@ -164,8 +164,7 @@ Los botones de arriba no quitan un cambio hecho en Blender.
   unidad nueva a partir de ella (**Nueva unidad a partir de esta…** en su página).
 - **Falta Sus animaciones en la página:** la tabla solo existe para una unidad con animaciones propias (un modelo con
   huesos propios). Todas las demás unidades usan las del juego: cámbialas en RUSE Decoy.
-- **Un envío que nunca trajiste:** volver a abrir Blender lo guarda aparte. RUSE Decoy lo muestra con **Traer el envío
-  guardado aparte** y **Llevarlo a la Papelera de reciclaje** (mira [[Abrir en Blender|Abrir-en-Blender]]).
+- **Un envío que nunca trajiste:** volver a abrir Blender lo guarda aparte. RUSE Decoy lo muestra con **Traerlos** y **Llevarlos a la Papelera de reciclaje** (mira [[Abrir en Blender|Abrir-en-Blender]]).
 
 ## Qué se ha probado en el juego
 

@@ -162,8 +162,7 @@ Przyciski wyżej nie usuwają zmiany zrobionej w Blenderze.
   nową jednostkę (**Nowa jednostka z tej…** na jej stronie).
 - **Na stronie brakuje Jej animacje:** tabela jest tylko dla jednostki z własnymi animacjami (model z własnymi kośćmi).
   Wszystkie inne jednostki używają animacji z gry: zmieniaj je w RUSE Decoy.
-- **Wysyłka, której nigdy nie przeniosłeś:** ponowne otwarcie Blendera ją odkłada. RUSE Decoy pokazuje ją z **Przenieś
-  odłożoną wysyłkę** i **Przenieś do Kosza** (zobacz [[Otwórz w Blenderze|Otwórz-w-Blenderze]]).
+- **Wysyłka, której nigdy nie przeniosłeś:** ponowne otwarcie Blendera ją odkłada. RUSE Decoy pokazuje ją z **Przenieś je z powrotem** i **Przenieś je do Kosza** (zobacz [[Otwórz w Blenderze|Otwórz-w-Blenderze]]).
 
 ## Co sprawdzono w grze
 

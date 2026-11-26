@@ -170,7 +170,7 @@ Die Knöpfe oben nehmen keine Änderung aus Blender heraus.
 - **Seine Animationen fehlt auf der Seite:** Die Tabelle gibt es nur für eine Einheit mit eigenen Animationen (ein
   Modell mit eigenen Knochen). Alle anderen Einheiten spielen die des Spiels: Ändere sie in RUSE Decoy.
 - **Eine Sendung, die du nie zurückgeholt hast:** Blender erneut zu öffnen legt sie beiseite. RUSE Decoy zeigt sie mit
-  **Beiseitegelegte Sendung zurückholen** und **In den Papierkorb legen** (siehe [[In Blender öffnen|In-Blender-öffnen]]).
+  **Sie zurückholen** und **Sie in den Papierkorb legen** (siehe [[In Blender öffnen|In-Blender-öffnen]]).
 
 ## Was im Spiel ausprobiert wurde
 

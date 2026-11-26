@@ -155,8 +155,7 @@ Tlačítka výše neodebírají změnu udělanou v Blenderu.
   jednotku (**Nová jednotka z této…** na její stránce).
 - **Na stránce chybí Její animace:** tabulka je jen u jednotky s vlastními animacemi (model s vlastními kostmi).
   Všechny ostatní jednotky hrají animace hry: měň je v RUSE Decoy.
-- **Odeslání, které jsi nikdy nepřenesl:** nové otevření Blenderu ho odloží. RUSE Decoy ho ukáže s **Přenést odložené
-  odeslání** a **Přesunout do Koše** (viz [[Otevřít v Blenderu|Otevřít-v-Blenderu]]).
+- **Odeslání, které jsi nikdy nepřenesl:** nové otevření Blenderu ho odloží. RUSE Decoy ho ukáže s **Přenést je zpět** a **Přesunout je do Koše** (viz [[Otevřít v Blenderu|Otevřít-v-Blenderu]]).
 
 ## Co bylo vyzkoušeno ve hře
 

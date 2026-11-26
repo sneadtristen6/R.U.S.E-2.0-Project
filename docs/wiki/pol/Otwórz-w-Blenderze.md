@@ -83,7 +83,7 @@ przeniesiesz ostatnią wysyłkę:
 - **Każda inna jednostka, z zaznaczonym modelem:** nic nie zostaje odłożone: następne **Otwórz w Blenderze** zaczyna od
   tego, co wysłałeś ostatnio.
 - **Animacje w RUSE Decoy:** każda odłożona wysyłka jest na liście nad animacjami jednostki („Wysłane z Blendera, nigdy
-  nieprzeniesione, odłożone ...”), z **Przenieś odłożoną wysyłkę**, żeby ją przyjąć, albo **Przenieś do Kosza**.
+  nieprzeniesione, odłożone ...”), z **Przenieś je z powrotem**, żeby ją przyjąć, albo **Przenieś je do Kosza**.
 
 ## Gdzie są twoje pliki Blendera
 

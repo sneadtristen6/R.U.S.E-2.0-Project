@@ -163,8 +163,7 @@ I pulsanti sopra non tolgono una modifica fatta in Blender.
   nuova unità da essa (**Nuova unità da questa…** nella sua pagina).
 - **Le sue animazioni manca nella pagina:** la tabella c'è solo per un'unità con animazioni sue (un modello con ossa
   sue). Tutte le altre unità usano quelle del gioco: cambiale in RUSE Decoy.
-- **Un invio che non hai mai riportato:** riaprire Blender lo mette da parte. RUSE Decoy lo mostra con **Riporta l'invio
-  messo da parte** e **Mettilo nel Cestino** (vedi [[Apri in Blender|Apri-in-Blender]]).
+- **Un invio che non hai mai riportato:** riaprire Blender lo mette da parte. RUSE Decoy lo mostra con **Riportale** e **Mettile nel Cestino** (vedi [[Apri in Blender|Apri-in-Blender]]).
 
 ## Cosa è stato provato nel gioco
 

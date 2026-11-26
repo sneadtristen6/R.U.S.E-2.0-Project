@@ -91,8 +91,8 @@ die letzte Sendung zurückgeholt ist:
 - **Jede andere Einheit, ihr Modell angehakt:** Nichts wird beiseitegelegt: Das nächste **In Blender öffnen** beginnt
   mit dem, was du zuletzt gesendet hast.
 - **Die Animationen in RUSE Decoy:** Jede beiseitegelegte Sendung steht über den Animationen der Einheit („Aus Blender
-  gesendet, nie zurückgeholt, am ... beiseitegelegt“), mit **Beiseitegelegte Sendung zurückholen**, um sie zu
-  übernehmen, oder **In den Papierkorb legen**.
+  gesendet, nie zurückgeholt, am ... beiseitegelegt“), mit **Sie zurückholen**, um sie zu
+  übernehmen, oder **Sie in den Papierkorb legen**.
 
 ## Wo deine Blender-Dateien sind
 

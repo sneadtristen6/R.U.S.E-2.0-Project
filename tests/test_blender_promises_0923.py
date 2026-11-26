@@ -257,6 +257,21 @@ class Item23CopyUndo(InElevenLanguages):
         self.assertNotIn("Back to the game's animation", wiki)
 
 
+class Item24SetAsideLine(InElevenLanguages):
+    ITEM = "24"
+
+    def test_52n_the_set_aside_line_and_its_buttons(self):
+        self.words_in_eleven_languages(["decoy_blender_aside", "decoy_blender_aside_recycle", "decoy_blender_aside_when",
+                                        "decoy_blender_set_aside", "tip_decoy_blender_aside_recycle"])
+        self.assertEqual(WORDS["decoy_blender_aside"]["us"], "Bring them back")
+        self.assertEqual(WORDS["decoy_blender_aside_recycle"]["us"], "Put them in the Recycle Bin")
+        self.assertEqual(WORDS["decoy_blender_aside_when"]["us"], "Changes you sent from Blender on {when} and never brought back.")
+        self.names_in_every_language("decoy_blender_set_aside", ["decoy_blender_aside"])
+        wiki = (ROOT / "docs" / "wiki" / "Open-in-Blender.md").read_text(encoding="utf-8")
+        self.assertIn("**Bring them back**", wiki)
+        self.assertNotIn("set-aside sending", wiki)
+
+
         #                                         code says the same words, for every refusal)
 
 

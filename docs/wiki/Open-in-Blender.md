@@ -81,9 +81,8 @@ last sending back:
   name>\squad\`.
 - **Any other unit, its model ticked:** nothing is set aside: the next **Open in Blender** starts from what you sent
   last.
-- **RUSE Decoy's animations:** each sending set aside is listed above the unit's animations ("Sent from Blender, never
-  brought back, set aside on ..."), with **Bring back the set-aside sending** to take it in, or **Put it in the Recycle
-  Bin**.
+- **RUSE Decoy's animations:** each sending set aside is listed above the unit's animations ("Changes you sent from
+  Blender on ... and never brought back"), with **Bring them back** to take it in, or **Put them in the Recycle Bin**.
 
 ## Where your Blender files are
 

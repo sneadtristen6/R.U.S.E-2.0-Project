@@ -88,8 +88,7 @@ l'ultimo invio:
 - **Qualsiasi altra unità, col suo modello spuntato:** non si mette da parte nulla: il prossimo **Apri in Blender**
   parte da ciò che hai inviato per ultimo.
 - **Le animazioni di RUSE Decoy:** ogni invio messo da parte è elencato sopra le animazioni dell'unità («Inviato da
-  Blender, mai riportato, messo da parte il ...»), con **Riporta l'invio messo da parte** per prenderlo, o **Mettilo nel
-  Cestino**.
+  Blender, mai riportato, messo da parte il ...»), con **Riportale** per prenderlo, o **Mettile nel Cestino**.
 
 ## Dove sono i tuoi file di Blender
 

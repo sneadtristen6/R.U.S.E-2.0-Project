@@ -91,8 +91,7 @@ ramené le dernier envoi :
 - **Toute autre unité, son modèle coché :** rien n'est mis de côté : le prochain **Ouvrir dans Blender** part de ce que
   vous avez envoyé en dernier.
 - **Les animations de RUSE Decoy :** chaque envoi mis de côté est listé au-dessus des animations de l'unité (« Envoyé
-  depuis Blender, jamais ramené, mis de côté le ... »), avec **Ramener l'envoi mis de côté** pour le prendre, ou **Le
-  mettre à la Corbeille**.
+  depuis Blender, jamais ramené, mis de côté le ... »), avec **Les ramener** pour le prendre, ou **Les mettre à la Corbeille**.
 
 ## Où sont vos fichiers Blender
 

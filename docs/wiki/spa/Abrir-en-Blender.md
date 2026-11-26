@@ -86,8 +86,8 @@ Un **envío** es lo que Blender mandó con **Enviar a R.U.S.E. Studio**. Si vuel
 - **Cualquier otra unidad, con su modelo marcado:** no se guarda nada aparte: el siguiente **Abrir en Blender** empieza
   con lo último que enviaste.
 - **Las animaciones de RUSE Decoy:** cada envío guardado aparte aparece encima de las animaciones de la unidad
-  («Enviado desde Blender, nunca traído, guardado aparte el ...»), con **Traer el envío guardado aparte** para tomarlo, o
-  **Llevarlo a la Papelera de reciclaje**.
+  («Enviado desde Blender, nunca traído, guardado aparte el ...»), con **Traerlos** para tomarlo, o
+  **Llevarlos a la Papelera de reciclaje**.
 
 ## Dónde están tus archivos de Blender
 
