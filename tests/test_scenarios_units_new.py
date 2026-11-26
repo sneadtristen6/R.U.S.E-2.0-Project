@@ -198,15 +198,27 @@ class NewUnitOfEveryKind(Player):
                 said = self.refusal("new_unit", T1, "Not a number", price, -1, -1, False, None)
                 self.assertEqual(said["us"], "Price: one number, used for every battle date.")
 
-    # U-5: a price too big for the game is refused with the value's code name and the int32 range:
-    # "ProductionPrice: 10000000000 doesn't fit (it must be -2147483648 to 2147483647)"
-    @unittest.expectedFailure
+    # U-5: a price too big for the game was refused with the value's code name and the int32 range:
+    # "ProductionPrice: 10000000000 doesn't fit (it must be -2147483648 to 2147483647)". Now "Price: too big: the game
+    # takes at most 2,147,483,647". (This harness's "us" is the Studio showing the game's own names, so only the other
+    # languages say the value by its label.)
     def test_a_price_too_big_is_refused_in_plain_words(self):
         self.mod("Too big")
         for lang, text in self.refusal("new_unit", T1, "Too much", 1e10, -1, -1, False, None).items():
             with self.subTest(lang=lang):
-                self.assertNotIn("ProductionPrice", text)
                 self.assertNotIn("-2147483648", text)
+                self.assertIn("2,147,483,647", text)
+                self.assertNotIn("doesn't fit", text)
+                if lang not in ("us", "base"):
+                    self.assertNotIn("ProductionPrice", text)
+        self.assertEqual(self.refusal("new_unit", T1, "Too much", 1e10, -1, -1, False, None)["us"],
+                         "ProductionPrice: too big: the game takes at most 2,147,483,647")
+
+    def test_the_most_the_game_takes_is_still_taken(self):
+        """The control: 2147483647 is made (test_prices); a price at the other end is said as too small elsewhere
+        (the Units tab's edit of a whole number below its range)."""
+        self.mod("At the most")
+        self.assertTrue(self.new(T1, "At the most", 2147483647)["address"])
 
 
 class NoCardType(Player):

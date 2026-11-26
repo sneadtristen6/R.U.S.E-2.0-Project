@@ -416,7 +416,7 @@ class Tab(unittest.TestCase):
                 (HARD, "DeviseBonusIA", [1, 2], "one number"),
                 (BONUS, "AIProfiles", [1, 2, 3], "expected 2 numbers"),
                 (BONUS, "AIProfiles", 1, "expected 2 numbers"),
-                (DEFAULT, "HarcelementActif", 2, "doesn't fit")):
+                (DEFAULT, "HarcelementActif", 2, "too big: the game takes at most 1")):
             with self.subTest(address=address, prop=prop, value=value), self.assertRaisesRegex(StudioError, why):
                 self.api.ai_edit(address, prop, value)
         self.assertFalse((self.home / "mods" / "tough" / "src" / "studio.rndf").is_file())  # nothing half-saved

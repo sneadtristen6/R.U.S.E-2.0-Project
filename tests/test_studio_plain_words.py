@@ -138,19 +138,18 @@ class CodeNames(WithMod):
             with self.subTest(lang=lang):
                 said = self.refused(lang, "edit", M4_GUN, "TempsEntreDeuxTirs", 1e39)
                 self.assertNotIn("TempsEntreDeuxTirs", said)
-                self.assertIn("1e+39", said)
-        self.assertTrue(self.refused("base", "edit", M4_GUN, "TempsEntreDeuxTirs", 1e39).startswith(
-            "TempsEntreDeuxTirs: 1e+39 doesn't fit"))
+        self.assertEqual(self.refused("base", "edit", M4_GUN, "TempsEntreDeuxTirs", 1e39),
+                         "TempsEntreDeuxTirs: far too big for the game")
 
     def test_a_number_too_big_is_said_by_the_value_s_label(self):
         self.assertEqual(self.refused("fr", "new_unit", M4, "Big", 10_000_000_000, group="new"),
-                         "Prix : 10000000000 ne convient pas (doit être entre -2147483648 et 2147483647)")
+                         "Prix : trop grand : le jeu accepte au plus 2,147,483,647")
         self.assertEqual(self.refused("us", "new_unit", M4, "Big", 10_000_000_000, group="new"),
-                         "Price: 10000000000 doesn't fit (it must be -2147483648 to 2147483647)")
+                         "Price: too big: the game takes at most 2,147,483,647")
 
     def test_control_the_game_s_own_names_when_the_studio_shows_them(self):
         self.assertEqual(self.refused("base", "new_unit", M4, "Big", 10_000_000_000, group="new"),
-                         "ProductionPrice: 10000000000 doesn't fit (it must be -2147483648 to 2147483647)")
+                         "ProductionPrice: too big: the game takes at most 2,147,483,647")
         self.assertIn("Panther", self.page.new_unit(M4, "Panther", 10, group="new")["address"])  # (made)
 
 

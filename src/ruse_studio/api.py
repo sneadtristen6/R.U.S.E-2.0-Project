@@ -346,8 +346,12 @@ def _whole(value, kind: str, prop: str):
     """Round like the build does for whole-number properties (half away from zero), and check it fits."""
     r = int(Decimal(str(value)).quantize(Decimal(1), rounding=ROUND_HALF_UP))
     lo, hi = (0, 1) if kind == "bool" else INT_RANGES[kind]
-    if not lo <= r <= hi:
-        raise StudioError(f"{prop}: {r} doesn't fit (it must be {lo} to {hi})", prop=prop)
+    if r > hi:
+        most = f"{hi:,}"   # (2,147,483,647: with its commas in every language)
+        raise StudioError(f"{prop}: too big: the game takes at most {most}", prop=prop)
+    if r < lo:
+        least = f"{lo:,}"
+        raise StudioError(f"{prop}: too small: the game takes at least {least}", prop=prop)
     return r
 
 
@@ -363,9 +367,6 @@ def _ascii_digits(text: str) -> str:
     return "".join(str(unicodedata.decimal(c)) if c.isdecimal() and not "0" <= c <= "9" else c for c in text)
 
 
-FLOAT32_MOST = 3.4028234663852886e38  # the most a 4-byte decimal number (the game's float32) holds
-
-
 def _fits(value, kind: str, prop: str):
     """A number typed for a property of kind `kind`, as the build will store it: a whole number rounded and checked
     (_whole); a 4-byte decimal one checked against the most it holds (past it, the build stopped with Python's
@@ -376,8 +377,7 @@ def _fits(value, kind: str, prop: str):
         try:
             struct.pack("<f", value)
         except OverflowError:
-            raise StudioError(f"{prop}: {value} doesn't fit (it must be {-FLOAT32_MOST} to {FLOAT32_MOST})",
-                              prop=prop) from None   # (the page says the value by its label: as _whole does)
+            raise StudioError(f"{prop}: far too big for the game", prop=prop) from None   # (the page says the value by its label: as _whole does)
     return value
 
 

@@ -331,7 +331,7 @@ class Tab(unittest.TestCase):
                                  ("QteDeviseInitiale", "lots", "numbers only"),
                                  ("QteDeviseInitiale", [1, 2], "one number"),
                                  ("PaliersTempsToChooseNewCardForAllianceTaille_1", [1, 2], "expected 3 numbers"),
-                                 ("MaxProductionQueueSize", -1, "doesn't fit")):
+                                 ("MaxProductionQueueSize", -1, "too small: the game takes at least")):
             with self.subTest(prop=prop, value=value), self.assertRaisesRegex(StudioError, why):
                 self.api.economy_edit(prop, value)
         self.assertFalse((self.home / "mods" / "rich" / "src" / "studio.rndf").is_file())  # nothing half-saved
