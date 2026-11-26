@@ -2,7 +2,7 @@
 about it (a player's report, 2026-09-30: "Access is denied" on every second test, from a leftover copy Windows wouldn't
 delete). It only reads, apart from a test file it writes and removes in the copies' folder, and the two fixes a player
 can ask for: closing a R.U.S.E. left running from a modded copy, and clearing leftover copies. The game's own folder is
-never changed. The report says where modded copies go and why (the folder chosen in Settings, $RUSE_INSTANCES, or the
+never changed. It also says when the app's own data files (rusemod.appfiles) are missing from its install. The report says where modded copies go and why (the folder chosen in Settings, $RUSE_INSTANCES, or the
 recommended place), and when that is another drive than the game's.
 
 A finding is {"key": what's checked, "level": "ok" | "info" | "warn" | "fail", "say": the apps' word for it (each app's
@@ -136,7 +136,23 @@ def _write_test(instances: Path) -> None:
 COPIES_SAID = {"chosen": "doc_copies_chosen", "env": "doc_copies_env", "recommended": "doc_copies_recommended"}
 
 
-def checks(game: Path | None, instances: Path | None, steam_running=None, processes=None, how: str = "") -> list[dict]:
+SAID_FILES = 12  # the missing files a finding names (the rest as a count)
+
+
+def _app_files(app_dir: Path | None) -> list[dict]:
+    """FL-57: the files the build reads from the app itself (rusemod.appfiles) that are missing: one "fail" naming
+    them, none when the install is complete. No fix: the words say to reinstall the app."""
+    from . import appfiles
+    gone = appfiles.missing(app_dir)
+    if not gone:
+        return []
+    more = len(gone) - SAID_FILES
+    names = ", ".join(g.replace("/", "\\") for g in gone[:SAID_FILES]) + (f" (+{more})" if more > 0 else "")
+    return [_finding("app_files", "fail", "doc_app_files_missing", files=names, n=len(gone))]
+
+
+def checks(game: Path | None, instances: Path | None, steam_running=None, processes=None, how: str = "",
+           app_dir: Path | None = None) -> list[dict]:
     """Every finding, in the order a player would fix them; without `instances` (no game found yet, so no place for
     modded copies) the copies' own checks are left out. `how` says why copies go to `instances` (rusemod.play
     .instances_choice: "chosen" in Settings, "env", "recommended"), so the "drive" finding and the report say where
@@ -151,6 +167,7 @@ def checks(game: Path | None, instances: Path | None, steam_running=None, proces
                else _finding("game", "fail", "doc_game_missing", "choose_game"))
     out.append(_finding("steam", "ok", "doc_steam_ok") if (steam_running or real_steam)()
                else _finding("steam", "info", "doc_steam_off"))
+    out += _app_files(app_dir)  # the app's own files (FL-57): said only when some are missing
 
     procs = (processes or winfiles.processes)()
     from_copies = [(pid, exe) for pid, exe in procs if instances is not None and winfiles.inside(exe, str(instances))]
