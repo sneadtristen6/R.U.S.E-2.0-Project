@@ -613,8 +613,10 @@ class ProgramCheck(unittest.TestCase):
                 made.append((args, kwargs))
                 self.stderr = io.BytesIO(STEAM + LIVE + END)
         with mock.patch.object(play.subprocess, "Popen", Popen):
-            process = launcher_start(self.dir / "RUSE.exe")
-        self.assertEqual(made, [([str(self.dir / "RUSE.exe")], {"cwd": str(self.dir), "stderr": play.subprocess.PIPE})])
+            process = launcher_start(self.dir / "RUSE.exe")  # (Checked our_tools.json: a made-up path, never read)
+        self.assertEqual(made, [([str(self.dir / "RUSE.exe")], {"cwd": str(self.dir), "stdin": play.subprocess.DEVNULL,
+                                                                 "stdout": play.subprocess.DEVNULL,
+                                                                 "stderr": play.subprocess.PIPE})])
         process.guard_lines.join(10)
         self.assertEqual([(m["multi"], m["ended"] is not None) for m in process.guard_lines.matches], [(True, True)])
         self.assertTrue(process.stderr.closed)       # read to its end, then closed

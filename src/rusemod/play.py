@@ -155,9 +155,11 @@ def start_game_watched(exe: Path):
     """The Launcher's start of the game: as start_game, with the game's own error output on a pipe that RUSE Guard
     reads for as long as the game runs, to know when a multiplayer or co-op match is on (rusemod.guard.GameLines: it
     keeps only the in-game record's match lines and drops every other line as it's read). The Studio's Test in game
-    uses start_game: RUSE Guard's match watch is the Launcher's only."""
+    uses start_game: RUSE Guard's match watch is the Launcher's only. The game's input and plain output go nowhere,
+    as they do when the windowed Launcher starts it with start_game."""
     from .guard import GameLines
-    process = subprocess.Popen([str(exe)], cwd=str(exe.parent), stderr=subprocess.PIPE)
+    process = subprocess.Popen([str(exe)], cwd=str(exe.parent), stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+                               stderr=subprocess.PIPE)
     process.guard_lines = GameLines(process.stderr)
     process.guard_lines.start()
     return process
