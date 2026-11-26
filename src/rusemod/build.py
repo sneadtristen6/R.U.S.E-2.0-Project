@@ -6410,6 +6410,22 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                     result.findings += [Finding("error", f"{', '.join(ids)}: {w}") for w in wrong]
                     for w in far:
                         warn(f"{', '.join(ids)}: {w}")
+                # the map's OWN starting points, which no mod moved, on the ground as edited (the owner's 13 B,
+                # 2026-11-26: a warning only, the build goes on): a block or water painted over a map's own HQ
+                from .players import skirmish_files
+                from .scenario import own_start_problems
+                for name in sorted(set(blocks) | set(bridge_spans) | set(new_roads) | set(roads_out)):
+                    try:
+                        shipped = bytes(data_arc.read(data_arc.find(movement_member(name))))
+                    except KeyError:
+                        shipped = None
+                    for own_file, own_item, own_x, own_y in own_start_problems(
+                            read_data, shipped, name, skirmish_files(read_glad, name), moves.get(name, ([], []))[0]):
+                        warn(f"{name}: scenario.toml: the map's own starting point (item {own_item}) at "
+                             f"({own_x:.0f}, {own_y:.0f}) in {own_file} is where no ground unit can stand now (water, a cliff, a block for every "
+                             f"unit, or off the map): the game would build that player's HQ wherever it finds room, "
+                             f"possibly far away. The build goes on; move the starting point (Scenario, Each "
+                             f"player's HQ) or open the ground there")
                 for name, (settings, ids) in players.items():  # how many players: after the mods' starting points
                     from .players import PlayersError, apply_players
                     from .scenario import Scenario, folder_of

@@ -1552,6 +1552,44 @@ def start_ground_problems(read, map_pack: str, moves: list) -> tuple[list[str], 
     return errors, warnings
 
 
+def own_start_problems(read, before: bytes | None, map_pack: str, files, moves: list) -> list[tuple]:
+    """The map's OWN starting points (the ones the mods didn't move or add: start_ground_problems has those) that
+    stand where no ground unit can now, though they could on the map as shipped: [(scenario file, item, x, y)]. The
+    owner's 13 B (2026-11-26): the build only warns of them and goes on. A block for every unit or water painted over
+    a map's own HQ is such a place. `read(member)`: DataMap_Win.dat's files after every map edit; `before`: the map's
+    movement file as shipped (None: it isn't known, nothing is said); `files`: the map's scenarios (file names, lower
+    case) its skirmish entries load (rusemod.players.skirmish_files); `moves`: the mod's moves and new starts. A map
+    whose movement file or scenario can't be read isn't checked (the build's own checks have said what they could)."""
+    from .cover import member
+    from .nav import Graph
+    win = read(member(map_pack))
+    if win is None or before is None:
+        return []
+    try:
+        from ruse_mod_engine import sdb
+        now = Graph.read(sdb.split_mapinfo(win)[1][1])
+        then = Graph.read(sdb.split_mapinfo(before)[1][1])
+    except (ValueError, IndexError, TypeError, struct.error):
+        return []
+    put = [m for m in moves if isinstance(m, Start) or (isinstance(m, Move) and m.kind == "StartingPoint")]
+    out = []
+    for file in sorted(files):
+        raw = read(folder_of(map_pack) + file)
+        try:
+            items = Scenario.read(raw).items if raw else []
+        except (ScenarioError, ValueError, struct.error):
+            continue
+        for i, it in enumerate(items):
+            if it.kind != "StartingPoint":
+                continue
+            x, y = it.position[0], it.position[1]
+            if any(m.file.lower() == file.lower() and abs(m.x - x) < 1 and abs(m.y - y) < 1 for m in put):
+                continue   # (one the mod put there: start_ground_problems says it)
+            if then.walkable(x, y) and not now.walkable(x, y):
+                out.append((file, i, x, y))
+    return out
+
+
 def _to_segment(x: float, y: float, a, b) -> float:
     (ax, ay), (bx, by) = a, b
     vx, vy = bx - ax, by - ay

@@ -258,12 +258,23 @@ class Ground(MapGame):
     # FINDING F4: a block for every unit (or water) painted over the map's own starting point, which the player hasn't
     # moved, builds with no word; the same block over a start the player moved is refused: "... is where no ground
     # unit can stand ...: the game would build that player's HQ wherever it finds room, possibly far away"
-    # (rusemod.scenario.start_ground_problems looks only at new and moved starts).
-    @unittest.expectedFailure
+    # (rusemod.scenario.start_ground_problems looks only at new and moved starts). The owner's 13 B (2026-11-26): the
+    # map's own HQs are checked too, but a warning only: the build goes on.
     def test_f4_a_block_over_the_maps_own_hq_is_said(self):
         self.api.terrain_add(self.pack, [{"brush": "block", "x": 1000, "y": 2000, "radius": 3000}])
         got = self.build()
-        self.assertIn("is where no ground unit can stand", " ".join(got.get("errors", []) + got["lines"]))
+        self.assertEqual(got["state"], "done", got)   # (a warning, not a stop)
+        said = [ln for ln in got["lines"] if "the map's own starting point" in ln]
+        self.assertEqual(len(said), 1, got["lines"])
+        self.assertIn("warning", said[0])
+        self.assertIn("is where no ground unit can stand", said[0])
+        self.assertIn("(1000, 2000)", said[0])
+
+    def test_a_block_away_from_the_maps_own_hq_says_nothing(self):
+        """The control for F4: a block far from the starting points: no word about them, and it builds."""
+        self.api.terrain_add(self.pack, [{"brush": "block", "x": 12000, "y": 12000, "radius": 1000}])
+        got = self.assertBuilds()
+        self.assertEqual([ln for ln in got["lines"] if "starting point" in ln and "own" in ln], [])
 
     def test_the_hq_moved_onto_a_block(self):
         """The control for F4: the same block, the starting point moved into it: the build says where and stops."""
