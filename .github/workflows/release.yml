@@ -2,6 +2,20 @@
 # Push a tag named <app>-v<version>, e.g. `git tag launcher-v0.1.0 && git push origin launcher-v0.1.0`.
 # The version must equal the app's __version__. The setup .exe is attached as it is (no zip), at a stable URL that
 # needs no GitHub login, so browsers can build a reputation for that one file.
+#
+# Signed releases (the legal fixes' Part 7; the owner, 2026-11-25: "Yep, all three for 26"): the release is made as a
+# DRAFT, which players' apps never see. The owner checks it on his own PC with his signing tool (GitHub's record of
+# how it was built, below), signs it with his release key, adds the signature file and publishes it; the apps from
+# then on install an update only with that signature (rusemod.releasesig). The build is kept apart from anything that
+# can write to the repository:
+# - the job that runs the build tools (pip's packages, Nuitka, Inno Setup) can only read the repository, and keeps no
+#   token in git (persist-credentials: false); only the second job, which runs nothing but the repository's own notes
+#   script, GitHub's attestation action and gh, may make the draft;
+# - no caches: a release build starts from nothing, never from a cache main's apps.yml saved (any push to main could
+#   leave one), so it takes longer (an earlier build without Nuitka's cache ran past 35 minutes);
+# - every action is pinned by its full commit (the tag it was taken from beside it), Python and Inno Setup by their
+#   exact versions, the game's Python 2.5.1 by its SHA-256, the build's packages by their versions
+#   (installers/requirements.txt).
 name: release
 
 on:
@@ -9,43 +23,44 @@ on:
     tags: ["launcher-v*", "studio-v*"]
 
 permissions:
-  contents: write  # create the release
+  contents: read  # the build reads the code only; the draft job alone may write (its own permissions, below)
 
 jobs:
-  release:
+  build:
     # the shared private repo mirrors main and the tags: it doesn't build or test (its Actions minutes are limited).
     # The public repo by its number, which a rename keeps: a check by name skipped every run after the rename
     # to R.U.S.E-2.0-Project (tests/test_installers.py WorkflowGuards)
     if: github.repository_id == '1393317090'
     runs-on: windows-latest
-    timeout-minutes: 60
+    timeout-minutes: 180
+    permissions:
+      contents: read
+    outputs:
+      app: ${{ steps.tag.outputs.app }}
+      version: ${{ steps.tag.outputs.version }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
         with:
-          python-version: "3.12"
-          cache: pip
-          cache-dependency-path: installers/requirements.txt
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5.6.0
+        with:
+          python-version: "3.12.10"
       - name: Install the build tools
         run: |
-          python -m pip install -r installers/requirements.txt
-          choco install innosetup --no-progress -y
-      # each app starts from its own saved compile only (studio-v* tags from nuitka-studio-..., main's apps.yml saves
-      # under the same start): with any "nuitka-" the newest saved one was taken, and Studio 0.9.8.11's release got the
-      # Launcher's and compiled most of the Studio from scratch (35 minutes and not done, 2026-11-01; main's own Studio
-      # build of the same commit, 13 minutes)
-      - name: Keep Nuitka's compile cache between builds
-        uses: actions/cache@v4
-        with:
-          path: ~\AppData\Local\Nuitka\Nuitka\Cache
-          key: nuitka-${{ github.ref_name }}-${{ github.sha }}
-          restore-keys: nuitka-${{ startsWith(github.ref_name, 'studio-v') && 'studio' || 'launcher' }}-
+          python -m pip install --no-cache-dir -r installers/requirements.txt
+          choco install innosetup --version 6.7.1 --no-progress -y
       - name: Which app and version the tag names
         id: tag
         run: |
           $app, $version = "${{ github.ref_name }}" -split '-v', 2
           "app=$app" >> $env:GITHUB_OUTPUT
           "version=$version" >> $env:GITHUB_OUTPUT
+      # an app without the owner's release keys could never update itself again (rusemod.releasesig): no release
+      # is built without them
+      - name: The owner's release keys are in the apps
+        env:
+          PYTHONPATH: src
+        run: python -m rusemod.releasesig --check-keys
       # The Studio carries the game's own Python 2.5.1 (installers/build_app.py python251), as apps.yml gets it:
       # python.org's installer, used only when it's the very file python.org gave out (its SHA-256 below; python.org
       # lists its MD5, a1d1a9c07bc4c78bd8fa05dd3efec87f, and its size, 10,970,624 bytes), unpacked, never installed.
@@ -66,24 +81,53 @@ jobs:
           "RUSE_PYTHON251=$dir" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
       - name: Build, check, make the installer, test-install it
         run: python installers/build_app.py ${{ steps.tag.outputs.app }} --test-install
-      - name: Publish the release
-        env:
-          GH_TOKEN: ${{ github.token }}
+      - name: The installer the tag names
         run: |
           $setup = Get-ChildItem "dist/*-Setup-${{ steps.tag.outputs.version }}.exe"
           if (-not $setup) { throw "no installer for version ${{ steps.tag.outputs.version }}: the tag must match the app's __version__" }
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
+        with:
+          name: installer
+          path: dist/*-Setup-${{ steps.tag.outputs.version }}.exe
+          if-no-files-found: error
+          retention-days: 7
+
+  draft:
+    needs: build
+    if: github.repository_id == '1393317090'
+    runs-on: windows-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write      # the draft release
+      id-token: write      # GitHub's record of how the files were built (an attestation), which the owner's tool checks
+      attestations: write
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5.6.0
+        with:
+          python-version: "3.12.10"
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093  # v4.3.0
+        with:
+          name: installer
+          path: dist
+      - name: Make the release notes
+        run: |
+          $setup = Get-ChildItem "dist/*-Setup-${{ needs.build.outputs.version }}.exe"
+          if (-not $setup) { throw "no installer for version ${{ needs.build.outputs.version }}" }
           $hash = (Get-FileHash $setup.FullName -Algorithm SHA256).Hash.ToLower()
-          $about = Get-Content -Raw -Encoding utf8 ".github/release-notes/${{ steps.tag.outputs.app }}.md"
+          $about = Get-Content -Raw -Encoding utf8 ".github/release-notes/${{ needs.build.outputs.app }}.md"
           # every language's notes in one file beside the installer: the apps show what's new in their own language
           # (installers/notes_json.py, rusemod.update NOTES_ASSET); the page links each language's notes. The links
           # name each language in its own script, so Python's output and PowerShell's reading of it are both UTF-8:
           # the runner's Western code page stopped the first release with ten languages (launcher-v0.4.8, 2026-10-06)
           $env:PYTHONIOENCODING = "utf-8"
           [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
-          $langs = python installers/notes_json.py ${{ steps.tag.outputs.app }} dist "${{ github.ref_name }}"
+          $langs = python installers/notes_json.py ${{ needs.build.outputs.app }} dist "${{ github.ref_name }}"
           if ($LASTEXITCODE -ne 0) { throw "the release notes in other languages can't be read (installers/notes_json.py)" }
-          $book = Get-ChildItem "dist/RUSE-*-notes.json"
           $read = if ($langs) { "Read these notes in: $langs`n`n" } else { "" }
+          # the SHA-256 line stays: apps from before the signature check (and anyone checking by hand) compare it
           $notes = @"
           $read$about
           Download **$($setup.Name)** below and run it. It installs for your Windows user, with no admin rights needed.
@@ -92,9 +136,22 @@ jobs:
           To check that you have the real file, compare its SHA-256 with ``$hash``
           (PowerShell: ``Get-FileHash $($setup.Name)``).
           "@
-          $pre = if ("${{ steps.tag.outputs.app }}" -eq "studio") { "--prerelease" } else { "--latest" }  # the Studio is a preview
           # the notes go in a file: on the command line, the Studio's (32 KB with every version's) passed Windows' 32,767
           # character limit and gh couldn't start (studio-v0.9.5, 2026-10-04)
+          Set-Content -Path (Join-Path $env:RUNNER_TEMP "release-notes.md") -Value $notes -Encoding utf8
+      - uses: actions/attest-build-provenance@c074443f1aee8d4aeeae555aebba3282517141b2  # v2.2.3
+        with:
+          subject-path: |
+            dist/*-Setup-${{ needs.build.outputs.version }}.exe
+            dist/RUSE-*-notes.json
+      - name: Publish the release as a draft (the owner signs it, then publishes it)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $setup = Get-ChildItem "dist/*-Setup-${{ needs.build.outputs.version }}.exe"
+          $book = Get-ChildItem "dist/RUSE-*-notes.json"
           $notesFile = Join-Path $env:RUNNER_TEMP "release-notes.md"
-          Set-Content -Path $notesFile -Value $notes -Encoding utf8
-          gh release create "${{ github.ref_name }}" $setup.FullName $book.FullName --title (($setup.BaseName -replace '-Setup-', ' ') -replace '-', ' ') --notes-file $notesFile $pre
+          # a draft is never "latest" and players' apps never see it; the Studio is a preview (a pre-release); the
+          # owner's signing tool makes the Launcher's the latest when it publishes it
+          $pre = if ("${{ needs.build.outputs.app }}" -eq "studio") { @("--prerelease") } else { @() }
+          gh release create "${{ github.ref_name }}" $setup.FullName $book.FullName --draft --title (($setup.BaseName -replace '-Setup-', ' ') -replace '-', ' ') --notes-file $notesFile @pre

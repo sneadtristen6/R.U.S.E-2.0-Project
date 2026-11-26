@@ -136,11 +136,78 @@ class WorkflowGuards(unittest.TestCase):
         # print (launcher-v0.4.8, 2026-10-06). Before that print: Python's output and PowerShell's reading of it UTF-8,
         # and the English notes read as UTF-8 too
         text = (ROOT / ".github" / "workflows" / "release.yml").read_text(encoding="utf-8")
-        publish = text[text.index("name: Publish the release"):]
+        publish = text[text.index("name: Make the release notes"):]   # (made before GitHub's record of the files)
         before = publish[:publish.index("python installers/notes_json.py")]
         self.assertIn('$env:PYTHONIOENCODING = "utf-8"', before)
         self.assertIn("[Console]::OutputEncoding = [System.Text.Encoding]::UTF8", before)
         self.assertIn("Get-Content -Raw -Encoding utf8", before)
+
+
+def jobs_of(text: str) -> dict:
+    """A workflow's jobs as text, by name (its `jobs:` block cut at each two-space name)."""
+    body = text[text.index("\njobs:\n") + 7:]
+    found = re.split(r"(?m)^  ([a-z_-]+):\n", body)
+    return dict(zip(found[1::2], found[2::2]))
+
+
+class ReleaseBuild(unittest.TestCase):
+    """The release build the owner chose (2026-11-25, "Yep, all three for 26"): a draft he signs on his PC, a build
+    that can't write to the repository, nothing from a cache, every action and tool pinned."""
+    TEXT = (ROOT / ".github" / "workflows" / "release.yml").read_text(encoding="utf-8")
+
+    def test_the_release_is_a_draft_until_he_signs_it(self):
+        create = next(line for line in self.TEXT.splitlines() if "gh release create" in line)
+        self.assertIn("--draft", create)
+        self.assertNotIn("--latest", self.TEXT)   # a draft can't be latest; his tool makes the Launcher's latest
+        self.assertIn('"--prerelease"', self.TEXT)  # the Studio stays a preview
+        self.assertIn("compare its SHA-256 with ``$hash``", self.TEXT)  # apps from before the check still read it
+
+    def test_only_the_draft_job_may_write_and_it_runs_no_build_tool(self):
+        jobs = jobs_of(self.TEXT)
+        self.assertEqual(sorted(jobs), ["build", "draft"])
+        self.assertRegex(self.TEXT, r"(?m)^permissions:\n  contents: read\b")
+        build, draft = jobs["build"], jobs["draft"]
+        self.assertIn("    permissions:\n      contents: read\n", build)
+        for word in ("write", "github.token", "GH_TOKEN", "secrets."):
+            self.assertNotIn(word, build)
+        self.assertIn("needs: build", draft)
+        self.assertIn("      contents: write", draft)
+        self.assertIn("      id-token: write", draft)
+        self.assertIn("      attestations: write", draft)
+        for tool in ("pip install", "build_app.py", "choco", "nuitka"):
+            self.assertNotIn(tool, draft.lower())
+        self.assertEqual(len(re.findall(r"(?m)^\s+persist-credentials: false$", self.TEXT)),
+                         len(re.findall(r"(?m)^\s+- uses: actions/checkout@", self.TEXT)))   # no token left in git
+
+    def test_nothing_comes_from_a_cache(self):
+        self.assertNotIn("actions/cache", self.TEXT)
+        self.assertNotRegex(self.TEXT, r"(?m)^\s+cache:")
+        self.assertNotIn("restore-keys", self.TEXT)
+
+    def test_every_action_and_tool_is_pinned(self):
+        uses = re.findall(r"(?m)^\s+(?:- )?uses: (\S+)(.*)$", self.TEXT)
+        self.assertGreaterEqual(len(uses), 7)
+        for action, rest in uses:
+            with self.subTest(action=action):
+                self.assertRegex(action, r"^[\w.-]+/[\w.-]+@[0-9a-f]{40}$")  # a commit, never a tag that can move
+                self.assertRegex(rest, r"^\s+# v\d+\.\d+\.\d+$")             # the tag it was taken from, to look up
+        self.assertEqual(re.findall(r'python-version: "([^"]+)"', self.TEXT), ["3.12.10", "3.12.10"])
+        self.assertIn("choco install innosetup --version 6.7.1", self.TEXT)
+        self.assertIn("Inno Setup 6.7.1", (ROOT / "installers" / "installer.iss").read_text(encoding="utf-8"))
+        pins = (ROOT / "installers" / "requirements.txt").read_text(encoding="utf-8")
+        for line in pins.splitlines():
+            if line.strip() and not line.startswith("#"):
+                self.assertRegex(line, r"^[A-Za-z0-9_.-]+==\S+$")
+
+    def test_no_release_without_the_owner_s_keys(self):
+        build = jobs_of(self.TEXT)["build"]
+        self.assertIn("python -m rusemod.releasesig --check-keys", build)
+        self.assertLess(build.index("--check-keys"), build.index("installers/build_app.py"))
+        attest = self.TEXT[self.TEXT.index("actions/attest-build-provenance@"):]
+        attest = attest[:attest.index("- name:")]
+        self.assertIn("dist/*-Setup-${{ needs.build.outputs.version }}.exe", attest)
+        self.assertIn("dist/RUSE-*-notes.json", attest)
+        self.assertLess(self.TEXT.index("actions/attest-build-provenance@"), self.TEXT.index("gh release create"))
 
 
 class ReleaseNotesLinks(unittest.TestCase):
