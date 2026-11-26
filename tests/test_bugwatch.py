@@ -1258,7 +1258,9 @@ function element(id) {
     const seen = { at_open: box.checked, row_hidden: $("agree-bugwatch-row").classList.contains("agree-hidden"),
       label: $("agree-bugwatch-label").textContent, note: $("agree-bugwatch-note").textContent,
       listening: window.listening("focus"), clicks: [] };
-    const click = () => { seen.clicks.push(box.checked); $("agree-accept").fire("click"); };
+    let labelAtAccept = null;
+    const click = () => { seen.clicks.push(box.checked); labelAtAccept = $("agree-bugwatch-label").textContent;
+      $("agree-accept").fire("click"); };
     const answer = (name, how) => {   // the oldest call of that name still out comes back (or the newest)
       const names = waiting.map((x) => x.name);
       const i = how === "newest" ? names.lastIndexOf(name) : names.indexOf(name);
@@ -1281,6 +1283,7 @@ function element(id) {
     }
     while (waiting.length) { waiting.shift().ok(); await settle(); }   // whatever is still out comes back
     seen.at_end = box.checked;
+    seen.label_at_accept = labelAtAccept;
     if (c.name !== undefined) {   // the username screen (no username yet)
       $("username-name").value = c.name;
       $("username-save").fire("click");
@@ -1547,6 +1550,51 @@ function element(id) {
         first_start = got[5]
         self.assertEqual((first_start["row_hidden"], first_start["listening"], first_start["label"],
                           first_start["note"]), (False, 0, words["bugwatch_on_label"], words["set_bugwatch_help"]))
+
+    def test_3_a_player_with_bug_watch_on_is_asked_to_keep_it(self):
+        """The agreement shown again (decision 38 C, 2026-11-25), the shared agreement.js as it is: a player who has
+        Bug Watch on is asked "Keep Bug Watch on?" (ticked; leaving it keeps it on and changes nothing; unticking it
+        turns Bug Watch off exactly as Settings' untick does, one bugwatch_off); everyone else (off, or never chose)
+        gets the Bug Watch box again, unticked, with "(Recommended)" (decision 10). If Bug Watch is switched off in the
+        other app meanwhile, the box is the plain one again. A new player's first start is as it was (the control:
+        unticked, the plain box). (Release 0.9.8.22 showed every player the plain box, even ticked.)"""
+        words = self.words("ruse_launcher", "agree_", "username_", "bugwatch_", "set_bugwatch_")
+        nick = {"available": True, "on": True, "name": "Nick#4821", "code": "abcdefgh"}
+        off = {**nick, "on": False}
+        never = {"available": True, "on": False, "name": "Nick#4821", "code": ""}
+        new = {"available": True, "on": False, "name": "", "code": ""}
+        again, first = {"terms": 3, "terms_version": 4}, {"terms": 0, "terms_version": 4}
+        cases = [{"guard": again, "status": [nick], "steps": []},                    # on: asked, yes
+                 {"guard": again, "status": [nick], "steps": ["untick"]},            # on: asked, no
+                 {"guard": again, "status": [off], "steps": []},                     # off: the plain box
+                 {"guard": again, "status": [never], "steps": []},                   # never chose: the plain box
+                 {"guard": again, "status": [nick, off], "steps": ["focus"]},        # switched off meanwhile
+                 {"guard": first, "status": [new], "steps": [], "name": "Ann"}]      # a new player
+        for c in cases:
+            c["words"] = words
+        got = self.run_node(self.AGREEMENT_IN_NODE, self.SRC / "rusemod" / "sharedui" / "agreement.js", cases)
+        self.assertEqual([g["finished"] for g in got], [True] * len(cases))
+        keep, plain = words["bugwatch_keep_label"], words["bugwatch_on_label"]
+        self.assertEqual(keep, "Keep Bug Watch on?")
+        self.assertIn("(Recommended)", plain)
+        self.assertEqual([g["label"] for g in got], [keep, keep, plain, plain, keep, plain])
+        self.assertEqual([g["label_at_accept"] for g in got], [keep, keep, plain, plain, plain, plain])
+        asked, help_ = words["bugwatch_keep_note"], words["set_bugwatch_help"]
+        self.assertEqual([g["note"] for g in got], [asked, asked, help_, help_, asked, help_])   # as opened
+        self.assertEqual([g["at_open"] for g in got], [True, True, False, False, True, False])
+        self.assertEqual([g["at_end"] for g in got], [True, False, False, False, False, False])
+        made = [[c for c in g["calls"] if c[0] in ("bugwatch_on", "bugwatch_off", "set_username")] for g in got]
+        self.assertEqual(made, [[], [["bugwatch_off"]], [], [], [], [["set_username", "Ann"]]])
+
+    def test_3_the_keep_question_is_in_every_language_in_both_apps(self):
+        """The two new keys (bugwatch_keep_label, bugwatch_keep_note) are in both apps' words in all 11 languages."""
+        import tomllib
+        for app in ("ruse_launcher", "ruse_studio"):
+            data = tomllib.loads((self.SRC / app / "words.toml").read_text(encoding="utf-8"))
+            for key in ("bugwatch_keep_label", "bugwatch_keep_note"):
+                self.assertEqual(sorted(data[key]), sorted(["us", "fr", "ger", "ita", "spa", "pol", "ru", "cz",
+                                                            "jpn", "sc", "fa"]), f"{app} {key}")
+                self.assertTrue(all(v.strip() for v in data[key].values()), f"{app} {key}")
 
     def test_3_an_answer_that_comes_back_late_never_switches_bug_watch(self):
         """The agreement shown again, the shared agreement.js as it is, with the window's calls coming back late and in

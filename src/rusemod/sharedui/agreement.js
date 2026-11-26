@@ -69,6 +69,16 @@
     text($("agree-accept"), w.agree_accept);
   }
 
+  // A player shown the screen again who has Bug Watch on is asked "Keep Bug Watch on?" (ticked = yes, it stays; an
+  // untick turns it off exactly as Settings' untick does); everyone else sees the Bug Watch box as before, unticked.
+  // The question follows Bug Watch as it is (switched off in the other app, it is the plain box again). English
+  // fallback when an older app's words lack the two keys.
+  function setQuestion(words, keep) {
+    const w = words;
+    text($("agree-bugwatch-label"), keep ? (w.bugwatch_keep_label || "Keep Bug Watch on?") : w.bugwatch_on_label);
+    text($("agree-bugwatch-note"), keep ? (w.bugwatch_keep_note || w.set_bugwatch_help) : w.set_bugwatch_help);
+  }
+
   // `status`: bugwatch_status() as the app had it ({available, on, name}). A player shown a new version of the
   // agreement (rusemod.guard.TERMS_VERSION raised) has a username already: it stays (asked again, a new #number would
   // have replaced it, and with it whose crashes and matches are whose), and the Bug Watch tick starts as it is now,
@@ -87,6 +97,7 @@
       let shown = Boolean(status.available && status.on);   // Bug Watch as the box was last set from it
       let looks = 0;                                          // the latest look's number (an older answer is let go)
       box.checked = shown;
+      if (again) setQuestion(words, shown);
       const follow = async () => {
         if (box.checked !== shown) return;   // the player's own change here stays
         const look = ++looks;
@@ -95,6 +106,7 @@
           if (look !== looks || box.checked !== shown) return;
           shown = Boolean(status.available && now.on);
           box.checked = shown;
+          setQuestion(words, shown);
         } catch (e) { /* the box stays as it is */ }
       };
       if (again) window.addEventListener("focus", follow);
