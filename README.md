@@ -385,7 +385,7 @@ the code. Side by side since September 2026, they built:
 - **Big mods:** mod sets past 4 GB, build lists sorted into groups, and builds about four times faster (all 366 era units in about 5 minutes).
 - **The first map importer for R.U.S.E.**, as far as we know: a real place made into a map from the game's own pieces. It already builds part of Utah Beach into a map that opens in the game; it isn't fully working in the Studio yet.
 - **The code:** everything in `src/rusemod`, `src/ruse_studio` and `src/ruse_launcher` is our own, written for R.U.S.E.
-  2.0. A few things that come with it are others' work: the intro's engine sound and the models in the start-up scene.
+  2.0. A few things that come with it are others' work: the models in the start-up scene.
   They, and the others whose work it builds on, are credited below and in
   [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 

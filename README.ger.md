@@ -392,8 +392,7 @@ den Code. Seit September 2026 Seite an Seite haben sie gebaut:
 - **Große Mods:** Mod-Sets über 4 GB, Baulisten in Gruppen und etwa viermal schnellere Builds (alle 366 Einheiten aus anderen Epochen in etwa 5 Minuten).
 - **Der erste Kartenimporter für R.U.S.E.**, soweit wir wissen: ein echter Ort als Karte, aus den eigenen Teilen des Spiels. Er baut schon einen Teil von Utah Beach zu einer Karte, die sich im Spiel öffnet; im Studio funktioniert er noch nicht ganz.
 - **Der Code:** Alles in `src/rusemod`, `src/ruse_studio` und `src/ruse_launcher` ist unser eigenes, für R.U.S.E. 2.0
-  geschrieben. Ein paar Dinge, die mitkommen, sind die Arbeit anderer: der Motorsound des Intros und die Modelle in der
-  Startszene. Sie und die anderen, auf deren Arbeit es aufbaut, werden unten und in
+  geschrieben. Ein paar Dinge, die mitkommen, sind die Arbeit anderer: die Modelle in der Startszene. Sie und die anderen, auf deren Arbeit es aufbaut, werden unten und in
   [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) genannt.
 
 Es ist noch früh, und es kommt noch viel mehr. Danke an alle unten, ohne die nichts davon angefangen hätte.
@@ -424,11 +423,6 @@ unter CC0 oder CC BY. Jeder Macher wird genannt, mit Titel, Lizenz und Link des 
 der Danksagungsdatei jedes Mods, der eines benutzt (`CREDITS-era-units.md`), und in der vollständigen Liste im
 [Release der Epocheneinheiten](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases/tag/era-units). Was wir geändert
 haben: jedes wurde an das Spiel angepasst (gedreht und skaliert) und hat die Hoheitszeichen seiner Nation bekommen.
-
-### Der Motorsound des Intros
-
-Der Motorsound im Intro von R.U.S.E. 2.0, für Spieler, die den Titel und das Intro von R.U.S.E. 2.0 anhaken. Quelle:
-nicht zutreffend.
 
 ### (Anonyme) Oozaru: Testen und Fehlersuche
 

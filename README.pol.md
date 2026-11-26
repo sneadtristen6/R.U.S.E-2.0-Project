@@ -393,8 +393,7 @@ i pisze kod. Ramię w ramię od września 2026 zbudowali:
 - **Duże mody:** zestawy modów ponad 4 GB, listy budowy w grupach i budowanie mniej więcej cztery razy szybsze (wszystkie 366 jednostek z innych epok w około 5 minut).
 - **Pierwszy importer map dla R.U.S.E.**, o ile wiemy: prawdziwe miejsce zamienione w mapę z elementów samej gry. Już buduje część Utah Beach w mapę, która otwiera się w grze; w Studio nie działa jeszcze w pełni.
 - **Kod:** wszystko w `src/rusemod`, `src/ruse_studio` i `src/ruse_launcher` jest nasze, napisane dla R.U.S.E. 2.0.
-  Kilka rzeczy, które do niego należą, to prace innych: dźwięk silnika z filmu wprowadzającego i modele w scenie
-  startowej. Oni i inni, na których pracach to się opiera, są wymienieni poniżej i w
+  Kilka rzeczy, które do niego należą, to prace innych: modele w scenie startowej. Oni i inni, na których pracach to się opiera, są wymienieni poniżej i w
   [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 To dopiero początek i dużo więcej przed nami. Dziękujemy wszystkim poniżej, bez których nic z tego by się nie zaczęło.
@@ -425,11 +424,6 @@ CC0 lub CC BY. Każdy autor jest wymieniony, z tytułem modelu, licencją i link
 w pliku podziękowań każdego moda, który go używa (`CREDITS-era-units.md`), i na pełnej liście w
 [wydaniu jednostek epok](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases/tag/era-units). Co
 zmieniliśmy: każdy został dopasowany do gry (obrócony i przeskalowany) i dostał oznaczenia swojej nacji.
-
-### Dźwięk silnika z filmu wprowadzającego
-
-Dźwięk silnika w filmie wprowadzającym R.U.S.E. 2.0, dla graczy, którzy zaznaczą tytuł i film wprowadzający R.U.S.E.
-2.0. Źródło: nie dotyczy.
 
 ### (Anonyme) Oozaru: testowanie i debugowanie
 

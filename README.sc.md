@@ -306,7 +306,7 @@ R.U.S.E. 2.0 由 sneadtristen6 和 Claude 打造，并得到下面各位的帮�
 - **Bug Watch：** 在你开启后发送崩溃和错误报告，让问题修得更快。
 - **大型模组：** 超过 4 GB 的模组组合、分组的建造列表，以及快约四倍的构建（全部 366 个其他时代单位约 5 分钟）。
 - **据我们所知，R.U.S.E. 的第一个地图导入器：** 用游戏自己的部件把真实地点做成地图。它已经能把犹他海滩的一部分做成可以在游戏中打开的地图；在 Studio 中还不能完全使用。
-- **代码:** `src/rusemod`、`src/ruse_studio` 和 `src/ruse_launcher` 中的一切都是我们自己的,为 R.U.S.E. 2.0 编写。随它一起提供的少数东西是他人的作品:片头的引擎声音和启动画面场景中的模型。它们,以及我们所借助其作品的其他人,在下文和 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) 中署名。
+- **代码:** `src/rusemod`、`src/ruse_studio` 和 `src/ruse_launcher` 中的一切都是我们自己的,为 R.U.S.E. 2.0 编写。随它一起提供的少数东西是他人的作品:启动画面场景中的模型。它们,以及我们所借助其作品的其他人,在下文和 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) 中署名。
 
 这只是开始，还有更多内容即将到来。感谢下面的每一位，没有他们，这一切都不会开始。
 
@@ -329,10 +329,6 @@ LittleGroove 制作了 R.U.S.E. 的第一个真正的模组管理器 **RUSE-Mod-
 
 其他时代的单位（Studio 0.9.8.2）是由制作并分享它们的人提供的免费 3D 模型，采用 CC0 或 CC BY 许可。每位作者都会署名，连同模型的标题、许可和链接，出现在 Studio 中该单位的页面上、任何使用它的模组的署名文件中（`CREDITS-era-units.md`），以及
 [时代单位发布页](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases/tag/era-units)上的完整列表中。我们做的修改：每个模型都已适配游戏（旋转和缩放），并加上了所属国家的标志。
-
-### 片头的引擎声音
-
-R.U.S.E. 2.0 片头中的引擎声音,供勾选 R.U.S.E. 2.0 标题和片头的玩家使用。来源:不适用。
 
 ### (Anonyme) Oozaru：测试和调试
 

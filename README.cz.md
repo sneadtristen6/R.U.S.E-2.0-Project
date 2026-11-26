@@ -386,7 +386,7 @@ boku od září 2026 vytvořili:
 - **Velké mody:** sady modů nad 4 GB, seznamy stavby ve skupinách a sestavení zhruba čtyřikrát rychlejší (všech 366 jednotek z jiných období asi za 5 minut).
 - **První importér map pro R.U.S.E.**, pokud víme: skutečné místo převedené na mapu z vlastních dílů hry. Už sestaví část Utah Beach do mapy, která se ve hře otevře; ve Studiu zatím nefunguje úplně.
 - **Kód:** vše v `src/rusemod`, `src/ruse_studio` a `src/ruse_launcher` je naše vlastní, napsané pro R.U.S.E. 2.0.
-  Několik věcí, které jsou jeho součástí, je práce jiných: zvuk motoru z intra a modely ve startovací scéně. Ty i další,
+  Několik věcí, které jsou jeho součástí, je práce jiných: modely ve startovací scéně. Ty i další,
   na jejichž práci stavíme, jsou uvedeny níže a v [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 Je to teprve začátek a čeká nás mnohem víc. Děkujeme všem níže, bez kterých by nic z toho nezačalo.
@@ -417,10 +417,6 @@ CC BY. Každý autor je uveden, s názvem modelu, licencí a odkazem, na stránc
 s poděkováním každého modu, který nějaký z nich používá (`CREDITS-era-units.md`), a v úplném seznamu na
 [vydání jednotek z ér](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases/tag/era-units). Co jsme změnili:
 každý byl přizpůsoben hře (otočen a zmenšen či zvětšen) a dostal označení svého národa.
-
-### Zvuk motoru z intra
-
-Zvuk motoru v intru R.U.S.E. 2.0, pro hráče, kteří zaškrtnou název a intro R.U.S.E. 2.0. Zdroj: neuvedeno.
 
 ### (Anonyme) Oozaru: testování a ladění
 

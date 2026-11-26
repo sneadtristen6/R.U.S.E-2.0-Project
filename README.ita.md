@@ -393,8 +393,7 @@ fianco da settembre 2026, hanno costruito:
 - **Mod grandi:** set di mod oltre 4 GB, liste di costruzione divise in gruppi, e build circa quattro volte più veloci (tutte le 366 unità di altre epoche in circa 5 minuti).
 - **Il primo importatore di mappe per R.U.S.E.**, per quanto ne sappiamo: un luogo reale trasformato in mappa con i pezzi del gioco stesso. Costruisce già una parte di Utah Beach in una mappa che si apre nel gioco; nello Studio non funziona ancora del tutto.
 - **Il codice:** tutto in `src/rusemod`, `src/ruse_studio` e `src/ruse_launcher` è nostro, scritto per R.U.S.E. 2.0.
-  Alcune cose che vengono con esso sono lavoro di altri: il suono del motore dell'intro e i modelli della scena di
-  avvio. Esse, e gli altri sul cui lavoro si basa, sono riconosciute più sotto e in
+  Alcune cose che vengono con esso sono lavoro di altri: i modelli della scena di avvio. Esse, e gli altri sul cui lavoro si basa, sono riconosciute più sotto e in
   [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 Siamo all'inizio, e c'è molto altro in arrivo. Grazie a tutte le persone qui sotto, senza le quali niente di tutto questo sarebbe cominciato.
@@ -425,11 +424,6 @@ CC0 o CC BY. Ogni autore è nominato, con il titolo del modello, la licenza e il
 Studio, nel file dei crediti di ogni mod che ne usa uno (`CREDITS-era-units.md`), e nell'elenco completo nella
 [release delle unità d'epoca](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases/tag/era-units). Cosa abbiamo
 cambiato: ognuno è stato adattato al gioco (ruotato e scalato) e ha ricevuto le insegne della sua nazione.
-
-### Il suono del motore dell'intro
-
-Il suono del motore nell'intro di R.U.S.E. 2.0, per i giocatori che mettono la spunta al titolo e all'intro di R.U.S.E.
-2.0. Fonte: non applicabile.
 
 ### (Anonyme) Oozaru: test e debug
 

@@ -404,8 +404,7 @@ et écrit le code. Côte à côte depuis septembre 2026, ils ont construit :
 - **Les gros mods :** des ensembles de mods de plus de 4 Go, des listes de construction rangées en groupes, et des constructions environ quatre fois plus rapides (les 366 unités d'autres époques en environ 5 minutes).
 - **Le premier importateur de cartes pour R.U.S.E.**, à notre connaissance : un lieu réel transformé en carte avec les propres pièces du jeu. Il construit déjà une partie d'Utah Beach en une carte qui s'ouvre dans le jeu ; il ne marche pas encore entièrement dans le Studio.
 - **Le code :** tout ce qui se trouve dans `src/rusemod`, `src/ruse_studio` et `src/ruse_launcher` est de nous, écrit
-  pour R.U.S.E. 2.0. Quelques éléments livrés avec lui sont le travail d'autres personnes : le bruit de moteur de
-  l'intro et les modèles de la scène de démarrage. Eux, et les autres dont le travail sert de base, sont crédités
+  pour R.U.S.E. 2.0. Quelques éléments livrés avec lui sont le travail d'autres personnes : les modèles de la scène de démarrage. Eux, et les autres dont le travail sert de base, sont crédités
   ci-dessous et dans [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 Ce n'est que le début, et il y a bien plus à venir. Merci à toutes les personnes ci-dessous, sans qui rien de tout cela n'aurait commencé.
@@ -436,11 +435,6 @@ CC0 ou CC BY. Chaque créateur est nommé, avec le titre du modèle, sa licence 
 Studio, dans le fichier de crédits de tout mod qui en utilise un (`CREDITS-era-units.md`), et dans la liste complète
 sur la [version des unités d'époque](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases/tag/era-units). Ce
 que nous avons changé : chacun a été ajusté au jeu (tourné et mis à l'échelle) et a reçu les marquages de sa nation.
-
-### Le bruit de moteur de l'intro
-
-Le bruit de moteur de l'intro de R.U.S.E. 2.0, pour les joueurs qui cochent le titre et l'intro de R.U.S.E. 2.0. Source
-: sans objet.
 
 ### (Anonyme) Oozaru : tests et débogage
 

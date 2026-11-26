@@ -399,8 +399,7 @@ el código. Codo con codo desde septiembre de 2026, han construido:
 - **Mods grandes:** conjuntos de mods de más de 4 GB, listas de construcción ordenadas en grupos, y construcciones unas cuatro veces más rápidas (las 366 unidades de otras épocas en unos 5 minutos).
 - **El primer importador de mapas para R.U.S.E.**, hasta donde sabemos: un lugar real convertido en mapa con las piezas del propio juego. Ya construye una parte de Utah Beach en un mapa que se abre en el juego; todavía no funciona del todo en el Studio.
 - **El código:** todo lo que hay en `src/rusemod`, `src/ruse_studio` y `src/ruse_launcher` es nuestro, escrito para
-  R.U.S.E. 2.0. Algunas cosas que vienen con él son trabajo de otros: el sonido de motor de la introducción y los
-  modelos de la escena de arranque. Ellos, y los demás en cuyo trabajo nos apoyamos, se reconocen abajo y en
+  R.U.S.E. 2.0. Algunas cosas que vienen con él son trabajo de otros: los modelos de la escena de arranque. Ellos, y los demás en cuyo trabajo nos apoyamos, se reconocen abajo y en
   [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 Esto es solo el principio, y queda mucho más por venir. Gracias a todas las personas de abajo, sin las que nada de esto habría empezado.
@@ -433,11 +432,6 @@ la página de la unidad en el Studio, en el archivo de créditos de cualquier mo
 (`CREDITS-era-units.md`), y en la lista completa de la
 [versión de las unidades de época](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases/tag/era-units). Lo
 que cambiamos: cada uno se ajustó al juego (girado y escalado) y recibió las insignias de su nación.
-
-### El sonido de motor de la introducción
-
-El sonido de motor de la introducción de R.U.S.E. 2.0, para los jugadores que marcan el título y la introducción de
-R.U.S.E. 2.0. Fuente: no corresponde.
 
 ### (Anonyme) Oozaru: pruebas y depuración
 
