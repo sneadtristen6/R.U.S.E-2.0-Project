@@ -143,9 +143,11 @@ def start(server: str = SERVER, timeout: float = TIMEOUT) -> dict:
         raise coded(OwnedPassError("The sign-in server address isn't set up."), "SIGN-01")
     try:
         status, body = _call(server.rstrip("/") + "/v1/steam/start", data=b"", timeout=timeout)
-    except (urllib.error.URLError, OSError, ValueError):
+    except (urllib.error.URLError, OSError, ValueError) as exc:
+        from . import bugwatch
+        # (Bug Watch: its code, with the Windows error number of why the server couldn't be reached when there is one)
         raise coded(OwnedPassError("We couldn't reach the sign-in server. Check your connection and try again."),
-                    "SIGN-02") from None
+                    "SIGN-02", win=bugwatch.os_number(exc)) from None
     if status == 200 and body.get("code") and body.get("login_url"):
         return {"code": str(body["code"]), "login_url": str(body["login_url"]),
                 "poll_every": _pos(body.get("poll_every"), 3), "expires_in": _pos(body.get("expires_in"), 600)}

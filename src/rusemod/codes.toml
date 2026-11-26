@@ -296,7 +296,7 @@ since = "0.9.8.23/0.4.8.23"
 [UPD-01]
 place = "update.latest"
 old = "(nothing: the update check goes well)"
-what = "GitHub couldn't be reached to look for updates, neither its API nor its release feed (http: the API's answer)"
+what = "GitHub couldn't be reached to look for updates, neither its API nor its release feed (http: the API's answer; win: the Windows error number, the API's else the feed's)"
 since = "0.9.8.23/0.4.8.23"
 
 [UPD-02]
@@ -326,7 +326,7 @@ since = "0.9.8.23/0.4.8.23"
 [SIGN-02]
 place = "ownedpass.start"
 old = "owned_sign_in_start:rusemod.ownedpass:<line> (a place)"
-what = "the sign-in server couldn't be reached"
+what = "the sign-in server couldn't be reached (win)"
 since = "0.9.8.23/0.4.8.23"
 
 [SIGN-03]

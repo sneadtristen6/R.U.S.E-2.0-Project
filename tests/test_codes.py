@@ -520,6 +520,57 @@ class SentNothingBefore(WithBugWatch):
         self.assertEqual(self.failures()[4], {"code": "L-SIGN-10", "detail": {"http": 200}})
         self.assertEqual(self.failures()[6], {"code": "L-SIGN-12", "detail": {"why": "L-PASS-01"}})
 
+    def test_a_server_that_couldn_t_be_reached_says_the_windows_error_number(self):
+        # (the newest pull, 2026-11-26: 26 of 39 sign-in starts failed "We couldn't reach the sign-in server", while
+        # the server answered here; without the number Bug Watch can't say why)
+        import socket
+        import ssl
+        from rusemod import owned, ownedpass, update
+        from rusemod.bugwatch import detail_of, os_number
+        refused = OSError(None, "refused", None, 10061)              # (as Windows gives it: its winerror)
+        self.assertEqual(os_number(urllib.error.URLError(refused)), 10061)
+        self.assertEqual(os_number(urllib.error.URLError(socket.gaierror(11001, "getaddrinfo failed"))), 11001)
+        self.assertEqual(os_number(refused), 10061)
+        for none in (urllib.error.URLError(TimeoutError("timed out")), urllib.error.URLError("no internet"),
+                     urllib.error.URLError(ssl.SSLCertVerificationError(1, "certificate verify failed")),
+                     urllib.error.HTTPError("https://example.invalid", 503, "no", {}, None), ValueError("bad")):
+            self.assertIsNone(os_number(none), none)
+        self.assertEqual(detail_of(urllib.error.URLError(refused)), {"win": 10061})
+        home = self.home
+
+        class Pass(ownedpass.OwnedPassCalls, owned.OwnedCalls):
+            _home = home
+
+            def prefs(self):
+                return {"lang": "us"}
+
+            def _game(self):
+                return None
+
+        class Update(update.UpdateCalls):
+            UPDATE_APP, UPDATE_VERSION = "launcher", "0.4.8.22"
+            _home = home
+
+            def prefs(self):
+                return {}
+        with mock.patch.object(ownedpass, "ON", True), \
+                mock.patch.object(ownedpass, "_call", side_effect=urllib.error.URLError(refused)):
+            with self.assertRaises(ownedpass.OwnedPassError) as raised:
+                ownedpass.start("https://example.invalid")
+            self.assertEqual(Pass().owned_sign_in_poll("abc"), {"status": "steam-error"})
+        self.assertEqual((code_of(raised.exception), raised.exception.bw_detail), ("SIGN-02", {"win": 10061}))
+        self.assertEqual(str(raised.exception), "We couldn't reach the sign-in server. Check your connection and try "
+                                                "again.")                     # (what the player reads: the same)
+        app = Update()
+        app._update_fetch = mock.Mock(side_effect=urllib.error.URLError(refused))
+        app._update_fetch_text = mock.Mock(side_effect=urllib.error.URLError(socket.gaierror(11001, "getaddrinfo")))
+        self.assertTrue(app.update_check()["error"])
+        app._update_fetch = mock.Mock(side_effect=urllib.error.HTTPError(update.API, 403, "rate limit", {}, None))
+        self.assertTrue(app.update_check()["error"])
+        self.assertEqual(self.failures(), [{"code": "L-SIGN-09", "detail": {"win": 10061}},
+                                           {"code": "L-UPD-01", "detail": {"win": 10061}},
+                                           {"code": "L-UPD-01", "detail": {"http": 403, "win": 11001}}])
+
     def test_a_game_that_ended_badly_with_its_exit_number(self):
         local = self.root / "local"
         (local / "Temp" / "CrashRpt_x").mkdir(parents=True)

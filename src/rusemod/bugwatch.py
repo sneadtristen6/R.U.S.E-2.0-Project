@@ -264,15 +264,29 @@ def allows_codes(home) -> bool:
 def detail_of(error) -> dict:
     """The numbers a failure's error says, none naming a player: those it carries (rusemod.codes.coded), the web
     server's answer number of an HTTP refusal (http), and the Windows error number of a file or network error (win:
-    the number Windows gave, else the error number Python gave)."""
+    os_number, also for a network error urllib wrapped)."""
     out = dict(getattr(error, "bw_detail", None) or {}) if error is not None else {}
     if "http" not in out and isinstance(error, urllib.error.HTTPError):
         out["http"] = error.code
-    elif "win" not in out and isinstance(error, OSError) and not isinstance(error, urllib.error.URLError):
-        number = getattr(error, "winerror", None) or error.errno
-        if isinstance(number, int) and not isinstance(number, bool):
-            out["win"] = number
+    elif "win" not in out and (number := os_number(error)) is not None:
+        out["win"] = number
     return out
+
+
+def os_number(error) -> int | None:
+    """The Windows error number of a file or network error, None when it has none: the number Windows gave
+    (winerror), else the one Python gave (errno; a name not found gives getaddrinfo's own, 11001); for a network error
+    urllib wrapped (URLError: "couldn't reach the server"), its reason's. Never an SSL library's own number
+    (ssl.SSLError: OpenSSL's, not Windows'), nor for a web server's answer (HTTPError: that is its http). A timeout of
+    our own (TimeoutError "timed out") has none."""
+    import ssl
+    inner = getattr(error, "reason", None) if isinstance(error, urllib.error.URLError) else None
+    for e in (inner, error):
+        if isinstance(e, OSError) and not isinstance(e, (ssl.SSLError, urllib.error.URLError)):
+            number = getattr(e, "winerror", None) or e.errno
+            if isinstance(number, int) and not isinstance(number, bool):
+                return number
+    return None
 
 
 def _shape(found, v4: bool) -> str | None:

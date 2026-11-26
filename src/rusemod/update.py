@@ -238,11 +238,15 @@ def latest(app: str, current: str, fetch=_get_json, fetch_text=_get_text) -> Rel
     except (OSError, ValueError) as exc:  # refused (the hourly limit) or unreachable: the release feed instead
         try:
             releases = feed_releases(fetch_text(FEED))
-        except (OSError, ValueError):
+        except (OSError, ValueError) as feed_exc:
+            from . import bugwatch
             why = plain(exc)   # (never Python's or Windows' own words)
-            # (Bug Watch: its code, with GitHub's answer number when it gave one: rusemod.codes)
+            # (Bug Watch: its code, with GitHub's answer number when it gave one and the Windows error number of a
+            # connection that couldn't be made, the API's, else the release feed's: rusemod.codes)
+            win = bugwatch.os_number(exc)
             raise coded(UpdateError(f"GitHub couldn't be reached to look for updates ({why}).", why=why), "UPD-01",
-                        http=exc.code if isinstance(exc, urllib.error.HTTPError) else None) from None
+                        http=exc.code if isinstance(exc, urllib.error.HTTPError) else None,
+                        win=bugwatch.os_number(feed_exc) if win is None else win) from None
     tag_re = re.compile(rf"^{app}-v({TAG_VERSION})$")
     best = None
     for rel in releases if isinstance(releases, list) else []:
