@@ -4322,18 +4322,18 @@ jpn = "{0} にはもうグループを増やせません：{1} グループに�
 sc = "{0} 中已没有位置再加一个组：它将有 {1} 个组，而为了让列表能显示在屏幕上，一个建筑最多 {2} 个组。请把这个单位放进它的某个组，或放进拥有自己单位的建筑（“添加建筑…”）。"
 fa = "در {0} دیگر جایی برای گروهی دیگر نیست: {1} گروه می‌شد، و هر ساختمان حداکثر {2} گروه دارد تا فهرستش در صفحه جا شود. این یگان را در یکی از گروه‌هایش بگذارید، یا در ساختمانی با یگان‌های خودش («افزودن ساختمان…»)."
 
-[e8695d9a76c]
-us = "This unit has no card type, so the Studio can't tell which group of that building it goes in: pick one of its groups, or a group of its own (the Nations tab's building board)."
-fr = "Cette unité n'a pas de type de carte, le Studio ne peut donc pas savoir dans quel groupe de ce bâtiment elle va : choisissez un de ses groupes, ou un groupe à elle (le tableau des bâtiments de l'onglet Nations)."
-ger = "Diese Einheit hat keinen Kartentyp, daher weiß das Studio nicht, in welche Gruppe dieses Gebäudes sie gehört: Wähle eine seiner Gruppen oder eine eigene Gruppe (die Gebäudetafel im Reiter Nationen)."
-ita = "Questa unità non ha un tipo di carta, quindi lo Studio non sa in quale gruppo di quell'edificio va: scegli uno dei suoi gruppi, oppure un gruppo tutto suo (la tabella degli edifici nella scheda Nazioni)."
-spa = "Esta unidad no tiene tipo de carta, así que el Studio no sabe en qué grupo de ese edificio va: elige uno de sus grupos, o un grupo propio (el tablero de edificios de la pestaña Naciones)."
-pol = "Ta jednostka nie ma typu karty, więc Studio nie wie, do której grupy tego budynku należy: wybierz jedną z jego grup albo osobną grupę (tablica budynków na karcie Narody)."
-ru = "У этого юнита нет типа карточки, поэтому Studio не может понять, в какую группу этого здания он входит: выберите одну из его групп или отдельную группу (доска зданий на вкладке «Нации»)."
-cz = "Tato jednotka nemá typ karty, takže Studio nepozná, do které skupiny té budovy patří: vyberte jednu z jejích skupin, nebo vlastní skupinu (tabule budov na kartě Národy)."
-jpn = "このユニットにはカードの種類がないため、Studio はその建物のどのグループに入るか判断できません。建物のグループのどれかか、専用のグループを選んでください（「国」タブの建物ボード）。"
-sc = "这个单位没有卡片类型，所以 Studio 无法判断它属于该建筑的哪个组：请选择它的某个组，或单独一组（“国家”标签页的建筑面板）。"
-fa = "این یگان نوع کارت ندارد، پس استودیو نمی‌داند در کدام گروه آن ساختمان قرار می‌گیرد: یکی از گروه‌هایش را انتخاب کنید، یا یک گروه جداگانه (صفحهٔ ساختمان‌ها در زبانهٔ ملت‌ها)."
+[ea00c38d5f4]
+us = "This unit has no kind the Studio can read, so it can't tell which row of that building's build menu it goes in: pick one of its rows, or a row of its own (the Nations tab's building board)."
+fr = "Cette unité n'a pas de genre que le Studio sait lire, il ne peut donc pas savoir dans quelle ligne du menu de construction de ce bâtiment elle va : choisissez une de ses lignes, ou une ligne à elle (le tableau des bâtiments de l'onglet Nations)."
+ger = "Diese Einheit hat keine Art, die das Studio lesen kann, daher weiß es nicht, in welche Zeile des Baumenüs dieses Gebäudes sie gehört: Wähle eine seiner Zeilen oder eine eigene Zeile (die Gebäudetafel im Reiter Nationen)."
+ita = "Questa unità non ha un genere che lo Studio sappia leggere, quindi non sa in quale riga del menu di costruzione di quell'edificio va: scegli una delle sue righe, oppure una riga tutta sua (la tabella degli edifici nella scheda Nazioni)."
+spa = "Esta unidad no tiene una clase que el Studio sepa leer, así que no sabe en qué fila del menú de construcción de ese edificio va: elige una de sus filas, o una fila propia (el tablero de edificios de la pestaña Naciones)."
+pol = "Ta jednostka nie ma rodzaju, który Studio umie odczytać, więc nie wie, do którego wiersza menu budowy tego budynku należy: wybierz jeden z jego wierszy albo osobny wiersz (tablica budynków na karcie Narody)."
+ru = "У этого юнита нет вида, который Studio умеет читать, поэтому оно не может понять, в какой ряд меню строительства этого здания он входит: выберите один из его рядов или отдельный ряд (доска зданий на вкладке «Нации»)."
+cz = "Tato jednotka nemá druh, který Studio umí přečíst, takže nepozná, do kterého řádku stavebního menu té budovy patří: vyberte jeden z jejích řádků, nebo vlastní řádek (tabule budov na kartě Národy)."
+jpn = "このユニットにはStudio が読み取れる種類がないため、その建物の生産メニューのどの行に入るか判断できません。建物の行のどれかか、専用の行を選んでください（「国」タブの建物ボード）。"
+sc = "这个单位没有 Studio 能读懂的类型，所以 Studio 无法判断它属于该建筑建造菜单的哪一行：请选择它的某一行，或单独一行（“国家”标签页的建筑面板）。"
+fa = "این یگان نوعی که استودیو بتواند بخواند ندارد، پس استودیو نمی‌داند در کدام ردیف منوی ساخت آن ساختمان قرار می‌گیرد: یکی از ردیف‌هایش را انتخاب کنید، یا یک ردیف جداگانه (صفحهٔ ساختمان‌ها در زبانهٔ ملت‌ها)."
 
 [ea826efeeac]
 us = "{0} isn't a mod folder any more."

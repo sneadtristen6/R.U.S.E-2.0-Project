@@ -234,9 +234,9 @@ class GroupCalls:
         from .api import StudioError
         if group is None and kind is None:
             # not a game rule: the owner's pick (2026-11-01): a unit with no card type, the modder picks its group
-            raise StudioError("This unit has no card type, so the Studio can't tell which group of that building it "
-                              "goes in: pick one of its groups, or a group of its own (the Nations tab's building "
-                              "board).")
+            raise StudioError("This unit has no kind the Studio can read, so it can't tell which row of that building's "
+                              "build menu it goes in: pick one of its rows, or a row of its own (the Nations "
+                              "tab's building board).")
         if group is None:
             return state.kind_group(kind, nation, factory)
         if group == NEW:

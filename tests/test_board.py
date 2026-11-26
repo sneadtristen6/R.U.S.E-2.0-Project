@@ -266,9 +266,9 @@ class Board(unittest.TestCase):
         """His pick (2026-11-01): the Studio can't tell the kind of a unit the game gives no card type (these made-up
         units have none), so the modder picks its group."""
         self.mod()
-        with self.assertRaisesRegex(StudioError, "no card type, so the Studio can't tell which group"):
+        with self.assertRaisesRegex(StudioError, "no kind the Studio can read, so it can't tell which row"):
             self.api.board_put(0, 10, unit=TIGER)
-        with self.assertRaisesRegex(StudioError, "no card type"):
+        with self.assertRaisesRegex(StudioError, "no kind the Studio can read"):
             self.api.board_move(0, A, 11)
         made = self.api.board_put(0, 10, unit=TIGER, group=A)["made"]           # A's group picked
         row = next(r for r in self.api.board(0)["rows"] if r["factory"] == 10)

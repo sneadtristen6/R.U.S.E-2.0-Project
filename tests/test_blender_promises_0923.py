@@ -349,6 +349,19 @@ class Item33HorseBonesLink(InElevenLanguages):
         self.words_in_eleven_languages(["eras_horse_bones_link"], english_left_in=True)
 
 
+class Item35GroupWords(InElevenLanguages):
+    ITEM = "35"
+
+    def test_52y_group_without_card_type(self):
+        self.words_in_eleven_languages(["eras_group_pick_why"])
+        self.assertNotIn("card type", WORDS["eras_group_pick_why"]["us"])
+        self.assertEqual(WORDS["eras_group_pick_why"]["us"], "Pick the row of the build menu it goes in above first: the "
+                         "Studio can't tell which row is its kind's for this unit.")
+        us = [t["us"] for t in ERRORS.values() if isinstance(t, dict) and "us" in t]
+        self.assertFalse([t for t in us if "no card type" in t])
+        from rusemod.wordedtext import key_of
+        text = next(t for t in us if t.startswith("This unit has no kind the Studio can read"))
+        self.assertIn(key_of(text), ERRORS)    # (an entry is named from its English: tests/test_errortext checks the
         #                                         code says the same words, for every refusal)
 
 
