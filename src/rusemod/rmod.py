@@ -400,7 +400,7 @@ def edits_of(path) -> _Edits | None:
     from ruse_mod_engine import mod_format
     file = rmod_of(path)
     if file is None:
-        return None
+        return _studio_edits(path)
     try:
         stat = file.stat()
     except OSError:
@@ -413,6 +413,43 @@ def edits_of(path) -> _Edits | None:
     try:
         edits = _edits(mod_format.load(str(file)))
     except (OSError, ValueError, KeyError, TypeError):
+        return None
+    _edits_seen[key] = (stamp, edits)
+    return edits
+
+
+_STUDIO_KINDS = ("set", "mul", "add", "append", "remove", "insert", "delprop")   # an operation on a value of an object
+
+
+def _studio_edits(path) -> _Edits | None:
+    """What a Studio mod folder (mod.toml + src/**/*.rndf, no .rmod) changes: the values its `patch` lines set, as the
+    same kind of key an .rmod's values have, so two mods changing one unit's value are told apart from two changing
+    different ones (the units scenarios' U-13: the set screen said nothing for two Studio mods). A path that isn't such
+    a folder, or whose files can't be read, is None (the build says so). New units' own values (clone and create
+    bodies) are the mod's own objects: not here."""
+    from .rndf import RndfError, parse
+    path = Path(path)
+    src = path / "src"
+    if not path.is_dir() or not (path / "mod.toml").is_file() or not src.is_dir():
+        return None
+    try:
+        files = sorted(src.rglob("*.rndf"), key=lambda p: p.relative_to(src).as_posix().lower())
+        stamp = tuple((str(f), f.stat().st_size, f.stat().st_mtime_ns) for f in [path / "mod.toml", *files])
+    except OSError:
+        return None
+    key = str(path.resolve())
+    hit = _edits_seen.get(key)
+    if hit is not None and hit[0] == stamp:
+        return hit[1]
+    try:
+        manifest = tomllib.loads((path / "mod.toml").read_text(encoding="utf-8")).get("mod", {})
+        edits = _Edits(str(manifest.get("name") or manifest.get("id") or path.name))
+        for f in files:
+            for op in parse(f.read_text(encoding="utf-8-sig"), file=f.relative_to(path).as_posix(), mod=edits.name):
+                if op.kind in _STUDIO_KINDS and op.target and op.path:
+                    head = op.target.rsplit("/", 1)[-1]
+                    edits.values[("studio", "", op.target.lower(), "", op.path)] = f"{head}.{op.path}"
+    except (OSError, ValueError, KeyError, TypeError, tomllib.TOMLDecodeError, RndfError):
         return None
     _edits_seen[key] = (stamp, edits)
     return edits

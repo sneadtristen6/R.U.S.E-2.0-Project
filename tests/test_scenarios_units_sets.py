@@ -58,13 +58,25 @@ class TwoModsInOneSet(Player):
 
     # U-13: the set screen says nothing when two Studio mods change the same value (set_check reads .rmod mods only,
     # rusemod.rmod.clashes): the later one's wins, and the player isn't told the earlier's change is gone
-    @unittest.expectedFailure
     def test_the_set_screen_says_when_two_mods_change_the_same_value(self):
         a = self.exported("Tougher", lambda: self.call("edit", M1, "SeuilMort", 20, "", ""))
         b = self.exported("Toughest", lambda: self.call("edit", M1, "SeuilMort", 30, "", ""))
         launcher = self.launcher()
         check = launcher.set_check(launcher.new_set("Both", [a, b])["set"])
         self.assertTrue(check["soft"], check)
+        self.assertEqual([c["kind"] for c in check["soft"]], ["value"])
+        self.assertEqual(check["hard"], [])
+        self.assertEqual((check["soft"][0]["a"], check["soft"][0]["b"]), ("Toughest", "Tougher"))   # (the later wins)
+        self.assertIn("it comes later, so it wins", check["soft"][0]["message"])
+        self.assertIn("SeuilMort", check["soft"][0]["message"])
+
+    def test_two_mods_changing_different_values_say_nothing(self):
+        """The control: one unit's SeuilMort in one mod, another unit's in the other: no clash."""
+        a = self.exported("Tougher", lambda: self.call("edit", M1, "SeuilMort", 20, "", ""))
+        b = self.exported("Other unit", lambda: self.call("edit", M2, "SeuilMort", 30, "", ""))
+        launcher = self.launcher()
+        check = launcher.set_check(launcher.new_set("Both", [a, b])["set"])
+        self.assertEqual((check["soft"], check["hard"]), ([], []))
 
     def test_two_mods_each_making_a_unit_of_the_same_name(self):
         """Two players each made a "Super Tank" from the same tank: the same address in both mods."""
