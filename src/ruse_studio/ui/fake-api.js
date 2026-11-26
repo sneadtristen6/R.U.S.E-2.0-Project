@@ -4035,8 +4035,8 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
             : "This unit has a model you imported, so it can't have its own copy of the model too: a unit has only one model. Click Use the copied unit's model under Its own model first, then Give it its own copy of the model.");
         }
         fakeModelCopies.add(address);
-        return { ...fakeLook(address), message: fakeSquad(address) ? "It has a uniform of its own now: Repaint in Blender changes only this squad."
-          : "It has its own copy of the model now: Repaint in Blender changes only this unit." };
+        return { ...fakeLook(address), message: fakeSquad(address) ? "It has a uniform of its own now: paint it with Open in Blender, and only this squad changes."
+          : "It has its own copy of the model now: paint it with Open in Blender, and only this unit changes." };
       },
       model_copy_remove: async (address) => {
         fakeModelCopies.delete(address);

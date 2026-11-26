@@ -9668,7 +9668,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         root, mod = self._paint_root(address), self._mod_dir()
         return paint_in(root) if root is not None else mod_textures(mod) if mod is not None else {}
 
-    def model_copy(self, address: str) -> dict:
+    def model_copy(self, address: str, lang: str | None = None) -> dict:
         """Give the unit at `address` its own copy of the models it draws (files/models/<its name>.copy.toml, `of`
         listing them): built as the same models with textures of its own. A squad's custom uniform: its soldiers,
         its bazooka man and its token's figure. A new unit's or one of the game's. Returns look() and a "message"."""
@@ -9709,19 +9709,18 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         copy.parent.mkdir(parents=True, exist_ok=True)
         copy.write_text(f"# Made by the RUSE Studio: {copy.name[:-len('.copy.toml')]} has {what}; its paint is in the "
                         f"folder of its name beside this file.\nof = {json.dumps(models)}\n", encoding="utf-8")
-        return {**self.look(address), "message": "It has a uniform of its own now: Repaint in Blender changes only "
-                                                 "this squad." if soldiers else
-                "It has its own copy of the model now: Repaint in Blender changes only this unit."}
+        w = words(lang or self.prefs().get("lang") or schema.BASE)   # (said in the Studio's language: SQ-11)
+        return {**self.look(address), "message": w["uniform_custom_done" if soldiers else "copy_own_done"]}
 
-    def model_copy_remove(self, address: str) -> dict:
+    def model_copy_remove(self, address: str, lang: str | None = None) -> dict:
         """The unit draws the game's models again (its .copy.toml goes; its paint stays in the mod, for a copy made
-        again). Returns look() and a "message"."""
+        again). Returns look() and a "message" in `lang` (the Studio's language when none is given)."""
         copy = self._own_copy_file(address)
         if copy is not None:
             copy.unlink(missing_ok=True)
-        return {**self.look(address), "message": "It wears the default uniform again. Your paint is kept in the mod, "
-                                                 "for when it gets a custom one again." if self._soldiers(address) else
-                "It draws the model it copies again. Its paint is kept in the mod, for when it gets a copy again."}
+        w = words(lang or self.prefs().get("lang") or schema.BASE)
+        return {**self.look(address),
+                "message": w["uniform_default_done" if self._soldiers(address) else "copy_default_done"]}
 
     def _copy_models(self, address: str) -> list[str]:
         """The models a unit's own copy copies: every model the unit draws that the mesh packs hold (_look_models: a

@@ -70,6 +70,25 @@ class Item3FirstHintOnATank(InElevenLanguages):
         self.assertIn("soldier", WORDS["blender_model_hint1"]["us"])
 
 
+class Item9UniformWordsInEveryLanguage(InElevenLanguages):
+    """51j: Custom uniform and Back to the default uniform answer in the Studio's language (the behaviour is
+    test_scenarios_squads_soldiers' SQ-11)."""
+    ITEM = "9"
+
+    def test_the_four_sentences_name_no_button_the_page_hasnt(self):
+        keys = ["uniform_custom_done", "copy_own_done", "uniform_default_done", "copy_default_done"]
+        self.words_in_eleven_languages(keys, english_left_in=True)
+        for key in ("uniform_custom_done", "copy_own_done"):
+            self.assertNotIn("Repaint in Blender", WORDS[key]["us"])
+            self.names_in_every_language(key, ["look_open"])
+
+    def test_the_calls_take_the_language(self):
+        import inspect
+        from ruse_studio.api import StudioApi
+        for call in ("model_copy", "model_copy_remove"):
+            self.assertIn("lang", inspect.signature(getattr(StudioApi, call)).parameters, call)
+
+
 class WikiPages(InElevenLanguages):
     def topic_opens_each_language_s_page(self, topic, us, fr):
         self.assertEqual(sorted(WIKI_TOPICS[topic]), sorted(LANGS))
