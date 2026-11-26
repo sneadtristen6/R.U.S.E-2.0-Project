@@ -28,6 +28,7 @@ import marshal
 import os
 import re
 import sys
+import time
 import types
 
 FOLDER = sys.argv[1]
@@ -774,7 +775,8 @@ if have('joined_a') and have('joined_a2') and have('joined_b'):
 
 
 # --- the record's lines on the game's own error output: what tells the Launcher a match is on (rusemod.guard) ---
-LINE = re.compile(r'gc: collectable <RUSEGUARD-MATCH ([^<>]*?) instance at')
+LINE = re.compile(r'gc: collectable <RUSEGUARD-MATCH ([^<>]*?) at (\d+) instance at')
+STAMPS = []   # the game's clock times in the lines game_errors last read
 
 
 class Drop(object):
@@ -808,7 +810,9 @@ def game_errors(run):
         os.close(saved)
     text = open(path, 'rb').read()
     os.remove(path)
-    return LINE.findall(text), back
+    found = LINE.findall(text)
+    STAMPS[:] = [int(stamp) for _words, stamp in found]
+    return [words for words, _stamp in found], back
 
 
 LIVE_1_0, LIVE_0_1 = 'live multi 1 coop 0', 'live multi 0 coop 1'
@@ -825,6 +829,9 @@ def _(name):
     lines, back = game_errors(play)
     # ten seconds in, then each third ten-second tick (40 s, 70 s), then the match's close
     expect(name, 'the lines', lines, [LIVE_1_0, LIVE_1_0, LIVE_1_0, 'end'])
+    # each line carries the clock time of the moment it is said (the Launcher drops a late one)
+    now = int(time.time())
+    expect(name, 'every line carries the time now', [abs(s - now) <= 5 for s in STAMPS], [True] * 4)
     expect(name, 'sys.stderr, gc\'s debug flags and gc\'s on/off put back', back, (True, True, True))
     expect(name, 'stopped', pc.stopped, None)
 
@@ -862,6 +869,26 @@ def _(name):
     expect(name, 'the lines', lines, [])
     expect(name, 'put back', back, (True, True, True))
     expect(name, 'stopped', (honest.stopped, plain.stopped), (None, None))
+
+
+@scenario('a multiplayer match whose world never closes, then a skirmish, a replay, a second match: each match ends')
+def _(name):
+    # the world-close call (world.kill) is not known to run on every way out of a match (not known): the next match's
+    # start, whatever kind it is, ends the one before, so the Launcher is told the match is over
+    pc = PC('honest', HONEST)
+    sim = Sim([pc])
+
+    def play():
+        sim.match([(0, 'human'), (1, 'human')], {'honest': 0}, seconds=15.0)               # no close_worlds
+        sim.match([(0, 'human'), (1, 'computer')], {'honest': 0}, seconds=45.0, multi=False, coop=False)
+        sim.match([(0, 'human'), (1, 'human')], {'honest': 0}, seconds=15.0)
+        sim.match([(0, 'human'), (1, 'human')], {'honest': 0}, seconds=45.0, replay=True)  # ends the one before
+        sim.match([(0, 'human'), (1, 'computer')], {'honest': 0}, seconds=45.0, multi=False, coop=False)
+    lines, back = game_errors(play)
+    expect(name, 'the lines', lines, [LIVE_1_0, 'end', LIVE_1_0, 'end'])
+    expect(name, 'put back', back, (True, True, True))
+    # the skirmish and the replay after the matches say nothing at all, so no line is left that says "on"
+    expect(name, 'the last line says the match is over', lines[-1], 'end')
 
 
 @scenario('a match that turns out to be a replay after it started: its end is said and nothing more')

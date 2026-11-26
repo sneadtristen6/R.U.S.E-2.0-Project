@@ -65,8 +65,11 @@ BUNDLE_LIMIT = 20_000_000                             # the most a bundle may we
 SCAN_EVERY = 30                                       # seconds between process scans in a live multiplayer match
 # The in-game record's lines on the game's own error output (gamescripts/guard_hash.py25): "live multi 1 coop 0" ten
 # seconds of game time into a multiplayer or co-op match and every 30 after, "end" when the match's world closes
-MATCH_LINE = re.compile(rb"RUSEGUARD-MATCH (live multi ([01]) coop ([01])|end)\b")
-LIVE_FOR = 120                                        # seconds one "live" line keeps the match on (4 missed: over)
+# Each line carries the game's own clock time ("... at 1791000000"): the C runtime may hold the game's error lines back
+# and hand them over late, all at once, and a late "live" must not count as a match that is on now.
+MATCH_LINE = re.compile(rb"RUSEGUARD-MATCH (live multi ([01]) coop ([01])|end) at (\d{9,11})\b")
+LINE_FRESH = 10                                       # seconds a "live" line may differ from the Launcher's clock (same PC)
+LIVE_FOR = 120                                       # seconds one "live" line keeps the match on (4 missed: over)
 LINE_MOST = 4096                                      # the most of one line of the game's error output read at once
 
 
@@ -612,17 +615,20 @@ class GameLines(threading.Thread):
         m = MATCH_LINE.search(raw)
         if m is None:
             return
+        stamp, now = int(m.group(4)), self.wall()
         with self._lock:
             last = self.matches[-1] if self.matches else None
-            if m.group(1) == b"end":
+            if m.group(1).startswith(b"end"):
                 if last is not None and last["ended"] is None:
-                    last["ended"] = int(self.wall())
+                    last["ended"] = int(min(stamp, now))
                 return
+            if abs(now - stamp) > LINE_FRESH:
+                return  # held back and handed over late (or from a wrong clock): says nothing about this moment
             multi, coop = m.group(2) == b"1", m.group(3) == b"1"
             if not (multi or coop):
                 return  # the record says a line only in a multiplayer or co-op match
             if last is None or last["ended"] is not None or self.clock() - last["seen"] > LIVE_FOR:
-                last = {"started": int(self.wall()), "multi": multi, "coop": coop, "ended": None, "findings": []}
+                last = {"started": stamp, "multi": multi, "coop": coop, "ended": None, "findings": []}
                 self.matches.append(last)
             last["seen"] = self.clock()
 

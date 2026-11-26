@@ -393,9 +393,14 @@ def setattr_many(mod, values):
     mod.cheat_tools, mod.live_multiplayer, mod.scan = values
 
 
-LIVE = b"gc: collectable <RUSEGUARD-MATCH live multi 1 coop 0 instance at 00000000029A3B20>\r\n"   # as the game says them
-COOP = b"gc: collectable <RUSEGUARD-MATCH live multi 0 coop 1 instance at 00000000029A3B20>\r\n"
-END = b"gc: collectable <RUSEGUARD-MATCH end instance at 00000000029A3C40>\r\n"
+STAMP = 1791000000   # the game's clock time in the lines below; the tests' Launcher clock says the same
+LIVE = b"gc: collectable <RUSEGUARD-MATCH live multi 1 coop 0 at 1791000000 instance at 00000000029A3B20>\r\n"   # as the game says them
+COOP = b"gc: collectable <RUSEGUARD-MATCH live multi 0 coop 1 at 1791000000 instance at 00000000029A3B20>\r\n"
+END = b"gc: collectable <RUSEGUARD-MATCH end at 1791000000 instance at 00000000029A3C40>\r\n"
+
+
+def said_at(words: str, stamp: int) -> bytes:
+    return f"gc: collectable <RUSEGUARD-MATCH {words} at {stamp} instance at 00000000029A3B20>\r\n".encode()
 STEAM = b"Caching Steam ID:  76561198012345678 [API loaded no]\n"   # a line Steam's own library writes there
 
 
@@ -460,37 +465,56 @@ class ProgramCheck(unittest.TestCase):
 
     def test_only_the_match_lines_are_kept(self):
         clock = [1000.0]
-        lines = guard.GameLines(io.BytesIO(b""), clock=lambda: clock[0], wall=lambda: 1791000000 + clock[0])
+        lines = guard.GameLines(io.BytesIO(b""), clock=lambda: clock[0], wall=lambda: STAMP + clock[0] - 1000)
         for raw in (STEAM, b"gc: collectable <TSomeGameClass instance at 0000000012345678>\n",
-                    b"RUSEGUARD-MATCH live multi 0 coop 0\n", b"RUSEGUARD-MATCH started\n", b"\n"):
+                    b"RUSEGUARD-MATCH live multi 0 coop 0 at 1791000000\n", b"RUSEGUARD-MATCH started\n", b"\n",
+                    b"RUSEGUARD-MATCH live multi 1 coop 0\n"):   # no game time in it: not one of ours
             lines.take(raw)
         self.assertEqual(lines.matches, [])          # nothing kept from any other line, the Steam one least of all
         self.assertIsNone(lines.live())
         lines.take(LIVE)
         on = lines.live()
         self.assertEqual((on["multi"], on["coop"], on["ended"], on["started"], on["findings"]),
-                         (True, False, None, 1791001000, []))
+                         (True, False, None, STAMP, []))
         clock[0] += guard.LIVE_FOR - 1
         self.assertIs(lines.live(), on)              # the next line is due every 30 seconds of game time
         clock[0] += 2
         self.assertIsNone(lines.live())              # none for LIVE_FOR seconds: not on any more
-        lines.take(LIVE)
+        now = STAMP + int(clock[0]) - 1000
+        lines.take(said_at("live multi 1 coop 0", now))
         self.assertIsNot(lines.live(), on)           # a new one (a new match, or after a long pause)
         lines.take(STEAM)
         lines.take(END)
         self.assertIsNone(lines.live())
         lines.take(END)                              # a second end changes nothing
-        lines.take(COOP)
+        lines.take(said_at("live multi 0 coop 1", now))
         self.assertEqual((lines.live()["multi"], lines.live()["coop"]), (False, True))
         self.assertEqual([(m["multi"], m["coop"], m["ended"] is not None) for m in lines.matches],
                          [(True, False, False), (True, False, True), (False, True, False)])
         self.assertNotIn("76561198012345678", json.dumps(lines.matches))
 
+    def test_lines_handed_over_late_say_nothing_about_now(self):
+        """A C runtime may hold the game's error lines back and hand them over all at once (judgment: an old one
+        did): a match's "live" lines of two minutes ago, read now, must not make the match count as on."""
+        clock = [5000.0]
+        lines = guard.GameLines(io.BytesIO(b""), clock=lambda: clock[0], wall=lambda: STAMP + 100)
+        burst = b"".join(said_at("live multi 1 coop 0", STAMP + t) for t in (-20, 10, 40, 70)) + \
+            said_at("end", STAMP + 80) + said_at("live multi 1 coop 0", STAMP + 85)   # the last: after the end, 15 s old
+        for raw in burst.splitlines(True):
+            lines.take(raw)
+        self.assertIsNone(lines.live())
+        clock[0] += 1000
+        self.assertIsNone(lines.live())              # and later still no match from them
+        lines.take(said_at("live multi 1 coop 0", STAMP + 100))   # a line of this moment does count
+        self.assertEqual(lines.live()["started"], STAMP + 100)
+        lines.take(said_at("live multi 1 coop 0", STAMP + 400))   # a stamp from the future: not trusted
+        self.assertEqual(len(lines.matches), 1)
+
     def _watch(self, script, consent=None, programs=("explorer.exe", "steam.exe", "Squalr.exe", "notepad.exe")):
         """A MatchWatch beside a stand-in game: at its i-th poll the game says script[i] (a line, or None), then it
         closes. Returns (how many times the programs were listed, what the watch said)."""
         scans, said = [], []
-        lines = guard.GameLines(io.BytesIO(b""))
+        lines = guard.GameLines(io.BytesIO(b""), wall=lambda: STAMP)
 
         class Game:
             guard_lines = lines
@@ -611,7 +635,8 @@ class ProgramCheck(unittest.TestCase):
         class Popen:
             def __init__(self, args, **kwargs):
                 made.append((args, kwargs))
-                self.stderr = io.BytesIO(STEAM + LIVE + END)
+                now = int(time.time())
+                self.stderr = io.BytesIO(STEAM + said_at("live multi 1 coop 0", now) + said_at("end", now))
         with mock.patch.object(play.subprocess, "Popen", Popen):
             process = launcher_start(self.dir / "RUSE.exe")  # (Checked our_tools.json: a made-up path, never read)
         self.assertEqual(made, [([str(self.dir / "RUSE.exe")], {"cwd": str(self.dir), "stdin": play.subprocess.DEVNULL,
@@ -624,11 +649,12 @@ class ProgramCheck(unittest.TestCase):
     @unittest.skipUnless(sys.platform == "win32", "a Windows command file stands in for the game")
     def test_a_real_programs_error_output_is_read_while_it_runs(self):
         exe = self.dir / "copy" / "RUSE.cmd"
+        now = int(time.time())
         exe.write_text("@echo off\r\n"
                        "echo Caching Steam ID: 76561198012345678 1>&2\r\n"
-                       "echo gc: collectable RUSEGUARD-MATCH live multi 1 coop 0 instance at 0 1>&2\r\n"
+                       f"echo gc: collectable RUSEGUARD-MATCH live multi 1 coop 0 at {now} instance at 0 1>&2\r\n"
                        "ping -n 2 127.0.0.1 >nul\r\n"
-                       "echo gc: collectable RUSEGUARD-MATCH end instance at 0 1>&2\r\n", encoding="ascii")
+                       f"echo gc: collectable RUSEGUARD-MATCH end at {now} instance at 0 1>&2\r\n", encoding="ascii")
         from rusemod import play
         process = play.start_game_watched(exe)
         self.assertEqual(process.wait(60), 0)

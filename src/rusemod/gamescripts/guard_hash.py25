@@ -51,6 +51,10 @@ def _guard_hash():
         try:
             import sys
             import gc
+            import time
+            # the game's own clock time goes in the line: a line the C runtime held back and hands over late
+            # is then told apart by the Launcher from a line of this moment
+            words = '%s at %d' % (words, int(time.time()))
             missing = []
             old_err = getattr(sys, 'stderr', missing)  # missing: Python writes there already
             old_debug = gc.get_debug()
@@ -222,10 +226,10 @@ def _guard_hash():
                 pass
 
     def start(world):
+        stop()  # first of all: a match whose world never closed ends here, whatever this one is (a skirmish too)
         multi, coop = online()
         if not (multi or coop):
             return
-        stop()
         if replay(world):
             return
         import time
