@@ -6660,7 +6660,7 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
             for reason in fair.offline:
                 say(f"built with cheats or test tools: {reason}; multiplayer and co-op only with players who have "
                     f"the same build, any other match is left at once")
-        # guards on three places where the game's own scripts stop the game with mods on (rusemod.scriptguards): in
+        # guards on four places where the game's own scripts stop the game with mods on (rusemod.scriptguards): in
         # every copy, on top of what the steps above did to the same script packs. One that can't be joined is left
         # out and said; it never stops the build.
         from . import scriptguards
