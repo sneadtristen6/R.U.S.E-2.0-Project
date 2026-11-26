@@ -183,6 +183,17 @@ class Item17OtherBonesWarning(InElevenLanguages):
         self.assertNotIn("This model is on bones of its own, and the riflemen's model isn't on the same bones", api)
 
 
+class Item18RecordUnread(InElevenLanguages):
+    ITEM = "18"
+
+    def test_52h_the_record_line_names_the_button_of_the_page_it_is_shown_on(self):
+        self.words_in_eleven_languages(["model_record_unread", "model_record_unread_own"])
+        self.assertIn("w.model_record_unread_own", js("app.js"))   # (the Model row's: its button reads Import another…)
+        self.names_in_every_language("model_record_unread_own", ["model_import_again"])
+        self.names_in_every_language("model_record_unread", ["model_import"])   # (a soldier's line: Import model…)
+        self.assertNotIn("Import model again", WORDS["model_record_unread"]["us"])
+
+
 AUTOMATIC = {"us": "Automatic", "fr": "Automatique", "ger": "Automatisch", "ita": "Automatica", "spa": "Automática",
              "pol": "Automatycznie", "ru": "Автоматически", "cz": "Automaticky", "jpn": "自動", "sc": "自动",
              "fa": "خودکار"}

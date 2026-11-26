@@ -3514,7 +3514,7 @@ function modelBox(address, info, draw, changed) {
       points: (own.vertices || 0).toLocaleString(), triangles: (own.triangles || 0).toLocaleString() }) }));
     // its record in the mod can't be read or is missing (look()'s record_unread): said, with what mends it, Import
     // model again (this row's main button), never Python's own words (the one check, finding 3)
-    if (own.record_unread) box.append(el("p", { className: "notice warn", textContent: w.model_record_unread }));
+    if (own.record_unread) box.append(el("p", { className: "notice warn", textContent: w.model_record_unread_own }));
     // (a model on bones of its own: what came in with it is in the Sounds and animation row, ownAnimationsBox)
     const turret = Object.entries(own.parts || {}).filter(([, role]) => role === "turret" || role === "gun").map(([name]) => name);
     if (turret.length) box.append(el("p", { className: "muted small", textContent: fill(w.model_turret, { parts: turret.join(", ") }) }));
