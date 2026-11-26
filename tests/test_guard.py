@@ -510,6 +510,39 @@ class ProgramCheck(unittest.TestCase):
         lines.take(said_at("live multi 1 coop 0", STAMP + 400))   # a stamp from the future: not trusted
         self.assertEqual(len(lines.matches), 1)
 
+    def test_the_scan_stops_two_minutes_after_the_last_live_line(self):
+        """The owner's 6 (2026-11-25): "keep 2 minutes". The number is written out here, not read from LIVE_FOR (a
+        test that reads it passes with any value): a scan up to 120 seconds after the last "live" line finds the
+        match, one more than 120 seconds after it finds none."""
+        self.assertEqual(guard.LIVE_FOR, 120)
+        (self.home / "guard").mkdir()
+        (self.home / guard.SIGNATURES).write_text(json.dumps([{"name": "squalr.exe", "what": "a memory editor"}]),
+                                                  encoding="utf-8")
+        clock, scans = [1000.0], []
+        lines = guard.GameLines(io.BytesIO(b""), clock=lambda: clock[0], wall=lambda: STAMP)
+
+        class Game:
+            guard_lines = lines
+            steps = [("live", 0), ("wait", 119), ("wait", 1), ("wait", 1)]   # seconds since the last line: 0, 119, 120, 121
+
+            def poll(self):
+                if not self.steps:
+                    return 0
+                what, seconds = self.steps.pop(0)
+                if what == "live":
+                    lines.take(LIVE)
+                clock[0] += seconds
+                return None
+
+        def listed():
+            scans.append(clock[0] - 1000.0)
+            return ["explorer.exe", "squalr.exe"]
+        with mock.patch.object(guard, "running_programs", listed):
+            guard.MatchWatch(Game(), self.home, self.game, self.copy, username="Nick#4821",
+                             consent={"terms": guard.TERMS_VERSION, "server": ""}, manifests=[], say=lambda s: None,
+                             sleep=lambda s: None, local=str(self.dir / "none")).run()
+        self.assertEqual(scans, [0.0, 119.0, 120.0])   # at 121 seconds the match is over: no scan
+
     def _watch(self, script, consent=None, programs=("explorer.exe", "steam.exe", "Squalr.exe", "notepad.exe")):
         """A MatchWatch beside a stand-in game: at its i-th poll the game says script[i] (a line, or None), then it
         closes. Returns (how many times the programs were listed, what the watch said)."""
