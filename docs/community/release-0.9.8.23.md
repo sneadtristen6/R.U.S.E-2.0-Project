@@ -63,7 +63,10 @@ started like a mod set's; to play R.U.S.E. without our apps, start it from Steam
   what it left out of a model's animations; Custom uniform and Back to the default uniform in all 11 languages; on
   tanks and planes Blender's first hint says "Change the model", and Open in Blender is the Model row's own button;
   "Repaint in Blender" where only paint comes back; "Automatic" in place of "Nearest"; plainer words in the bones and
-  squad boxes, with Having trouble? links and links to the wiki's how-tos; the German "Sie" lines say "du".
+  squad boxes, with Having trouble? links and links to the wiki's how-tos; the German "Sie" lines say "du"; a new unit
+  never wearing a deleted unit's old look; one way back from Blender, Open in Blender (Add a soldier keeps its own
+  Blender button); a broken animations or build-menu groups file said in plain words, with a Set aside button, and the
+  box saying first what the build goes without. These last three are checked by tests, not yet tried in the game.
 - **Export and the Launcher:** your README, credits, licence and docs folder packed with the mod; your whole user name
   taken out of your README; a mod saved by a newer Studio added with a word to update; a join code after a Studio test
   says so and offers Play; Export names what it replaced; Export finishes when a file of the mod's older copy in the
@@ -78,9 +81,7 @@ started like a mod set's; to play R.U.S.E. without our apps, start it from Steam
 
 **What's next: 0.9.8.24.** These need more work or a test in the game first, so they come in the next update:
 a copy built with cheats that has to leave a match closing the game without a crash (our test in the game still
-crashed it as it closed); a new unit never wearing a deleted unit's old look; one way back from Blender, Open in
-Blender; a broken animations or build-menu groups file said in plain words, with a Set aside button; one name,
-Import model, everywhere; Researched from linking to Edit Units' research section; repainting a unit with a model you
+crashed it as it closed); one name, Import model, everywhere; Researched from linking to Edit Units' research section; repainting a unit with a model you
 imported (Open in Blender with only its paint); mods named with no letter a to z
 getting the same short file name; two mods in one set that each make a unit of the same name, or each have the
 Generic Horse; the Blank Terrain and Blank Ocean starts on one game map; the crash code naming the kind of crash;
