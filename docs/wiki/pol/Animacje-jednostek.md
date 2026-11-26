@@ -129,7 +129,7 @@ zajmuje swoje miejsce: każda czynność, która jej używała, używa jej zmien
 |---|---|---|
 | Zmianę dla wszystkich jednostek | **Wróć do wersji z gry** | Wiersz animacji w RUSE Decoy albo jej okno |
 | Własną kopię tej jednostki (**Tylko ta jednostka**) | **Wróć do tego, czego używają wszystkie jednostki** | Wiersz animacji na liście jednostki albo jej okno |
-| Zmiany kopii (nazwa i zaznaczenia zostają) | **Wróć do animacji z gry** | Okno kopii |
+| Zmiany kopii (nazwa i zaznaczenia zostają) | **Cofnij zmiany kopii** | Okno kopii |
 | Kopię, całą | **Usuń kopię** | **Twoje kopie** |
 | Zmianę zrobioną w Blenderze | Cofnij ją w Blenderze, dopóki ten Blender jest jeszcze otwarty, potem **Przenieś moje zmiany**: cofa się też w twoim modzie | Blender, potem RUSE Decoy |
 

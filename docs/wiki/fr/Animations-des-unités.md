@@ -139,7 +139,7 @@ que vous changez prend sa place : chaque action qui la jouait la joue changée.
 |---|---|---|
 | Un changement pour toutes les unités | **Revenir à celle du jeu** | La ligne de l'animation dans RUSE Decoy, ou sa fenêtre |
 | La propre copie de cette unité (**Cette unité seulement**) | **Revenir à ce que jouent toutes les unités** | La ligne de l'animation dans la liste de l'unité, ou sa fenêtre |
-| Les changements d'une copie (son nom et ses coches restent) | **Revenir à l'animation du jeu** | La fenêtre de la copie |
+| Les changements d'une copie (son nom et ses coches restent) | **Annuler les changements de la copie** | La fenêtre de la copie |
 | Une copie, en entier | **Supprimer la copie** | **Vos copies** |
 | Un changement fait dans Blender | Annulez-le dans Blender tant que ce Blender est encore ouvert, puis **Ramener mes changements** : il est aussi annulé dans votre mod | Blender, puis RUSE Decoy |
 

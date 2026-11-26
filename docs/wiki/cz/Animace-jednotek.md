@@ -122,7 +122,7 @@ zaujme své místo: každá činnost, která ji hrála, ji hraje změněnou.
 |---|---|---|
 | Změnu pro všechny jednotky | **Zpět na původní** | Řádek animace v RUSE Decoy nebo její okno |
 | Vlastní kopii této jednotky (**Jen tato jednotka**) | **Zpět na tu, kterou hrají všechny jednotky** | Řádek animace v seznamu jednotky nebo její okno |
-| Změny kopie (název a zaškrtnutí zůstanou) | **Zpět na animaci hry** | Okno kopie |
+| Změny kopie (název a zaškrtnutí zůstanou) | **Zrušit změny kopie** | Okno kopie |
 | Kopii, celou | **Smazat kopii** | **Vaše kopie** |
 | Změnu udělanou v Blenderu | Vrať ji zpět v Blenderu, dokud je ten Blender ještě otevřený, pak **Přenést moje změny**: vrátí se i v tvém modu | Blender, pak RUSE Decoy |
 

@@ -131,7 +131,7 @@ que cambies ocupa su lugar: cada acción que la usaba la usa cambiada.
 |---|---|---|
 | Un cambio para todas las unidades | **Volver a la del juego** | La línea de la animación en RUSE Decoy, o su ventana |
 | La copia propia de esta unidad (**Solo esta unidad**) | **Volver a la de todas las unidades** | La línea de la animación en la lista de la unidad, o su ventana |
-| Los cambios de una copia (su nombre y sus marcas se quedan) | **Volver a la animación del juego** | La ventana de la copia |
+| Los cambios de una copia (su nombre y sus marcas se quedan) | **Deshacer los cambios de la copia** | La ventana de la copia |
 | Una copia, entera | **Borrar la copia** | **Tus copias** |
 | Un cambio hecho en Blender | Deshazlo en Blender mientras ese Blender siga abierto, y luego **Traer mis cambios**: también se deshace en tu mod | Blender, luego RUSE Decoy |
 

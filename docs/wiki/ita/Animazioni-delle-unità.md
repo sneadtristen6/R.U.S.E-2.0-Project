@@ -129,7 +129,7 @@ prende il suo posto: ogni azione che la usava la usa cambiata.
 |---|---|---|
 | Una modifica per tutte le unità | **Torna a quella del gioco** | La riga dell'animazione in RUSE Decoy, o la sua finestra |
 | La copia propria di questa unità (**Solo questa unità**) | **Torna a quella di tutte le unità** | La riga dell'animazione nell'elenco dell'unità, o la sua finestra |
-| Le modifiche di una copia (nome e spunte restano) | **Torna all'animazione del gioco** | La finestra della copia |
+| Le modifiche di una copia (nome e spunte restano) | **Annulla le modifiche della copia** | La finestra della copia |
 | Una copia, tutta | **Elimina la copia** | **Le tue copie** |
 | Una modifica fatta in Blender | Annullala in Blender finché quel Blender è ancora aperto, poi **Riporta le mie modifiche**: viene annullata anche nella tua mod | Blender, poi RUSE Decoy |
 

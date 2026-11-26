@@ -135,7 +135,7 @@ Namen. Eine, die du änderst, nimmt ihren Platz ein: Jede Handlung, die sie spie
 |---|---|---|
 | Eine Änderung für alle Einheiten | **Zurück zum Spiel-Original** | Die Zeile der Animation in RUSE Decoy oder ihr Fenster |
 | Die eigene Kopie dieser Einheit (**Nur diese Einheit**) | **Zurück zu dem, was alle Einheiten spielen** | Die Zeile der Animation in der Liste der Einheit oder ihr Fenster |
-| Die Änderungen einer Kopie (Name und Haken bleiben) | **Zurück zur Animation des Spiels** | Das Fenster der Kopie |
+| Die Änderungen einer Kopie (Name und Haken bleiben) | **Änderungen der Kopie rückgängig machen** | Das Fenster der Kopie |
 | Eine Kopie, ganz | **Kopie löschen** | **Deine Kopien** |
 | Eine Änderung aus Blender | Mache sie in Blender rückgängig, solange dieses Blender noch offen ist, dann **Meine Änderungen zurückholen**: Sie wird auch in deinem Mod rückgängig gemacht | Blender, dann RUSE Decoy |
 

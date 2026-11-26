@@ -125,7 +125,7 @@ takes its place: every action that played it plays it changed.
 |---|---|---|
 | A change for every unit | **Back to the game's** | The animation's line in RUSE Decoy, or its window |
 | This unit's own copy (**Only this unit**) | **Back to what every unit plays** | The animation's line on the unit's list, or its window |
-| A copy's changes (its name and ticks stay) | **Back to the game's animation** | The copy's window |
+| A copy's changes (its name and ticks stay) | **Undo the copy's changes** | The copy's window |
 | A copy, all of it | **Delete the copy** | **Your copies** |
 | A change made in Blender | Undo it in Blender while that Blender is still open, then **Bring my changes back**: it's undone in your mod too | Blender, then RUSE Decoy |
 

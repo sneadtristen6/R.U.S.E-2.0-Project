@@ -246,6 +246,17 @@ class Item22CopyTooltip(InElevenLanguages):
             self.assertNotIn(OLD_END[lang], WORDS["tip_decoy_copy_make"][lang], lang)
 
 
+class Item23CopyUndo(InElevenLanguages):
+    ITEM = "23"
+
+    def test_52m_the_copy_s_button_reads_undo_the_copy_s_changes(self):
+        self.words_in_eleven_languages(["decoy_copy_reset", "tip_decoy_copy_reset"])
+        self.assertEqual(WORDS["decoy_copy_reset"]["us"], "Undo the copy's changes")
+        wiki = (ROOT / "docs" / "wiki" / "Unit-Animations.md").read_text(encoding="utf-8")
+        self.assertIn("**Undo the copy's changes**", wiki)    # (the field manual names the button as the page does)
+        self.assertNotIn("Back to the game's animation", wiki)
+
+
         #                                         code says the same words, for every refusal)
 
 
