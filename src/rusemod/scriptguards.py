@@ -1,8 +1,8 @@
-"""Guards on three places where the game's own scripts stop the game, added to every modded copy.
+"""Guards on four places where the game's own scripts stop the game, added to every modded copy.
 
 An error that leaves one of the game's scripts stops the game on the spot (its code 0x29a). Players' crash reports
-(Bug Watch, 2026-11-05 to 11-09) came from three places where the game uses something without checking it is there,
-each reached through mods the game was never written for:
+(Bug Watch, 2026-11-05 to 11-09, and for `condition` again in the pull of 11-26) came from four places where the game
+uses something without checking it is there, each reached through mods the game was never written for:
 
 - `menu`: a build list's research cards. For a research that upgrades a unit, the game looks that unit's button up in
   the SAME list. A set of mods can leave the unit in another building's list (one mod moves the T-26 to the Barracks,
@@ -12,20 +12,32 @@ each reached through mods the game was never written for:
   and this one step, unlike the steps beside it, uses it unchecked.
 - `units`: a mission's step that turns units into another kind of unit. It keeps the new units for a few seconds and
   then uses each without checking it still exists; one killed and cleared away in between stops the game.
+- `condition`: a mission's "units inside this zone" check, on a zone with no zone info. The game makes each zone a
+  mission names with no info (leveldesignsolo/helper.py TagZoneDetection) and gives it its info only from an item of
+  that name in the map's scenario (leveldesign/helper.py TagHelper.Prepare; for a name not found it only calls its
+  debug dialog and goes on). The game's detector processing scans each such check (game/world.py LDDetectorProcessing
+  calls ConditionDetectUnit.scan, its interval 1.0), and the check's get_unit_list reads the zone's radius unchecked.
+  A map mod that replaces a campaign chapter's scenario with one holding none of the zones its script watches gives
+  this (read in the scripts and that mod's scenarios, 2026-11-10).
 
 Each guard runs after the game's own module (pyscript.append_module, as the build lists' rows do: rusemod.menulines)
 and changes nothing unless the game would have stopped: the game's own function runs first and unchanged where that
-can be done (`menu`: only its exact failure is caught, any other error is passed on as it was; `strategic_ia`: only a
-side with no AI object is left alone), and `units` repeats the game's five lines with the two that fail made safe per
-unit. `menu` and `units` carry on with what the game's function does after the place it failed, so each is joined
-only to the function it was written for: the module's function is compared with the game's own (GAME_FUNCTIONS, a
-SHA-256 of its code), and a mod's own version of it is left as the mod has it, with a note.
+can be done (`menu` and `condition`: only its exact failure is caught, any other error is passed on as it was;
+`strategic_ia`: only a side with no AI object is left alone), and `units` repeats the game's five lines with the two
+that fail made safe per unit. `menu`, `units` and `condition` carry on with what the game's function does after the
+place it failed (`condition`: what it gives for a zone that holds no units, the game's own empty list, so the scan sets
+the check as it does for an empty zone), so each is joined only to the function it was written for: the module's
+function is compared with the game's own (GAME_FUNCTIONS, a SHA-256 of its code), and a mod's own version of it is left
+as the mod has it, with a note.
 
 A guard that can't be joined (a pack or module missing, a mod's own script, a name not there) is left out with a
 note: it never stops a build.
 
 Read in the game's scripts and, for `menu`, run with the game's own compiled menu scripts under its own Python on the
-players' unit data, which gives the players' error without the guard and the lists with it. Not tried in the game.
+players' unit data, which gives the players' error without the guard and the lists with it; for `condition`, the
+game's own compiled check (its get_unit_list and scan) run under its own Python on a zone made by the game's own
+TagZoneDetection and never given its info, which gives the players' error without the guard and an empty zone with it
+(2026-11-26). Not tried in the game.
 
 Each guard that steps in also adds 1 to the count the game's own text says before a later script-error stop
 ("Previously ignored errors: N", COUNT), so Bug Watch can tell how often guards kept a game going before it stopped
@@ -138,6 +150,35 @@ def _r2g_mute_finished(self):
 
 ActionMuteUnit.virtual_on_finished = _r2g_mute_finished
 ''',
+    "condition": '''\
+# RUSE 2.0's guard on a mission's "units inside this zone" check (rusemod.scriptguards). The game's own code runs
+# first, unchanged. Only when it fails at its unchecked read of the zone's size because the zone has no zone info (its
+# info is None, as for a zone the map doesn't have, so .radius fails), the check finds no units there, with the game's
+# own empty list, as the game's code does for a zone that holds none. Any other error is passed on as it was.
+_r2g_game_zone_units = ConditionDetectUnitDansZoneDetection.get_unit_list''' + COUNT + '''
+
+
+def _r2g_no_zone_info(self, error):
+    try:
+        if self.Detecteur.zone_info is None and error.args == ("'NoneType' object has no attribute 'radius'",):
+            return 1
+    except:
+        pass
+    return 0
+
+
+def _r2g_zone_units(self, world):
+    try:
+        return _r2g_game_zone_units(self, world)
+    except AttributeError, error:
+        if not _r2g_no_zone_info(self, error):
+            raise
+    _r2g_count()
+    return _killable.KillableList()
+
+
+ConditionDetectUnitDansZoneDetection.get_unit_list = _r2g_zone_units
+''',
 }
 # where each guard goes: (the script pack in ZZ_Win.dat, the game's module in it)
 SCRIPTS = {
@@ -145,6 +186,8 @@ SCRIPTS = {
     "strategic_ia": ("genpython\\eugensolo.ipk",
                      "genpython\\1000\\codeia\\python\\eugensolo\\leveldesignsolo\\strategic_ia.xyz"),
     "units": ("genpython\\eugensolo.ipk", "genpython\\1000\\codeia\\python\\eugensolo\\leveldesignsolo\\units.xyz"),
+    "condition": ("genpython\\eugensolo.ipk",
+                  "genpython\\1000\\codeia\\python\\eugensolo\\leveldesignsolo\\condition.xyz"),
 }
 # the game's function each guard takes the place of: (its class, its name). A guard that carries on after the place
 # the game's function failed is joined only when the module's function is the game's own (its code's SHA-256, in
@@ -153,12 +196,14 @@ FUNCTIONS = {
     "menu": (b"Menu", b"add_bouton_techno"),
     "strategic_ia": None,
     "units": (b"ActionMuteUnit", b"virtual_on_finished"),
+    "condition": (b"ConditionDetectUnitDansZoneDetection", b"get_unit_list"),
 }
 # what each guard is for, in the build's own words (the build says which were added)
 WHAT = {
     "menu": "a build list whose research has no unit to stand beside",
     "strategic_ia": "a mission starting the AI of a side a person plays",
     "units": "a mission's changed units, one of them gone",
+    "condition": "a mission's zone check on a zone with no zone info",
 }
 
 
@@ -204,7 +249,8 @@ def function_sha(module: pyscript.Code, cls: bytes, name: bytes) -> str | None:
 
 
 # the name each guard keeps the game's own function under: a module that sets it has the guard already
-KEPT = {"menu": b"_r2g_game_add_techno", "strategic_ia": b"_r2g_game_ia_all", "units": b"_r2g_game_mute_finished"}
+KEPT = {"menu": b"_r2g_game_add_techno", "strategic_ia": b"_r2g_game_ia_all", "units": b"_r2g_game_mute_finished",
+        "condition": b"_r2g_game_zone_units"}
 
 
 def script_changes(zz_win, changed: dict | None = None) -> tuple[dict, list[str], list[str]]:
