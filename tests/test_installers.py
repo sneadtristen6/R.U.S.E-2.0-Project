@@ -369,6 +369,26 @@ class BuildCommands(unittest.TestCase):
         main = Path(ROOT / "installers" / "build_app.py").read_text(encoding="utf-8").split("def main(")[1]
         self.assertLess(main.index("webview2_setup(program.parent)"), main.index("installer_command("))
 
+    def test_the_signature_check_starts_windows_powershell_without_powershell_7s_module_path(self):
+        """launcher-v0.4.8.23's build on GitHub (2026-11-26): release.yml runs the build from a PowerShell 7 step, and
+        Windows PowerShell, inheriting PowerShell 7's PSModulePath, said nothing ("status: none; signed by: nobody";
+        recreated on this PC with PowerShell 7.5.0: the old check gave ('', ''), this one Valid). The check now starts it
+        without that path, and when it still says nothing, PowerShell's own error is the status."""
+        seen = {}
+
+        def run(cmd, **kw):
+            seen["env"] = kw["env"]
+            return mock.Mock(stdout="Valid\nCN=x, O=Microsoft Corporation\n", stderr="")
+        with mock.patch.dict(os.environ, {"PSModulePath": r"C:\Program Files\PowerShell\7\Modules"}), \
+                mock.patch.object(build_app.subprocess, "run", run):
+            self.assertEqual(build_app.webview2_signature(Path("x.exe")), ("Valid", "CN=x, O=Microsoft Corporation"))
+        self.assertNotIn("PSMODULEPATH", {k.upper() for k in seen["env"]})
+        self.assertEqual(seen["env"]["RUSE_SIGNED_FILE"], "x.exe")
+        silent = mock.Mock(stdout="", stderr="Get-AuthenticodeSignature : the module could not be loaded")
+        with mock.patch.object(build_app.subprocess, "run", return_value=silent):
+            status, signer = build_app.webview2_signature(Path("x.exe"))
+        self.assertEqual((status.startswith("PowerShell said: Get-AuthenticodeSignature"), signer), (True, ""))
+
     def test_the_installer_offers_webview2_ticked_and_never_forces_it(self):
         script = (ROOT / "installers" / "installer.iss").read_text(encoding="utf-8")
         task = next(line for line in script.splitlines() if line.startswith('Name: "webview2"'))

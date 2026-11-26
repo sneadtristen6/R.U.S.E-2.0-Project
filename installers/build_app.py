@@ -80,12 +80,19 @@ WEBVIEW2_SIGNER = "O=Microsoft Corporation"
 
 
 def webview2_signature(path: Path) -> tuple[str, str]:
-    """Windows' word on `path`'s signature: (its status, "Valid" when it holds; the signer's certificate subject)."""
+    """Windows' word on `path`'s signature: (its status, "Valid" when it holds; the signer's certificate subject).
+    Windows PowerShell is started without the PSModulePath it would inherit: GitHub's release build runs this from a
+    PowerShell 7 step, whose module path makes Windows PowerShell load PowerShell 7's own Microsoft.PowerShell.Security
+    and fail before Get-AuthenticodeSignature (launcher-v0.4.8.23's build, 2026-11-26: "status: none; signed by:
+    nobody"). When it still says nothing, its own error is the status, so the build says why."""
     script = ("$s = Get-AuthenticodeSignature -LiteralPath $env:RUSE_SIGNED_FILE; "
               "[string]$s.Status; [string]$s.SignerCertificate.Subject")
+    env = {k: v for k, v in os.environ.items() if k.upper() != "PSMODULEPATH"}
     out = subprocess.run(["powershell", "-NoProfile", "-NonInteractive", "-Command", script], capture_output=True,
-                         text=True, timeout=120, env=dict(os.environ, RUSE_SIGNED_FILE=str(path)))
+                         text=True, timeout=120, env=dict(env, RUSE_SIGNED_FILE=str(path)))
     lines = [line.strip() for line in out.stdout.splitlines()] + ["", ""]
+    if not lines[0] and out.stderr.strip():
+        return "PowerShell said: " + " ".join(out.stderr.split())[:300], ""
     return lines[0], lines[1]
 
 
