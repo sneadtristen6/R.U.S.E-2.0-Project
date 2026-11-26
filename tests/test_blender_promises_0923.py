@@ -341,6 +341,14 @@ class Item32ModelsOrUniformLink(InElevenLanguages):
         self.assertIn('helpLine(w.model_both_squad, "squad", "notice warn")', app)
 
 
+class Item33HorseBonesLink(InElevenLanguages):
+    ITEM = "33"
+
+    def test_52w_the_generic_horse_s_page_has_the_models_and_bones_line(self):
+        self.assertIn('helpLine(w.eras_horse_bones_link, "bones")', js("eraunits.js"))
+        self.words_in_eleven_languages(["eras_horse_bones_link"], english_left_in=True)
+
+
         #                                         code says the same words, for every refusal)
 
 

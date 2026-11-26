@@ -199,7 +199,9 @@
     const parts = [el("h1", { textContent: unitName(p) }), el("p", { className: "unit-desc", textContent: facts.join(" · ") })];
     if (p.built) {  // made for RUSE 2.0, from the modder's own game when added: its maker, and what adding it does
       parts.push(el("p", { className: "small", textContent: fill(w.eras_horse_made_by, { author: c.author || "" }) }),
-        el("p", { className: "notice", textContent: w.eras_horse_what }));
+        el("p", { className: "notice", textContent: w.eras_horse_what }),
+        // (its bones, two halves and animations: the field manual's Models and bones page, with the link; 52w)
+        helpLine(w.eras_horse_bones_link, "bones"));
     } else {
       const credit = el("p", { className: "small" },
         el("span", { textContent: fill(w.eras_model_by, { author: c.author || "", licence: c.licence || "" }) + " " }),
