@@ -70,8 +70,8 @@ class Around(unittest.TestCase):
         instance.mkdir(parents=True, exist_ok=True)
         (instance / "RUSE.exe").write_bytes(b"MZ the game")
         mods_of = [(m.id, m.version) for m, _ops in mods]
-        lock = FAIRPLAY.build_code("24687178", b"\1" * 32, mods_of) if fairplay.locked else None
-        FAIRPLAY.write_record(instance, "24687178", b"\1" * 32, mods_of, fairplay, [], lock)
+        lock = FAIRPLAY.build_code("24687178", b"\x01" * 32, mods_of) if fairplay.locked else None
+        FAIRPLAY.write_record(instance, "24687178", b"\x01" * 32, mods_of, fairplay, [], lock)
         return Built()
 
     def play(self, starter, mod, words=None):
@@ -92,7 +92,7 @@ class TheLocksLines(Around):
         french = fairplay.lock_lines(words("fr"))
         self.assertEqual(self.play(starter, self.cheat, words("fr")), [french, french])  # before and after the build
         self.assertEqual(self.builds[-1].lines, french)
-        lock = self.builds[-1].patches(fairplay.build_code("24687178", b"\1" * 32, [("dev", "1.0.0")]))[0]
+        lock = self.builds[-1].patches(fairplay.build_code("24687178", b"\x01" * 32, [("dev", "1.0.0")]))[0]
         self.assertEqual(fairplay.lock_words_of(lock), french)
         # English: nothing to fill in, the lock's own English
         self.assertEqual(self.play(starter, self.cheat, words("us")), [None, None])

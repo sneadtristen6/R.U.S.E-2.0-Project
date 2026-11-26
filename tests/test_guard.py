@@ -680,8 +680,8 @@ class Stop(unittest.TestCase):
     def cheat_record(self, lock=None, folder=None):
         from rusemod import fairplay
         cheat = fairplay.FairPlay([fairplay.ModCheck("dev", "Dev", cheat=True)])
-        lock = lock or fairplay.build_code("24687178", b"\1" * 32, [("dev", "1.0.0")])
-        return fairplay.write_record(folder or self.copy, "24687178", b"\1" * 32, [("dev", "1.0.0")], cheat, [], lock)
+        lock = lock or fairplay.build_code("24687178", b"\x01" * 32, [("dev", "1.0.0")])
+        return fairplay.write_record(folder or self.copy, "24687178", b"\x01" * 32, [("dev", "1.0.0")], cheat, [], lock)
 
     def watch(self, process, terms=None, **kw):
         w = guard.MatchWatch(process, self.home, self.game, self.copy, username=kw.pop("username", "Nick#4821"),
@@ -740,7 +740,7 @@ class Stop(unittest.TestCase):
         """The number alone isn't enough: no record, an honest copy's, or a 0.9.8.22 cheat copy's (a lock that crashes,
         no stop) files nothing and says one line; a lock with no build code (thirteen zeros) is a lock."""
         from rusemod import fairplay
-        honest = fairplay.write_record(self.copy, "24687178", b"\1" * 32, [("maps", "1.0.0")], fairplay.FairPlay(), [])
+        honest = fairplay.write_record(self.copy, "24687178", b"\x01" * 32, [("maps", "1.0.0")], fairplay.FairPlay(), [])
         old = dict(self.cheat_record(), stop=None)
         for record in (None, honest, old):
             (self.copy / fairplay.RECORD).unlink(missing_ok=True)

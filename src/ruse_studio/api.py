@@ -351,9 +351,11 @@ def _whole(value, kind: str, prop: str):
     lo, hi = (0, 1) if kind == "bool" else INT_RANGES[kind]
     if r > hi:
         most = f"{hi:,}"   # (2,147,483,647: with its commas in every language)
+        # not a game rule: the field's number type in the data file (patch.INT_RANGES)
         raise StudioError(f"{prop}: too big: the game takes at most {most}", prop=prop)
     if r < lo:
         least = f"{lo:,}"
+        # not a game rule: the field's number type in the data file (patch.INT_RANGES)
         raise StudioError(f"{prop}: too small: the game takes at least {least}", prop=prop)
     return r
 
@@ -380,6 +382,7 @@ def _fits(value, kind: str, prop: str):
         try:
             struct.pack("<f", value)
         except OverflowError:
+            # not a game rule: the field's number type in the data file (patch.INT_RANGES)
             raise StudioError(f"{prop}: far too big for the game", prop=prop) from None   # (the page says the value by its label: as _whole does)
     return value
 
@@ -2309,6 +2312,8 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             used |= {f.name.lower() for f in (here / "maps").iterdir()} if here is not None and (here / "maps").is_dir() \
                 else set()
             if not newmap.name_fits(source_entry, name, _pack_name(name, used), self._map_list_names()):
+                # (newmap._list_name refuses it at build time; whether the game takes two of one name: not known)
+                # not a game rule: the build's own check of the map list, asked early
                 raise StudioError(f"The game already has a map called {name!r}. Give the new map another name.")
         folder = self._map_dir()
         # the owner's pick 42 (2026-11-14): "A new map gets its own map mod." With only a units mod picked (the map

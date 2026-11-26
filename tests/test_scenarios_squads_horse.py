@@ -291,7 +291,8 @@ class InASet(HorseScenario):
 
 
 class BlenderThenAddedAgain(HorseScenario):
-    @unittest.expectedFailure    # finding SQ-10: the Generic Horse added again opens the old one's Blender sending
+    # finding SQ-10 (the Generic Horse added again opened the old one's Blender sending): passes since 0.9.8.23's picks
+    # 21 and 22 (old Blender work under the same name set aside, not picked up), so it is a plain test now
     def test_open_in_blender_after_taken_out_and_added_again(self):
         """Unusual: the Generic Horse opened in Blender (the one Blender button: its riflemen with their horse), sent
         changed, closed, not brought back; Take it out of my mod; Add to my mod again. Its Blender folder (blender/

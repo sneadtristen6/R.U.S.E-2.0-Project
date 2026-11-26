@@ -266,9 +266,11 @@ def _fitted(d: Decimal, kind: str, what: str):
         lo, hi = (0, 1) if kind == "bool" else INT_RANGES[kind]
         if r > hi:
             most = f"{hi:,}"   # (2,147,483,647: with its commas in every language)
+            # not a game rule: the field's own number type in the data file (patch.INT_RANGES), not how the game plays
             raise TypedError(f"{what}: too big: the game takes at most {most}")
         if r < lo:
             least = f"{lo:,}"
+            # not a game rule: the field's own number type in the data file (patch.INT_RANGES), not how the game plays
             raise TypedError(f"{what}: too small: the game takes at least {least}")
         return r
     x = float(d)

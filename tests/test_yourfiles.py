@@ -190,7 +190,8 @@ class StudioFolders(unittest.TestCase):
         self.assertTrue((mod / "mod.toml").is_file())
         self.api.new_mod("Beach", kind="map")
         made = self.work / "Maps" / "beach"
-        self.assertEqual(self.api.mods("map")["mods"], [{"path": str(made), "name": "beach"}])
+        # the mod menu shows each mod's real name, beside its folder (0.9.8.23, making units' promise 1)
+        self.assertEqual(self.api.mods("map")["mods"], [{"path": str(made), "name": "Beach", "folder": "beach"}])
         left = make_mod(self.home / "mods" / "left-behind", "left-behind")  # one that couldn't be moved
         make_mod(self.work / "Mods" / ".moving-half", "half")  # one being moved: never listed
         self.assertEqual([m["path"] for m in self.api.mods()["mods"]], [str(mod), str(left)])

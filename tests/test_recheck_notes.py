@@ -331,7 +331,7 @@ class SquadPage(PageCase, unittest.TestCase):
             send(t, his)
             return t.api, stack.close
         return {"name": name, "page": "squad", "unit": {"address": sb.SQUAD, "name": "My Riflemen"}, "make": make,
-                "click": {"text": "squad_blender_back"}}
+                "click": {"text": "squad_blender_back_last"}}   # (the button under the squad card: 52r's words)
 
     def test_a_material_made_in_blender_is_named_on_the_page(self):
         """Soldier 5 sent back with a material made in Blender ("Helmet paint": no alpha picture goes with it), so
