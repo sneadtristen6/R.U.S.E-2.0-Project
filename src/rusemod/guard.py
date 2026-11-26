@@ -306,6 +306,28 @@ def client_key(home) -> bytes:
     return key
 
 
+PRIVACY_CODE_PREFIX = b"RUSE-GUARD-PRIVACY-1:"
+
+
+def privacy_code(client_key_hex: str) -> str:
+    """The short code that finds this install's own RUSE Guard records for a privacy request, XXXX-XXXX-XXXX: the
+    first 12 characters of base32 (RFC 4648, upper case, no padding) of SHA-256(PREFIX + the 32 key bytes), made
+    from the public key every bundle already carries as client_key. The same definition is in the server's repo."""
+    digest = hashlib.sha256(PRIVACY_CODE_PREFIX + bytes.fromhex(client_key_hex)).digest()
+    code = base64.b32encode(digest).decode("ascii").rstrip("=")[:12]
+    return "-".join(code[i:i + 4] for i in (0, 4, 8))
+
+
+def own_privacy_code(home) -> str:
+    """This install's privacy code, or "" while it has no key yet. It only reads: the key is made by the first
+    bundle (client_key), never only to show a code."""
+    try:
+        key = Path(home, CLIENT_KEY).read_bytes()
+    except OSError:
+        return ""
+    return privacy_code(ed25519.public_key(key).hex()) if len(key) == 32 else ""
+
+
 def bundle(home, log: MatchLog, *, username: str, record: dict | None, replay: Path | None, manifests: list,
            dev: DevKey, findings: list, ended: int, stop: dict | None = None) -> dict:
     """One match's evidence, in his server's shapes (ruse_guard.review.MatchBundle + server.PlayerEvidence), plus

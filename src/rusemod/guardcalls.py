@@ -21,6 +21,11 @@ class GuardCalls:
         return guard.settings_of(settings(self._home), self._guard_server) | {
             "dev_key": guard.dev_key(self._home).reason, "terms_version": guard.TERMS_VERSION}
 
+    def guard_privacy_code(self) -> dict:
+        """Settings' "Your RUSE Guard code" (for privacy requests): {"code": "XXXX-XXXX-XXXX"}, or "" while this
+        install has no RUSE Guard key yet (the first match's bundle makes it; nothing is made to show it)."""
+        return {"code": guard.own_privacy_code(self._home)}
+
     def _save_guard(self, key: str, value) -> dict:
         values = settings(self._home)
         g = values.get("guard") if isinstance(values.get("guard"), dict) else {}

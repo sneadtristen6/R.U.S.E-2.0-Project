@@ -4500,6 +4500,45 @@ jpn = "目的: 本物の R.U.S.E. マルチプレイヤー対戦でのチート�
 sc = "目的：阻止真实 R.U.S.E. 多人对战中的作弊，让每一场对战都公平。它只在多人对战和合作对战中起作用，绝不会在单人游戏、对电脑的遭遇战、战役、回放中起作用，也不会在你制作 Mod 时起作用。作为其中一部分，在这些对战期间，它会把你正在运行的程序与已知作弊工具列表对照：只读取程序名称，只报告列表中的名称，不查看其他任何内容。它绝不会收集你的文件、屏幕、按键或电脑内存。用作弊工具或测试工具构建的 Mod 副本只能离线游玩：带进多人对战后，它会投降然后关闭游戏，Launcher 会把游戏崩溃报告中关于此事的那一行发送给我们；诚实的副本绝不会被停止。使用 Studio 和 Launcher 即表示接受 RUSE Guard，包括这项检查。"
 fa = "چرا: برای جلوگیری از تقلب در مسابقه‌های چندنفرهٔ واقعی R.U.S.E.، تا هر مسابقه عادلانه باشد. فقط در مسابقه‌های چندنفره و همکاری عمل می‌کند و هرگز در بازی تک‌نفره، نبرد با رایانه، کمپین، بازپخش‌ها یا هنگام ساختن ماد عمل نمی‌کند. به عنوان بخشی از آن، در طول این مسابقه‌ها برنامه‌های در حال اجرای شما را با فهرستی از ابزارهای تقلب شناخته‌شده مقایسه می‌کند: فقط نام برنامه‌ها را می‌خواند، فقط نامی را گزارش می‌کند که در آن فهرست باشد و به چیز دیگری نگاه نمی‌کند. هرگز فایل‌ها، صفحه، کلیدهای فشرده‌شده یا حافظهٔ رایانهٔ شما را جمع‌آوری نمی‌کند. نسخهٔ مادشده‌ای که با ابزار تقلب یا آزمایش ساخته شده فقط برای بازی آفلاین است: اگر به مسابقهٔ چندنفره برده شود، تسلیم می‌شود و سپس بازی را می‌بندد و Launcher خطی را که گزارش خرابی بازی در این باره دارد برای ما می‌فرستد؛ نسخه‌های درستکار هرگز متوقف نمی‌شوند. استفاده از Studio و Launcher یعنی پذیرش RUSE Guard، از جمله همین بررسی."
 
+[set_guardcode_title]
+us = "Your RUSE Guard code (for privacy requests)"
+fr = "Votre code RUSE Guard (pour les demandes de confidentialité)"
+ger = "Ihr RUSE-Guard-Code (für Datenschutzanfragen)"
+ita = "Il tuo codice RUSE Guard (per le richieste sulla privacy)"
+spa = "Tu código de RUSE Guard (para solicitudes de privacidad)"
+pol = "Twój kod RUSE Guard (do próśb dotyczących prywatności)"
+ru = "Ваш код RUSE Guard (для запросов о конфиденциальности)"
+cz = "Váš kód RUSE Guard (pro žádosti o ochranu soukromí)"
+jpn = "あなたの RUSE Guard コード（プライバシーに関する依頼用）"
+sc = "你的 RUSE Guard 代码（用于隐私请求）"
+fa = "کد RUSE Guard شما (برای درخواست‌های حریم خصوصی)"
+
+[tip_guardcode]
+us = "Send this code to us with a privacy request: it lets us find your own RUSE Guard records. You can't change it here."
+fr = "Envoyez-nous ce code avec une demande de confidentialité : il nous permet de retrouver vos propres enregistrements RUSE Guard. Vous ne pouvez pas le modifier ici."
+ger = "Schick uns diesen Code mit einer Datenschutzanfrage: Damit finden wir deine eigenen RUSE-Guard-Aufzeichnungen. Hier lässt er sich nicht ändern."
+ita = "Inviaci questo codice con una richiesta sulla privacy: ci permette di trovare le tue registrazioni RUSE Guard. Qui non si può modificare."
+spa = "Envíanos este código con una solicitud de privacidad: nos permite encontrar tus propios registros de RUSE Guard. Aquí no se puede cambiar."
+pol = "Wyślij nam ten kod z prośbą dotyczącą prywatności: dzięki niemu znajdziemy twoje własne zapisy RUSE Guard. Tutaj nie można go zmienić."
+ru = "Отправьте нам этот код вместе с запросом о конфиденциальности: по нему мы найдём ваши собственные записи RUSE Guard. Здесь его изменить нельзя."
+cz = "Pošlete nám tento kód spolu s žádostí o ochranu soukromí: podle něj najdeme vaše vlastní záznamy RUSE Guard. Zde ho nelze změnit."
+jpn = "プライバシーに関する依頼とあわせてこのコードを私たちに送ってください。あなた自身の RUSE Guard の記録を見つけるために使います。ここでは変更できません。"
+sc = "提交隐私请求时请把这个代码发给我们：我们用它找到你自己的 RUSE Guard 记录。这里不能修改。"
+fa = "این کد را همراه با درخواست حریم خصوصی برای ما بفرستید: با آن سوابق RUSE Guard خودتان را پیدا می‌کنیم. اینجا قابل تغییر نیست."
+
+[set_guardcode_none]
+us = "No code yet. It is made on this PC the first time RUSE Guard records a multiplayer or co-op match, and then shown here."
+fr = "Pas encore de code. Il est créé sur ce PC la première fois que RUSE Guard enregistre une partie multijoueur ou coopérative, puis affiché ici."
+ger = "Noch kein Code. Er entsteht auf diesem PC, wenn RUSE Guard zum ersten Mal eine Mehrspieler- oder Koop-Partie aufzeichnet, und wird dann hier angezeigt."
+ita = "Ancora nessun codice. Viene creato su questo PC la prima volta che RUSE Guard registra una partita multigiocatore o cooperativa, e poi mostrato qui."
+spa = "Aún no hay código. Se crea en este PC la primera vez que RUSE Guard registra una partida multijugador o cooperativa, y luego se muestra aquí."
+pol = "Jeszcze nie ma kodu. Powstaje na tym komputerze, gdy RUSE Guard po raz pierwszy zapisze mecz wieloosobowy lub kooperacyjny, i wtedy pojawia się tutaj."
+ru = "Кода пока нет. Он создаётся на этом ПК, когда RUSE Guard впервые записывает сетевой или кооперативный матч, и затем показывается здесь."
+cz = "Zatím žádný kód. Vytvoří se na tomto PC, když RUSE Guard poprvé zaznamená zápas pro více hráčů nebo kooperativní, a pak se zobrazí zde."
+jpn = "コードはまだありません。このPCで RUSE Guard が初めてマルチプレイヤー対戦または協力対戦を記録したときに作られ、ここに表示されます。"
+sc = "还没有代码。RUSE Guard 在这台电脑上第一次记录多人对战或合作对战时会生成，然后显示在这里。"
+fa = "هنوز کدی نیست. وقتی RUSE Guard برای نخستین بار روی این رایانه یک مسابقهٔ چندنفره یا همکاری را ثبت کند ساخته می‌شود و سپس اینجا نشان داده می‌شود."
+
 [agree_full_toggle]
 us = "Read the full agreement"
 fr = "Lire l'accord complet"

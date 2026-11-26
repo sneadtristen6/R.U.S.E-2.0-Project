@@ -494,6 +494,7 @@
       fair_play_on: async () => ({ on: /^(fair|agree)/.test(String(mode || "")) }),
       // the guard terms the agreement screen reads and sets (rusemod.guard; ?fake=agree starts with them unaccepted)
       guard_status: async () => ({ terms: fakeTerms, terms_version: 4, scan: false, on: true }),
+      guard_privacy_code: async () => ({ code: "FRRR-IM2K-4RUX" }),
       guard_accept_terms: async () => { fakeTerms = 4; return { terms: 4 }; },
       // (a copy built with a test tool has its join code too: it plays with players who have the same build)
       fair_play: async () => ({ built: true, code: mode === "fairchanged" ? null : myCode,

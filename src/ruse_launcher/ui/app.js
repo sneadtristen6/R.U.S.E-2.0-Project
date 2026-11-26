@@ -190,6 +190,7 @@ const SETTINGS = [  // the language isn't here: it has its own button at the top
   { id: "title", render() { renderTitle(); } },  // loaded when Settings opens (loadTitle)
   { id: "backup", render() { renderBackup(); } },  // loaded when Settings opens (loadBackup)
   { id: "bugwatch", render() { renderBugwatch(); } },  // loaded when Settings opens (loadBugwatch)
+  { id: "guardcode", render() { renderGuardCode(); } },  // loaded when Settings opens (loadGuardCode)
   { id: "updates", render() {
     const w = state.words, u = state.update || {};
     text($("set-updates-text"), u.checking ? w.set_updates_checking : u.available ? fill(w.update_out, { app: APP_NAME, version: u.version })
@@ -361,6 +362,19 @@ async function changeBugwatch(turnOn) {
   } catch (err) { state.bugwatch = { ...b, note: errorText(err), bad: true }; }
   $("bugwatch-sent").classList.add("hidden");
   renderBugwatch();
+}
+
+// --- Your RUSE Guard code, for privacy requests (rusemod.guard.privacy_code): read-only; until this install has a
+// RUSE Guard key (its first multiplayer or co-op match makes it) the section says how the code is made ---
+async function loadGuardCode() {
+  try { state.guardCode = (await api().guard_privacy_code()).code || ""; } catch (err) { state.guardCode = ""; }
+  if (state.settings) renderGuardCode();
+}
+
+function renderGuardCode() {
+  const w = state.words, node = $("guardcode-value"), code = state.guardCode || "";
+  text(node, code || w.set_guardcode_none);
+  node.title = w.tip_guardcode || "";
 }
 
 async function showBugwatch() {
@@ -1729,7 +1743,7 @@ async function start() {
   $("lang-pick-close").addEventListener("click", closeLangPick);
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && langPick && !langPick.first) closeLangPick(); });
   $("settings-open").addEventListener("click", () => {
-    state.settings = true; render(); loadWhere(); loadCopies(); loadTitle(); loadBackup(); loadBugwatch(); loadSignin();
+    state.settings = true; render(); loadWhere(); loadCopies(); loadTitle(); loadBackup(); loadBugwatch(); loadGuardCode(); loadSignin();
   });
   $("title-gold").addEventListener("change", changeTitle);
   $("set-signin-open").addEventListener("click", () => { if (window.OwnedSignIn) window.OwnedSignIn.open(); });

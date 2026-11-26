@@ -4630,7 +4630,7 @@ function showView(view) {
   if (view === "values") { renderValues(); return; }
   if (view === "decoy") { window.DecoyView.open(state.words, state.lang); return; }
   if (view === "files") { window.FilesView.open(state.words); return; }  // (reads the packs, not the game index)
-  if (view === "settings") { renderSettings(); loadBackup(); loadBugwatch(); return; }
+  if (view === "settings") { renderSettings(); loadBackup(); loadBugwatch(); loadGuardCode(); return; }
   if (view !== "maps") return;
   const open = () => window.MapView.open(api(), state.words, state.lang).catch(problem);
   if (window.MapView) open();
@@ -6229,6 +6229,7 @@ const SETTINGS = [  // the language isn't here: it has its own button at the top
   } },
   { id: "backup", render() { renderBackup(); } },  // loaded each time Settings opens (loadBackup)
   { id: "bugwatch", render() { renderBugwatch(); } },  // loaded each time Settings opens (loadBugwatch)
+  { id: "guardcode", render() { renderGuardCode(); } },  // loaded each time Settings opens (loadGuardCode)
   { id: "updates", async render() {
     const w = state.words, u = state.update || {};
     if (!state.version) state.version = (await api().game_folder()).version;
@@ -6492,6 +6493,19 @@ async function changeBugwatch(turnOn) {
   } catch (err) { state.bugwatch = { ...b, note: errorText(err), bad: true }; }
   $("bugwatch-sent").classList.add("hidden");
   renderBugwatch();
+}
+
+// --- Your RUSE Guard code, for privacy requests (rusemod.guard.privacy_code): read-only; until this install has a
+// RUSE Guard key (its first multiplayer or co-op match makes it) the section says how the code is made ---
+async function loadGuardCode() {
+  try { state.guardCode = (await api().guard_privacy_code()).code || ""; } catch (err) { state.guardCode = ""; }
+  if (state.view === "settings") renderGuardCode();
+}
+
+function renderGuardCode() {
+  const w = state.words, node = $("guardcode-value"), code = state.guardCode || "";
+  node.textContent = code || w.set_guardcode_none || "";
+  node.title = w.tip_guardcode || "";
 }
 
 async function showBugwatch() {
