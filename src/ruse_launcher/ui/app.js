@@ -116,6 +116,7 @@ async function setLanguage(lang) {
   $("fair-theirs").placeholder = w.fair_paste;
   text($("fair-compare"), w.fair_compare);
   text($("fair-full"), w.fair_full);
+  text($("fair-play"), w.fair_play_set);
   text($("fair-close"), w.cancel);
   // tooltips: one plain sentence on the controls a new player meets (words.toml tip_*)
   const tips = { "settings-open": "tip_settings_open", "side-sets": "tip_side_sets", "side-library": "tip_side_library",
@@ -1592,7 +1593,7 @@ async function openFair(full) {
   $("fair-box").classList.remove("hidden");
   fair.busy = true;
   renderFair();
-  try { fair.view = await api().fair_play(Boolean(full)); fair.full = Boolean(full); } catch (err) { problem(err); }
+  try { fair.view = await api().fair_play(Boolean(full), state.active || ""); fair.full = Boolean(full); } catch (err) { problem(err); }
   fair.busy = false;
   renderFair();
 }
@@ -1612,8 +1613,11 @@ function renderFair() {
     else if (v.problems.length) [said, kind] = [fill(w.fair_changed, { what: v.problems.slice(0, 3).join("; ") }), "bad"];
     else if (v.offline.length) [said, kind] = [fill(w.fair_offline, { why: v.offline.join("; ") }), "bad"];
     else if (!v.code) said = w.fair_no_change;
+    else if (v.other) [said, kind] = [w.fair_other, "bad"];  // the copy was last built from a test or another set
     else [said, kind] = [fair.full ? w.fair_checked : "", "good"];
   }
+  $("fair-play").classList.toggle("hidden", !(v && v.built && v.other && !fair.busy));
+  $("fair-play").disabled = state.playing;
   text(node, said);
   node.className = "message" + (kind ? " " + kind : "") + (said ? "" : " hidden");
   $("fair-code-row").classList.toggle("hidden", !(v && v.code && !fair.busy));
@@ -1779,6 +1783,7 @@ async function start() {
   $("fair-compare").addEventListener("click", compareFair);
   $("fair-theirs").addEventListener("keydown", (e) => { if (e.key === "Enter") compareFair(); });
   $("fair-full").addEventListener("click", () => openFair(true));
+  $("fair-play").addEventListener("click", play);  // Play builds this set again; the box then shows its own code (play() reopens it)
   $("add-mod").addEventListener("click", addModFile);
   $("convert-mod").addEventListener("click", openConvert);
   $("convert-pick").addEventListener("click", pickConvert);

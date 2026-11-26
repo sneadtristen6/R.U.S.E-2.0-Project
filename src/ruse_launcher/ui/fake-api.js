@@ -162,6 +162,8 @@
     fair_changed: "No join code: the modded copy changed after it was built ({what}). Press Play to build it again.",
     fair_offline: "This copy was built with cheats or test tools ({why}). It plays multiplayer and co-op only with players whose join code is the same as yours; it leaves any other match a few seconds in.",
     fair_no_change: "No join code: these mods don't change how the game plays, so anyone can play with you.",
+    fair_other: "This code is from the last build on this PC, a test from the Studio or another mod set, not from this set. Press Play to build this set and get its code.",
+    fair_play_set: "Play this set",
     fair_checked: "Every file checked: the copy is exactly as it was built.", fair_same: "Same game: you can play together.",
     fair_differs: "Not the same game. A match between these two would drift apart:", fair_copied: "Join code copied.",
     badge_cheat: "Cheat", tip_badge_cheat: "A cheat or a test tool: a modded copy with it plays multiplayer and co-op only with players who have the same mods",
@@ -495,7 +497,8 @@
         why: mode === "fairoffline" ? "offline" : mode === "fairchanged" ? "changed" : null, fingerprint: "K7Q2-M9XD",
         mods: [["airfield-capacity", "1.0.0"], ["passable-forests", "1.0.0"]],
         offline: mode === "fairoffline" ? ["Money Test Tool is a cheat or a test tool"] : [], scripts: [], watch: true,
-        problems: mode === "fairchanged" ? ["Data/PC/190852/ZZ_GladPatchableWin.dat changed after the build"] : [] }),
+        problems: mode === "fairchanged" ? ["Data/PC/190852/ZZ_GladPatchableWin.dat changed after the build"] : [],
+        other: mode === "fairother" }),
       compare_code: async (text) => {
         if (!text.trim().toUpperCase().startsWith("RUSE1:")) throw new Error("That isn't a R.U.S.E. join code (they start with RUSE1:).");
         return text.trim() === myCode ? { same: true, differences: [] }

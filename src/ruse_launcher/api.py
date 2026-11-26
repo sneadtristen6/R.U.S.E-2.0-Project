@@ -39,6 +39,7 @@ from pathlib import Path
 
 from rusemod import buildtext, doctor, fairplay, mod_index, startlog, yourfiles
 from rusemod import play as game_start, schema
+from rusemod.instance import read_record as read_instance_record
 from rusemod.lock import CodeError
 from rusemod.backup import BackupCalls, BackupError
 from rusemod.bugwatch import BugWatchCalls
@@ -397,15 +398,35 @@ class LauncherApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedC
         self._save_fair("trusted", kept)
         return self._lists(mod=mod_id)
 
-    def fair_play(self, full: bool = False) -> dict:
+    def fair_play(self, full: bool = False, set_id: str = "") -> dict:
         """The modded copy as the Play screen shows it: its join code (None, with `why`, when it has none), the
         fingerprint, the mods, why it's offline, the mods that run scripts, and what changed since the build (`full`
-        reads every file the build wrote: a few seconds)."""
+        reads every file the build wrote: a few seconds). `set_id`: the mod set the page is showing; "other" is then
+        true when the one modded copy was last built from something else (the Studio's Test in game, or another set),
+        so its code isn't that set's (the owner's pick 36, accepted 2026-11-14: "Say the code is from a test, and
+        offer Play")."""
         game, _found = self._game()
         if game is None:
             return {"built": False, "code": None, "why": "no game", "fingerprint": None, "mods": [], "offline": [],
-                    "scripts": [], "watch": False, "problems": []}
-        return fairplay.copy_view(shared_copy(game, self._instances), game, full)
+                    "scripts": [], "watch": False, "problems": [], "other": False}
+        instance = shared_copy(game, self._instances)
+        view = fairplay.copy_view(instance, game, full)
+        view["other"] = bool(view["built"] and set_id and self._built_for_other(instance, game, set_id))
+        return view
+
+    def _built_for_other(self, instance, game, set_id: str) -> bool:
+        """Whether the modded copy at `instance` was built from something other than what Play would build for the set
+        `set_id` now: its record's key against play.built_from's (the key alone: no file of the copy is read). A set
+        that can't be found, or has a mod that isn't there, says nothing here: Play says it."""
+        chosen = next((s for s in self._read_sets() if s["id"] == set_id), None)
+        if chosen is None or chosen.get("error") or any(f is None for f in chosen.get("folders", [])):
+            return False
+        record = read_instance_record(str(instance))
+        if record is None:
+            return False
+        key = (record.get("built_from") or {}).get("key")
+        now = game_start.built_from(game, chosen["folders"], title=title_on(self._home))["key"]
+        return key != now
 
     def compare_code(self, text: str) -> dict:
         """A friend's join code next to this copy's: {"same": bool, "differences": [sentences]}."""

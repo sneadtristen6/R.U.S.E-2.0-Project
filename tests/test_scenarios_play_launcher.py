@@ -129,13 +129,13 @@ class JoinCodes(Sets):
         self.assertFalse(compared["same"])
         self.assertTrue(any("other-tanks" in d for d in compared["differences"]), compared)
 
-    @unittest.expectedFailure    # finding P-3: the set's join code box shows another build's code
     def test_the_code_shown_on_a_sets_page_is_that_sets(self):
-        """Unusual: a set played (its code sent to a friend), then Test in game in the Studio after one more change to
-        the same mod: the one modded copy is the Studio's test now. On the set's page, Join code (app.js: the box is on
-        the set's page) shows that build's code, with nothing saying it isn't the set's; compared with the friend's
-        code: "Same mods and versions, but the games still differ...". A Play builds the set again, and its code is
-        the first one."""
+        """Unusual (finding P-3): a set played (its code sent to a friend), then Test in game in the Studio after one
+        more change to the same mod: the one modded copy is the Studio's test now. On the set's page, Join code (app.js:
+        the box is on the set's page) showed that build's code, with nothing saying it isn't the set's; compared with
+        the friend's code: "Same mods and versions, but the games still differ...". Now the page is told (fair_play's
+        "other") and says the code is of the last build and offers Play (the owner's pick 36, accepted 2026-11-14:
+        "Say the code is from a test, and offer Play"). A Play builds the set again, and its code is the first one."""
         la = self.launcher()
         mod = self.library_mod(la, "Tank Test", 15)
         la.new_set("Mine", [mod])
@@ -143,13 +143,21 @@ class JoinCodes(Sets):
         sent = la.fair_play()["code"]
         self.page.edit(M4, "SeuilMort", 22)
         self.assertEqual(self.in_game()["state"], "done")
-        shown = la.fair_play()
+        shown = la.fair_play(False, "mine")
         compared = la.compare_code(sent)
-        print("\nP-3 shown after the Studio's test:", shown["code"], shown["why"], shown["problems"], "|",
-              compared["differences"])
+        self.assertNotEqual(shown["code"], sent)                    # (the code on the page is the test's)
+        self.assertFalse(compared["same"])
+        self.assertTrue(shown["other"], shown)                      # ... and the page is told so, to say it
+        page = LAUNCHER_UI.read_text(encoding="utf-8")
+        self.assertIn("v.other", page)
+        self.assertIn('fair_play(Boolean(full), state.active || "")', page)
+        for key in ("fair_other", "fair_play_set"):
+            self.assert_worded({lang: self.launcher_words(lang)[key] for lang in LANGS})
         self.played(la, "mine")
-        self.assertEqual(la.fair_play()["code"], sent)
-        self.assertTrue(shown["code"] in (None, sent) or shown["why"], shown)
+        again = la.fair_play(False, "mine")
+        self.assertEqual(again["code"], sent)
+        self.assertFalse(again["other"], again)                     # (control: after the set's own Play, it is the set's)
+        self.assertFalse(la.fair_play()["other"])                   # (no set given: nothing said)
 
 
 if __name__ == "__main__":

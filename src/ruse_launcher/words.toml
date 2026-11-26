@@ -3624,6 +3624,33 @@ jpn = "コードはありません。これらの MOD はゲームの遊び方�
 sc = "没有代码：这些模组不改变游戏玩法，任何人都能和你一起玩。"
 fa = "کد پیوستنی نیست: این مادها شیوهٔ بازی را تغییر نمی‌دهند، پس هر کسی می‌تواند با شما بازی کند."
 
+# the join code shown on a set's page is of the copy's last build: the Studio's test, or another set (the owner's pick 36)
+[fair_other]
+us = "This code is from the last build on this PC, a test from the Studio or another mod set, not from this set. Press Play to build this set and get its code."
+fr = "Ce code vient de la dernière construction sur ce PC, un test du Studio ou un autre ensemble de mods, pas de cet ensemble. Appuyez sur Jouer pour construire cet ensemble et obtenir son code."
+ger = "Dieser Code stammt vom letzten Bau auf diesem PC, einem Test aus dem Studio oder einem anderen Mod-Set, nicht von diesem Set. Drücke Spielen, um dieses Set zu bauen und seinen Code zu bekommen."
+ita = "Questo codice viene dall'ultima costruzione su questo PC, un test dello Studio o un altro set di mod, non da questo set. Premi Gioca per costruire questo set e avere il suo codice."
+spa = "Este código viene de la última construcción en este PC, una prueba del Studio u otro conjunto de mods, no de este conjunto. Pulsa Jugar para construir este conjunto y obtener su código."
+pol = "Ten kod pochodzi z ostatniej budowy na tym komputerze, z testu w Studio lub z innego zestawu modów, nie z tego zestawu. Naciśnij Graj, aby zbudować ten zestaw i dostać jego kod."
+ru = "Этот код получен при последней сборке на этом ПК: это тест из Studio или другой набор модов, а не этот набор. Нажмите «Играть», чтобы собрать этот набор и получить его код."
+cz = "Tento kód pochází z poslední sestavy na tomto PC, z testu ve Studiu nebo z jiné sady modů, ne z této sady. Stiskněte Hrát, sestavíte tuto sadu a získáte její kód."
+jpn = "このコードは、この PC での直近のビルド（Studio のテスト、または別の Mod セット）のもので、このセットのものではありません。「プレイ」を押すとこのセットをビルドして、そのコードが得られます。"
+sc = "此代码来自这台电脑上最近一次构建，是 Studio 的测试或另一个模组组合，而不是这个组合。点“开始游戏”会构建这个组合并得到它的代码。"
+fa = "این کد از آخرین ساخت روی این رایانه است، یک آزمایش از استودیو یا مجموعهٔ ماد دیگری، نه از این مجموعه. «بازی» را بزنید تا این مجموعه ساخته شود و کدش را بگیرید."
+
+[fair_play_set]
+us = "Play this set"
+fr = "Jouer cet ensemble"
+ger = "Dieses Set spielen"
+ita = "Gioca questo set"
+spa = "Jugar este conjunto"
+pol = "Graj w ten zestaw"
+ru = "Играть в этот набор"
+cz = "Hrát tuto sadu"
+jpn = "このセットをプレイ"
+sc = "开始游戏（此组合）"
+fa = "بازی با این مجموعه"
+
 [fair_checked]
 us = "Every file checked: the copy is exactly as it was built."
 fr = "Chaque fichier vérifié : la copie est exactement telle qu'elle a été créée."
