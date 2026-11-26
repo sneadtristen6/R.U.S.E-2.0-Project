@@ -102,6 +102,13 @@ class Item8LeftOutAnimations(InElevenLanguages):
         self.assertIn("{names}", WORDS["model_kept_not_left_out"]["us"])
 
 
+class Item11BonesBoxLink(InElevenLanguages):
+    ITEM = "11"
+
+    def test_52a_the_box_has_the_having_trouble_link(self):
+        self.assertIn('troubleLink("bones")', function_text(js("app.js"), "ownAnimationsBox"))
+
+
 class WikiPages(InElevenLanguages):
     def topic_opens_each_language_s_page(self, topic, us, fr):
         self.assertEqual(sorted(WIKI_TOPICS[topic]), sorted(LANGS))

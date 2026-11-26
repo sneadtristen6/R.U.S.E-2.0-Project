@@ -3743,7 +3743,9 @@ function ownAnimationsBox(address) {
       box.append(el("p", { className: "muted small", textContent: fill(w.model_anim_empty, { n: a.empty.length,
         all: a.actions }), title: w.tip_model_anim_empty }));
     }
-    box.append(el("p", { className: "muted small", textContent: w.model_anim_next, title: w.tip_model_anim_next }));
+    // (the box's help line ends with Having trouble? Read the guide: the field manual's Models and bones page)
+    box.append(el("p", { className: "muted small", title: w.tip_model_anim_next }, w.model_anim_next || "", " ",
+      troubleLink("bones")));
   }).catch(() => box.remove());  // (no answer: the box above still says what the model is)
   return box;
 }
