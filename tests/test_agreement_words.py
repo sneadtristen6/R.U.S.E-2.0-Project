@@ -105,5 +105,23 @@ class VersionFourAsApproved(unittest.TestCase):
             self.assertIn(MATCH[lang], point(text, "- What it may collect"), lang)
 
 
+class ReleaseGateForTheCleanStop(unittest.TestCase):
+    """Review finding 5 (legal/clean-stop): the lock now closes the game itself and files its stop note by the exit
+    code, so the agreement's English lines about a crash report are untrue once it ships. The words are the v5 words
+    step's (with TERMS_VERSION 5); until then this is an expected failure. When the words are fixed it reports an
+    unexpected success: take the decorator off then."""
+
+    @unittest.expectedFailure
+    def test_no_agreement_line_describes_the_crash_route_or_offline_play_only(self):
+        from tomllib import loads
+        for app in APPS:
+            data = loads((SRC / app / "words.toml").read_text(encoding="utf-8"))
+            for key in ("agree_guard", "agree_full"):
+                english = data[key]["us"].lower()
+                for old in ("offline play only", "crash report carries", "crash reporter may then send",
+                            "reads that report on your pc"):
+                    self.assertNotIn(old, english, f"{app} {key}")
+
+
 if __name__ == "__main__":
     unittest.main()

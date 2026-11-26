@@ -1754,58 +1754,6 @@ function element(id) {
                     w.game_crash(found, [], 0, send=False)
                     self.assertTrue(all(is_clean(json.loads(f.read_text())) for f in w.outbox.glob("crash-*.json")))
 
-    def test_5_only_the_games_own_crash_reports_are_read(self):
-        """The agreement: "When the game writes its own crash report, the apps read that report on your PC". Another
-        program can leave its crash report in the same folder (the game's crash reporter is used by other programs
-        too), even one holding RUSE Guard's mark: neither Bug Watch (read_dump, its game watch) nor RUSE Guard
-        (collect_stops) reads it past its module list, which says whose it is; the game's own beside it is read and
-        reported as before (the control). (Until 0.9.8.22 both read every crash report written while the game ran,
-        and Bug Watch sent another program's as a game crash.)"""
-        from rusemod import guard
-        bugwatch.turn_on(self.home, "Nick")
-
-        def mark(team: int) -> bytes:   # RUSE Guard's line, filled in, as the lock writes it when it stops a copy
-            return (b"RUSEGUARD-LOCK a cheat copy was stopped: it surrendered and left the match. multi 1 coop 0 "
-                    b"local " + str(team).encode() + b" RUSEGUARD-END")
-        text = b'Traceback (most recent call last):\n  File "DataDir:\\x\\menu.py", line 40, in f\nKeyError: 1\x00'
-        local = self.home / "local"
-        game, other = local / "Temp" / "CrashRpt_game" / "report.dmp", local / "Temp" / "CrashRpt_other" / "report.dmp"
-        for path, program, team in ((game, None, 0), (other, self.OTHER, 7)):
-            path.parent.mkdir(parents=True)
-            path.write_bytes(Crashes.dump(self, program=program, extra=b"\0" + mark(team) + b"\0" + text))
-            os.utime(path, (1500, 1500))
-        real, read = Path.read_bytes, []
-
-        def reading(path):
-            read.append(Path(path).parent.name)
-            return real(path)
-        with mock.patch.object(Path, "read_bytes", reading):
-            self.assertIsNone(bugwatch.read_dump(other))
-            found = bugwatch.read_dump(game)
-            guard.collect_stops(self.home, since=1000, username="Nick#4821", server="", now=1791000200,
-                                local=str(local), say=lambda s: None)
-        self.assertNotIn("CrashRpt_other", read)                 # never read whole, by either app
-        self.assertEqual((found["code"], found["module"].lower(), found["offset"]), ("0x29a", bugwatch.GAME_PROGRAM,
-                                                                                    "0x1234"))
-        self.assertIn("KeyError: 1", found["traceback"])
-        stops = [json.loads(p.read_text(encoding="utf-8"))["evidence"]["stop"]["text"]
-                 for p in (self.home / guard.OUTBOX).glob("*.json")]
-        self.assertEqual(len(stops), 1)
-        self.assertIn("multi 1 coop 0 local 0", stops[0])      # the game's own (RUSE Guard's line, the control)
-
-        class Closed:
-            def poll(self):
-                return 0
-        w = self.watch()
-        times = iter([1000.0, 1600.0])
-        with mock.patch.object(w, "send_waiting"):
-            bugwatch.GameWatch(w, Closed(), [], 0, sleep=lambda _s: None, clock=lambda: next(times),
-                               local=str(local)).run()
-        crashes = [json.loads(f.read_text()) for f in w.outbox.glob("crash-*.json")]
-        self.assertEqual([(c["module"].lower(), c["offset"]) for c in crashes], [(bugwatch.GAME_PROGRAM, "0x1234")])
-        self.assertTrue(all(is_clean(c) for c in crashes))
-
-
 class TheCardInBothApps(unittest.TestCase):
     """The Bug Watch Settings card is in the Launcher AND the Studio, with the same words in all ten languages and the
     same controls and app.js wiring. Guards the Studio mirror against drifting from the Launcher (card added 2026-10-30)."""

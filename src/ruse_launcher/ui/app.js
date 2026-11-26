@@ -1607,8 +1607,37 @@ async function play() {
     render();
     if (state.fair) openFair(false);  // the new copy's join code
     if (j.state === "done") watchCrash();  // the game is running: told if it stops at a crash we know
+    if (j.state === "done") watchGuard();  // and if RUSE Guard closes it (a cheat copy that left a match)
   };
   tick();
+}
+
+// --- RUSE Guard closed the game (the owner's 23, 2026-11-25: "one Launcher line in the player's own language when
+// the game closes this way"). A copy built with cheats or test tools that left a multiplayer match closes the game at
+// that match's end-of-match screen, and the Launcher files a note that it was stopped (rusemod.guard.MatchWatch);
+// api.guard_stop hands the page the line once, in the player's language. Asked a few seconds after a Play and when the
+// page opens, then again every few seconds while RUSE Guard watches the game ---
+let guardWatch = null;
+const GUARD_TRIES = 5;   // calls in a row that may fail before the page stops asking
+
+function watchGuard(first = 3000) {
+  clearTimeout(guardWatch);
+  let failed = 0;
+  const tick = async () => {
+    let seen;
+    try {
+      seen = await api().guard_stop();
+      failed = 0;
+    } catch (err) {
+      failed += 1;
+      if (failed < GUARD_TRIES) guardWatch = setTimeout(tick, 3000);
+      return;
+    }
+    // said plainly, without the troubleshooter's or a bug report's link: nothing went wrong in the apps
+    if (seen && seen.notice) { setMessage(seen.notice); return; }
+    if (seen && seen.watching) guardWatch = setTimeout(tick, 3000);
+  };
+  guardWatch = setTimeout(tick, first);
 }
 
 // --- the game's crash, told (the owner's item 25: "... if their unit was crashing the game, they should be told
@@ -1957,6 +1986,7 @@ async function start() {
   await setLanguage(state.lang);
   await refresh();
   watchCrash(0);  // a game this app started may be watched still, or have just stopped at a crash we know
+  watchGuard(0);  // or RUSE Guard may have closed it
   // the first screen is drawn: the start-up log (rusemod.startlog) notes it, for the troubleshooter's report
   Promise.resolve().then(() => api().start_mark("ready")).catch(() => {});  // an older back end: no log
   showVersion();

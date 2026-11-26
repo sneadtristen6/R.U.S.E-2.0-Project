@@ -285,32 +285,123 @@ class SameBuild(SwitchedOn):
                 fairplay.lock_numbers(bad)
 
     def test_the_source_says_the_same_numbers(self):
-        """The lock's source and rusemod.fairplay agree on the announcement's start, version and the code's name."""
+        """The lock's source and rusemod.fairplay agree on the announcement's start, version and the code's name, on
+        RUSE Guard's close number, and on the lock's four lines in English (the apps' words for "us")."""
         src = (fairplay.SCRIPTS / "fairplay_lock.py25").read_text(encoding="utf-8")
         self.assertIn(f"_fairplay_lock_first = 0x{fairplay.LOCK_FIRST:08X}", src)
         self.assertIn(f"_fairplay_lock_version = {fairplay.LOCK_VERSION} ", src)
         self.assertIn(f"_fairplay_lock_code = '{fairplay.NO_BUILD_CODE}'", src)
+        self.assertIn(f"_fairplay_lock_exit = 0x{fairplay.LOCK_EXIT:08X} ", src)
         top = pyscript.load(fairplay.game_script(fairplay.LOCK))
         self.assertEqual(top.consts.count(fairplay.NO_BUILD_CODE.encode()), 1)  # the one the build replaces
+        self.assertEqual(fairplay.lock_words_of(fairplay.game_script(fairplay.LOCK)), ("", "", "", ""))
+        english = [fairplay._top_value(fairplay.game_script(fairplay.LOCK), name.encode())
+                   for name in ("_fairplay_lock_check_text", "_fairplay_lock_same_text", "_fairplay_lock_text",
+                                "_fairplay_lock_open_text")]
+        self.assertEqual(english, list(fairplay.LOCK_LINES.values()))
+        # the close number is none of the exit codes the game ends with otherwise (0, 1, 5, 9, -1, 0xC0000409; a script
+        # error's stop is 0x29a; 259 means "still running" to Windows), and fits an exit code
+        self.assertNotIn(fairplay.LOCK_EXIT, (0, 1, 5, 9, 0xFFFFFFFF, 0xC0000409, 0x29A, 259))
+        self.assertTrue(0 < fairplay.LOCK_EXIT < 2 ** 31)
+        from rusemod import guard
+        self.assertEqual(guard.STOP_CODE, f"{fairplay.LOCK_EXIT:#x}")
+
+    def test_the_lock_closes_the_game_and_never_stops_it(self):
+        """The lock (0.9.8.23 on) closes the game through the game's own quit (_sysutils.TerminateSelf, never the
+        brutal one) and lets no error of its own out: no RUSE Guard mark text for a crash report, and no raise in its
+        end-screen hook (0.9.8.22's raised there on purpose)."""
+        def codes(code):
+            yield code
+            for c in code.consts:
+                if isinstance(c, Code):
+                    yield from codes(c)
+        top = pyscript.load(fairplay.game_script(fairplay.LOCK))
+        every = list(codes(top))
+        names = {n for c in every for n in c.names}
+        self.assertTrue({b"_sysutils", b"display_debug_message"} <= names, names)
+        texts = [v for c in every for v in c.consts if isinstance(v, (bytes, str))]
+        self.assertIn(b"TerminateSelf", texts)   # looked up on _sysutils by name: a game without it says so
+        self.assertFalse([t for t in texts if "RUSEGUARD" in (t if isinstance(t, str) else t.decode("latin-1"))])
+        named = {c.name: c for c in every}
+        hook, close = named[b"_show_end_game_screen"], named[b"close_game"]
+        RAISE_VARARGS = 130
+        for name in (b"_show_end_game_screen", b"close_game", b"decide", b"say", b"before_start_game"):
+            self.assertNotIn(RAISE_VARARGS, [op for _p, op, _a in instructions(named[name].code)], name)
+        # the close: TerminateSelf called with two positional arguments (the number and False), never keywords
+        CALL_FUNCTION = 131
+        ins = instructions(close.code)
+        calls = [a for _p, op, a in ins if op == CALL_FUNCTION]
+        self.assertIn(2, calls)
+        self.assertEqual([a for a in calls if a > 0xFF], [])   # (keyword arguments: the game takes none)
+        k = next(k for k, (_p, op, a) in enumerate(ins) if op == CALL_FUNCTION and a == 2)
+        self.assertEqual([close.names[a] for _p, _op, a in ins[k - 2:k]], [b"_fairplay_lock_exit", b"False"])  # never
+        # the brutal quit, always the number
+        self.assertIn(b"_world", hook.consts)  # it closes only for the end screen of the match it left (its world)
+
+    def test_the_lock_speaks_the_players_language(self):
+        """The lock's lines come from the app's own words in the player's language (the owner's 23, 2026-11-25:
+        "Yes, I agree with 23 in every language"), in both apps and all eleven languages, Persian too; the build
+        fills them in as one value, nothing else in the lock changes; English needs nothing filled in."""
+        from rusemod import schema
+        from ruse_launcher.api import words as launcher_words
+        from ruse_studio.api import words as studio_words
+        for app_words in (launcher_words, studio_words):
+            self.assertIsNone(fairplay.lock_lines(app_words("us")))   # English: the lock's own
+            self.assertIsNone(fairplay.lock_lines(None))
+            for lang in schema.APP_LANGS:
+                if lang == "us":
+                    continue
+                lines = fairplay.lock_lines(app_words(lang))
+                self.assertEqual(len(lines), 4, lang)
+                for line, english in zip(lines, fairplay.LOCK_LINES.values()):
+                    self.assertNotEqual(line, english, lang)   # translated, every one
+                    self.assertIn("RUSE Guard", line, lang)    # the name kept as it is
+        self.assertEqual(fairplay.lock_lines(launcher_words("fa")), fairplay.lock_lines(studio_words("fa")))
+        code = fairplay.build_code("24687178", self.FP, self.MODS)
+        french = fairplay.lock_lines(launcher_words("fr"))
+        plain, made = pyscript.load(fairplay.lock_script(code)), pyscript.load(fairplay.lock_script(code, french))
+        differ = [k for k, (a, b) in enumerate(zip(plain.consts, made.consts)) if a != b]
+        self.assertEqual([(plain.consts[k], made.consts[k]) for k in differ], [(("", "", "", ""), french)])
+        self.assertEqual((fairplay.lock_words_of(fairplay.lock_script(code, french)),
+                          fairplay.lock_code_of(fairplay.lock_script(code, french))), (french, code))
+        for bad in (("one",), ("a", "b", "c", ""), ("a", "b", "c", b"d")):
+            with self.assertRaisesRegex(fairplay.FairPlayError, "lines"):
+                fairplay.lock_script(code, bad)
+        # a cheat copy's patches carry them; a copy without the lock has none to carry
+        fair = fairplay.FairPlay([fairplay.ModCheck("t", "Test tool", cheat=True)], scripts=True, lines=french)
+        self.assertTrue(fair.locked)
+        self.assertEqual(fairplay.lock_words_of(fair.patches(code)[0]), french)
+        self.assertFalse(fairplay.FairPlay([fairplay.ModCheck("t", "Maps")], scripts=True, lines=french).locked)
+        self.assertFalse(fairplay.FairPlay([fairplay.ModCheck("t", "Test tool", cheat=True)], scripts=True,
+                                           dev=True).locked)
 
     @unittest.skipUnless(python25(), "no Python 2.5.1 on this PC (set RUSE_PYTHON251 to its folder)")
     def test_matches_played_under_the_games_python(self):
         """tests/gamescripts_sim.py25: whole matches between stand-in PCs, run by the game's own Python version with
         the scripts exactly as a build puts them in a copy. Every match goes as expected: same build = plays on;
-        anyone missing or different = the cheat copy leaves; a game without our scripts is never touched."""
+        anyone missing or different = the cheat copy leaves, and in a multiplayer match closes the game at that
+        match's end screen with RUSE Guard's close number (only that match's: never a later skirmish's, after a co-op
+        leave or a quit before the end screen); a game without our scripts is never touched; a copy built in French or
+        Persian says the app's own lines in that language."""
         import subprocess
+        from ruse_launcher.api import words as launcher_words
         a = fairplay.build_code("24687178", self.FP, self.MODS)
         b = fairplay.build_code("24687178", self.FP, self.MODS + [("money", "0.3.0")])
+        french, persian = fairplay.lock_lines(launcher_words("fr")), fairplay.lock_lines(launcher_words("fa"))
         with tempfile.TemporaryDirectory() as tmp:
             out = Path(tmp)
             for name, data in (("lock_a", fairplay.lock_script(a)), ("lock_a2", fairplay.lock_script(a)),
                                ("lock_b", fairplay.lock_script(b)), ("lock_none", fairplay.lock_script()),
+                               ("lock_fr", fairplay.lock_script(a, french)),
+                               ("lock_fa", fairplay.lock_script(a, persian)),
                                ("watch", fairplay.game_script(fairplay.WATCH)),
                                ("record", fairplay.game_script(fairplay.GUARD))):
                 (out / f"{name}.bin").write_bytes(data)
+            (out / "words.txt").write_bytes("\n".join(french + persian).encode("utf-8"))
             (out / "numbers.txt").write_text("".join(f"{name} {x} {y}\n" for name, (x, y) in
                                                      (("a", fairplay.lock_numbers(a)),
-                                                      ("b", fairplay.lock_numbers(b)))), encoding="ascii")
+                                                      ("b", fairplay.lock_numbers(b))))
+                                             + f"exit {fairplay.LOCK_EXIT}\n", encoding="ascii")
             released = Path(__file__).with_name("data") / "fairplay_lock_before_same_build.bin"
             if released.is_file():  # the lock as released up to 0.4.8.18, before the same-build check: it meets
                 # the new one (a player who hasn't updated yet)
@@ -330,7 +421,7 @@ class SameBuild(SwitchedOn):
         self.assertEqual(run.returncode, 0, run.stdout + run.stderr)
         self.assertRegex(run.stdout, r"(\d+) of \1 matches as expected")
         self.assertNotIn("FAILED", run.stdout)
-        self.assertGreaterEqual(run.stdout.count("\nok "), 16)
+        self.assertGreaterEqual(run.stdout.count("\nok "), 31)  # 16 before the close, 13 for it, 2 for the languages
 
 
 class Mods(SwitchedOn):
@@ -421,9 +512,22 @@ class Copy(unittest.TestCase):
     def test_a_multiplayer_copy_has_its_code(self):
         rec = self.record()
         self.assertEqual(rec["code"], encode_join_code(24687178, self.fp, [("tanks", "1.2.0")]))
-        self.assertEqual((rec["why"], rec["lock"]), (None, None))
+        self.assertEqual((rec["why"], rec["lock"], rec["stop"]), (None, None, None))
         view = fairplay.copy_view(self.copy, self.game, full=True)
         self.assertEqual((view["code"], view["problems"], view["fingerprint"]), (rec["code"], [], rec["fingerprint"]))
+
+    def test_a_cheat_copy_s_record_says_its_lock_closes_the_game(self):
+        """How the copy's lock stops it: it closes the game with RUSE Guard's close number (the Launcher files a stop
+        only for a record that says so, rusemod.guard.closes_with_stop); a lock with no build code too."""
+        from rusemod import guard
+        cheat = fairplay.FairPlay([fairplay.ModCheck("dev", "Dev", cheat=True)])
+        for lock in (fairplay.build_code("24687178", self.fp, [("tanks", "1.2.0")]), fairplay.NO_BUILD_CODE):
+            rec = self.record(cheat, lock)
+            self.assertEqual((rec["lock"], rec["stop"]), (lock, fairplay.LOCK_STOP))
+            self.assertTrue(guard.closes_with_stop(fairplay.read_record(self.copy)))
+        self.assertFalse(guard.closes_with_stop(self.record(cheat, None)))
+        self.assertFalse(guard.closes_with_stop({"lock": "473dc7fef1d1a", "offline": ["x"]}))  # 0.9.8.22's record
+        self.assertFalse(guard.closes_with_stop(None))
 
     def test_a_cheat_copy_has_its_code_too(self):
         """A copy built with cheats or test tools plays with players who have the same build (GitHub issue 24), so
