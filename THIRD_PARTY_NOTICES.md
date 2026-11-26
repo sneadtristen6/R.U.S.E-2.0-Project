@@ -158,6 +158,46 @@ painted grey, lit and rendered together in Blender into one picture.
 | B-17 Flying Formation | Planefrog69 | https://sketchfab.com/models/769966de4d2340f1b7d54ea8a386ae15 |
 | Supermarine Spitfire Mk.IIa | barking_dogo | https://sketchfab.com/models/a49be5ab6d624e75b55231948a31b1b3 |
 
+## In the Studio, for its 3D views: three.js
+
+The Studio's 3D views (the map view, a unit's model, a squad, RUSE Decoy's moves, the 3D check) draw with three.js,
+which ships inside the Studio ([src/ruse_studio/ui/three](src/ruse_studio/ui/three)), so a 3D view loads nothing from
+the internet. These five files, unchanged, as jsDelivr served them from the npm package three 0.170.0 on 2026-11-25:
+
+| File | In the Studio | Bytes | SHA-256 | Downloaded from |
+|---|---|---|---|---|
+| three.module.min.js | ui/three/three.module.min.js | 691,648 | 08fd7545d13d2c7fb65ab691530a802dafefd638596501854f267d0fb13c39e7 | https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.min.js |
+| OrbitControls.js | ui/three/addons/controls/OrbitControls.js | 32,134 | 80efaadea4f8a636a65fb0bd08bfef62f3d93a0bb94e2e7500f23176c5c07f4e | https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/controls/OrbitControls.js |
+| GLTFLoader.js | ui/three/addons/loaders/GLTFLoader.js | 110,273 | 45139faddd5aaf48ed2d62203d976e5cbd703db1a592de40527f9f6cf58abd44 | https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/loaders/GLTFLoader.js |
+| BufferGeometryUtils.js | ui/three/addons/utils/BufferGeometryUtils.js | 31,768 | c25b7930e570e9ec56173cd3b866ec8d2e10016630db3937efb439daf1cedbf6 | https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/utils/BufferGeometryUtils.js |
+| LICENSE | ui/three/LICENSE | 1,081 | 4c40a1ef62450b857c3b2aaf294936304cd552d965fbcd9d32d4c5bcf4ba4454 | https://cdn.jsdelivr.net/npm/three@0.170.0/LICENSE |
+
+### three.js (MIT)
+
+```
+The MIT License
+
+Copyright © 2010-2024 three.js authors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+```
+
 ## The other libraries the apps carry
 
 Nuitka makes each app into a Windows program with Python 3.12 ([installers/build_app.py](installers/build_app.py)), so

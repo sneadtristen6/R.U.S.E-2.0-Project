@@ -5,11 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>RUSE Studio</title>
   <link rel="stylesheet" href="style.css">
-  <!-- the Maps view's 3D library (three.js, MIT) comes from the internet, like the 3D check, until the Studio ships
-       its own copy; it's only loaded when the Maps view opens -->
+  <!-- the 3D views' library (three.js 0.170.0, MIT) ships inside the Studio (ui/three, THIRD_PARTY_NOTICES.md), so a
+       3D view loads nothing from the internet; it's only loaded when a 3D view opens -->
   <script type="importmap">
-    { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.min.js",
-                   "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/" } }
+    { "imports": { "three": "./three/three.module.min.js",
+                   "three/addons/": "./three/addons/" } }
   </script>
 </head>
 <body>

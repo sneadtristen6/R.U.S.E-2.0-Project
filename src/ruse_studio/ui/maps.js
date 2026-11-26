@@ -3,7 +3,7 @@
 // with the map's overview picture (StudioApi.map_view, rusemod/terrain.py). Brush strokes are saved in the current
 // mod's maps/<map>/terrain.toml (StudioApi.terrain_add); this view draws them on the game's ground with the same
 // maths as the build (rusemod/brush.py), and "Test in game" builds them into all four files that hold the ground.
-// three.js is loaded from the internet (see index.html) the first time the view opens.
+// three.js comes with the Studio (ui/three, see index.html) and is loaded the first time the view opens.
 const $ = (id) => document.getElementById(id);
 const SCALE = 1 / 1000;  // world units to scene units: a standard map is about 1,300 scene units wide
 const mv = { api: null, words: {}, lang: "base", maps: [], current: null, lod: "lowdef", water: true, gl: null, ask: 0,

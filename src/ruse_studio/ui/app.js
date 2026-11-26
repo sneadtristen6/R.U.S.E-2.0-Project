@@ -2156,8 +2156,8 @@ function copyNotice(u) {
 }
 
 // --- a unit's 3D model on its page, turning slowly until it's dragged (api.unit_preview: the game's model as a .glb
-// from rusemod.gltf, made once per game build and kept in the cache). three.js comes from the internet, as for the
-// Maps view (index.html). One renderer for every page, moved into the page shown. The mod's paint (what Bring back
+// from rusemod.gltf, made once per game build and kept in the cache). three.js comes with the Studio, as for the
+// Maps view (index.html, ui/three). One renderer for every page, moved into the page shown. The mod's paint (what Bring back
 // put in it) goes on in place of the game's picture; a plane's propeller discs (`<model>_propeller` in the game's own
 // models, `helice_hs_<number>` in a model of its own) show the game's own see-through picture of a spinning propeller
 // (api.unit_preview "disc"), and are left out when it can't be had. ---

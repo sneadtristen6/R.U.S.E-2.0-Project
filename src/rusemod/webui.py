@@ -32,6 +32,11 @@ def serve(folder: Path, extra: dict[str, Path] | None = None) -> tuple[http.serv
     extra = {"shared": SHARED_UI, **{k: Path(v).resolve() for k, v in (extra or {}).items()}}
 
     class Quiet(http.server.SimpleHTTPRequestHandler):
+        # modules (maps.js, the Studio's three.js in ui/three) load only as JavaScript; Python takes a file's type from
+        # the PC's registry, which some PCs have set to text/plain for .js: the type is named here instead
+        extensions_map = {**http.server.SimpleHTTPRequestHandler.extensions_map,
+                          ".js": "text/javascript", ".mjs": "text/javascript"}
+
         def log_message(self, *args):
             pass
 

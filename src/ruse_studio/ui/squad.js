@@ -40,7 +40,7 @@
 
   // --- each soldier's picture: his model (squad_info's preview, a .glb as the 3D view draws them) drawn once, small and
   // off the page, from the front corner as the 3D view first shows a unit; a plain figure while it's drawn, and when it
-  // can't be (no preview, or the 3D library, which comes from the internet, couldn't load) ---
+  // can't be (no preview, or the 3D library, which comes with the Studio, couldn't load) ---
   const FACE_W = 96, FACE_H = 120;   // (drawn twice as big, then shown at this size: smoother)
   const PLAIN = '<svg viewBox="0 0 48 60" aria-hidden="true"><circle cx="24" cy="10" r="7"/>'
     + '<path d="M13 21h22l3 17h-6l-2 20h-6l-1-13-1 13h-6l-2-20h-6z"/></svg>';

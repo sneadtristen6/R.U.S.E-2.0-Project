@@ -62,11 +62,12 @@ Someone cheating in a match isn't a security problem in our apps: tell us on the
 - **Mods from the list are checked.** A mod downloaded from the Supported mods list is installed only if its size and
   SHA-256 match the list's entry. Anything else is deleted and refused, so a changed or cut-off file never installs.
 - **What the apps connect to:** GitHub (updates, the mods list, mod downloads, the game patches and the era units'
-  models), the three.js library from jsDelivr (`cdn.jsdelivr.net`) for the Studio's 3D view, and our own servers:
+  models) and our own servers:
   RUSE Guard's (match records and a cheat copy's stop line, under your username), Bug Watch's (only if you tick it)
   and the Steam sign-in server (only when you sign in). They never ask for your Steam password: Sign in through Steam
   happens on Steam's own page in your browser. **Report a problem** only opens a filled-in page in your browser, with
-  your Windows user name taken out of any paths; nothing is sent until you post it yourself.
+  your Windows user name taken out of any paths; nothing is sent until you post it yourself. The Studio's 3D views
+  draw with three.js, which ships inside the Studio: nothing is fetched for them.
 - **This repository** has GitHub's secret scanning and push protection switched on, and a check on every push and pull
   request keeps game files and private material out of it.
 - **Mods that change the game's scripts:** scripts run inside the game and can do anything it can. They're marked, and
