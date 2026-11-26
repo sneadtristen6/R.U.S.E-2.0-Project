@@ -38,6 +38,7 @@ from rusemod import (ai, buildtext, doctor, economy, flaginfo, gamefiles, identi
 from rusemod.backup import BackupCalls
 from rusemod.brush import BrushError, parse_strokes, strokes_toml
 from rusemod.bugwatch import BugWatchCalls
+from rusemod.codes import coded
 from rusemod.community import APP_NAMES, REPO_URL, CommunityCalls, private_paths_out
 from rusemod.guardcalls import GuardCalls
 from rusemod.owned import OwnedCalls
@@ -390,6 +391,14 @@ class StudioError(Exception):
     def __init__(self, *args, prop: str | None = None):
         super().__init__(*args)
         self.prop = prop
+
+
+class EntryError(StudioError):
+    """A refusal of what the modder entered or picked ("Pick or make a mod first", a name taken, a size that isn't a
+    number): said as any other, and Bug Watch sends nothing for it, not even a failed try (the owner's B10 A,
+    2026-11-26: "send nothing for them, keeping Bug Watch's 60 message keys a day for real failures"; the 125 places his
+    question named, rusemod.bugwatch.Watch.call)."""
+    bw_entry = True
 
 
 def file_named(exc: OSError, fallback=None):
@@ -1323,7 +1332,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             raise StudioError("Range: one number.")
         edits = self._edits()
         if edits is None:
-            raise StudioError("Pick or make a mod first: changes are saved in a mod.")
+            raise EntryError("Pick or make a mod first: changes are saved in a mod.")
         listed = self.weapons(unit)["weapons"]
         n, w = next(((i, x) for i, x in enumerate(listed) if x["address"] == weapon), (None, None))
         if w is None:
@@ -1366,7 +1375,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         as a link at the weapon's address; choosing the game's own ammo again removes the change."""
         edits = self._edits()
         if edits is None:
-            raise StudioError("Pick or make a mod first: changes are saved in a mod.")
+            raise EntryError("Pick or make a mod first: changes are saved in a mod.")
         role_mount = self.role_mount_of(edits, unit, weapon)  # a bomb bay a role change gave it (roles.RoleCalls)
         if weapon.partition(":")[0] != unit.partition(":")[0] and not role_mount:
             raise StudioError(f"{weapon} isn't a weapon of {unit}")
@@ -1421,10 +1430,10 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         AmmunitionId when built (rusemod.identity)."""
         name = (name or "").strip()
         if not name:
-            raise StudioError("Give the copy a name.")
+            raise EntryError("Give the copy a name.")
         edits = self._edits()
         if edits is None:
-            raise StudioError("Pick or make a mod first: a copy is saved in a mod.")
+            raise EntryError("Pick or make a mod first: a copy is saved in a mod.")
         if source in edits.new_units:
             raise StudioError(f"{name}: copy the ammunition {_tail(source)} was made from instead")
         ix = self._open()
@@ -1470,7 +1479,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         words = str(words or "").strip()
         edits = self._edits()
         if edits is None:
-            raise StudioError("Pick or make a mod first: changes are saved in a mod.")
+            raise EntryError("Pick or make a mod first: changes are saved in a mod.")
         real, new = self._resolve(edits, address)
         if ":" in address:
             raise StudioError(f"{address} is a part, not an ammunition")
@@ -1857,7 +1866,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         try:
             units = {u["address"]: u for u in self._all_units(ix)}
             if real not in units:
-                raise StudioError(f"{address} isn't a unit")
+                raise EntryError(f"{address} isn't a unit")
             links = self._upgrade_links(ix, edits)
             game_parent = ix.links(UPGRADE).get(real)
             below, todo = set(), [address]  # every unit researched from this one, directly or not
@@ -1916,7 +1925,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             raise StudioError(f"{prop}: numbers only")
         edits = self._edits()
         if edits is None:
-            raise StudioError("Pick or make a mod first: changes are saved in a mod.")
+            raise EntryError("Pick or make a mod first: changes are saved in a mod.")
         game = self.upgrade(address)["research"][prop]["game"]
         new = None if value is None else _whole(value, "int32", prop)
         if new is not None and new < 0:
@@ -1943,11 +1952,11 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         """set_upgrade; `guard` False: the groups neither checked nor written (era_unit_add does both itself)."""
         edits = self._edits()
         if edits is None:
-            raise StudioError("Pick or make a mod first: changes are saved in a mod.")
+            raise EntryError("Pick or make a mod first: changes are saved in a mod.")
         info = self.upgrade(address)
         if parent is not None and parent not in {c["address"] for c in info["choices"]}:
             # not a game rule: what the Upgrade box offers (the same nation's units in the same build menu)
-            raise StudioError(f"{address} can't be researched from {parent} here")
+            raise EntryError(f"{address} can't be researched from {parent} here")
         game_parent = info["game_parent"]["address"] if info["game_parent"] else None
         real, _new = self._resolve(edits, address)
         ix = self._open()
@@ -2046,7 +2055,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         MOD_FORMAT §3). A level written inside its armour part the old way goes with it."""
         edits = self._edits()
         if edits is None:
-            raise StudioError("Pick or make a mod first: changes are saved in a mod.")
+            raise EntryError("Pick or make a mod first: changes are saved in a mod.")
         real, new = self._resolve(edits, address)
         ix = self._open()
         try:
@@ -2061,9 +2070,9 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             try:
                 value = int(value)
             except (TypeError, ValueError):
-                raise StudioError("Pick an armour level from the list.") from None
+                raise EntryError("Pick an armour level from the list.") from None
             if value not in levels:
-                raise StudioError("Pick an armour level from the list.")
+                raise EntryError("Pick an armour level from the list.")
         keyed = address if new else o["address"]
         with self._saving:
             edits = ModEdits(edits.folder)  # read again: another change may have been saved meanwhile
@@ -2220,7 +2229,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             raise StudioError(f"There's no {preset!r} to start from.")
         name = " ".join(str(name or "").split())
         if not name:
-            raise StudioError("Give the new map a name.")
+            raise EntryError("Give the new map a name.")
         if len(name) > newmap.NAME_LONGEST:
             raise StudioError(f"The name is {len(name)} characters; the menus take {newmap.NAME_LONGEST}.")
         opts = self.duplicate_options(pack)
@@ -2233,7 +2242,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         if entry is not None and entry not in [e["name"] for e in opts["entries"]]:
             raise StudioError(f"{opts['source']} has no entry {entry!r}.")
         if entry is None and len(battles) != 1:
-            raise StudioError("Pick what to copy: one of this map's BATTLES maps, Operations or campaign chapters.")
+            raise EntryError("Pick what to copy: one of this map's BATTLES maps, Operations or campaign chapters.")
         if entry is not None and battles == [entry]:
             entry = None  # the map's one BATTLES map: map.toml needn't say it
         files: dict = {}
@@ -2246,7 +2255,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                 # needs; on an Operation or a campaign chapter, Blank Terrain starts a mission of its own instead
                 # (rusemod.mission: T41 played one on Blank Terrain), and Blank Ocean stays the Battles maps' (the
                 # owner, 2026-10-09: "We don't want ops making ocean maps yet")
-                raise StudioError("Blank Ocean starts from a Battles map; Blank Terrain from a Battles map, an "
+                raise EntryError("Blank Ocean starts from a Battles map; Blank Terrain from a Battles map, an "
                                   "Operation or a campaign chapter.")
             game = self._game()
             if game is None:
@@ -2328,12 +2337,12 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         """(the map's folder name, its new-map settings (newmap.NewMap) or None, a shipped map's own pictures
         (menupicture.MenuPictures) or None)."""
         if self._map_dir() is None:
-            raise StudioError("Pick or make a map project first: a map's pictures are saved in it.")
+            raise EntryError("Pick or make a map project first: a map's pictures are saved in it.")
         copy = self._new_maps().get(str(pack).lower())
         if copy is not None:
             return copy[0], copy[1], None
         if not re.fullmatch(r"[A-Za-z0-9_]+", str(pack or "")):
-            raise StudioError(f"{pack!r} isn't a map's pack name")
+            raise EntryError(f"{pack!r} isn't a map's pack name")
         return pack, None, self._shipped_pictures(pack)
 
     def _set_menu_pictures(self, pack: str, **changes) -> None:
@@ -2519,7 +2528,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         name, spec, shipped = self._menu_owner(pack)
         if not getattr(spec or shipped, "wide_picture", None):
             # not a game rule: our build draws the dots on a 3D map picture of the mod's own
-            raise StudioError("The start dots go on the map's own 3D map picture: pick one or make it in Blender "
+            raise EntryError("The start dots go on the map's own 3D map picture: pick one or make it in Blender "
                               "first. The game's own have their dots drawn in.")
         with self._saving:
             self._set_menu_pictures(pack, start_dots=bool(on))
@@ -3288,9 +3297,9 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
     def _scenario_file(self, pack: str) -> Path:
         folder = self._map_dir()
         if folder is None:
-            raise StudioError("Pick or make a mod first: scenario changes are saved in it.")
+            raise EntryError("Pick or make a mod first: scenario changes are saved in it.")
         if not re.fullmatch(r"[A-Za-z0-9_]+", str(pack or "")):
-            raise StudioError(f"{pack!r} isn't a map's pack name")
+            raise EntryError(f"{pack!r} isn't a map's pack name")
         return folder / "maps" / pack / "scenario.toml"
 
     def _read_scenario_edits(self, pack: str) -> tuple[list, list]:
@@ -3399,7 +3408,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             raise StudioError(f"this {it['kind'] or 'plain item'} has no turn of its own to change")
         turn = float(turn)
         if not math.isfinite(turn):
-            raise StudioError("the turn must be a number")
+            raise EntryError("the turn must be a number")
         turn = math.remainder(turn, math.tau)
         with self._saving:
             moves, spawns = self._read_scenario_edits(pack)
@@ -3422,7 +3431,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         if not 0 <= int(item) < len(base["items"]) or base["items"][int(item)]["kind"] != "StartingPoint":
             raise StudioError(f"{file} has no starting point {item}")
         if not math.isfinite(float(turn)):
-            raise StudioError("the camera's turn must be a number")
+            raise EntryError("the camera's turn must be a number")
         it = base["items"][int(item)]
         turn = math.remainder(float(turn), math.tau) or None
         with self._saving:
@@ -3439,11 +3448,11 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
     def scenario_turn_start_camera(self, pack: str, number: int, turn: float) -> dict:
         """Turn the warm-up camera of the current mod's new starting point number `number` `turn` radians about it."""
         if not math.isfinite(float(turn)):
-            raise StudioError("the camera's turn must be a number")
+            raise EntryError("the camera's turn must be a number")
         with self._saving:
             moves, starts, spawns = self._read_scenario_all(pack)
             if not 0 <= int(number) < len(starts):
-                raise StudioError("that starting point isn't in the mod any more")
+                raise EntryError("that starting point isn't in the mod any more")
             starts[int(number)] = replace(starts[int(number)], camera=math.remainder(float(turn), math.tau) or None)
             self._write_scenario_edits(pack, moves, spawns, starts)
         return self.map_scenarios(pack)
@@ -3512,7 +3521,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         or a zone by, a label's `text` (the game text it shows). The game's value again takes the change out. Returns
         the map's scenarios as the mod leaves them."""
         if self._map_dir() is None:
-            raise StudioError("Pick or make a mod first: scenario changes are saved in it.")
+            raise EntryError("Pick or make a mod first: scenario changes are saved in it.")
         base = self._base_scenario(pack, file)
         item = int(item)
         if not 0 <= item < len(base["items"]):
@@ -3522,7 +3531,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         if field not in scenario.KIND_CHANGES.get(kind, ()):
             raise StudioError(f"a {kind or 'plain item'}'s {field} can't be changed here")
         if field == "trucks" and it.get("trucks") is None and it.get("what") != "DalleBatimentDepot":
-            raise StudioError("Only a supply depot has trucks.")
+            raise EntryError("Only a supply depot has trucks.")
         if field in scenario.TEXT_CHANGES:  # a name the mission scripts find the item by, or a label's text
             game = it.get(field) or ""
             text = str(value).strip()
@@ -3618,13 +3627,13 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         (the first name the scenario hasn't got), a zone `size` across (world units; ZONE_SIZE when not given: the
         Add a spot or zone tray's Size box). Returns the map's scenarios."""
         if self._map_dir() is None:
-            raise StudioError("Pick or make a mod first: scenario changes are saved in it.")
+            raise EntryError("Pick or make a mod first: scenario changes are saved in it.")
         if kind not in scenario.PLACE_KINDS:
             raise StudioError(f"a {kind or 'plain item'} can't be added here")
         self._base_scenario(pack, file)
         x, y = float(x), float(y)
         if not (math.isfinite(x) and math.isfinite(y)):
-            raise StudioError("the place must be two finite numbers")
+            raise EntryError("the place must be two finite numbers")
         with self._saving:
             if kind in scenario.LABEL_KINDS:
                 place = scenario.Place(file, kind, x, y, text=self._new_label_text(words))
@@ -3634,7 +3643,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                 try:
                     size = self.ZONE_SIZE if size is None else float(size)
                 except (TypeError, ValueError):
-                    raise StudioError("a zone's size is a number") from None
+                    raise EntryError("a zone's size is a number") from None
                 if not (math.isfinite(size) and 0 < size <= self.ZONE_SIZE_MOST):
                     raise StudioError(f"a zone's size is more than 0 and at most {self.ZONE_SIZE_MOST / 260:,.0f} m")
                 place = scenario.Place(file, kind, x, y, name=self._free_name(pack, file, "zone"),
@@ -3647,7 +3656,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
     def _place(self, pack: str, number: int) -> tuple[list, int]:
         places = self._read_places(pack)
         if not 0 <= int(number) < len(places):
-            raise StudioError("that name, point or zone isn't in the mod any more")
+            raise EntryError("that name, point or zone isn't in the mod any more")
         return places, int(number)
 
     def scenario_move_place(self, pack: str, number: int, x: float, y: float) -> dict:
@@ -3655,7 +3664,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         at x, y."""
         x, y = float(x), float(y)
         if not (math.isfinite(x) and math.isfinite(y)):
-            raise StudioError("the place must be two finite numbers")
+            raise EntryError("the place must be two finite numbers")
         with self._saving:
             places, n = self._place(pack, number)
             places[n] = replace(places[n], x=x, y=y)
@@ -3684,7 +3693,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                 if not math.isfinite(value) or (field != "rotation" and value <= 0):
                     if field != "rotation":   # (each refusal said as it is here, so errors.toml lists it)
                         raise StudioError(f"{field} must be a number more than 0")
-                    raise StudioError("the turn must be a number")
+                    raise EntryError("the turn must be a number")
             places[n] = replace(p, **{field: value})
             self._write_places(pack, places)
         return self.map_scenarios(pack)
@@ -3726,7 +3735,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             raise StudioError(f"The words are too long: at most {scenario.TEXT_MOST} letters.")
         folder = self._mod_dir(self._kind(kind))
         if folder is None:
-            raise StudioError("Pick or make a mod first: changes are saved in a mod.")
+            raise EntryError("Pick or make a mod first: changes are saved in a mod.")
         ix = self._open()
         try:
             taken = {r[0] for r in ix.db.execute("SELECT DISTINCT name FROM text WHERE dictionary = ?", (table,)) if r[0]}
@@ -3755,7 +3764,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         from dataclasses import replace as _replace
         from rusemod.sectors import Sectors
         if self._map_dir() is None:
-            raise StudioError("Pick or make a mod first: scenario changes are saved in it.")
+            raise EntryError("Pick or make a mod first: scenario changes are saved in it.")
         with self._saving:
             moves, starts, spawns, removes = self._read_scenario_tables(pack)
             now = self._read_scenario_sectors(pack) or Sectors()   # (the painted sectors stay)
@@ -3814,7 +3823,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
 
     def _save_sectors(self, pack: str, setting) -> None:
         if self._map_dir() is None:
-            raise StudioError("Pick or make a mod first: scenario changes are saved in it.")
+            raise EntryError("Pick or make a mod first: scenario changes are saved in it.")
         moves, starts, spawns, removes = self._read_scenario_tables(pack)
         self._write_scenario_edits(pack, moves, spawns, starts, removes, setting)
 
@@ -4148,12 +4157,12 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         try:
             where = [(float(x), float(y)) for x, y in points]
         except (TypeError, ValueError):
-            raise StudioError("the places to spawn at must be pairs of numbers") from None
+            raise EntryError("the places to spawn at must be pairs of numbers") from None
         if not 1 <= len(where) <= self.SPAWN_MOST or not all(map(math.isfinite, (v for p in where for v in p))):
             raise StudioError(f"a spawn takes 1 to {self.SPAWN_MOST} places, each two finite numbers")
         if trucks is not None:
             if unit != DEPOT_SLAB:
-                raise StudioError("Only a supply depot has trucks.")
+                raise EntryError("Only a supply depot has trucks.")
             trucks = self._trucks(trucks)
         camp = scenario.NEUTRAL if camp is None else int(camp)
         if self._base_scenario(pack, file)["kind"] == "skirmish" and camp != scenario.NEUTRAL:
@@ -4194,11 +4203,11 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             moves, spawns = self._read_scenario_edits(pack)
             n = int(number)
             if not 0 <= n < len(spawns):
-                raise StudioError("that spawn isn't in the mod any more")
+                raise EntryError("that spawn isn't in the mod any more")
             sp = spawns[n]
             if field == "trucks":
                 if sp.class_path != scenario.DEPOT:
-                    raise StudioError("Only a supply depot has trucks.")
+                    raise EntryError("Only a supply depot has trucks.")
                 new = replace(sp, trucks=self._trucks(value))
             elif field == "group":
                 g = str(value or "").strip()
@@ -4221,9 +4230,9 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                 try:
                     turn = float(value)
                 except (TypeError, ValueError):
-                    raise StudioError("the turn must be a number") from None
+                    raise EntryError("the turn must be a number") from None
                 if not math.isfinite(turn):
-                    raise StudioError("the turn must be a number")
+                    raise EntryError("the turn must be a number")
                 new = replace(sp, rotation=turn)
             spawns[n] = new
             self._write_scenario_edits(pack, moves, spawns)
@@ -4235,18 +4244,18 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         neither puts the map's back to the game's and the mod's own to 25. Returns the map's scenarios and how many
         depots changed."""
         if trucks is not None and times is not None:
-            raise StudioError("Give the depots a number of trucks, or a times, not both.")
+            raise EntryError("Give the depots a number of trucks, or a times, not both.")
         if times is not None:
             try:
                 times = float(times)
             except (TypeError, ValueError):
                 raise StudioError(f"times: {times!r} isn't a number") from None
             if not math.isfinite(times) or times < 0:
-                raise StudioError("times is a number, 0 or more")
+                raise EntryError("times is a number, 0 or more")
         if trucks is not None:
             trucks = self._trucks(trucks)
         if self._map_dir() is None:
-            raise StudioError("Pick or make a mod first: scenario changes are saved in it.")
+            raise EntryError("Pick or make a mod first: scenario changes are saved in it.")
         base = self._base_scenario(pack, file)
 
         def each(game: int) -> int | None:  # a depot's new trucks (None: back to what it had)
@@ -4370,12 +4379,12 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         trucks; neither takes that rule out. Saved in the current mod's depots.toml at once; returns economy_depots."""
         folder = self._mod_dir()
         if folder is None:
-            raise StudioError("Pick or make a mod first: changes are saved in a mod.")
+            raise EntryError("Pick or make a mod first: changes are saved in a mod.")
         where = str(where or "")
         if where != scenario.ALL_MAPS and not re.fullmatch(r"[A-Za-z0-9_]+", where):
-            raise StudioError(f"{where!r} isn't a map's pack name")
+            raise EntryError(f"{where!r} isn't a map's pack name")
         if trucks is not None and times is not None:
-            raise StudioError("Give the depots a number of trucks, or a times, not both.")
+            raise EntryError("Give the depots a number of trucks, or a times, not both.")
         rule = None
         if trucks is not None:
             rule = scenario.DepotRule(trucks=self._trucks(trucks))
@@ -4385,7 +4394,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             except (TypeError, ValueError):
                 raise StudioError(f"times: {times!r} isn't a number") from None
             if isinstance(times, bool) or not math.isfinite(t) or t < 0:
-                raise StudioError("times is a number, 0 or more")
+                raise EntryError("times is a number, 0 or more")
             rule = scenario.DepotRule(times=t)
         with self._saving:
             rules = self._depot_rules()
@@ -4404,7 +4413,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         with self._saving:
             moves, spawns = self._read_scenario_edits(pack)
             if not 0 <= int(number) < len(spawns):
-                raise StudioError("that spawn isn't in the mod any more")
+                raise EntryError("that spawn isn't in the mod any more")
             spawns[int(number)] = replace(spawns[int(number)], x=float(x), y=float(y))
             self._write_scenario_edits(pack, moves, spawns)
         return self.map_scenarios(pack)
@@ -4414,7 +4423,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         with self._saving:
             moves, spawns = self._read_scenario_edits(pack)
             if not 0 <= int(number) < len(spawns):
-                raise StudioError("that spawn isn't in the mod any more")
+                raise EntryError("that spawn isn't in the mod any more")
             del spawns[int(number)]
             self._write_scenario_edits(pack, moves, spawns)
         return self.map_scenarios(pack)
@@ -4436,7 +4445,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         with self._saving:
             moves, starts, spawns = self._read_scenario_all(pack)
             if not 0 <= int(number) < len(starts):
-                raise StudioError("that starting point isn't in the mod any more")
+                raise EntryError("that starting point isn't in the mod any more")
             starts[int(number)] = replace(starts[int(number)], x=float(x), y=float(y))
             self._write_scenario_edits(pack, moves, spawns, starts)
         return self.map_scenarios(pack)
@@ -4446,7 +4455,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         with self._saving:
             moves, starts, spawns = self._read_scenario_all(pack)
             if not 0 <= int(number) < len(starts):
-                raise StudioError("that starting point isn't in the mod any more")
+                raise EntryError("that starting point isn't in the mod any more")
             del starts[int(number)]
             self._write_scenario_edits(pack, moves, spawns, starts)
         return self.map_scenarios(pack)
@@ -4561,14 +4570,14 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         if now["why"] == "shipped":
             raise StudioError("A shipped map keeps its size.")
         if now["why"]:
-            raise StudioError("Only a map started blank (Duplicate map: Blank Terrain or Blank Ocean) can change size: a "
+            raise EntryError("Only a map started blank (Duplicate map: Blank Terrain or Blank Ocean) can change size: a "
                               "copy keeps the copied map's ground, and its size with it.")
         try:
             cells = bigmap.check_size([int(across), int(down)], "the map's size")
         except (bigmap.BigMapError, TypeError, ValueError) as exc:
             raise StudioError(str(exc)) from None
         if first_x % 2 or first_y % 2:
-            raise StudioError("A strip is two squares wide: add or take off an even number of squares on a side.")
+            raise EntryError("A strip is two squares wide: add or take off an even number of squares on a side.")
         spec = replace(copy[1], size=None if list(cells) == now["copied"] and not (first_x or first_y) else cells)
         dx, dy = first_x * bigmap.CASE, first_y * bigmap.CASE
         path = self._map_file(pack)
@@ -4663,9 +4672,9 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
     def _scenery_file(self, pack: str) -> Path:
         folder = self._map_dir()
         if folder is None:
-            raise StudioError("Pick or make a mod first: what you place is saved in it.")
+            raise EntryError("Pick or make a mod first: what you place is saved in it.")
         if not re.fullmatch(r"[A-Za-z0-9_]+", str(pack or "")):
-            raise StudioError(f"{pack!r} isn't a map's pack name")
+            raise EntryError(f"{pack!r} isn't a map's pack name")
         return folder / "maps" / pack / "scenery.toml"
 
     @staticmethod
@@ -4731,7 +4740,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         file}."""
         path = self._scenery_file(pack)
         if not isinstance(areas, list) or not areas or not all(isinstance(a, dict) for a in areas):
-            raise StudioError("the circles to erase must be a list of tables (x, y, radius)")
+            raise EntryError("the circles to erase must be a list of tables (x, y, radius)")
         try:
             new = scenery.parse_erase(areas, "the circles to erase")
         except scenery.SceneryEditError as exc:
@@ -4915,7 +4924,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         ya, yb = sorted((float(y0), float(y1)))
         cx, cy, reach = (xa + xb) / 2, (ya + yb) / 2, math.hypot(xb - xa, yb - ya) / 2
         if reach > self.BOX_MOST:
-            raise StudioError(f"That box is too big to pick from: at most {2 * self.BOX_MOST / 260:,.0f} m corner to "
+            raise EntryError(f"That box is too big to pick from: at most {2 * self.BOX_MOST / 260:,.0f} m corner to "
                               f"corner. Drag a smaller one, or use the Erase brush for a whole area.")
         sc, placed, kinds = self._pick_index(pack)
         hits = [h for h in scenery.objects_near(sc, cx, cy, reach, only=set(kinds), placed=placed)
@@ -4980,7 +4989,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         found their object, "saved": the file or None}."""
         path = self._scenery_file(pack)
         if not isinstance(changes, list) or not all(isinstance(c, (list, tuple)) and len(c) == 2 for c in changes):
-            raise StudioError("the changes must be a list of [old, new] pairs")
+            raise EntryError("the changes must be a list of [old, new] pairs")
         try:
             olds = scenery.parse_objects([c[0] for c in changes], "the objects to change")
             news = [scenery.parse_objects([c[1]], "the changed objects")[0] if c[1] is not None else None
@@ -5077,9 +5086,9 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         from rusemod.sceneryasset import KINDS, AssetError, asset_name, import_asset, name_of_file
         folder = self._map_dir()
         if folder is None:
-            raise StudioError("Pick or make a mod first: the model is saved in it.")
+            raise EntryError("Pick or make a mod first: the model is saved in it.")
         if kind not in KINDS:
-            raise StudioError(f"{kind!r} isn't a kind of model: rock, prop, plant or tree.")
+            raise EntryError(f"{kind!r} isn't a kind of model: rock, prop, plant or tree.")
         if file is None:
             if self._window is None:
                 return {"asset": None, **self.assets()}
@@ -5090,7 +5099,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             size = float(size)
             name = asset_name(name) if name else name_of_file(file)
         except (TypeError, ValueError):
-            raise StudioError("The size is a number: 1 is as the model was made.") from None
+            raise EntryError("The size is a number: 1 is as the model was made.") from None
         except AssetError as exc:
             raise StudioError(f"{exc}.") from None
         if not replace_it and name in self._assets():
@@ -5113,14 +5122,14 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         from rusemod.sceneryasset import LICENCES, asset_toml
         a = self._assets().get(name)
         if a is None:
-            raise StudioError(f"The mod has no model called {name!r}.")
+            raise EntryError(f"The mod has no model called {name!r}.")
         if size is not None:
             try:
                 size = float(size)
             except (TypeError, ValueError):
-                raise StudioError("The size is a number: 1 is as the model was made.") from None
+                raise EntryError("The size is a number: 1 is as the model was made.") from None
             if not 0.01 <= size <= 100:
-                raise StudioError("Give a size from 0.01 to 100 (1 is as the model was made).")
+                raise EntryError("Give a size from 0.01 to 100 (1 is as the model was made).")
         credit = dict(a.credit)
         for k, v in (("source", source), ("author", author), ("licence", licence)):
             if v is not None:
@@ -5155,7 +5164,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         from rusemod.sceneryasset import type_name
         a = self._assets().get(name)
         if a is None:
-            raise StudioError(f"The mod has no model called {name!r}.")
+            raise EntryError(f"The mod has no model called {name!r}.")
         t = type_name(name)
         with self._saving:
             placed = self._placed_assets(t)
@@ -5199,9 +5208,9 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
     def _roads_file(self, pack: str) -> Path:
         folder = self._map_dir()
         if folder is None:
-            raise StudioError("Pick or make a mod first: new roads are saved in it.")
+            raise EntryError("Pick or make a mod first: new roads are saved in it.")
         if not re.fullmatch(r"[A-Za-z0-9_]+", str(pack or "")):
-            raise StudioError(f"{pack!r} isn't a map's pack name")
+            raise EntryError(f"{pack!r} isn't a map's pack name")
         return folder / "maps" / pack / "roads.toml"
 
     @staticmethod
@@ -5274,7 +5283,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         dropped when the bridges stay. The mod's own new roads stay. Returns roads(pack)."""
         from rusemod import roadnet
         if self._map_dir() is None:
-            raise StudioError("Pick or make a mod first: the change is saved in it.")
+            raise EntryError("Pick or make a mod first: the change is saved in it.")
         path = self._roads_file(pack)
         with self._saving:
             self._write_roads(path, self._read_roads(path),
@@ -5370,9 +5379,9 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         from rusemod import mapcheck
         folder = self._map_dir()
         if folder is None:
-            raise StudioError("Pick or make a mod first: the check builds it.")
+            raise EntryError("Pick or make a mod first: the check builds it.")
         if not re.fullmatch(r"[A-Za-z0-9_]+", str(pack or "")):
-            raise StudioError(f"{pack!r} isn't a map's pack name")
+            raise EntryError(f"{pack!r} isn't a map's pack name")
         game = self._game()
         if game is None:
             # not a game rule: the game or one of its files isn't found
@@ -5500,7 +5509,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         from rusemod import menuorder, missionsteps
         folder, game = self._mod_dir(), self._game()
         if folder is None:
-            raise StudioError("Pick or make a mod first: changes are saved in a mod.")
+            raise EntryError("Pick or make a mod first: changes are saved in a mod.")
         if game is None:
             # not a game rule: the game or one of its files isn't found
             raise StudioError("We couldn't find R.U.S.E., so there are no missions to show.")
@@ -5628,7 +5637,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         except BridgeError as exc:  # (a ValueError too)
             raise StudioError(str(exc)) from None
         except (TypeError, ValueError):
-            raise StudioError("A bridge's place, turn and length are numbers") from None
+            raise EntryError("A bridge's place, turn and length are numbers") from None
         o = replace(o, x=round(o.x), y=round(o.y))
         with self._saving:
             every = self._read_objects(path) + [o]
@@ -5642,7 +5651,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         from rusemod import roadnet
         path = self._roads_file(pack)
         if not isinstance(points, list) or len(points) > self.ROAD_POINTS_MOST:
-            raise StudioError(f"A road's line holds 2 to {self.ROAD_POINTS_MOST} points")
+            raise EntryError(f"A road's line holds 2 to {self.ROAD_POINTS_MOST} points")
         try:
             new = roadnet.parse_roads([{"points": [list(p) for p in points], "join": join,
                                         "keep_trees": keep_trees is True}], "the new road")
@@ -5671,9 +5680,9 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
     def _terrain_file(self, pack: str) -> Path:
         folder = self._map_dir()
         if folder is None:
-            raise StudioError("Pick or make a mod first: the shaped ground is saved in it.")
+            raise EntryError("Pick or make a mod first: the shaped ground is saved in it.")
         if not re.fullmatch(r"[A-Za-z0-9_]+", str(pack or "")):
-            raise StudioError(f"{pack!r} isn't a map's pack name")
+            raise EntryError(f"{pack!r} isn't a map's pack name")
         return folder / "maps" / pack / "terrain.toml"
 
     @staticmethod
@@ -5920,7 +5929,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         folder = self._checked_dir(where)
         pattern = r"[A-Za-z0-9_]+"
         if not (re.fullmatch(pattern, str(name or "")) and re.fullmatch(pattern, str(to or ""))):
-            raise StudioError("A map folder's name is letters, digits and _ only")
+            raise EntryError("A map folder's name is letters, digits and _ only")
         source, target = folder / "maps" / name, folder / "maps" / to
         if not source.is_dir():
             raise StudioError(f"maps/{name} isn't in this mod")
@@ -6138,7 +6147,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         says, and the format state after."""
         folder = self._mod_dir(self._kind(kind))
         if folder is None:
-            raise StudioError("Pick or make a mod first.")
+            raise EntryError("Pick or make a mod first.")
         if modformat.state(folder)["state"] == "newer":
             raise StudioError(f"{folder.name} was saved by a newer RUSE Studio: update the Studio, not the mod.")
         with self._saving:
@@ -6522,7 +6531,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         "own" (only `via`, the unit the modder came from) or "shared" (all of them)."""
         edits = self._edits()
         if edits is None:
-            raise StudioError("Pick or make a mod first: changes are saved in a mod.")
+            raise EntryError("Pick or make a mod first: changes are saved in a mod.")
         real, _new = self._resolve(edits, address)
         ix = self._open()
         try:
@@ -6719,7 +6728,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             raise StudioError(f"{mode} isn't a game mode the economy has ({', '.join(economy.TARGETS)})")
         edits = self._edits()
         if edits is None:
-            raise StudioError("Pick or make a mod first: changes are saved in a mod.")
+            raise EntryError("Pick or make a mod first: changes are saved in a mod.")
         found, types = self._economy_copies()
         if not found:  # not a game rule: our index of the game has no copy of the constants (an older index)
             raise StudioError("The game index has none of the economy's values: build it again in Settings.")
@@ -6962,7 +6971,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         value: whether it is now Default's (then it doesn't count)."""
         edits = self._edits()
         if edits is None:
-            raise StudioError("Pick or make a mod first: changes are saved in a mod.")
+            raise EntryError("Pick or make a mod first: changes are saved in a mod.")
         ix = self._open()
         try:
             found = self._ai_find(ix, address)
@@ -7108,7 +7117,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         The game's own text again takes the mod's script out. Returns ai_script(path) again."""
         folder = self._mod_dir(self._kind(kind))
         if folder is None:
-            raise StudioError("Pick or make a mod first: changes are saved in a mod.")
+            raise EntryError("Pick or make a mod first: changes are saved in a mod.")
         game = self._game()
         e = self._script_entry(path)
         text = str(text).replace("\r\n", "\n")
@@ -7290,7 +7299,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         version), or {"cancelled": True}."""
         folder = self._mod_dir()
         if folder is None:
-            raise StudioError("Pick or make a mod first: changes are saved in a mod.")
+            raise EntryError("Pick or make a mod first: changes are saved in a mod.")
         nested = list(nested or [])
         data = self._picked_file(source)
         if data is None:
@@ -7330,10 +7339,10 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         (mods/<mod id>/<name>): checked as a file of its kind. Returns files_list(pack), or {"cancelled": True}."""
         folder = self._mod_dir()
         if folder is None:
-            raise StudioError("Pick or make a mod first: changes are saved in a mod.")
+            raise EntryError("Pick or make a mod first: changes are saved in a mod.")
         name = str(name).strip().replace("\\", "/").strip("/")
         if not re.fullmatch(r"[A-Za-z0-9_][A-Za-z0-9_.-]*(/[A-Za-z0-9_][A-Za-z0-9_.-]*)*", name) or ".." in name:
-            raise StudioError("Give the new file a name of letters, digits, _, - and dots (folders with /), like "
+            raise EntryError("Give the new file a name of letters, digits, _, - and dots (folders with /), like "
                               "pictures/my_flag.tgv.")
         mod_id = self.mod_info()["id"]
         path = f"mods/{mod_id}/{name}"
@@ -7616,7 +7625,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         Returns the object's page again (value_object)."""
         edits = self._edits()
         if edits is None:
-            raise StudioError("Pick or make a mod first: changes are saved in a mod.")
+            raise EntryError("Pick or make a mod first: changes are saved in a mod.")
         if prop in NOT_EDITABLE:
             raise StudioError(f"{prop} isn't changed here: the Studio keeps each of these numbers unique")
         if address in edits.new_objects:  # an object the mod makes: checked against its class's kind of value
@@ -7734,7 +7743,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         mod's own in the same table as the game text the value shows now, showing `words` in every language (the
         words panel changes each), and the value pointed at it. Returns value_edit's {saved, page}."""
         if self._edits() is None:
-            raise StudioError("Pick or make a mod first: changes are saved in a mod.")
+            raise EntryError("Pick or make a mod first: changes are saved in a mod.")
         page = self.value_object(address, lang)
         row = next((r for r in page["rows"] if r["prop"] == prop), None)
         if row is None or row["kind"] != "key":
@@ -7812,7 +7821,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         with self._saving:
             path, notes = self._notes(kind)
             if path is None:
-                raise StudioError("Pick or make a mod first: notes are kept in it.")
+                raise EntryError("Pick or make a mod first: notes are kept in it.")
             if text:
                 notes[key] = text
             else:
@@ -7916,7 +7925,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         a language left empty given the English words. Returns value_words(key, kind) again."""
         mod = self._mod_dir(self._kind(kind))
         if mod is None:
-            raise StudioError("Pick or make a mod first: changes are saved in a mod.")
+            raise EntryError("Pick or make a mod first: changes are saved in a mod.")
         now = self.value_words(key, kind)
         if not now["table"]:
             # not a game rule: the game's texts (the index) have no such key
@@ -8040,7 +8049,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         (a value the object doesn't have is added, MOD_FORMAT §10.2). Returns {saved, page}."""
         edits = self._edits()
         if edits is None:
-            raise StudioError("Pick or make a mod first: changes are saved in a mod.")
+            raise EntryError("Pick or make a mod first: changes are saved in a mod.")
         if prop in NOT_EDITABLE:
             raise StudioError(f"{prop} isn't added here: the Studio keeps each of these numbers unique")
         if address in edits.new_objects:
@@ -8079,7 +8088,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         out. Returns {saved, page}."""
         edits = self._edits()
         if edits is None:
-            raise StudioError("Pick or make a mod first: changes are saved in a mod.")
+            raise EntryError("Pick or make a mod first: changes are saved in a mod.")
         if prop in NOT_EDITABLE:
             raise StudioError(f"{prop} isn't taken out here: the Studio keeps each of these numbers unique")
         if address in edits.new_objects:
@@ -8143,7 +8152,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         values. Returns {saved, page: the object's page again (deleted), or None for one the mod made}."""
         edits = self._edits()
         if edits is None:
-            raise StudioError("Pick or make a mod first: changes are saved in a mod.")
+            raise EntryError("Pick or make a mod first: changes are saved in a mod.")
         if address in edits.new_objects:
             with self._saving:
                 edits = ModEdits(edits.folder)
@@ -8178,7 +8187,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         """Put back an object the current mod deletes (its changes to it come back too). Returns {saved, page}."""
         edits = self._edits()
         if edits is None:
-            raise StudioError("Pick or make a mod first: changes are saved in a mod.")
+            raise EntryError("Pick or make a mod first: changes are saved in a mod.")
         with self._saving:
             edits = ModEdits(edits.folder)
             edits.undelete(address)
@@ -8213,15 +8222,15 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         Returns {address, saved, page}."""
         edits = self._edits()
         if edits is None:
-            raise StudioError("Pick or make a mod first: changes are saved in a mod.")
+            raise EntryError("Pick or make a mod first: changes are saved in a mod.")
         name, cls = str(name or "").strip(), str(cls or "").strip()
         if not self._new_name_ok(name):
             # not a game rule: a mod file can't write that name (rusemod.rndf reads it back as something else)
-            raise StudioError("Give the new object a name of letters A-Z, digits and _, starting with a letter (like "
+            raise EntryError("Give the new object a name of letters A-Z, digits and _, starting with a letter (like "
                               "Ammo_My_Shell).")
         if not any(c["class"] == cls for c in self.value_classes()["classes"]):
             # not a game rule: the kinds offered are the ones the unit data's objects have
-            raise StudioError(f"{cls or 'That'} isn't a kind of object the game's unit data has: pick one from the "
+            raise EntryError(f"{cls or 'That'} isn't a kind of object the game's unit data has: pick one from the "
                               f"list.")
         target = f"{DEFAULT_NAMESPACE}/{name}"
         ix = self._open()
@@ -8571,7 +8580,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         target = self._own_model_file(address)
         if target is None:
             # not a game rule: the Studio gives models only to the units a mod makes (a game unit's stays the game's)
-            raise StudioError("Only a new unit made in this mod can get a model of its own: copy the unit first.")
+            raise EntryError("Only a new unit made in this mod can get a model of its own: copy the unit first.")
         if file is None:
             if self._window is None:
                 return None
@@ -8581,9 +8590,9 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         try:
             size = float(size)
         except (TypeError, ValueError):
-            raise StudioError("The size is a number: 1 is as long as the unit it copies.") from None
+            raise EntryError("The size is a number: 1 is as long as the unit it copies.") from None
         if not MODEL_SIZES[0] <= size <= MODEL_SIZES[1]:
-            raise StudioError(f"Give a size from {MODEL_SIZES[0]:g} to {MODEL_SIZES[1]:g} (1 is as long as the unit "
+            raise EntryError(f"Give a size from {MODEL_SIZES[0]:g} to {MODEL_SIZES[1]:g} (1 is as long as the unit "
                               f"it copies).")
         found = [m for m in self._look_models(address)[0] if "_dest" not in m.lower()]
         if not found:
@@ -9075,9 +9084,9 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             try:
                 times = float(times)
             except (TypeError, ValueError):
-                raise StudioError("Times is a number: 0.5 is half the size, 2 twice.") from None
+                raise EntryError("Times is a number: 0.5 is half the size, 2 twice.") from None
             if not 0 < times <= MODEL_SIZES[1] / MODEL_SIZES[0]:
-                raise StudioError("Times is a number above 0: 0.5 is half the size, 2 twice.")
+                raise EntryError("Times is a number above 0: 0.5 is half the size, 2 twice.")
         units = self._own_models_of(kind)
         names = {a: u.name for a, u in self._new_units().items()}
         models = {a: self._own_model_file(a) for a in units}    # (each one's model: the file being written)
@@ -9287,7 +9296,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         from rusemod.unitlook import REPLACE
         mod = self._mod_dir()
         if mod is None:
-            raise StudioError("Pick or make a mod first: the card goes into it.")
+            raise EntryError("Pick or make a mod first: the card goes into it.")
         card = self._card_view(address)
         if card is None:
             raise StudioError("This unit has no card picture the Studio can change.")
@@ -9425,7 +9434,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         folder = self._own_look_folder(address)
         if folder is None:
             # not a game rule: the Studio gives a look of its own only to the buildings a mod makes
-            raise StudioError("Only a new building made in this mod can get a model of its own: copy the building "
+            raise EntryError("Only a new building made in this mod can get a model of its own: copy the building "
                               "first.")
         info = self.building_look(address)
         if piece not in {p["type"] for p in info["pieces"]}:
@@ -9439,7 +9448,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         try:
             size = float(size)
         except (TypeError, ValueError):
-            raise StudioError("The size is a number: 1 is as big as the piece it takes the place of.") from None
+            raise EntryError("The size is a number: 1 is as big as the piece it takes the place of.") from None
         with self._saving:
             try:
                 import_look(file, folder.parent.parent.parent, folder.name, piece, size, bool(two_sided),
@@ -9464,9 +9473,9 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             try:
                 size = float(size)
             except (TypeError, ValueError):
-                raise StudioError("The size is a number: 1 is as big as the piece it takes the place of.") from None
+                raise EntryError("The size is a number: 1 is as big as the piece it takes the place of.") from None
             if not 0.01 <= size <= 100:
-                raise StudioError("Give a size from 0.01 to 100 (1 is as big as the piece it takes the place of).")
+                raise EntryError("Give a size from 0.01 to 100 (1 is as big as the piece it takes the place of).")
         credit = dict(a.credit)
         for k, v in (("source", source), ("author", author), ("licence", licence)):
             if v is not None:
@@ -9615,11 +9624,11 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         if what not in self.UNIT_FOLDERS:
             raise StudioError(f"{what!r} isn't one of the Studio's folders")
         if self._mod_dir() is None:
-            raise StudioError("Pick or make a mod first.")
+            raise EntryError("Pick or make a mod first.")
         if what == "building":
             folder = self._own_look_folder(address)
             if folder is None:
-                raise StudioError("Only a new building made in this mod can get a model of its own: copy the building "
+                raise EntryError("Only a new building made in this mod can get a model of its own: copy the building "
                                   "first.")
             if not (folder / "building.toml").is_file():
                 raise StudioError("This building has no model of its own yet.")
@@ -9630,7 +9639,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         else:
             kept = self._model_kept(address)
             if kept is None:
-                raise StudioError("Only a new unit made in this mod can get a model of its own: copy the unit first.")
+                raise EntryError("Only a new unit made in this mod can get a model of its own: copy the unit first.")
             if not kept["made"]:
                 raise StudioError("This unit has no model of its own in your mod yet: click Import model… to give it "
                                   "one.")
@@ -9675,9 +9684,9 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         copy = self._own_copy_file(address)
         if copy is None:
             if self._mod_dir() is None:
-                raise StudioError("Pick or make a mod first: the copy is saved in it.")
+                raise EntryError("Pick or make a mod first: the copy is saved in it.")
             # not a game rule: what the build finds by name (a unit, $/GFX/Everything/<name>)
-            raise StudioError("Only a unit can get its own copy of its model.")
+            raise EntryError("Only a unit can get its own copy of its model.")
         own = self._own_model_file(address)
         if own is not None and own.is_file():
             # not a game rule: one model per unit (the build takes the imported one or the copy, never both). Refused,
@@ -9763,7 +9772,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         it takes the change out. Returns rides_in() and a "message"."""
         edits = self._edits()
         if edits is None:
-            raise StudioError("Pick or make a mod first: the change is saved in it.")
+            raise EntryError("Pick or make a mod first: the change is saved in it.")
         info = self.rides_in(address, lang)
         if not info:
             raise StudioError("This unit doesn't ride in a truck.")
@@ -9840,7 +9849,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         custom uniform (model_copy)."""
         if self._mod_dir() is not None and self._paint_root(address) is None and self._soldiers(address):
             # not a game rule: the owner's choice, 2026-10-11 ("default uniform ... or do you want a custom uniform")
-            raise StudioError("Pick Custom uniform first: the default uniform is worn by other squads and by gun and "
+            raise EntryError("Pick Custom uniform first: the default uniform is worn by other squads and by gun and "
                               "vehicle crews too, so it isn't repainted here.")
 
     def look_bring_back(self, address: str) -> dict:
@@ -9853,7 +9862,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         from rusemod.blender import ask_to_save
         mod = self._mod_dir()
         if mod is None:
-            raise StudioError("Pick or make a mod first: the paint goes into it.")
+            raise EntryError("Pick or make a mod first: the paint goes into it.")
         folder = self._look_folder(address)
         if not (folder / unitlook.LOOK_FILE).is_file():
             raise StudioError("Open this unit in Blender first and paint it, then bring your paint back.")
@@ -10019,12 +10028,12 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         refusal."""
         name = (name or "").strip()
         if not name:
-            raise StudioError("Give the new unit a name.")
+            raise EntryError("Give the new unit a name.")
         if not isinstance(price, (int, float)) or isinstance(price, bool):
-            raise StudioError("Price: one number, used for every battle date.")
+            raise EntryError("Price: one number, used for every battle date.")
         edits = self._edits()
         if edits is None:
-            raise StudioError("Pick or make a mod first: a new unit is saved in a mod.")
+            raise EntryError("Pick or make a mod first: a new unit is saved in a mod.")
         if source in edits.new_units:
             raise StudioError(f"{name}: copy the unit {_tail(source)} was made from instead (a copy of a copy would "
                               f"lose its changes)")
@@ -10036,7 +10045,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                 # not a game rule: the game or one of its files isn't found
                 raise StudioError(f"{source} isn't in this game build") from None
             if not o["export"] or o["class"] not in KIND_OF:
-                raise StudioError(f"{source} isn't a unit or building, so it can't be copied here")
+                raise EntryError(f"{source} isn't a unit or building, so it can't be copied here")
             types = ix.prop_types(o["class"])
             all_units = self._all_units(ix)
             menus = {(u["nation"], u["factory"]) for u in all_units if u["factory"] is not None}
@@ -10079,7 +10088,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                     if other.strip().casefold() == name.strip().casefold():
                         raise StudioError(f"There's already a unit called {other}. Pick another name.")
                     # not a game rule: two names that would give the same files (the Studio's own file names)
-                    raise StudioError(f"{name} is too close to the name of {other}, a unit already in the game or "
+                    raise EntryError(f"{name} is too close to the name of {other}, a unit already in the game or "
                                       f"your mod: the two would get the same files. Pick another name.")
             else:  # a name without letters or digits A-Z (Japanese, say): the address gets a number instead
                 n = 1
@@ -10233,7 +10242,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             left = self._take_leftovers(edits, address)
             if left:
                 return {"deleted": None, "leftovers": left, "relinked": [], "left": []}
-            raise StudioError(f"{address} isn't a unit made in this mod, so it can't be deleted here")
+            raise EntryError(f"{address} isn't a unit made in this mod, so it can't be deleted here")
         folder = edits.folder
         # a list file another program holds for a moment (a sync program, an antivirus) is tried again as long as a file
         # of the unit itself is: the whole take-out, put back in between (the owner: "it should through")
@@ -10358,13 +10367,13 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         # apart): the units of the one on the ground of the other
         folders = list(dict.fromkeys(f for f in (self._mod_dir(), self._map_dir()) if f is not None))
         if not folders:
-            raise StudioError("Pick or make a mod or a map first.")
+            raise EntryError("Pick or make a mod or a map first.")
         folder = folders[-1]
         if self._building():  # one build at a time: two raced for the same copy
-            raise StudioError("A test is already being built: wait for it to finish.")
+            raise coded(StudioError("A test is already being built: wait for it to finish."), "TST-01")
         if self._restoring():  # a copy built now would take half-restored files (rusemod.backup)
             # not a game rule: something else is busy (the game, the other app, a restore)
-            raise StudioError("The game's files are being restored: wait for it to finish.")
+            raise coded(StudioError("The game's files are being restored: wait for it to finish."), "TST-02")
 
         game = self._game()
         copies, _how = self._copies(game)
@@ -10376,7 +10385,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         def work(say):
             if game is None:
                 # not a game rule: the game or one of its files isn't found
-                raise BuildError("We couldn't find R.U.S.E.")
+                raise coded(BuildError("We couldn't find R.U.S.E."), "TST-03")
             self._clear_waiting(*folders)   # (a deleted unit's file another program had open: rusemod.holding)
             self._starter.modded(game, folders, instance, name, say, words=said, cut_off_errors=True,
                                  title=title_on(self._home))  # R.U.S.E. 2.0's title, unless Settings says the game's
@@ -10492,7 +10501,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         path = Path(str(fix.get("path", "")))
         mine = [Path(f).resolve() for f in getattr(self, "_test_folders", [])]
         if not any(path.resolve().is_relative_to(f / "maps") for f in mine):
-            raise StudioError("That file isn't part of the last test's mods.")
+            raise coded(StudioError("That file isn't part of the last test's mods."), "TST-04")
         kind = fix.get("kind")
         with self._saving:
             if kind in ("spawn_neutral", "spawn_remove", "spawns_neutral_all", "spawns_remove_all"):
@@ -10506,7 +10515,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                     hit = [i for i, s in enumerate(spawns) if s.what == fix.get("what") and s.file == fix.get("file")
                            and s.x == fix.get("x") and s.y == fix.get("y")][:1]
                 if not hit:
-                    raise StudioError("That spawn isn't in the mod any more.")
+                    raise EntryError("That spawn isn't in the mod any more.")
                 if kind in ("spawn_neutral", "spawns_neutral_all"):
                     for k in hit:
                         spawns[k] = replace(spawns[k], camp=scenario.NEUTRAL)
@@ -10524,12 +10533,12 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                 want = [list(p) for p in fix.get("points", [])]
                 k = next((i for i, r in enumerate(roads) if [list(p) for p in r.points] == want), None)
                 if k is None:
-                    raise StudioError("That road isn't in the mod any more.")
+                    raise EntryError("That road isn't in the mod any more.")
                 del roads[k]
                 self._write_roads(path, roads)
                 done = f"road {fix.get('road')}: taken out"
             else:
-                raise StudioError(f"unknown fix {kind!r}")
+                raise coded(StudioError(f"unknown fix {kind!r}"), "TST-05")
         return {"done": done}
 
     def _where_to_look(self, folder: Path) -> list[str]:
@@ -10646,7 +10655,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             raise StudioError("Pick or make a map first.") if kind == "map" else StudioError("Pick or make a mod first.")
         version = _ascii_digits((version or "").strip())
         if not re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", version):
-            raise StudioError("The version should be three numbers, like 1.0.0.")
+            raise EntryError("The version should be three numbers, like 1.0.0.")
         exports = self.__dict__.setdefault("_exports", [])   # (this Studio's export jobs)
         if any(getattr(self._jobs.get(j), "state", None) == "running" for j in exports):
             # not a game rule: two exports at once wrote one file together (the export scenarios' FE-15)

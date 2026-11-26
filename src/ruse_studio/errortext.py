@@ -51,7 +51,8 @@ def templates_in(paths) -> list[str]:
     """Every StudioError template in these Python files (and of OTHERS), each once, in the order first met; then, for
     each frame of WITHIN among them, every template of the messages its blank holds (said in the player's language
     too)."""
-    out = wordedtext.templates_in(paths, {"StudioError": 0, **OTHERS}, min_text=0)
+    # (EntryError: a StudioError Bug Watch sends nothing for, said the same way: ruse_studio.api)
+    out = wordedtext.templates_in(paths, {"StudioError": 0, "EntryError": 0, **OTHERS}, min_text=0)
     for frame, (source, calls) in WITHIN.items():
         if frame in out:
             out += [t for t in wordedtext.templates_in([source], calls, min_text=0) if t not in out]

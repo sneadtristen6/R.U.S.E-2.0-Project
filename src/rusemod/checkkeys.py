@@ -168,6 +168,9 @@ class _Finder(ast.NodeVisitor):
 
     def visit_Raise(self, node):
         exc = node.exc
+        if isinstance(exc, ast.Call) and (getattr(exc.func, "id", None) or getattr(exc.func, "attr", None)) == "coded" \
+                and exc.args:  # raise coded(<the error>, "<its code>") (rusemod.codes): the error it carries
+            exc = exc.args[0]
         if isinstance(exc, ast.Call):
             name = getattr(exc.func, "id", None) or getattr(exc.func, "attr", None)
             span = "\n".join(self.lines[max(0, node.lineno - 2):node.end_lineno])
@@ -339,15 +342,16 @@ def _first(items, text: str, least: int = 0) -> str:
     return next((check for pattern, check, own in items if own >= least and pattern.fullmatch(text)), "")
 
 
-def check_of(text, where: str, tuples: bool = False) -> str:
+def check_of(text, where: str, tuples: bool = False, least: int = 0) -> str:
     """The key of a text made in the function `where` ("rusemod.build:load_mod"), else "". `tuples`: a listed mistake,
-    which may also be a check's ("error", ...) text the build put its own words before."""
+    which may also be a check's ("error", ...) text the build put its own words before. `least`: only a template with
+    that many letters of its own (not one that is only blanks, "{0}: {1}", which any text fits)."""
     if not isinstance(text, str) or not where:
         return ""
     t = _entries()
     own = t["where"].get(where, [])
     if not tuples:
-        return _first(own, text)
+        return _first(own, text, least)
     return _first(own, text, MIN_OWN) or _first(t["tuple"], text) or _first(own, text)
 
 

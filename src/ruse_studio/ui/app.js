@@ -4314,12 +4314,68 @@ async function testInGame() {
     // mistakes in the mods: each one listed with its fix, not the troubleshooter (it can't fix a mod)
     if (!ok && j && j.errors && j.errors.length) showTestProblems();
     else if (!ok) offerTroubleshoot();
+    if (ok) watchCrash();  // the game is running: told if it stops at a crash we know
   };
   try {
     const { job } = await api().test_in_game();
     follow(job, log, finish, (line) => card.line(line));
   } catch (err) { problem(err); finish(false); }
 }
+
+// --- the game's crash after a Test in game, told as the Launcher tells it after a Play (the owner's B9 A, 2026-11-26:
+// "after the game crashes in a Studio Test in game, the Studio shows the same crash notice the Launcher shows after
+// Play"; its words are the Launcher's, words.toml crash_*). Bug Watch watches the game a test started
+// (rusemod.bugwatch.GameWatch); at a crash we know (rusemod.crashplaces) api.bugwatch_crash hands over its notice once:
+// the plain reason and, when the crash report kept it, the unit the game was making, by its name as its card says.
+// Asked a few seconds after a test and when the page opens, then every few seconds while the game is watched, and
+// again after a call that failed; nothing when Bug Watch is off (no game is watched then) ---
+let crashWatch = null;
+const CRASH_TRIES = 5;   // calls in a row that may fail before the page stops asking
+
+function watchCrash(first = 3000) {
+  clearTimeout(crashWatch);
+  let failed = 0;
+  const tick = async () => {
+    let seen;
+    try {
+      seen = await api().bugwatch_crash();
+      failed = 0;
+    } catch (err) {
+      failed += 1;
+      if (failed < CRASH_TRIES) crashWatch = setTimeout(tick, 3000);
+      return;
+    }
+    if (seen && seen.notice) { say(crashText(seen.notice), "error"); return; }
+    if (seen && seen.watching) crashWatch = setTimeout(tick, 3000);
+  };
+  crashWatch = setTimeout(tick, first);
+}
+
+// One sentence: "The game crashed while making the unit “Horse Squad”." and why, in the modder's language
+function crashText(notice) {
+  const w = state.words, why = w["crash_why_" + notice.why] || "";
+  if (!notice.unit) return fill(w.crash_no_unit, { why });
+  return fill(notice.added ? w.crash_mod_unit : w.crash_unit, { unit: notice.unit, why });
+}
+
+// --- the page's own script errors, told to Bug Watch (the owner's B11 B, 2026-11-26: "the Studio page's own script
+// errors send the screen's name and a short error name"; rusemod.bugwatch.Watch.page_error): the screen (state.view)
+// and the error's short name (TypeError), once each per page; never its words, its file or its line. A call's refusal
+// is counted by the call itself, so a promise nobody caught is told only for the page's own kinds of error ---
+const PAGE_ERRORS = ["EvalError", "RangeError", "ReferenceError", "SyntaxError", "TypeError", "URIError",
+  "AggregateError"];
+const pageErrorsTold = new Set();
+
+function tellPageError(err, pageKindsOnly) {
+  const name = String((err && err.name) || "Error").replace(/[^A-Za-z0-9_]/g, "").slice(0, 32) || "Error";
+  if (pageKindsOnly && !PAGE_ERRORS.includes(name)) return;
+  const screen = String(state.view || "start").replace(/[^a-z0-9_-]/g, "").slice(0, 20) || "start";
+  if (pageErrorsTold.has(screen + ":" + name)) return;
+  pageErrorsTold.add(screen + ":" + name);
+  Promise.resolve().then(() => api().bugwatch_page_error(screen, name)).catch(() => {});
+}
+window.addEventListener("error", (e) => tellPageError(e.error, false));
+window.addEventListener("unhandledrejection", (e) => tellPageError(e.reason, true));
 
 // A test the build stopped: its mistakes at the top of the log, each with what fixes it (StudioApi.test_problems and
 // test_fix: a team spawn on a BATTLES map made neutral or taken out, a road that joins nothing taken out)
@@ -6717,6 +6773,7 @@ async function start() {
   // the first screen is drawn: the start-up log (rusemod.startlog) notes it, for the troubleshooter's report
   Promise.resolve().then(() => api().start_mark("ready")).catch(() => {});  // an older back end: no log
   checkUpdate();
+  watchCrash(0);  // a game a test started may be watched still, or have just stopped at a crash we know
   await openLangPick(true);  // until a language is picked there: "Choose your language", first
   // then the shared agreement + username (shared/agreement.js), once RUSE Guard is live, before the start screen
   let guardLive = false;

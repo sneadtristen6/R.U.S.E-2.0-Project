@@ -388,6 +388,13 @@ def ticket_url(code: str, app: str, version: str) -> str:
     return f"{TICKET}?{urlencode(fields)}"
 
 
+class Refusal(str):
+    """The words refusing a modded game, and for Bug Watch why (`why`: the code of the check's first reason,
+    rusemod.codes OWN-nn) and how many reasons (`n`)."""
+    why: str | None = None
+    n: int | None = None
+
+
 class OwnedCalls:
     """The window API's calls for owned copies, for both apps (a mixin beside rusemod.community.CommunityCalls; it
     uses _home, _game, _starter, prefs and _community_open). The check is on once the app's window turns it on
@@ -413,8 +420,16 @@ class OwnedCalls:
         return check(game, settings(self._home).get("unlocks", []))
 
     def _owned_refusal(self, game: Path) -> str | None:
-        """For rusemod.play.Starter: the message when a modded game mustn't start from `game`, else None."""
-        return None if self._owned_view(Path(game))["ok"] else words(self._owned_lang())["refused"]
+        """For rusemod.play.Starter: the message when a modded game mustn't start from `game`, else None. The message
+        says too, for Bug Watch, why by the code of its first reason and how many reasons there were (Refusal)."""
+        view = self._owned_view(Path(game))
+        if view["ok"]:
+            return None
+        reasons = {"no_steam_record": "OWN-01", "steam_file": "OWN-02", "fake_steam": "OWN-03"}
+        said = Refusal(words(self._owned_lang())["refused"])
+        said.why = next((reasons[r] for r in view["reasons"] if r in reasons), None)
+        said.n = len(view["reasons"])
+        return said
 
     def owned_check(self) -> dict:
         """The check for the game folder in use, with the box's words in the player's language."""
@@ -425,6 +440,8 @@ class OwnedCalls:
         for one that doesn't fit."""
         game = self._owned_game()
         if game is None or not unlock_fits(unlock, folder_code(game)):
+            from . import bugwatch
+            bugwatch.failure("SIGN-16")  # (an answer, not an error: counted by its code alone)
             return self.owned_check() | {"ok": False, "bad_code": True}
         values = settings(self._home)
         values["unlocks"] = list(dict.fromkeys([*values.get("unlocks", []), grouped(unlock, 5)]))

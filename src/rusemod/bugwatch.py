@@ -47,6 +47,16 @@ it from the game's crash report"); a day the same kinds, the most of any game th
 its own mods by format and the kinds they hold. Under version 3 a failed Play's own mods are one number
 ("play:set:L1-O2"), as version 3's words say.
 
+THE DAY'S LIST OF FAILURES (the owner's answers of 2026-11-26, B6 B to B11 B; rusemod.codes): only under the agreement
+version that describes it (CODES_AGREEMENT; below it a day goes exactly as before), a day's send also lists the
+failures the player met, at most 20, each by its code (L-SET-08, S-TST-02, BLD-123) with how far a Play or a Test in
+game got, its set's shape, and numbers only: a count, the Windows error number, the web server's answer number, the
+game's exit number, and another code saying why (failure_entry). The keys under "messages" go on beside it. What sent
+nothing before is in it too: sign-in answers that aren't errors, the mod list or the update check failing, a crash
+report that can't be read, a game that ended badly (its exit number), a page's own script error (its screen's name and
+the error's short name, Watch.page_error), and a game the app was closed under (its note, notes_left). A refusal of
+what the player entered (the Studio's EntryError, B10 A) sends nothing at all.
+
 THE CRASHES WE KNOW, TOLD TO THE PLAYER (the owner's item 25, 2026-11-13: his two answers, whole, are in
 rusemod.crashplaces; they begin "It should tell them the unit that it was making when it crashed." and "For 25, they
 should also be told why that unit made the game crash."): a game crash at a place rusemod.crashplaces knows gets its
@@ -224,6 +234,81 @@ def allows_v4(home) -> bool:
     later accepted. A player who ticked Bug Watch under version 3 sends only what version 3 lists until the apps have
     shown version 4 and the player accepted it (the agreement screen, at the next start)."""
     return enabled(home) and agreement(home) >= AGREEMENT_V4
+
+
+# --- the day's list of failures, each by its code (the owner's B6 B and B7 B, 2026-11-26: "each failure goes in a short
+# list in the day's send", with "the code, where in our code, counts, plus three numbers that name no player: the
+# Windows error number, the web server's answer number, the game's exit number"; rusemod.codes) ---------------------
+# The agreement version from which the list and its numbers are counted and sent: the legal session's version 5 notice
+# is to describe them (which version does: not said yet, so it is this one constant). Below it nothing new is counted
+# or sent: the day goes as before.
+CODES_AGREEMENT = 5
+FAILURES_MOST = 20      # entries in a day's list (the server's LIMITS.failures); a failure the list holds already: once
+MISTAKES_MOST = 8       # entries one build's listed mistakes may take of them, beside the build's own
+DETAIL_MOST = {"n": MAX_COUNT, "win": 4294967295, "http": 599, "exit": 4294967295}  # the server's highest each
+SHAPE_RE = re.compile(r"L[0-9]{1,3}-(?:F[0-9]{1,3}-R[0-9]{1,3}|O[0-9]{1,3})")
+
+
+def _entry(error) -> bool:
+    """Whether an error is a refusal of what the player entered (`bw_entry`: the Studio's EntryError), which Bug Watch
+    sends nothing for (the owner's B10 A)."""
+    return error is not None and getattr(error, "bw_entry", False) is True
+
+
+def allows_codes(home) -> bool:
+    """Whether the day's list of failures and its numbers may be counted and sent: Bug Watch on and the agreement
+    version that describes them (CODES_AGREEMENT) or a later one accepted."""
+    return enabled(home) and agreement(home) >= CODES_AGREEMENT
+
+
+def detail_of(error) -> dict:
+    """The numbers a failure's error says, none naming a player: those it carries (rusemod.codes.coded), the web
+    server's answer number of an HTTP refusal (http), and the Windows error number of a file or network error (win:
+    the number Windows gave, else the error number Python gave)."""
+    out = dict(getattr(error, "bw_detail", None) or {}) if error is not None else {}
+    if "http" not in out and isinstance(error, urllib.error.HTTPError):
+        out["http"] = error.code
+    elif "win" not in out and isinstance(error, OSError) and not isinstance(error, urllib.error.URLError):
+        number = getattr(error, "winerror", None) or error.errno
+        if isinstance(number, int) and not isinstance(number, bool):
+            out["win"] = number
+    return out
+
+
+def _shape(found, v4: bool) -> str | None:
+    """A failed Play's or Test in game's mod set as Watch._failed writes it (L2-F1-R0; before version 4 L2-O1)."""
+    if not (isinstance(found, tuple) and len(found) == 3):
+        return None
+    listed, folders, rmods = found
+    shape = (f"L{len(listed)}-F{int(folders)}-R{int(rmods)}" if v4 else
+             f"L{len(listed)}-O{int(folders) + int(rmods)}")
+    return shape if SHAPE_RE.fullmatch(shape) else None
+
+
+def failure_entry(app: str, code: str, stage=None, shape=None, detail=None) -> dict | None:
+    """One entry of the day's list as the server takes it (PAYLOADS.md "failures"): the code as `app` sends it
+    (rusemod.codes.wire), how far a Play or Test in game got, the set's shape, and only numbers and codes in its
+    detail. None for no code."""
+    from .codes import wire
+    wired = wire(code, app)
+    if not wired:
+        return None
+    out: dict = {"code": wired}
+    if stage in STAGES:
+        out["stage"] = stage
+    if isinstance(shape, str) and SHAPE_RE.fullmatch(shape):
+        out["set"] = shape
+    kept = {}
+    for key, value in (detail or {}).items():
+        if key in DETAIL_MOST and isinstance(value, int) and not isinstance(value, bool):
+            kept[key] = value % 2 ** 32 if key in ("win", "exit") else value  # (a negative exit: as Windows says it)
+            if not 0 <= kept[key] <= DETAIL_MOST[key]:
+                kept.pop(key)
+        elif key == "why" and wire(value, app):
+            kept["why"] = wire(value, app)
+    if kept:
+        out["detail"] = kept
+    return out
 
 
 def game_maps(game) -> dict[str, str]:
@@ -487,7 +572,12 @@ class Watch:
             self.save()
 
     def call(self, name: str, seconds: float, error=None) -> None:
+        """A window call: its try, and when it failed, the error's kind, which refusal or failure it was (reason_key)
+        and its code in the day's list (_coded). A refusal of what the player entered (an error marked `bw_entry`: the
+        Studio's EntryError, the owner's B10 A, "send nothing for them") counts nothing at all, not even the try."""
         key = _name(name)
+        if _entry(error):
+            return
         with self.lock:
             day = self._day()
             if day is None or key is None:
@@ -500,13 +590,17 @@ class Watch:
                 kind = _kind(error)
                 c["errors"][kind] = c["errors"].get(kind, 0) + 1
                 self._reason(day, key, error)
+                self._coded(day, error, call=key)
             self._changed()
 
     def job(self, name: str, ok: bool, seconds: float, error=None, build_errors: int = 0, mistakes=()) -> None:
         """`mistakes`: for a build that listed mistakes in the mods, where the build found each one
         (rusemod.patch.Finding.site), counted under "messages" as "mistake:rusemod.build:1208" when the error
-        doesn't say which check each was (its `error_keys`: _failed)."""
+        doesn't say which check each was (its `error_keys`: _failed). A job ended by a refusal of what the player
+        entered (`bw_entry`, B10 A) counts nothing at all."""
         key = _name(name) or "job"
+        if not ok and _entry(error):
+            return
         with self.lock:
             day = self._day()
             if day is None:
@@ -525,6 +619,60 @@ class Watch:
                         where = _name(f"mistake:{str(site)[-55:]}") if site else None
                         if where:
                             day["messages"][where] = day["messages"].get(where, 0) + 1
+                self._coded(day, error)
+            self._changed()
+
+    def _coded(self, day: dict, error, call: str | None = None) -> None:
+        """A failed call's or job's entry in the day's list (B6 B): its code (rusemod.codes.code_of; a window call's
+        own code in codes.toml for one no other code says, `call`), how far a Play or Test in game got and its set,
+        and its numbers (detail_of); a build's listed mistakes each by its code beside it (the error's
+        `error_codes`). Only under CODES_AGREEMENT; never stops the app."""
+        try:
+            if not allows_codes(self.home):
+                return
+            from .codes import code_of, for_call
+            code = code_of(error) or (for_call(self.app, call) if call else "")
+            if not code:
+                return
+            stage, shape = getattr(error, "stage", None), _shape(getattr(error, "mod_set", None),
+                                                                  allows_v4(self.home))
+            self._add_failure(day, failure_entry(self.app, code, stage, shape, detail_of(error)))
+            mistakes = [c for c in dict.fromkeys(getattr(error, "error_codes", None) or []) if c]
+            for mistake in mistakes[:MISTAKES_MOST]:
+                self._add_failure(day, failure_entry(self.app, mistake, stage, shape))
+        except Exception:  # noqa: BLE001 - counting must never stop the app
+            pass
+
+    def _add_failure(self, day: dict, entry: dict | None) -> None:
+        kept = day.setdefault("failures", [])
+        if entry is not None and entry not in kept and len(kept) < FAILURES_MOST:
+            kept.append(entry)
+
+    def failure(self, code: str, error=None, shape=None, **detail) -> None:
+        """A failure that is no window call's or job's error (a sign-in answer, a mod list that couldn't be had, a
+        game that ended badly), by its code in the day's list, with its numbers (`detail`, and those `error` says:
+        detail_of) and the set's shape. Only under CODES_AGREEMENT."""
+        with self.lock:
+            day = self._day()
+            if day is None or not allows_codes(self.home):
+                return
+            numbers = detail_of(error) | {k: v for k, v in detail.items() if v is not None}
+            self._add_failure(day, failure_entry(self.app, code, None, shape, numbers))
+            self._changed()
+
+    def page_error(self, screen: str, name: str) -> None:
+        """A page's own script failed (the owner's B11 B: "the Studio page's own script errors send the screen's name
+        and a short error name"): "page_error:<screen>:<name>" with the problems shown, and PAGE-01 in the day's list.
+        Never the error's words, its file or its line. Only under CODES_AGREEMENT."""
+        screen = re.sub(r"[^a-z0-9_-]", "", str(screen or "").lower())[:20] or "start"
+        name = re.sub(r"[^A-Za-z0-9_]", "", str(name or ""))[:32] or "Error"
+        with self.lock:
+            day = self._day()
+            if day is None or not allows_codes(self.home):
+                return
+            key = f"page_error:{screen}:{name}"
+            day["messages"][key] = day["messages"].get(key, 0) + 1
+            self._add_failure(day, failure_entry(self.app, "PAGE-01"))
             self._changed()
 
     def _failed(self, day: dict, job: str, error) -> bool:
@@ -718,6 +866,9 @@ class Watch:
                              "mods": {m: v for m, v in played.get("mods", {}).items() if m in mods}}
         if counts.get("app_crashes"):
             out["app_crashes"] = min(MAX_COUNT, counts["app_crashes"])
+        failures = [f for f in counts.get("failures") or [] if isinstance(f, dict) and f.get("code")]
+        if failures and allows_codes(self.home):  # (B6 B: only under the agreement version that describes them)
+            out["failures"] = failures[:FAILURES_MOST]
         while len(json.dumps(out, separators=(",", ":")).encode()) > DAY_BYTES and out.get("calls"):
             out["calls"].popitem()  # the least-used call goes first (they're in order of use)
         return out
@@ -1026,7 +1177,25 @@ def _kept_memory(data: bytes, streams: dict):
     return read
 
 
-def read_dump(path, exe=None, install=None, unit=False) -> dict | None:
+def _unread(why: list | None, code: str, error=None) -> None:
+    """Why read_dump read no crash report from a file, for Bug Watch's list (GameWatch): its code, and the Windows
+    error number of a file that couldn't be read."""
+    if why is not None:
+        why.append((code, detail_of(error) if error is not None else {}))
+
+
+def _from_copy(program: str | None, copy) -> bool:
+    """Whether a crash report's RUSE.exe (its module's path as the report keeps it) ran from the modded copy at `copy`:
+    its last parts are the copy's folder, its parent's, and RUSE.exe (a report keeps the path in a form of its own, so
+    only its end is compared)."""
+    if not program:
+        return False
+    have = [p.lower() for p in re.split(r"[\\/]", program) if p]
+    want = [p.lower() for p in (Path(copy).parent.name, Path(copy).name, "RUSE.exe") if p]
+    return have[-len(want):] == want
+
+
+def read_dump(path, exe=None, install=None, unit=False, why: list | None = None, copy=None) -> dict | None:
     """From a crash report file, read on this PC only: {"code", "module", "offset"}; for a bad memory access
     (0xc0000005) "access", what the game tried to do and where ("read 0x20"); with the copy's RUSE.exe (`exe`) given,
     "chain": the places in RUSE.exe the crashed thread's stack returns to, nearest first (up to CHAIN_MOST, each one
@@ -1038,13 +1207,18 @@ def read_dump(path, exe=None, install=None, unit=False) -> dict | None:
     for, its chain and the rest of the looked-at stack holding what that place needs: a place that needs them gets
     none without `exe`), "reason": its plain reason's key; and with `unit` (asked only under version 4 of the
     agreement: GameWatch) and `exe`, "unit": the number of the unit the game was making, when the report kept it
-    (crashplaces.unit_number). Neither goes out as it is (Watch.game_crash, unit_sent). None if it can't be read. The
-    dump never leaves the PC (the plan, §2)."""
+    (crashplaces.unit_number). Neither goes out as it is (Watch.game_crash, unit_sent). None if it can't be read, and
+    then `why` (a list, when given) gets why, by its code: CRASH-14 the file couldn't be read, CRASH-04 it isn't a
+    crash report, CRASH-12 it holds no exception record, CRASH-13 it is cut short. With `copy` (a modded copy's
+    folder), None too for a report whose RUSE.exe didn't run from that copy (_from_copy: another game's). The dump
+    never leaves the PC (the plan, §2)."""
     try:
         data = Path(path).read_bytes()
-    except OSError:
+    except OSError as exc:
+        _unread(why, "CRASH-14", exc)
         return None
     if data[:4] != b"MDMP":
+        _unread(why, "CRASH-04")
         return None
     access, chain, at_offsets, words, builds, reason, number = None, [], [], [], {}, None, None
     returns = []  # every place in RUSE.exe the looked-at stack returns to, nearest first (a crash we know: crashplaces)
@@ -1055,6 +1229,7 @@ def read_dump(path, exe=None, install=None, unit=False) -> dict | None:
             kind, size, at = struct.unpack_from("<III", data, rva + 12 * i)
             streams[kind] = (at, size)
         if 6 not in streams:  # ExceptionStream
+            _unread(why, "CRASH-12")
             return None
         at, exc_size = streams[6]
         (thread,) = struct.unpack_from("<I", data, at)
@@ -1062,7 +1237,7 @@ def read_dump(path, exe=None, install=None, unit=False) -> dict | None:
         if code == 0xC0000005 and params >= 2:
             what, where = struct.unpack_from("<QQ", data, at + 40)
             access = f"{ACCESS.get(what, '?')} 0x{where:x}"
-        modules = []
+        modules, program = [], None
         if 4 in streams:  # ModuleListStream
             mat, _ = streams[4]
             (n,) = struct.unpack_from("<I", data, mat)
@@ -1072,6 +1247,10 @@ def read_dump(path, exe=None, install=None, unit=False) -> dict | None:
                 name = data[name_rva + 4:name_rva + 4 + length].decode("utf-16-le", "replace")
                 modules.append((base, size, re.split(r"[\\/]", name)[-1]))
                 builds[(base, size)] = (size, checksum, stamp)  # which build of it (crashplaces.BUILD)
+                if modules[-1][2].lower() == "ruse.exe":
+                    program = name  # (its path: only compared with the copy's, never kept)
+        if copy is not None and not _from_copy(program, copy):
+            return None  # another game's report (one started outside the apps, or from the game's own folder)
         module, offset = next(((name, address - base) for base, size, name in modules
                                if base <= address < base + size), ("?", address))
         game = next(((base, size) for base, size, name in modules if name.lower() == "ruse.exe"), None)
@@ -1113,6 +1292,7 @@ def read_dump(path, exe=None, install=None, unit=False) -> dict | None:
                 except (struct.error, ValueError, IndexError):
                     number = None
     except struct.error:
+        _unread(why, "CRASH-13")
         return None
     module = re.sub(r"[^A-Za-z0-9_.+ -]", "_", module)[:64] or "?"
     out = {"code": f"0x{code:x}", "module": module, "offset": f"0x{offset:x}"}
@@ -1180,6 +1360,8 @@ def script_error_text(data: bytes) -> str:
 
 
 QUICK_CLOSE = 60.0  # seconds: a game started from a modded copy that closed sooner, leaving no crash report, is counted
+NOTES = "games"     # <home>/bugwatch/games/: a note for each game an app watches, while it runs (notes_left, B11 B)
+NOTE_EVERY = 60.0   # seconds between the times a note says the game was last seen running
 
 
 class GameWatch(threading.Thread):
@@ -1187,7 +1369,13 @@ class GameWatch(threading.Thread):
     any crash report it left since it started; at one of the crashes we know, the notice for the player (crash_notice:
     the plain reason, and under version 4 the unit the game was making, named as its card says). The notice is kept
     first, before Bug Watch's own records, and each record that can't be written (a full disk, a folder held) costs
-    only itself; a notice of an earlier game the window never took goes when this game starts."""
+    only itself; a notice of an earlier game the window never took goes when this game starts.
+
+    Under CODES_AGREEMENT also, in the day's list of failures (B6 B, B7 B): a crash report that couldn't be read
+    (read_dump's code), a game that closed within a minute with none (CRASH-01), and one that ended after that with an
+    exit number other than 0 and none (CRASH-05), each with the game's exit number; and while the game runs, its note
+    on the PC (_write_note), so a game the app was closed under still counts at the app's next start (notes_left: the
+    owner's B11 B)."""
 
     def __init__(self, watch: Watch, process, listed: list[str], own: int, sleep=time.sleep, clock=time.time,
                  local: str | None = None, exe=None, folders=None, game=None):
@@ -1197,9 +1385,12 @@ class GameWatch(threading.Thread):
         self.watch, self.process, self.listed, self.own = watch, process, listed, own
         self.sleep, self.clock, self.local, self.started = sleep, clock, local, clock()
         self.exe = exe  # the copy's program file, for a crash's chain and unit (read_dump); its folder is the copy
+        self.note: Path | None = None  # the game's note while it is watched (_write_note)
 
     def start(self) -> None:
         global _notice
+        self._close_notes()  # (an earlier game an app was closed under has ended: no game runs twice from the copy)
+        self._write_note()  # (first: a game whose watch can't start is still counted at the next start)
         with _notice_lock:  # (the window waits for a notice while a game is watched: crash_notice)
             _watching.add(self)
             _notice = None  # an earlier game's notice the window never took: never said while this game runs
@@ -1217,14 +1408,67 @@ class GameWatch(threading.Thread):
             with _notice_lock:
                 _watching.discard(self)
 
+    def _close_notes(self) -> None:
+        """A game starting from the modded copy (either app's): the note of every earlier game still waiting (an app
+        was closed under it) gets this start as its end at the latest (`until`), since a copy runs one game at a time
+        (rusemod.instance.refuse_if_running): its crash report is looked for before it only (notes_left)."""
+        folder = self.watch.folder / NOTES
+        for p in folder.glob("*.json") if folder.is_dir() else []:
+            try:
+                note = json.loads(p.read_text(encoding="utf-8"))
+                if isinstance(note, dict) and not note.get("done") and not note.get("until"):
+                    p.write_text(json.dumps({**note, "until": self.started}), encoding="utf-8")
+            except (OSError, ValueError, TypeError):
+                continue
+
+    def _write_note(self, seen: float | None = None) -> None:
+        """The game's note on the PC (B11 B), under CODES_AGREEMENT only: when it started, when it was last seen
+        running, its mods (mod-list ones by id@version, the others as a count), and where the copy's program and the
+        game's install are, for its crash report (read_dump). Never sent. One that can't be written costs only
+        itself."""
+        try:
+            if self.note is None and (seen is not None or not allows_codes(self.watch.home)):
+                return
+            path = self.watch.folder / NOTES / f"{self.watch.app}-{int(self.started * 1000)}.json"
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(json.dumps({"started": self.started, "seen": self.started if seen is None else seen,
+                                        "listed": list(self.listed), "own": int(self.own),
+                                        "exe": str(self.exe or ""), "game": str(self.game or "")}), encoding="utf-8")
+            self.note = path
+        except (OSError, TypeError, ValueError):
+            pass
+
+    def _note_done(self) -> None:
+        """The game closed while watched: its note goes (marked done when it can't be deleted, so it never counts
+        twice)."""
+        if self.note is None:
+            return
+        try:
+            self.note.unlink(missing_ok=True)
+        except OSError:
+            try:
+                self.note.write_text(json.dumps({"done": True}), encoding="utf-8")
+            except OSError:
+                pass
+        self.note = None
+
     def _watch(self) -> None:
-        while self.process.poll() is None:
+        seen = self.clock() if self.note is not None else 0.0
+        while True:
+            ended = self.process.poll()  # (its exit number, once it has ended)
+            if ended is not None:
+                break
             self.sleep(5)
+            if self.note is not None and self.clock() - seen >= NOTE_EVERY:
+                seen = self.clock()
+                self._write_note(seen)
+        self._note_done()
         ran = self.clock() - self.started
         v4 = allows_v4(self.watch.home)
-        crashes = []
+        crashes, unread = [], []
         for dump in crash_dumps_since(self.started, self.local):
-            found = read_dump(dump, self.exe, install=self.game, unit=v4)  # the unit only under version 4
+            # (the unit only under version 4; why a report couldn't be read, into `unread`)
+            found = read_dump(dump, self.exe, install=self.game, unit=v4, why=unread)
             if not found:
                 continue
             if isinstance(found.get("unit"), int) and self.exe is not None:
@@ -1240,6 +1484,95 @@ class GameWatch(threading.Thread):
             _record(self.watch.game_crash, found, self.listed, self.own, holds=holds)
         if ran < QUICK_CLOSE and not crashes:  # the game didn't get going, or was quit at once (2026-11-10)
             _record(self.watch.count, "messages", "game:closed-under-1-min")
+        if crashes or not allows_codes(self.watch.home):
+            return
+        shape = self._shape()
+        for code, numbers in unread:
+            _record(self.watch.failure, code, shape=shape, **numbers, exit=ended)
+        if ran < QUICK_CLOSE:
+            _record(self.watch.failure, "CRASH-01", shape=shape, exit=ended)
+        elif ended and not unread:  # (0: the game ended as it should; its own exit number at a normal quit: not known)
+            _record(self.watch.failure, "CRASH-05", shape=shape, exit=ended)
+
+    def _shape(self) -> str | None:
+        try:
+            return _shape(set_of(self.folders), allows_v4(self.watch.home)) if self.folders else None
+        except Exception:  # noqa: BLE001 - a mod folder that can't be read: no shape
+            return None
+
+
+def notes_left(watch: Watch, local: str | None = None) -> int:
+    """At an app's start: each game it watched that was still running when the app was last closed, by its note (the
+    owner's B11 B: "a game still running when the Studio is closed is recorded through a small note file on the
+    player's PC, read at the next start (its minutes, and a crash if the game left one)"): the minutes it was seen
+    running (up to its crash report's time when it left one) and that crash report, counted now. Only a report its
+    game can have left counts: written before the next game started from the copy (the note's `until`,
+    GameWatch._close_notes), by a RUSE.exe that ran from the copy (read_dump's `copy`). A game still running from its
+    copy waits for a later start; a note older than KEEP_DAYS goes. Under CODES_AGREEMENT only: otherwise a note goes
+    unread. Returns how many games were counted."""
+    folder, counted = watch.folder / NOTES, 0
+    for p in sorted(folder.glob(f"{watch.app}-*.json")) if folder.is_dir() else []:
+        try:
+            note = json.loads(p.read_text(encoding="utf-8"))
+            started, seen = float(note["started"]), float(note.get("seen", note["started"]))
+            until = float(note["until"]) if note.get("until") else None
+            own = max(0, int(note.get("own") or 0))
+            exe, game = str(note.get("exe") or "") or None, str(note.get("game") or "") or None
+            listed = [m for m in note.get("listed") or [] if isinstance(m, str)]
+        except (OSError, ValueError, TypeError, KeyError, AttributeError):  # (a note made wrong: it goes)
+            note, started = None, 0.0
+        old = watch.clock() - started > KEEP_DAYS * 86400
+        if note is None or note.get("done") or old or not allows_codes(watch.home):
+            _forget(p)
+            continue
+        if until is None and exe and _runs_from(Path(exe).parent):
+            continue  # the game still runs: a later start counts it
+        crashes = []
+        for dump in crash_dumps_since(started, local):
+            try:
+                when = dump.stat().st_mtime
+            except OSError:
+                continue
+            if until is not None and when >= until:
+                continue  # (the next game's)
+            found = read_dump(dump, exe, install=game, unit=False, copy=Path(exe).parent if exe else None)
+            if found:
+                crashes.append(found)
+                seen = max(seen, when)  # (it ran until it crashed)
+        if until is not None:
+            seen = min(seen, until)
+        _record(watch.played, max(0.0, seen - started) / 60.0, listed, own)
+        for found in crashes:
+            _record(watch.game_crash, found, listed, own, send=False)
+        _forget(p)
+        counted += 1
+    return counted
+
+
+def _runs_from(copy: Path) -> bool:
+    """Whether the game (or anything) still runs from the modded copy at `copy` (rusemod.instance.game_running)."""
+    try:
+        from .instance import game_running
+        return bool(game_running(str(copy)))
+    except Exception:  # noqa: BLE001 - not known: counted now, as one that ended
+        return False
+
+
+def _forget(path: Path) -> None:
+    try:
+        path.unlink(missing_ok=True)
+    except OSError:
+        pass
+
+
+def _seen_at_exit() -> None:
+    """The app closing: each game it still watches is noted as seen running now (the note's last time: notes_left)."""
+    for game in list(_watching):
+        try:
+            if game.note is not None:
+                game._write_note(game.clock())
+        except Exception:  # noqa: BLE001 - the app is closing: nothing may stop it
+            pass
 
 
 def _record(write, *args, **kwargs) -> None:
@@ -1395,15 +1728,30 @@ _calls = threading.local()  # the window call running on this thread (a job star
 def start(home, app: str, version: str) -> Watch:
     """At the app's start: its Watch, the finished days into the outbox, what waits sent in the background, and
     the error hooks that count crashes. Safe to call when Bug Watch is off (nothing is counted then)."""
-    global _current
+    global _current, _exit_hooked
     _current = Watch(home, app, version)
     _hook_errors(_current)
     if enabled(home):
         _current.roll()
-        threading.Thread(target=_current.send_waiting, daemon=True).start()
+        threading.Thread(target=_left_then_send, args=(_current,), daemon=True).start()
     import atexit
     atexit.register(_current.save)
+    if not _exit_hooked:
+        _exit_hooked = True
+        atexit.register(_seen_at_exit)  # (a game still watched as the app closes: its note says when, notes_left)
     return _current
+
+
+_exit_hooked = False
+
+
+def _left_then_send(watch: Watch) -> None:
+    """In the background at an app's start: the games it was closed under counted (notes_left), then what waits sent."""
+    try:
+        notes_left(watch)
+    except Exception:  # noqa: BLE001 - counting must never stop the app
+        pass
+    watch.send_waiting()
 
 
 def current() -> Watch | None:
@@ -1434,6 +1782,24 @@ def checks(findings) -> None:
         _current.checks(findings)
 
 
+def failure(code: str, error=None, **detail) -> None:
+    """Count a failure that is no window call's error in this app's Watch (Watch.failure), when there is one."""
+    if _current is not None:
+        try:
+            _current.failure(code, error, **detail)
+        except Exception:  # noqa: BLE001 - counting must never stop the app
+            pass
+
+
+def failed(error) -> None:
+    """Count a caught error that the window call doesn't fail on (an update check that couldn't ask GitHub) by its
+    code (rusemod.codes.coded) and its numbers, when it has a code."""
+    from .codes import code_of
+    code = code_of(error)
+    if code:
+        failure(code, error)
+
+
 class Refused(Exception):
     """A job an app refused before it started: its kind as Bug Watch counts it, and its key (never words)."""
 
@@ -1442,12 +1808,14 @@ class Refused(Exception):
         self.words_key = key
 
 
-def refused(name: str, key: str) -> None:
+def refused(name: str, key: str, code: str = "", **detail) -> None:
     """A job an app refused before starting it (the Launcher's Play: one already starting, a restore running, no
     such set, a set with a mistake, an author not trusted yet), counted as a failed job of kind "Refused" and by its
-    key under "messages". Until 2026-11-10 these Plays never reached Bug Watch at all (the job never started)."""
+    key under "messages", and by its `code` with its numbers in the day's list (rusemod.codes). Until 2026-11-10 these
+    Plays never reached Bug Watch at all (the job never started)."""
     if _current is not None:
-        _current.job(name, False, 0.0, Refused(key))
+        from .codes import coded
+        _current.job(name, False, 0.0, coded(Refused(key), code, **detail))
 
 
 class BugWatchCalls:
@@ -1497,6 +1865,13 @@ class BugWatchCalls:
         game was making by its name as its card says, whether a mod added it). Only when Bug Watch is on: it watches
         the game (rusemod.play.Starter). Bug Watch's own call, so not counted as one of the window's."""
         return crash_notice()
+
+    def bugwatch_page_error(self, screen: str, name: str) -> dict:
+        """The page's own script failed (the Studio's window.onerror, the owner's B11 B): the screen's name and the
+        error's short name (TypeError), nothing else (Watch.page_error)."""
+        if _current is not None:
+            _current.page_error(screen, name)
+        return {"ok": True}
 
     def bugwatch_seen(self, group: str, key: str) -> dict:
         """The page tells Bug Watch a screen opened ("screens", its name), that screen used ("screen_used": the Launcher's

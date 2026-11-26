@@ -28,11 +28,13 @@ import os
 import re
 import subprocess
 import sys
+import urllib.error
 import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
 
 from . import net
+from .codes import coded
 from .home import save_settings, settings
 from .mod_index import plain
 
@@ -238,7 +240,9 @@ def latest(app: str, current: str, fetch=_get_json, fetch_text=_get_text) -> Rel
             releases = feed_releases(fetch_text(FEED))
         except (OSError, ValueError):
             why = plain(exc)   # (never Python's or Windows' own words)
-            raise UpdateError(f"GitHub couldn't be reached to look for updates ({why}).", why=why) from None
+            # (Bug Watch: its code, with GitHub's answer number when it gave one: rusemod.codes)
+            raise coded(UpdateError(f"GitHub couldn't be reached to look for updates ({why}).", why=why), "UPD-01",
+                        http=exc.code if isinstance(exc, urllib.error.HTTPError) else None) from None
     tag_re = re.compile(rf"^{app}-v({TAG_VERSION})$")
     best = None
     for rel in releases if isinstance(releases, list) else []:
@@ -253,10 +257,11 @@ def latest(app: str, current: str, fetch=_get_json, fetch_text=_get_text) -> Rel
     name = f"RUSE-{APPS[app]}-Setup-{version}.exe"
     asset = next((a for a in rel.get("assets", []) if a.get("name") == name), None)
     if asset is None:
-        raise UpdateError(f"{APPS[app]} {version} is out, but its installer ({name}) isn't in the release yet.")
+        raise coded(UpdateError(f"{APPS[app]} {version} is out, but its installer ({name}) isn't in the release yet."),
+                    "UPD-02")
     url = str(asset.get("browser_download_url", ""))
     if not url.startswith("https://github.com/"):
-        raise UpdateError(f"{name}'s download address isn't on GitHub, so it isn't used.")
+        raise coded(UpdateError(f"{name}'s download address isn't on GitHub, so it isn't used."), "UPD-03")
     hashes = set()
     digest = str(asset.get("digest") or "")
     if digest.startswith("sha256:"):
@@ -265,8 +270,8 @@ def latest(app: str, current: str, fetch=_get_json, fetch_text=_get_text) -> Rel
     if notes:
         hashes.add(notes[0].lower())
     if len(hashes) != 1:
-        raise UpdateError(f"{APPS[app]} {version} can't be checked (its SHA-256 is missing or differs between GitHub "
-                          f"and the release notes), so it isn't installed.")
+        raise coded(UpdateError(f"{APPS[app]} {version} can't be checked (its SHA-256 is missing or differs between "
+                                f"GitHub and the release notes), so it isn't installed."), "UPD-05")
     book = next((a for a in rel.get("assets", []) if a.get("name") == NOTES_ASSET.format(app=APPS[app])), None)
     book_url = str((book or {}).get("browser_download_url", ""))
     body = str(rel.get("body") or "")
@@ -412,6 +417,8 @@ class UpdateCalls:
         try:
             rel = latest(self.UPDATE_APP, self.UPDATE_VERSION, fetch=self._update_fetch, fetch_text=self._update_fetch_text)
         except UpdateError as exc:
+            from . import bugwatch
+            bugwatch.failed(exc)  # (the call itself goes well: Bug Watch counts the check that failed by its code)
             kept = self._update_kept()
             prefs = getattr(self, "prefs", None)   # (asked without a language: the window's own)
             said_in = lang if lang not in ("", "us") or prefs is None else (prefs().get("lang") or "us")

@@ -18,6 +18,7 @@ import zlib
 from pathlib import Path
 
 from .build import DEFAULT_PACK, BuildError, build_and_write, build_cache, load_mod
+from .codes import coded
 from .home import save_settings, settings
 from .instance import Note
 from .steam import build_of
@@ -326,7 +327,10 @@ class Starter:
             self._modded(game, mod_folders, instance, name, say, watch, guard, words, cut_off_errors, title, state)
         except Exception as exc:
             from . import bugwatch
+            from .codes import code_of
             bugwatch.failed_at(exc, state["stage"], mod_folders)
+            if not code_of(exc):  # none of the others: its kind and place are in the keys beside it (rusemod.codes)
+                coded(exc, "PLAY-26")
             raise
 
     def _modded(self, game, mod_folders, instance, name, say, watch, guard, words, cut_off_errors, title,
@@ -340,23 +344,34 @@ class Starter:
         not_owned = self.owned(game) if not required and self.owned is not None else None
         if required or not_owned:  # not a game rule: the project's (a required update first; only a copy its player owns)
             exc = BuildError(required or not_owned)
-            # Bug Watch: which of the two it was (rusemod.bugwatch.reason_key); the words themselves never go
+            # Bug Watch: which of the two it was (rusemod.bugwatch.reason_key); the words themselves never go; and its
+            # code (rusemod.codes): for a copy not confirmed, why (its first reason, rusemod.owned.Refusal) and how many
             exc.words_key = "play_update_required" if required else "play_copy_not_confirmed"
-            raise exc
+            if required:
+                raise coded(exc, "PLAY-08")
+            raise coded(exc, "PLAY-09", why=getattr(not_owned, "why", None), n=getattr(not_owned, "n", None))
         refuse_if_running(str(instance))  # before anything is built: a game still running from the copy is said at once
         home = (guard or {}).get("home")
         fair = fairplay.check([Path(m) for m in mod_folders], watch, home) if fairplay.ON else fairplay.FairPlay()
         lock = instance.parent / BUILDING
-        lock.parent.mkdir(parents=True, exist_ok=True)
-        fd = _claim(lock)
+        try:
+            lock.parent.mkdir(parents=True, exist_ok=True)
+            fd = _claim(lock)
+        except OSError as exc:  # (the copies' folder or the build's lock: its code and Windows error number, as it was)
+            coded(exc, "PLAY-12")
+            raise
         if fd is None:
             # not a game rule: something else is busy (the game, the other app, a restore)
-            raise BuildError("The other app (the Launcher or the Studio) is building the modded game right now: wait "
-                             "for it to finish, then try again.")
+            raise coded(BuildError("The other app (the Launcher or the Studio) is building the modded game right now: "
+                                   "wait for it to finish, then try again."), "PLAY-11")
         result = None
         try:
-            made_from = built_from(game, mod_folders, title=title)  # before the mods are read, and again after
-            stamps = mod_stamps(mod_folders)
+            try:
+                made_from = built_from(game, mod_folders, title=title)  # before the mods are read, and again after
+                stamps = mod_stamps(mod_folders)
+            except OSError as exc:  # (the game's or the mods' files unread: its code and Windows error number)
+                coded(exc, "PLAY-28")
+                raise
             if needs_build(str(game), str(instance), made_from) and \
                     not take_back(str(game), str(instance), made_from):
                 state["stage"] = "build"
@@ -382,32 +397,43 @@ class Starter:
             # by which check each was, with the caught error's when it said one again (rusemod.checkkeys)
             exc.error_sites = [getattr(f, "site", "") for f in result.errors]
             from .checkkeys import finding_key
+            from .codes import finding_code
             exc.error_keys = [finding_key(f) for f in result.errors]
-            raise exc
+            # and each by its code (rusemod.codes), the first one also as why the build stopped
+            exc.error_codes = [finding_code(f) for f in result.errors]
+            raise coded(exc, "PLAY-20", n=len(result.errors), why=next((c for c in exc.error_codes if c), None))
         state["stage"] = "start"
         exe = next((p for p in instance.iterdir() if p.name.lower() == "ruse.exe"), None) if instance.is_dir() else None
         if exe is None:
-            raise BuildError(f"The modded copy at {instance} has no RUSE.exe.")
+            raise coded(BuildError(f"The modded copy at {instance} has no RUSE.exe."), "PLAY-23")
         if not self._steam(say):
-            raise BuildError("Steam didn't start. Start Steam, then try again.")
+            raise coded(BuildError("Steam didn't start. Start Steam, then try again."), "PLAY-24")
         say("Starting R.U.S.E. from the modded copy…")
-        process = self.start_game(exe)
+        try:
+            process = self.start_game(exe)
+        except OSError as exc:  # (the game's program wouldn't start: its code and Windows error number, as it was)
+            coded(exc, "PLAY-25")
+            raise
         from . import bugwatch
         watch = bugwatch.current()
-        if watch is not None and process is not None and bugwatch.enabled(watch.home):
-            try:
-                watch.game_build(build_of(game))  # the game's Steam build, which the day's report names
-            except (OSError, ValueError):
-                pass
-            # Bug Watch: the minutes this game runs with these mods, and any crash report it leaves
-            bugwatch.GameWatch(watch, process, *bugwatch.mods_of(mod_folders), exe=exe, folders=mod_folders,
-                               game=game).start()
-        if fairplay.ON and guard and process is not None:  # RUSE Guard: the match watch (multiplayer only)
-            from .guard import MatchWatch, check_manifest
-            # the match is filed under the player's chosen username (Nick#4821), never their Steam ID
-            username = (settings(home).get("player") or {}).get("name", "")
-            MatchWatch(process, home, game, instance, username=username, consent=guard.get("consent", {}),
-                       manifests=[check_manifest(m) for m in mod_folders], say=say).start()
+        try:
+            if watch is not None and process is not None and bugwatch.enabled(watch.home):
+                try:
+                    watch.game_build(build_of(game))  # the game's Steam build, which the day's report names
+                except (OSError, ValueError):
+                    pass
+                # Bug Watch: the minutes this game runs with these mods, and any crash report it leaves
+                bugwatch.GameWatch(watch, process, *bugwatch.mods_of(mod_folders), exe=exe, folders=mod_folders,
+                                   game=game).start()
+            if fairplay.ON and guard and process is not None:  # RUSE Guard: the match watch (multiplayer only)
+                from .guard import MatchWatch, check_manifest
+                # the match is filed under the player's chosen username (Nick#4821), never their Steam ID
+                username = (settings(home).get("player") or {}).get("name", "")
+                MatchWatch(process, home, game, instance, username=username, consent=guard.get("consent", {}),
+                           manifests=[check_manifest(m) for m in mod_folders], say=say).start()
+        except Exception as exc:  # (the game runs, and a watch of it couldn't start: its code, as it was)
+            coded(exc, "PLAY-27")
+            raise
 
     def _steam(self, say) -> bool:
         if self.steam_running():

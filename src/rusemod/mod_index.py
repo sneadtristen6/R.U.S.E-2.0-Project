@@ -192,24 +192,47 @@ def fetch(url: str, cache_dir, timeout: float = TIMEOUT, now=time.localtime) -> 
         mods, problems = parse(text)
     except (ModIndexError, OSError, UnicodeDecodeError) as exc:
         why = plain(exc, timeout)
+        kept = None
         if cached.is_file():
             try:
                 mods, problems = parse(cached.read_text(encoding="utf-8"))
                 as_of = _fetched(stamp)
-                return IndexResult(mods, "cache", as_of, problems + [f"no fresh list: {why}"],
+                kept = IndexResult(mods, "cache", as_of, problems + [f"no fresh list: {why}"],
                                    f"No connection to the mod list ({why}). This is the copy from {as_of}.")
             except (ModIndexError, OSError, UnicodeDecodeError):
                 pass
+        _list_failed(exc, kept is not None)
+        if kept is not None:
+            return kept
         if isinstance(exc, urllib.error.HTTPError) and exc.code == 404:  # the address answers, the list isn't there
             exc.close()
             raise ModIndexError("No mod list has been published yet, so there's nothing to browse. A mod you have as "
                                 "a file goes in with “Add a mod file…”.") from None
         raise ModIndexError(f"The mod list couldn't be loaded ({why}), and there's no copy from before.") from None
+    if problems:  # Bug Watch: entries of the list skipped as bad, how many (rusemod.codes)
+        from . import bugwatch
+        bugwatch.failure("LIST-05", n=len(problems))
     cache_dir.mkdir(parents=True, exist_ok=True)
     when = time.strftime("%Y-%m-%d %H:%M", now())
     cached.write_text(text, encoding="utf-8")
     stamp.write_text(json.dumps({"url": url, "fetched": when}), encoding="utf-8")
     return IndexResult(mods, "online", when, problems)
+
+
+def _list_failed(exc: BaseException, kept: bool) -> None:
+    """Bug Watch (rusemod.codes; the browse call itself goes well, so nothing else says it): why no fresh mod list was
+    had, by its code: a list that came but can't be read (LIST-04), else the copy from before shown (LIST-03), none
+    published (LIST-02: the address answered 404), or no list and no copy (LIST-01); with the web server's answer
+    number when there was one."""
+    from . import bugwatch
+    http = exc.code if isinstance(exc, urllib.error.HTTPError) else None
+    if isinstance(exc, (ModIndexError, UnicodeDecodeError)):
+        code = "LIST-04"
+    elif kept:
+        code = "LIST-03"
+    else:
+        code = "LIST-02" if http == 404 else "LIST-01"
+    bugwatch.failure(code, http=http)
 
 
 def _fetched(stamp: Path) -> str:

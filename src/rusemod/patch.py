@@ -27,6 +27,8 @@ from dataclasses import dataclass, field
 from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 from operator import itemgetter
 
+from .codes import coded
+
 INT_RANGES = {"bool": (0, 255), "int8": (-2**7, 2**7 - 1), "int16": (-2**15, 2**15 - 1), "uint16": (0, 2**16 - 1),
               "int32": (-2**31, 2**31 - 1), "uint32": (0, 2**32 - 1), "int64": (-2**63, 2**63 - 1)}
 CHECK_INDEX = False   # the tests: the find index kept as objects are made checked against a rebuild each time
@@ -170,6 +172,8 @@ class Finding:
     check: str = field(default="", compare=False, repr=False)
     where: str = field(default="", compare=False, repr=False)
     cause: str = field(default="", compare=False, repr=False)
+    # its failure code for Bug Watch (rusemod.codes): given, or the one of the error it was made from
+    code: str = field(default="", compare=False, repr=False)
 
     def __post_init__(self):
         if not self.site:
@@ -183,6 +187,7 @@ class Finding:
                 from .checkkeys import cause_of, finding_where
                 self.where = finding_where(frame)
                 self.cause = self.cause or cause_of(sys.exc_info()[1], self.where)
+                self.code = self.code or str(getattr(sys.exc_info()[1], "bw_code", "") or "")
 
 
 @dataclass
@@ -228,12 +233,12 @@ class _EntryProps(dict):
 
     def __setitem__(self, key, value):
         if key not in ("k", "v"):
-            raise PatchError(f"a map entry has k (its key) and v (its value), not {key}")
+            raise coded(PatchError(f"a map entry has k (its key) and v (its value), not {key}"), "BLD-025")
         super().__setitem__(key, value)
         self.mapv.pairs[self.i] = (self["k"], self["v"])
 
     def pop(self, key, *default):
-        raise PatchError("a map entry's key or value can't be deleted")
+        raise coded(PatchError("a map entry's key or value can't be deleted"), "BLD-026")
 
 
 def show(v) -> str:
@@ -258,7 +263,7 @@ def _parse_path(path: str) -> list[tuple[str, list[str]]]:
     for part in path.split("."):
         m = _SEG.match(part)
         if not m:
-            raise PatchError(f"bad property path {path!r}")
+            raise coded(PatchError(f"bad property path {path!r}"), "BLD-027")
         segs.append((m.group(1), re.findall(r"\[([^\]]*)\]", m.group(2))))
     return segs
 
@@ -320,10 +325,10 @@ class Engine:
                 return False
         return True
 
-    def _find(self, level: str, message: str, op: Op | None = None) -> None:
+    def _find(self, level: str, message: str, op: Op | None = None, code: str = "") -> None:
         if level == "warning" and op is not None and op.override:
             level = "note"
-        self.findings.append(Finding(level, message, op))
+        self.findings.append(Finding(level, message, op, code=code))
 
     def _own(self, name: str) -> Obj:
         """The top-level object `name`, to change in place (Game.own). When that copies it, the find index
@@ -348,8 +353,8 @@ class Engine:
                 found = self._objects_of(op.every, op.filter)
                 if not found:
                     # not a game rule: the game or one of its files isn't found
-                    raise PatchError(f"{op.at()} patches every {_what(op.every, op.filter)}, but none exists in this "
-                                     f"game build (after a game update, this needs a rebase)")
+                    raise coded(PatchError(f"{op.at()} patches every {_what(op.every, op.filter)}, but none exists in "
+                                           f"this game build (after a game update, this needs a rebase)"), "BLD-028")
                 for name, prefix, _obj in found:
                     try:
                         self._prop_op(op, name, every=True, prefix=prefix)
@@ -365,22 +370,23 @@ class Engine:
         elif op.kind in ("replacefile", "addfile"):
             self._file_op(op)
         else:
-            raise PatchError(f"unknown operation {op.kind!r}")
+            raise coded(PatchError(f"unknown operation {op.kind!r}"), "BLD-029")
 
     # --- objects ---
     def _missing(self, name: str, op: Op, verb: str) -> PatchError:
         if name in self.deleted:
             d = self.deleted[name]
-            return PatchError(f"{op.at()} {verb} {name}, which {d.at()} deleted")
-        return PatchError(f"{op.at()} {verb} {name}, which doesn't exist in this game build "
-                          f"(after a game update, this needs a rebase)")
+            return coded(PatchError(f"{op.at()} {verb} {name}, which {d.at()} deleted"), "BLD-030")
+        return coded(PatchError(f"{op.at()} {verb} {name}, which doesn't exist in this game build "
+                          f"(after a game update, this needs a rebase)"), "BLD-031")
 
     def _create(self, op: Op) -> None:
         name = op.target
         if name in self.game.objects:
             by = self.created.get(name)
             who = by.at() if by else "the game"
-            raise PatchError(f"{op.at()} creates {name}, but {who} already has an object with that name")
+            raise coded(PatchError(f"{op.at()} creates {name}, but {who} already has an object with that name"),
+                        "BLD-032")
         placed = op
         if op.kind == "clone":
             src, prefix = self._target(op, op.source, "clones")
@@ -394,7 +400,7 @@ class Engine:
                 elif isinstance(val, Inline):
                     source = val.obj
                 else:
-                    raise PatchError(f"{op.at()} clones {op.source}, which isn't an object")
+                    raise coded(PatchError(f"{op.at()} clones {op.source}, which isn't an object"), "BLD-033")
             obj = _fresh(source)  # owned sub-objects copied, references kept
             placed = copy.copy(op)
             placed.source = src  # the new object goes into its source's file (model.save)
@@ -440,8 +446,8 @@ class Engine:
     def _delete_object(self, op: Op) -> None:
         name, prefix = self._target(op, op.target, "deletes")
         if prefix:
-            raise PatchError(f"{op.at()} deletes {op.target}, a part of {name}; parts can't be deleted, patch {name} "
-                             f"instead")
+            raise coded(PatchError(f"{op.at()} deletes {op.target}, a part of {name}; parts can't be deleted, patch "
+                                   f"{name} instead"), "BLD-034")
         if name not in self.game.objects:
             if name in self.deleted:
                 self._find("note", f"{op.at()} deletes {name}, already deleted by {self.deleted[name].at()}", op)
@@ -459,10 +465,10 @@ class Engine:
         path = op.target.lower().replace("\\", "/")
         if op.kind == "addfile":
             if path in self.game.files:
-                raise PatchError(f"{op.at()} adds {op.target}, which already exists")
+                raise coded(PatchError(f"{op.at()} adds {op.target}, which already exists"), "BLD-035")
         elif path not in self.game.files:
             # not a game rule: how a mod names what it patches
-            raise PatchError(f"{op.at()} replaces {op.target}, which isn't a game file")
+            raise coded(PatchError(f"{op.at()} replaces {op.target}, which isn't a game file"), "BLD-036")
         prev = self.file_log.get(path)
         if prev and prev.mod != op.mod:
             self._find("warning", f"{op.at()} replaces {op.target}, which {prev.at()} already replaced", op)
@@ -487,7 +493,7 @@ class Engine:
         target_val = old
         if idx is not None:
             if not isinstance(old, ListV):
-                raise PatchError(f"{op.at()}: {owner}:{path} isn't a list")
+                raise coded(PatchError(f"{op.at()}: {owner}:{path} isn't a list"), "BLD-037")
             target_val = old.items[idx]
         category = {"set": "set", "mul": "math", "add": "math", "delprop": "delprop"}.get(op.kind, op.kind)
         self._check_conflict(op, key, category, target_val)
@@ -509,8 +515,8 @@ class Engine:
                     return
                 prev = self._last_other(op, key)
                 why = f" ({prev[0].at()} deleted it)" if prev and prev[1] == "delprop" else ""
-                raise PatchError(f"{op.at()}: can't {op.kind} {owner}:{path}, it isn't set{why}; set it first "
-                                 f"(the engine's default isn't stored in the data)")
+                raise coded(PatchError(f"{op.at()}: can't {op.kind} {owner}:{path}, it isn't set{why}; set it first "
+                                 f"(the engine's default isn't stored in the data)"), "BLD-038")
             new = _math(op, target_val, owner, path)
         else:
             new = self._list_op(op, target_val, owner, path, key)
@@ -571,14 +577,15 @@ class Engine:
                 if idx is not None:
                     val = obj.props.get(prop)
                     if not isinstance(val, ListV) or not -len(val.items) <= idx < len(val.items):
-                        raise PatchError(f"{op.at()}: {owner}:{'.'.join(walked + [prop])} has no item {idx}")
+                        raise coded(PatchError(f"{op.at()}: {owner}:{'.'.join(walked + [prop])} has no item {idx}"),
+                                    "BLD-039")
                     idx %= len(val.items)
                 path = ".".join(walked + [prop + (f"[{idx}]" if idx is not None else "")])
                 return owner, obj, prop, idx, path
             holder, key = obj.props, prop
             val = obj.props.get(prop)
             if val is None:
-                raise PatchError(f"{op.at()}: {owner} has no {'.'.join(walked + [prop])}")
+                raise coded(PatchError(f"{op.at()}: {owner} has no {'.'.join(walked + [prop])}"), "BLD-040")
             for sel in sels:
                 holder, key, val = self._item(op, val, sel, owner, ".".join(walked + [prop]))
             step = prop + "".join(f"[{s}]" for s in sels)
@@ -587,9 +594,10 @@ class Engine:
             elif isinstance(val, Ref) and val.target in self.game.objects:
                 users = self._referrers(val.target)
                 if users > 1 and op.share not in ("own", "shared"):
-                    raise PatchError(
+                    raise coded(PatchError(
                         f"{op.at()}: {owner}:{'.'.join(walked + [step])} is {val.target}, which {users} places use; "
-                        f"say `own` (this one only gets its own copy) or `shared` (change it for all of them)")
+                        f"say `own` (this one only gets its own copy) or `shared` (change it for all of them)"),
+                        "BLD-041")
                 if users > 1 and op.share == "own":
                     copy_ = Inline(_fresh(self.game.objects[val.target]))
                     holder[key] = copy_
@@ -598,18 +606,18 @@ class Engine:
                 else:
                     owner, obj, walked = val.target, self._own(val.target), []
             else:
-                raise PatchError(f"{op.at()}: {owner}:{'.'.join(walked + [step])} isn't an object")
-        raise PatchError(f"{op.at()}: empty property path")
+                raise coded(PatchError(f"{op.at()}: {owner}:{'.'.join(walked + [step])} isn't an object"), "BLD-042")
+        raise coded(PatchError(f"{op.at()}: empty property path"), "BLD-043")
 
     def _item(self, op: Op, val, sel: str, owner: str, prop: str):
         """(holder, key, value) of one item of a list (by number or filter), or of one entry of a map (by number; the
         path goes on with `.k` or `.v`)."""
         if isinstance(val, MapV):
             if not re.fullmatch(r"-?\d+", sel) or not -len(val.pairs) <= int(sel) < len(val.pairs):
-                raise PatchError(f"{op.at()}: {owner}:{prop} has no entry [{sel}]")
+                raise coded(PatchError(f"{op.at()}: {owner}:{prop} has no entry [{sel}]"), "BLD-044")
             return None, None, Inline(Obj(ENTRY, _EntryProps(val, int(sel) % len(val.pairs))))
         if not isinstance(val, ListV):
-            raise PatchError(f"{op.at()}: {owner}:{prop} isn't a list")
+            raise coded(PatchError(f"{op.at()}: {owner}:{prop} isn't a list"), "BLD-045")
         k = self._select(op, val, sel, owner, prop)
         return val.items, k, val.items[k]
 
@@ -617,7 +625,7 @@ class Engine:
         if re.fullmatch(r"-?\d+", sel):
             k = int(sel)
             if not -len(lst.items) <= k < len(lst.items):
-                raise PatchError(f"{op.at()}: {owner}:{prop} has no item {k}")
+                raise coded(PatchError(f"{op.at()}: {owner}:{prop} has no item {k}"), "BLD-046")
             return k % len(lst.items)
         field_, _, want = sel.partition("=")
         hits = []
@@ -628,7 +636,8 @@ class Engine:
                 hits.append(k)
         if len(hits) != 1:
             # not a game rule: how a mod names what it patches
-            raise PatchError(f"{op.at()}: [{sel}] matches {len(hits)} items of {owner}:{prop}, it must match exactly one")
+            raise coded(PatchError(f"{op.at()}: [{sel}] matches {len(hits)} items of {owner}:{prop}, it must match "
+                                   f"exactly one"), "BLD-047")
         return hits[0]
 
     # --- finding objects (MOD_FORMAT §4) ---
@@ -682,7 +691,7 @@ class Engine:
         for cond in _conditions(filter_ or ""):
             field_, eq, want = cond.partition("=")
             if not eq or not field_.strip():
-                raise PatchError(f"a filter is written [Property=value], not [{filter_}]")
+                raise coded(PatchError(f"a filter is written [Property=value], not [{filter_}]"), "BLD-048")
             field_, want = field_.strip(), want.strip()
             if field_ == "file":
                 found = [t for t in found if _unquote(want).lower() in self._file_of(t[0], t[2]).lower()]
@@ -711,13 +720,14 @@ class Engine:
         what = _what(cls, filter_)
         if not found:
             # not a game rule: the game or one of its files isn't found
-            raise PatchError(f"{op.at()} {verb} {what}, which doesn't exist in this game build (after a game update, "
-                             f"this needs a rebase)")
+            raise coded(PatchError(f"{op.at()} {verb} {what}, which doesn't exist in this game build (after a game "
+                                   f"update, this needs a rebase)"), "BLD-049")
         if len(found) > 1:
             names = ", ".join(f"{n}:{p}" if p else n for n, p, _ in found[:4])
             # not a game rule: how a mod names what it patches
-            raise PatchError(f"{op.at()}: {what} matches {len(found)} objects ({names}{', …' if len(found) > 4 else ''}); "
-                             f"it must match exactly one")
+            raise coded(PatchError(f"{op.at()}: {what} matches {len(found)} objects "
+                                   f"({names}{', …' if len(found) > 4 else ''}); it must match exactly one"),
+                        "BLD-050")
         name, prefix, _ = found[0]
         if sub:
             prefix = f"{prefix}.{sub}" if prefix else sub
@@ -733,7 +743,7 @@ class Engine:
         for i, (prop, sels) in enumerate(segs):
             val = obj.props.get(prop)
             if val is None:
-                raise PatchError(f"{op.at()}: {name} has no {path}")
+                raise coded(PatchError(f"{op.at()}: {name} has no {path}"), "BLD-051")
             holder, key = obj.props, prop
             for sel in sels:
                 holder, key, val = self._item(op, val, sel, name, prop)
@@ -744,7 +754,7 @@ class Engine:
             elif isinstance(val, Ref) and val.target in self.game.objects:
                 name, obj = val.target, get(val.target)
             else:
-                raise PatchError(f"{op.at()}: {name}:{path}: {prop} isn't an object")
+                raise coded(PatchError(f"{op.at()}: {name}:{path}: {prop} isn't an object"), "BLD-052")
         return holder, key, val
 
     def _ref_to(self, op: Op, text: str) -> str | None:
@@ -764,14 +774,14 @@ class Engine:
         if isinstance(val, Inline):
             holder, key, val = self._part_at(op, name, prefix, own=True)  # the same part, in the object _share changes
             return self._share(op, val.obj, holder, key)
-        raise PatchError(f"{op.at()}: {text} isn't an object")
+        raise coded(PatchError(f"{op.at()}: {text} isn't an object"), "BLD-053")
 
     def _share(self, op: Op, part: Obj, holder, key) -> str:
         """Give a part its own name so something else can refer to it too (it stays where it is in its file)."""
         if part.origin is None:
             # not a game rule: how a mod names what it patches
-            raise PatchError(f"{op.at()}: can't refer to a {part.cls} part that a mod made; refer to a part of a game "
-                             f"object, or make it a named object of its own")
+            raise coded(PatchError(f"{op.at()}: can't refer to a {part.cls} part that a mod made; refer to a part of a "
+                                   f"game object, or make it a named object of its own"), "BLD-054")
         name = f"{part.origin[0]}#{part.origin[1]}"
         holder[key] = Ref(name)
         self.game.objects[name] = part
@@ -838,7 +848,8 @@ class Engine:
     def _list_op(self, op: Op, current, owner: str, path: str, key):
         where = f"{owner}:{path}"
         if not isinstance(current, ListV):
-            raise PatchError(f"{op.at()}: {where} isn't a list" + (" (it isn't set)" if current is None else ""))
+            raise coded(PatchError(f"{op.at()}: {where} isn't a list" + (" (it isn't set)" if current is None else "")),
+                        "BLD-055")
         items = list(current.items)
         if op.kind == "append":
             self._no_deleted_refs(op, ListV(op.value))
@@ -863,14 +874,15 @@ class Engine:
             if op.where == "at":
                 pos = int(op.anchor)
                 if not 0 <= pos <= len(items):
-                    raise PatchError(f"{op.at()}: {where} has no position {pos}")
+                    raise coded(PatchError(f"{op.at()}: {where} has no position {pos}"), "BLD-056")
             else:
                 anchor = _fit(op.anchor, items)
                 if anchor not in items:
                     prev = self._last_other(op, key)
                     why = f" ({prev[0].at()} removed it)" if prev and prev[1] == "remove" and \
                         _overlap([op.anchor], prev[2]) else ""
-                    raise PatchError(f"{op.at()}: can't insert next to {show(op.anchor)} in {where}, it isn't there{why}")
+                    raise coded(PatchError(f"{op.at()}: can't insert next to {show(op.anchor)} in {where}, it isn't "
+                                           f"there{why}"), "BLD-057")
                 pos = items.index(anchor) + (1 if op.where == "after" else 0)
             items.insert(pos, _fit(op.value, items))
         return ListV(items)
@@ -878,7 +890,8 @@ class Engine:
     def _no_deleted_refs(self, op: Op, value) -> None:
         for v in _walk_value(value):
             if isinstance(v, Ref) and v.target in self.deleted and v.target not in self.game.objects:
-                raise PatchError(f"{op.at()} refers to {v.target}, which {self.deleted[v.target].at()} deleted")
+                raise coded(PatchError(f"{op.at()} refers to {v.target}, which {self.deleted[v.target].at()} deleted"),
+                            "BLD-058")
 
     # --- the end: round numbers once, check references, the truck flags and what the game needs of units ---
     def _finish(self) -> None:
@@ -886,8 +899,8 @@ class Engine:
             found = self._finish_obj(name, obj, write=not self.game.shares(name))
             if found is None:  # a number of an object still in common with the caller's game changes: copied first
                 found = self._finish_obj(name, self._own(name), write=True)
-            for message in found:
-                self._find("error", message)
+            for message, code in found:
+                self._find("error", message, code=code)
         new = [n for n in self.created if n in self.game.objects]
         if new:
             from .identity import clashes
@@ -912,17 +925,18 @@ class Engine:
             # rule: ruses-per-sector
             self._find("error", f"{op.at()}: {why}" if op else f"{name}: {why} (a .rmod mod in the set sets it)", op)
 
-    def _finish_obj(self, name: str, obj: Obj, write: bool) -> list[str] | None:
+    def _finish_obj(self, name: str, obj: Obj, write: bool) -> list[tuple[str, str]] | None:
         """Round the numbers of the top-level object `name` once (in place) and check its references: the errors, in
-        order. Not `write`: None as soon as rounding would change a number, even only in how it's written (5.0 to 5),
-        or would make a new NaN, which compares unequal and so counts as changed (model.save)."""
+        order, each with its code for Bug Watch (rusemod.codes). Not `write`: None as soon as rounding would change a
+        number, even only in how it's written (5.0 to 5), or would make a new NaN, which compares unequal and so counts
+        as changed (model.save)."""
         found = []
         for v in _walk_obj(obj):
             if isinstance(v, Num):
                 try:
                     r = _round(v)
                 except PatchError as exc:
-                    found.append(f"{name}: {exc}")
+                    found.append((f"{name}: {exc}", getattr(exc, "bw_code", "")))
                     continue
                 if write:
                     v.value = r
@@ -930,7 +944,7 @@ class Engine:
                     return None
             elif isinstance(v, Ref) and v.target is not None and v.target not in self.game.objects:
                 why = f", which {self.deleted[v.target].at()} deleted" if v.target in self.deleted else ""
-                found.append(f"{name} still refers to {v.target}{why}")
+                found.append((f"{name} still refers to {v.target}{why}", "BLD-061"))
         return found
 
     def _blame(self, hit) -> Op | None:
@@ -1039,7 +1053,7 @@ def _round(v: Num) -> Decimal:
         r = v.value.quantize(Decimal(1), rounding=ROUND_HALF_UP)  # half away from zero: 52.5 -> 53, -2.5 -> -3
         lo, hi = INT_RANGES[v.kind]
         if not lo <= r <= hi:
-            raise PatchError(f"{r} doesn't fit in {v.kind}")
+            raise coded(PatchError(f"{r} doesn't fit in {v.kind}"), "BLD-059")
         return r
     if v.kind == "float32":
         return Decimal(struct.unpack("<f", struct.pack("<f", float(v.value)))[0])
@@ -1061,7 +1075,7 @@ def _math(op: Op, current, owner: str, path: str):
 
     def one(n):
         if not isinstance(n, Num):
-            raise PatchError(f"{op.at()}: {owner}:{path} isn't a number")
+            raise coded(PatchError(f"{op.at()}: {owner}:{path} isn't a number"), "BLD-060")
         return Num(n.kind, n.value * k if op.kind == "mul" else n.value + k)
 
     if isinstance(current, ListV):
