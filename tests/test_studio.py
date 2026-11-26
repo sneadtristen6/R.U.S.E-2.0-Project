@@ -1768,8 +1768,9 @@ class MapDocks(WithMod):
                   "fix": None}]
         go = threading.Event()
 
-        def check(game, mod, pack, say):
-            self.assertEqual((Path(game), Path(mod), pack), (self.game, folder, "SuperCrossRoads4"))
+        def check(game, mod, pack, say, home=None):   # (home: where the build cache is kept, the Studio's own)
+            self.assertEqual((Path(game), Path(mod), pack, home), (self.game, folder, "SuperCrossRoads4",
+                                                                   self.api._home))
             say("roads: SuperCrossRoads4")
             go.wait(5)
             return found

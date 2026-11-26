@@ -752,7 +752,7 @@ class ThePageAndItsHelp(unittest.TestCase):
         from ruse_studio.api import _words
         js, fake = (self.UI / "eraunits.js").read_text(encoding="utf-8"), (self.UI / "fake-api.js").read_text(encoding="utf-8")
         own = sorted(k for k in _words() if re.fullmatch(r"(tip_)?eras_horse_\w+", k))
-        self.assertEqual(len(own), 11)
+        self.assertEqual(len(own), 12)   # (12 since eras_horse_bones_link: its bones, halves and animations' page)
         steps = re.search(r"const HORSE_STEPS = \{(.*?)\};", js, re.S).group(1)
         self.assertEqual(sorted(re.findall(r'(\w+): "', steps)), sorted(horse_squad.STEPS))   # every step of the job
         for key in own:
