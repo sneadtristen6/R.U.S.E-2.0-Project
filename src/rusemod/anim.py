@@ -915,6 +915,8 @@ def copy_unit(mod: Path, source: str, target: str) -> bool:
         if u:
             if src.is_dir():
                 shutil.copytree(src, dst, dirs_exist_ok=True)
+                from . import holding   # (the Studio's note of what it wrote: a leftover of a deleted unit's, same bytes and times)
+                holding.note(mod, [p for p in dst.rglob("*") if p.is_file()])
             table[target] = copy.deepcopy(u)
             write_units(mod, table)
         if ticked:

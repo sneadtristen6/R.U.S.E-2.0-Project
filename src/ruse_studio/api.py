@@ -32,7 +32,7 @@ from dataclasses import asdict, replace
 from decimal import ROUND_HALF_UP, Decimal
 from pathlib import Path, PurePosixPath
 
-from rusemod import (ai, buildtext, doctor, economy, flaginfo, gamefiles, identity, loc, mapscripts, missions,
+from rusemod import (ai, buildtext, doctor, economy, flaginfo, gamefiles, holding, identity, loc, mapscripts, missions,
                      mod_index, modformat, newmap, numberinfo, package, packfiles, scenario, scenery, schema,
                      startlog, values as every_value, yourfiles)
 from rusemod.backup import BackupCalls
@@ -9424,6 +9424,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         part = to.with_name(to.name + ".part")
         part.write_bytes(data)
         part.replace(to)
+        holding.note(mod, [to])   # (the Studio's note of what it wrote: a leftover of a deleted unit's card, same size and time)
         return {"card": self._card_view(address),
                 "message": f"The card is in {mod.name} now. Click Test in game to see it in the build menu."}
 
