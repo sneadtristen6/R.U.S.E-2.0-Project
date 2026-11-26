@@ -4078,7 +4078,8 @@ def find_pack(game: Path, name: str) -> Path | None:
     p = Path(name)
     if p.is_file():
         return p
-    candidates = [game / "Data" / "PC" / rev / name for rev in data_revisions(game)] + [game / "Maps" / "PC" / name]
+    candidates = ([game / "Data" / "PC" / rev / name for rev in reversed(data_revisions(game))]   # newest first (FL-121)
+                  + [game / "Maps" / "PC" / name])
     for c in candidates:
         if c.is_file():
             return c
