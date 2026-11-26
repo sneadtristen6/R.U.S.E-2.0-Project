@@ -10056,7 +10056,8 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             all_units = self._all_units(ix)
             menus = {(u["nation"], u["factory"]) for u in all_units if u["factory"] is not None}
             menus |= self._own_menus(ix, edits)  # the mod's buildings with units of their own (board.py)
-            parent = ix.links(UPGRADE).get(source)      # the unit the source is researched from, if any
+            parent = ix.links(UPGRADE).get(source)      # the unit the source is researched from, if any (the copy gets the game's link)
+            gone = self._hidden_by_mod(edits) | set(edits.deleted)   # (U-15: a parent the mod hid or took out)
             parent_menu = next(((u["nation"], u["factory"]) for u in all_units if u["address"] == parent), None)
             namespace, tail = source.rsplit("/", 1)
             m = _PREFIX.match(tail)
@@ -10125,8 +10126,10 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         # moved to a menu its research parent isn't in, it becomes a unit of its own: a unit researched from another
         # nation's unit never lets a match finish loading (2026-10-09 test: a T-80 started from the Soviet IS-2, researched from the KV-1, put in the USA's menu:
         # the loading screen never ended; rule unit-research-parent). The Upgrade box can link it again in its menu.
-        dropped = parent if parent is not None and "Nationalite" in values and parent_menu != (nation, factory) \
-            else None
+        # (the same when the parent is hidden by the mod or taken out of it: the build stops on a shown unit researched
+        # from a hidden one; U-15)
+        moved = "Nationalite" in values and parent_menu != (nation, factory)
+        dropped = parent if parent is not None and (moved or parent in gone) else None
         own = [(UPGRADE, REMOVED)] + ([(UPGRADE_FLAG, REMOVED)] if any(path == UPGRADE_FLAG for path, _n, _t in
                                                                        o["values"]) else []) if dropped else []
         with self._saving:

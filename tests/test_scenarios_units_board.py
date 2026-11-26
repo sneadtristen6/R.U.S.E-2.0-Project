@@ -64,14 +64,13 @@ class KeepOrEmpty(Player):
     # Again: it's shown in its build menu at every battle date, but ...Descriptor_Unit_M1, the unit it's researched from
     # (UpgradeRequire), is hidden there (ShowInMenu 0): the game stops when that build menu opens"). Found on the real
     # game first (the finished mod "Real board": the USA emptied, then a copy of the Sherman, an upgrade of the Lee).
-    @unittest.expectedFailure
     def test_a_copy_of_an_upgrade_made_after_its_nation_was_emptied_builds(self):
         folder = self.mod("Emptied then copied")
         self.call("nation_units_hide", 0, True, "us")
         copy = self.call("new_unit", M2, "M2 Again", 40, -1, -1, False, None)["address"]
         self.assertEqual(self.build(folder)[0], [], self.call("upgrade", copy, "us")["parent"])
 
-    @unittest.expectedFailure   # U-15 too, the board's take-out
+    # U-15 too, the board's take-out
     def test_a_copy_of_an_upgrade_made_after_its_parent_was_taken_out_builds(self):
         folder = self.mod("Taken out then copied")
         self.call("board_take_out", 0, M1, None, "us")
@@ -86,18 +85,23 @@ class KeepOrEmpty(Player):
         errors = self.build(folder)[0]
         print("\nM1's dates by hand: check_mod", self.call("check_mod")["problems"], "| build:", errors)
 
-    def test_what_a_copy_of_an_upgrade_made_after_its_nation_was_emptied_does_now(self):
-        """U-15 as it is now (passes on the code as it is; goes once U-15 is mended): New unit… says nothing (no
-        research_parent_dropped), the copy's Upgrade box names M1, the mod check says nothing, the build stops."""
+    def test_a_copy_of_an_upgrade_made_after_its_nation_was_emptied_is_bought_from_the_start(self):
+        """U-15 mended: New unit... says which unit it stopped being researched from, the copy's Upgrade box is empty
+        and the build goes through."""
         folder = self.mod("Emptied then copied now")
         self.call("nation_units_hide", 0, True, "us")
         res = self.call("new_unit", M2, "M2 Again", 40, -1, -1, False, None)
+        self.assertEqual(res["research_parent_dropped"], M1)
+        self.assertIsNone(self.call("upgrade", res["address"], "us")["parent"])
+        self.assertEqual(self.build(folder)[0], [])
+
+    def test_a_copy_of_an_upgrade_whose_parent_is_shown_stays_an_upgrade(self):
+        """The control: nothing hidden, so the copy stays researched from M1 and nothing is said."""
+        folder = self.mod("Shown parent")
+        res = self.call("new_unit", M2, "M2 Again", 40, -1, -1, False, None)
         self.assertIsNone(res["research_parent_dropped"])
         self.assertEqual(self.call("upgrade", res["address"], "us")["parent"]["address"], M1)
-        print("\nU-15 check_mod:", self.call("check_mod")["problems"])
-        errors = self.build(folder)[0]
-        self.assertEqual(len(errors), 1)
-        self.assertIn("the game stops when that build menu opens", errors[0])
+        self.assertEqual(self.build(folder)[0], [])
 
     def test_empty_germany_with_a_lend_lease_tank_in_it(self):
         folder = self.mod("Empty Germany")
