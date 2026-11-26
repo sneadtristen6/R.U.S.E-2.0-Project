@@ -3547,7 +3547,8 @@ function modelBox(address, info, draw, changed) {
     // for as long as the model has them
     for (const line of alphaLostLines(own)) box.append(el("p", { className: "notice warn", textContent: line }));
     // a mod made with both (by an older Studio, or by hand): the build stops on it (rusemod.build.unit_own_copies)
-    if (info.own_copy) box.append(el("p", { className: "notice warn", textContent: squad ? w.model_both_squad : w.model_both }));
+    if (info.own_copy) box.append(squad ? helpLine(w.model_both_squad, "squad", "notice warn")   // (with the link: 52v)
+      : el("p", { className: "notice warn", textContent: w.model_both }));
     const drop = el("button", { type: "button", className: "ghost", textContent: w.model_remove,
       title: kinds ? w.tip_model_remove_kinds : squad ? w.tip_model_remove_squad : w.tip_model_remove });
     drop.addEventListener("click", async () => {
@@ -3808,8 +3809,10 @@ function uniformBox(address, info, draw, changed, squadPage = false) {
       title: owned ? (squadPage ? w.tip_squad_uniform_custom_own_model : w.tip_uniform_custom_own_model)
         : w.tip_uniform_custom, disabled: !state.mod || owned });
     custom.addEventListener("click", act("model_copy", custom));
-    box.append(el("p", { className: "muted small",
-      textContent: owned ? (squadPage ? w.squad_uniform_own_model : w.uniform_own_model) : w.uniform_default }),
+    // (a squad wears your models or a uniform, not both: said here with the Having trouble? link, as in its card's
+    // notes; 52v)
+    box.append(owned ? helpLine(squadPage ? w.squad_uniform_own_model : w.uniform_own_model, "squad")
+      : el("p", { className: "muted small", textContent: w.uniform_default }),
       el("div", { className: "actions" }, custom));
     if (!state.mod) box.append(el("p", { className: "notice", textContent: w.no_mod }));
   }

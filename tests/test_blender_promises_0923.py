@@ -331,6 +331,16 @@ class Item31CustomUniformLine(InElevenLanguages):
         self.names_in_every_language("uniform_has", ["one_parts", "one_part_soldiers", "one_part_paint", "look_open"])
 
 
+class Item32ModelsOrUniformLink(InElevenLanguages):
+    ITEM = "32"
+
+    def test_52v_models_or_uniform_said_with_the_link(self):
+        self.assertIn('helpLine(fill(w.squad_both, { who: s.label }), "squad", "notice warn")', js("squad.js"))
+        app = js("app.js")
+        self.assertIn('helpLine(squadPage ? w.squad_uniform_own_model : w.uniform_own_model, "squad")', app)
+        self.assertIn('helpLine(w.model_both_squad, "squad", "notice warn")', app)
+
+
         #                                         code says the same words, for every refusal)
 
 
