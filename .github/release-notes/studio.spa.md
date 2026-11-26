@@ -1,7 +1,7 @@
 **RUSE Studio, una versión preliminar para modders.** Explora las unidades del juego en cualquiera de sus diez
 idiomas, cámbialas en un mod propio y pruébalo en el juego. Tu instalación de Steam nunca se modifica.
 
-**0.9.8.23:** Una actualización obligatoria: nuevos términos de uso y aviso de privacidad, el título propio del juego por defecto, actualizaciones firmadas, un código de fallo para cada fallo y los arreglos prometidos en el anuncio de la 0.9.8.22.
+**0.9.8.23:** Una actualización obligatoria, sobre todo de calidad de vida: mucho trabajo entre bastidores para que las aplicaciones sean más seguras y más fáciles de usar, sobre todo en multijugador. Nuevos términos de uso y aviso de privacidad, el título propio del juego por defecto, actualizaciones firmadas, un código de fallo para cada fallo y muchos arreglos.
 
 - **Una actualización obligatoria:** las versiones anteriores ya no se pueden usar. Al abrirse, la aplicación instala esta por sí sola, y **Probar en el juego** espera a que esté instalada.
 - **Nuevos términos de uso y aviso de privacidad (versión 5):** se muestran una vez al abrir la aplicación; **Aceptar y continuar** para seguir. Ahora dicen claramente lo que RUSE Guard, Bug Watch y las aplicaciones hacen en tu PC y lo que envían. Léelos de nuevo cuando quieras en **Ajustes > Términos, créditos y licencias**, con los créditos y la licencia.

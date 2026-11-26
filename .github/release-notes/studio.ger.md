@@ -1,7 +1,7 @@
 **RUSE Studio, eine Vorschau für Modder.** Durchsuche die Einheiten des Spiels in jeder seiner zehn Sprachen, ändere
 sie in einem eigenen Mod und teste ihn im Spiel. Deine Steam-Installation wird nie verändert.
 
-**0.9.8.23:** Ein Pflicht-Update: neue Nutzungsbedingungen und Datenschutzerklärung, standardmäßig der eigene Titel des Spiels, signierte Updates, ein Absturzcode für jeden Absturz und die Korrekturen, die in der Ankündigung zu 0.9.8.22 versprochen wurden.
+**0.9.8.23:** Ein Pflicht-Update, vor allem für mehr Komfort: viel Arbeit hinter den Kulissen, damit die Apps sicherer und einfacher zu benutzen sind, besonders im Mehrspielermodus. Neue Nutzungsbedingungen und Datenschutzerklärung, standardmäßig der eigene Titel des Spiels, signierte Updates, ein Absturzcode für jeden Absturz und viele Korrekturen.
 
 - **Ein Pflicht-Update:** ältere Versionen können nicht mehr benutzt werden. Beim Öffnen installiert die App diese Version von selbst, und **Im Spiel testen** wartet, bis sie installiert ist.
 - **Neue Nutzungsbedingungen und Datenschutzerklärung (Version 5):** werden einmal beim Öffnen der App gezeigt; mit **Akzeptieren und weiter** geht es weiter. Sie sagen jetzt klar, was RUSE Guard, Bug Watch und die Apps auf deinem PC tun und was sie senden. Du kannst sie jederzeit in **Einstellungen > Bedingungen, Danksagungen und Lizenzen** noch einmal lesen, mit den Danksagungen und der Lizenz.

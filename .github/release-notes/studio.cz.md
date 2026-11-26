@@ -1,7 +1,7 @@
 **RUSE Studio, ukázková verze pro moddery.** Procházejte jednotky hry v kterémkoli z jejích deseti jazyků, měňte je ve
 vlastním módu a vyzkoušejte ho ve hře. Vaše instalace Steamu se nikdy nemění.
 
-**0.9.8.23:** Povinná aktualizace: nové podmínky použití a zásady ochrany soukromí, ve výchozím nastavení vlastní titul hry, podepsané aktualizace, kód pádu pro každý pád a opravy slíbené v oznámení verze 0.9.8.22.
+**0.9.8.23:** Povinná aktualizace, hlavně pro pohodlí: spousta práce v zákulisí, aby byly aplikace bezpečnější a snáz se používaly, hlavně ve hře více hráčů. Nové podmínky použití a zásady ochrany soukromí, ve výchozím nastavení vlastní titul hry, podepsané aktualizace, kód pádu pro každý pád a mnoho oprav.
 
 - **Povinná aktualizace:** starší verze už nelze používat. Při spuštění aplikace tuto verzi nainstaluje sama a **Vyzkoušet ve hře** počká, až bude nainstalovaná.
 - **Nové podmínky použití a zásady ochrany soukromí (verze 5):** zobrazí se jednou při spuštění aplikace; pro pokračování zvolte **Přijmout a pokračovat**. Nově jasně říkají, co RUSE Guard, Bug Watch a aplikace dělají na vašem PC a co odesílají. Můžete si je kdykoli znovu přečíst v **Nastavení > Podmínky, poděkování a licence**, spolu s poděkováním a licencí.

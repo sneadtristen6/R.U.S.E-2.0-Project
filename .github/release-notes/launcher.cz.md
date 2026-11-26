@@ -1,7 +1,7 @@
 **RUSE Launcher 0.4, pro hráče.** Najde R.U.S.E. přes Steam a **Hrát** sestaví upravenou kopii hry s vašimi módy a
 spustí ji. Vaše instalace Steamu se nikdy nemění.
 
-**0.4.8.23:** Povinná aktualizace: nové podmínky používání a oznámení o ochraně soukromí, vlastní název hry ve výchozím nastavení, podepsané aktualizace, kód pádu po každém pádu, opravy RUSE Guard a opravy slíbené v oznámení k 0.4.8.22.
+**0.4.8.23:** Povinná aktualizace, hlavně pro pohodlí: spousta práce v zákulisí, aby byly aplikace bezpečnější a snáz se používaly, hlavně ve hře více hráčů. Nové podmínky používání a oznámení o ochraně soukromí, vlastní název hry ve výchozím nastavení, podepsané aktualizace, kód pádu po každém pádu, silnější RUSE Guard a mnoho oprav.
 
 - **Povinná aktualizace:** starší verze už nejde používat. Po otevření ji aplikace nainstaluje sama a **Hrát** počká, až bude nainstalovaná.
 - **Nové podmínky používání a oznámení o ochraně soukromí (verze 5):** zobrazí se jednou po otevření aplikace; pokračujte tlačítkem **Přijmout a pokračovat**. Nově jasně říkají, co RUSE Guard, Bug Watch a aplikace dělají na vašem PC a co odesílají. Přečtete si je znovu kdykoli v **Nastavení > Podmínky, poděkování a licence**, spolu s poděkováním a licencí.

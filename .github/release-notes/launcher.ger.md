@@ -1,7 +1,7 @@
 **RUSE Launcher 0.4, für Spieler.** Er findet R.U.S.E. über Steam, und **Spielen** baut eine gemoddete Kopie des
 Spiels mit deinen Mods und startet sie. Deine Steam-Installation wird nie verändert.
 
-**0.4.8.23:** Ein Pflicht-Update: neue Nutzungsbedingungen und Datenschutzerklärung, standardmäßig der eigene Titel des Spiels, signierte Updates, ein Absturzcode bei jedem Absturz, Korrekturen für RUSE Guard und die in der Ankündigung zu 0.4.8.22 versprochenen Korrekturen.
+**0.4.8.23:** Ein Pflicht-Update, vor allem für mehr Komfort: viel Arbeit hinter den Kulissen, damit die Apps sicherer und einfacher zu benutzen sind, besonders im Mehrspielermodus. Neue Nutzungsbedingungen und Datenschutzerklärung, standardmäßig der eigene Titel des Spiels, signierte Updates, ein Absturzcode bei jedem Absturz, ein stärkerer RUSE Guard und viele Korrekturen.
 
 - **Ein Pflicht-Update:** ältere Versionen lassen sich nicht mehr benutzen. Beim Öffnen installiert die App dieses Update von selbst, und **Spielen** wartet, bis es drin ist.
 - **Neue Nutzungsbedingungen und Datenschutzerklärung (Version 5):** werden einmal beim Öffnen der App gezeigt; mit **Akzeptieren und weiter** geht es weiter. Sie sagen jetzt klar, was RUSE Guard, Bug Watch und die Apps auf deinem PC tun und was sie senden. Lies sie jederzeit wieder unter **Einstellungen > Bedingungen, Danksagungen und Lizenzen**, mit den Danksagungen und der Lizenz.

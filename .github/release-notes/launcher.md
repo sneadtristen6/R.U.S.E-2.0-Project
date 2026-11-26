@@ -1,7 +1,7 @@
 **RUSE Launcher 0.4, for players.** It finds R.U.S.E. through Steam, and **Play** builds a modded copy of the game
 with your mods and starts it. Your Steam install is never changed.
 
-**0.4.8.23:** A required update: new terms of use and privacy notice, the game's own title by default, signed updates, a crash code for every crash, RUSE Guard's fixes and the fixes promised in 0.4.8.22's announcement.
+**0.4.8.23:** A required update, mostly quality of life: a lot of work behind the scenes to make the apps safer and easier to use, especially in multiplayer. New terms of use and privacy notice, the game's own title by default, signed updates, a crash code for every crash, a stronger RUSE Guard and many fixes.
 <!-- required update -->
 
 - **A required update:** older versions can't be used any more. When the app opens it installs this one by itself, and **Play** waits until it's in.

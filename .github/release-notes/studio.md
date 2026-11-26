@@ -1,7 +1,7 @@
 **RUSE Studio, a preview for modders.** Browse the game's units in any of its ten languages, change them in a mod of
 your own, and test it in the game. Your Steam install is never changed.
 
-**0.9.8.23:** A required update: new terms of use and privacy notice, the game's own title by default, signed updates, a crash code for every crash, and the fixes promised in 0.9.8.22's announcement.
+**0.9.8.23:** A required update, mostly quality of life: a lot of work behind the scenes to make the apps safer and easier to use, especially in multiplayer. New terms of use and privacy notice, the game's own title by default, signed updates, a crash code for every crash, and many fixes.
 <!-- required update -->
 
 - **A required update:** older versions can't be used any more. When the app opens it installs this one by itself, and **Test in game** waits until it's in.

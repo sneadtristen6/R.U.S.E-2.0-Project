@@ -1,11 +1,12 @@
 ---
-title: "Studio 0.9.8.23 and Launcher 0.4.8.23: a required update with new terms, signed updates, a crash code for every crash and the promised fixes"
+title: "Studio 0.9.8.23 and Launcher 0.4.8.23: bug fixes, crash codes and a stronger anti-cheat"
 category: Announcements
 order: 28
 ---
 **RUSE Studio 0.9.8.23** and **RUSE Launcher 0.4.8.23** are out:
-[Releases](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases). This update is required: both apps install
-it by themselves when they open, and Play and Test in game wait until it's in.
+[Releases](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases). Most of this update is quality of life: a
+lot of work behind the scenes to make the apps safer and easier to use, especially in multiplayer. It's required: both
+apps install it by themselves when they open, and Play and Test in game wait until it's in.
 
 ![R.U.S.E. 2.0](https://raw.githubusercontent.com/sneadtristen6/R.U.S.E-2.0-Project/main/docs/images/ruse-2-0-brand.png)
 
@@ -49,7 +50,7 @@ started like a mod set's; to play R.U.S.E. without our apps, start it from Steam
 - **Microsoft WebView2**, which the apps' window needs, is offered where it's missing, never forced: a ticked box in
   the installer, a Yes/No box when an app opens, and a card in Settings.
 
-**The fixes promised in 0.9.8.22's announcement.** Of the problems and changes we listed for this update, these are in:
+**More fixes and changes:**
 
 - **Making units:** the mod menu shows each mod's real name; a unit price below 0 refused, as a research price already
   is; a second unit with exactly the same name refused in every alphabet; plainer limits ("too big: the game takes at
