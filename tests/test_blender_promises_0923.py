@@ -204,6 +204,18 @@ OLD_END = {"us": "Not tried in the game yet.", "fr": "Pas encore essayé dans le
            "jpn": "ゲーム内ではまだ試していません。", "sc": "尚未在游戏中试过。", "fa": "هنوز در بازی امتحان نشده است."}
 
 
+class Item19Automatic(InElevenLanguages):
+    ITEM = "19"
+
+    def test_52i_automatic_in_place_of_nearest(self):
+        keys = ["actions_nearest", "actions_how", "tip_actions_pick"]
+        self.words_in_eleven_languages(keys)
+        for key in keys:
+            self.assertNotIn("Nearest", WORDS[key]["us"], key)
+            for lang in LANGS:
+                self.assertIn(AUTOMATIC[lang], WORDS[key][lang], (key, lang))
+
+
         #                                         code says the same words, for every refusal)
 
 
