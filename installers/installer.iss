@@ -1,7 +1,8 @@
 ﻿; The installer for either app (Inno Setup 6). installers/build_app.py passes the app's details:
 ; AppName, AppId, AppVersion, ExeName, AppDescription, SourceDir (the built program folder), IconFile, OutputDir,
 ; OutputName. It installs for the current Windows user only, so it never asks for admin rights, and it never touches
-; the game. Uninstalling keeps the platform folder (mods, settings, the game index) in %LOCALAPPDATA%.
+; the game. Uninstalling keeps the platform folder (mods, settings, the game index) in %LOCALAPPDATA% unless the
+; player says Yes to the question at uninstall (it starts on No).
 
 #ifndef AppName
   #error Build this through installers/build_app.py, which passes the app's details.
@@ -89,6 +90,20 @@ farsi.BackupGroup=بازی شما
 farsi.BackupTask=نگه داشتن یک پشتیبان تمیز از فایل‌های بازی (توصیه‌شده)
 farsi.BackupWhy=چرا: RUSE Launcher و RUSE Studio هیچ‌وقت پوشهٔ بازی شما را تغییر نمی‌دهند، اما مدیرهای ماد دیگر و ویرایش‌های دستی ممکن است تغییرش دهند، و هر بازی مادشده از همین فایل‌ها ساخته می‌شود. با یک پشتیبان تمیز، برنامه می‌تواند فایل‌های بازی را بررسی کند و هر فایلی را که تغییر کرده برگرداند. پشتیبان در اولین اجرای برنامه ساخته می‌شود: چند دقیقه طول می‌کشد و تقریباً به اندازهٔ خود بازی جا می‌گیرد (در RUSE-Backup، روی درایو بازی).
 
+; Asked when the app is uninstalled (the owner, 2026-11-25, decision 19: "add a second setting for that"): also delete the
+; apps' settings and data (the platform folder, rusemod.home). Never ticked for the player: the default answer is No.
+english.DeleteDataQuestion=Also delete the settings and data of RUSE Launcher and RUSE Studio on this PC?%n%nBoth apps share them: your saved choices and the apps' stored files. Your game, the copies made from it and your Documents\RUSE 2.0 folder are never deleted.%n%nChoose No to keep them, for a later install.
+french.DeleteDataQuestion=Supprimer aussi les réglages et les données de RUSE Launcher et de RUSE Studio sur ce PC ?%n%nLes deux applications les partagent : vos choix enregistrés et les fichiers que les applications conservent. Votre jeu, les copies faites à partir de lui et votre dossier Documents\RUSE 2.0 ne sont jamais supprimés.%n%nChoisissez Non pour les garder, pour une installation ultérieure.
+german.DeleteDataQuestion=Auch die Einstellungen und Daten von RUSE Launcher und RUSE Studio auf diesem PC löschen?%n%nBeide Apps teilen sie: deine gespeicherten Einstellungen und die Dateien, die die Apps aufbewahren. Dein Spiel, die daraus gemachten Kopien und dein Ordner Dokumente\RUSE 2.0 werden nie gelöscht.%n%nWähle Nein, um sie für eine spätere Installation zu behalten.
+italian.DeleteDataQuestion=Eliminare anche le impostazioni e i dati di RUSE Launcher e RUSE Studio su questo PC?%n%nLe due app li condividono: le tue scelte salvate e i file che le app conservano. Il tuo gioco, le copie fatte da esso e la cartella Documenti\RUSE 2.0 non vengono mai eliminati.%n%nScegli No per conservarli, per un'installazione futura.
+spanish.DeleteDataQuestion=¿Borrar también los ajustes y los datos de RUSE Launcher y RUSE Studio en este PC?%n%nLas dos aplicaciones los comparten: tus opciones guardadas y los archivos que guardan las aplicaciones. Tu juego, las copias hechas a partir de él y tu carpeta Documentos\RUSE 2.0 nunca se borran.%n%nElige No para conservarlos, para una instalación posterior.
+polish.DeleteDataQuestion=Usunąć też ustawienia i dane RUSE Launcher i RUSE Studio na tym komputerze?%n%nObie aplikacje korzystają z nich wspólnie: zapisane wybory i pliki przechowywane przez aplikacje. Twoja gra, kopie z niej zrobione i folder Dokumenty\RUSE 2.0 nigdy nie są usuwane.%n%nWybierz Nie, aby je zachować na późniejszą instalację.
+russian.DeleteDataQuestion=Удалить также настройки и данные RUSE Launcher и RUSE Studio на этом компьютере?%n%nОба приложения используют их вместе: ваши сохранённые выборы и файлы, которые хранят приложения. Ваша игра, сделанные из неё копии и папка Документы\RUSE 2.0 никогда не удаляются.%n%nВыберите Нет, чтобы сохранить их для будущей установки.
+czech.DeleteDataQuestion=Smazat také nastavení a data RUSE Launcheru a RUSE Studia na tomto počítači?%n%nObě aplikace je sdílejí: vaše uložené volby a soubory, které aplikace uchovávají. Vaše hra, kopie z ní vytvořené a složka Dokumenty\RUSE 2.0 se nikdy nemažou.%n%nVyberte Ne, abyste je zachovali pro pozdější instalaci.
+japanese.DeleteDataQuestion=このPCにある RUSE Launcher と RUSE Studio の設定とデータも削除しますか？%n%n2つのアプリが共有している、保存した選択内容とアプリが保管しているファイルです。ゲーム本体、そこから作ったコピー、ドキュメント\RUSE 2.0 フォルダーは削除されません。%n%n後でインストールし直すときのために残すには「いいえ」を選んでください。
+chinesesimplified.DeleteDataQuestion=是否同时删除这台电脑上 RUSE Launcher 和 RUSE Studio 的设置和数据？%n%n两个应用共用它们：你保存的选择和应用保存的文件。你的游戏、由它制作的副本以及“文档\RUSE 2.0”文件夹永远不会被删除。%n%n选择“否”可保留它们，以便以后重新安装。
+farsi.DeleteDataQuestion=تنظیمات و داده‌های RUSE Launcher و RUSE Studio روی این رایانه هم پاک شود؟%n%nهر دو برنامه آن‌ها را مشترک دارند: انتخاب‌های ذخیره‌شدهٔ شما و فایل‌هایی که برنامه‌ها نگه می‌دارند. بازی شما، نسخه‌هایی که از آن ساخته شده و پوشهٔ Documents\RUSE 2.0 هرگز پاک نمی‌شوند.%n%nبرای نگه داشتن آن‌ها برای نصب بعدی، «خیر» را انتخاب کنید.
+
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"
 Name: "gamebackup"; Description: "{cm:BackupTask}"; GroupDescription: "{cm:BackupGroup}"
@@ -168,4 +183,20 @@ begin
       + 'small, from Microsoft.' + #13#10#13#10 + 'Open the download now?', mbConfirmation, MB_YESNO) = IDYES then
       ShellExec('open', 'https://go.microsoft.com/fwlink/p/?LinkId=2124703', '', '', SW_SHOWNORMAL, ewNoWait,
         ErrorCode);
+end;
+
+// The question at uninstall (not on a silent uninstall: the player didn't see it then): also delete the apps' settings
+// and data, the platform folder in %LOCALAPPDATA% that RUSE Launcher and RUSE Studio share (rusemod.home). The answer
+// starts on No. Only that folder is ever deleted; a folder set by hand ($RUSE_PLATFORM_HOME) is not touched.
+procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
+var
+  Folder: String;
+begin
+  if CurUninstallStep = usPostUninstall then
+  begin
+    Folder := ExpandConstant('{localappdata}\RUSE Mod Platform');
+    if (not UninstallSilent) and DirExists(Folder) then
+      if MsgBox(CustomMessage('DeleteDataQuestion'), mbConfirmation, MB_YESNO or MB_DEFBUTTON2) = IDYES then
+        DelTree(Folder, True, True, True);
+  end;
 end;

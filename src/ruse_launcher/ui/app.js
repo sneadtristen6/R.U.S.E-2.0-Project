@@ -188,6 +188,7 @@ const SETTINGS = [  // the language isn't here: it has its own button at the top
   { id: "where", render() { renderWhere(); } },  // loaded when Settings opens (loadWhere)
   { id: "copies", render() { renderCopies(); } },  // loaded when Settings opens (loadCopies)
   { id: "title", render() { renderTitle(); } },  // loaded when Settings opens (loadTitle)
+  { id: "terms", render() { renderTerms(); } },  // read each time Settings opens (loadTerms)
   { id: "backup", render() { renderBackup(); } },  // loaded when Settings opens (loadBackup)
   { id: "bugwatch", render() { renderBugwatch(); } },  // loaded when Settings opens (loadBugwatch)
   { id: "updates", render() {
@@ -306,6 +307,28 @@ function renderTitle() {
   const note = $("set-title-note");
   text(note, t.note || "");
   note.className = "message" + (t.note ? (t.bad ? " bad" : " good") : "");
+}
+
+// --- the terms again, the credits and the licence (rusemod.termscalls through api.terms_info): read only. The
+// agreement's words are the app's own (the same text as the first-start screen); the two files are what the app ships.
+async function loadTerms() {
+  try { state.terms = await api().terms_info(); } catch (err) { state.terms = { failed: errorText(err) }; }
+  if (state.settings) renderTerms();
+}
+
+function renderTerms() {
+  const w = state.words, t = state.terms || {};
+  text($("set-terms-help"), w.set_terms_help);
+  text($("terms-accepted"), t.failed ? t.failed : t.accepted ? fill(w.terms_accepted, { version: t.accepted, current: t.current })
+    : w.terms_accepted_none);
+  const folds = [["agreement", w.terms_read_agreement, w.agree_full, w.tip_terms_agreement],
+    ["notices", w.terms_read_credits, t.notices, w.tip_terms_credits],
+    ["licence", w.terms_read_licence, t.licence, w.tip_terms_licence]];
+  for (const [id, label, body, tip] of folds) {
+    text($(`terms-${id}-sum`), label);
+    $(`terms-${id}-sum`).title = tip || "";
+    text($(`terms-${id}-text`), body == null ? w.terms_missing : body);   // (a missing file is said, never replaced)
+  }
 }
 
 async function changeTitle() {
@@ -1730,7 +1753,7 @@ async function start() {
   $("lang-pick-close").addEventListener("click", closeLangPick);
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && langPick && !langPick.first) closeLangPick(); });
   $("settings-open").addEventListener("click", () => {
-    state.settings = true; render(); loadWhere(); loadCopies(); loadTitle(); loadBackup(); loadBugwatch(); loadSignin();
+    state.settings = true; render(); loadWhere(); loadCopies(); loadTitle(); loadTerms(); loadBackup(); loadBugwatch(); loadSignin();
   });
   $("title-gold").addEventListener("change", changeTitle);
   $("set-signin-open").addEventListener("click", () => { if (window.OwnedSignIn) window.OwnedSignIn.open(); });

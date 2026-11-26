@@ -6228,6 +6228,23 @@ const SETTINGS = [  // the language isn't here: it has its own button at the top
       } catch (err) { problem(err); }
     };
   } },
+  // the terms again, the credits and the licence (rusemod.termscalls): read only; the agreement's words are the app's
+  // own (the first-start screen's text), the two files are what the app ships; the Launcher's too
+  { id: "terms", async render() {
+    const w = state.words;
+    let t;
+    try { t = await api().terms_info(); } catch (err) { t = { failed: errorText(err) }; }
+    $("terms-accepted").textContent = t.failed ? t.failed : t.accepted
+      ? fillText(w.terms_accepted, { version: t.accepted, current: t.current }) : w.terms_accepted_none;
+    const folds = [["agreement", w.terms_read_agreement, w.agree_full, w.tip_terms_agreement],
+      ["notices", w.terms_read_credits, t.notices, w.tip_terms_credits],
+      ["licence", w.terms_read_licence, t.licence, w.tip_terms_licence]];
+    for (const [id, label, body, tip] of folds) {
+      $(`terms-${id}-sum`).textContent = label;
+      $(`terms-${id}-sum`).title = tip || "";
+      $(`terms-${id}-text`).textContent = body == null ? w.terms_missing : body;   // (a missing file is said, never replaced)
+    }
+  } },
   { id: "backup", render() { renderBackup(); } },  // loaded each time Settings opens (loadBackup)
   { id: "bugwatch", render() { renderBugwatch(); } },  // loaded each time Settings opens (loadBugwatch)
   { id: "updates", async render() {

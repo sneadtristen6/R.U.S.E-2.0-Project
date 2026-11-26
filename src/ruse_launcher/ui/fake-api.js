@@ -491,6 +491,8 @@
       // the guard terms the agreement screen reads and sets (rusemod.guard; ?fake=agree starts with them unaccepted)
       guard_status: async () => ({ terms: fakeTerms, terms_version: 4, scan: false, on: true }),
       guard_accept_terms: async () => { fakeTerms = 4; return { terms: 4 }; },
+      // Settings' terms, credits and licences (rusemod.termscalls)
+      terms_info: async () => ({ accepted: fakeTerms, current: 4, notices: "Third-party notices (preview).", licence: "Licence (preview)." }),
       // (a copy built with a test tool has its join code too: it plays with players who have the same build)
       fair_play: async () => ({ built: true, code: mode === "fairchanged" ? null : myCode,
         why: mode === "fairoffline" ? "offline" : mode === "fairchanged" ? "changed" : null, fingerprint: "K7Q2-M9XD",

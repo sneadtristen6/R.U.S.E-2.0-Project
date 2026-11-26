@@ -3517,6 +3517,8 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
       fair_play_on: async () => ({ on: /^(fair|agree)/.test(String(mode || "")) }),
       guard_status: async () => ({ terms: fakeTerms, terms_version: 4, scan: false, on: true }),
       guard_accept_terms: async () => { fakeTerms = 4; return { terms: 4 }; },
+      // Settings' terms, credits and licences (rusemod.termscalls)
+      terms_info: async () => ({ accepted: fakeTerms, current: 4, notices: "Third-party notices (preview).", licence: "Licence (preview)." }),
       bugwatch_status: async () => ({ ...fakeBugwatch }),
       bugwatch_on: async (name) => {
         const num = String(1000 + Math.floor(Math.random() * 9000));

@@ -44,6 +44,7 @@ from rusemod.backup import BackupCalls, BackupError
 from rusemod.bugwatch import BugWatchCalls
 from rusemod.community import APP_NAMES, CommunityCalls
 from rusemod.guardcalls import GuardCalls
+from rusemod.termscalls import TermsCalls
 from rusemod.owned import OwnedCalls
 from rusemod.ownedpass import OwnedPassCalls
 from rusemod.update import UpdateCalls
@@ -129,7 +130,7 @@ def _kind_of(path) -> str:
 
 
 class LauncherApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCalls, OwnedPassCalls, BackupCalls,
-                  startlog.StartCalls, GuardCalls, BugWatchCalls):
+                  startlog.StartCalls, GuardCalls, TermsCalls, BugWatchCalls):
     """The launcher's back end. The arguments replace the real world in tests: the game folder, the launcher's own
     folder, where modded copies and the game's backups go, how links, the game and Steam get started, and the
     window's dialogs."""
