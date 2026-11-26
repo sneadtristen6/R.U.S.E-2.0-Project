@@ -168,9 +168,33 @@ class DeleteASquad(Unusual):
 
     @unittest.skipUnless(__import__("sys").platform == "win32", "Windows behaviour: the apps are Windows programs (on Steam Deck, under Proton)")
     def test_made_again_while_a_deleted_soldier_s_look_is_still_held(self):
-        """Unusual: as above, and New unit under the same name while the file is still held. By rusemod.holding.forget
-        (a file a program still holds is from then on the new unit's), the new squad's soldier 2 wears it: the page
-        shows his look, the build takes it (an owner question: see the report). Held or let go, it stays."""
+        """Unusual: as above, and New unit under the same name while the file is still held. The owner's 4 A
+        (2026-11-26, pick 21, 4beb58fc): a new unit never wears a deleted unit's old look. rusemod.holding.forget marks
+        the held leftover "reborn": the build leaves it out while it's held, and once the program lets go, opening the
+        mod again takes it out, so the new squad's soldier 2 wears the game's look. (Before 4 A the new squad wore it:
+        this test said so until GitHub's run of 0.9.8.23 failed on it, 2026-11-26.)"""
+        self.page.soldier_import(SQUAD, "2", str(self.model_file("marine.glb", b"glTF marine")))
+        held = open(self.models / f"{STEM}@2.glb", "rb")
+        try:
+            with mock.patch("ruse_studio.edits.HOLD_WAIT", 0.3):
+                self.page.delete_unit(SQUAD)
+            self.page.new_unit(GAME_SQUAD, "My Squad", 50)
+            result, _loaded = self.built()
+            self.assertEqual((self.errors(result), sorted(result.own_models)), ([], []))   # held: left out
+        finally:
+            held.close()
+        self.page.choose_mod(str(self.mod))
+        self.assertEqual([s["wears"] for s in self.info()["soldiers"]], ["game"] * 5)
+        self.assertEqual(self.soldier_files(), [])
+        result, _loaded = self.built()
+        self.assertEqual((self.errors(result), sorted(result.own_models)), ([], []))
+
+    @unittest.skipUnless(__import__("sys").platform == "win32", "Windows behaviour: the apps are Windows programs (on Steam Deck, under Proton)")
+    @unittest.expectedFailure    # finding SQ-10: while held, the page says soldier 2 wears the deleted squad's look
+    def test_the_page_while_the_deleted_soldier_s_look_is_still_held(self):
+        """Unusual: as above, the page before the program lets go. The build leaves the held leftover out (4 A), but the
+        page shows soldier 2 as wearing his own look ("own"), from the file it still finds there. Measured 2026-11-26
+        on the 0.9.8.23 code: ['game', 'own', 'game', 'game', 'game']. The page should say what the build does."""
         self.page.soldier_import(SQUAD, "2", str(self.model_file("marine.glb", b"glTF marine")))
         held = open(self.models / f"{STEM}@2.glb", "rb")
         try:
@@ -180,11 +204,7 @@ class DeleteASquad(Unusual):
             wears = [s["wears"] for s in self.info()["soldiers"]]
         finally:
             held.close()
-        self.page.choose_mod(str(self.mod))
-        self.assertEqual(wears, ["game", "own", "game", "game", "game"])
-        self.assertEqual(self.soldier_files(), [f"{STEM}@2.glb"])
-        result, _loaded = self.built()
-        self.assertEqual((self.errors(result), sorted(result.own_models)), ([], [f"{STEM}@2"]))
+        self.assertEqual(wears, ["game"] * 5)
 
     @unittest.expectedFailure    # finding SQ-8: a look with no record: the page says "Your model, from ."
     def test_a_look_without_its_record_is_said_with_a_name(self):

@@ -36,6 +36,15 @@ from rusemod import bugwatch, codes, webui  # noqa: E402
 from rusemod import home as homes  # noqa: E402
 from rusemod.build import BuildError, load_mod  # noqa: E402
 from rusemod.codes import code_of, coded  # noqa: E402
+
+
+def windows_error(number: int, words: str) -> OSError:
+    """An OSError with Windows' own error number (its winerror), the same on every system: OSError's fourth argument
+    sets winerror only on Windows, so on GitHub's Linux runs `OSError(None, words, None, number)` had none
+    (2026-11-26: three tests here failed there, passing on Windows)."""
+    error = OSError(None, words)
+    error.winerror = number
+    return error
 from test_checkkeys import SECRET, entry, folders  # noqa: E402
 
 SRC = Path(__file__).resolve().parents[1] / "src"
@@ -548,7 +557,7 @@ class SentNothingBefore(WithBugWatch):
         import ssl
         from rusemod import owned, ownedpass, update
         from rusemod.bugwatch import detail_of, os_number
-        refused = OSError(None, "refused", None, 10061)              # (as Windows gives it: its winerror)
+        refused = windows_error(10061, "refused")              # (as Windows gives it: its winerror)
         self.assertEqual(os_number(urllib.error.URLError(refused)), 10061)
         self.assertEqual(os_number(urllib.error.URLError(socket.gaierror(11001, "getaddrinfo failed"))), 11001)
         self.assertEqual(os_number(refused), 10061)
@@ -707,7 +716,7 @@ class ModInstalls(WithBugWatch):
         with mock.patch.object(mod_index.net, "urlopen", opener):
             got = mod_index.download(self.entry(), into)
         self.assertEqual((got.read_bytes(), len(calls)), (self.BODY, 2))
-        refused = OSError(None, "refused", None, 10061)                      # (as Windows gives it: its winerror)
+        refused = windows_error(10061, "refused")                      # (as Windows gives it: its winerror)
 
         def http(status):
             return urllib.error.HTTPError("https://example.invalid/c", status, "no", {}, io.BytesIO(b""))
@@ -745,7 +754,7 @@ class ModInstalls(WithBugWatch):
                 LauncherApi._install_one(stub, self.entry(), lambda s: None)
             self.assertFalse(downloaded.exists())                            # (the download goes either way)
             return raised.exception
-        refused, disk = one(LibraryError("This mod wasn't added: an edit")), one(OSError(None, "full", None, 112))
+        refused, disk = one(LibraryError("This mod wasn't added: an edit")), one(windows_error(112, "full"))
         self.assertEqual((type(refused), code_of(refused), str(refused)),
                          (ModIndexError, "LIST-09", "This mod wasn't added: an edit"))  # (what the player reads)
         self.assertIsInstance(disk, OSError)
@@ -757,7 +766,7 @@ class ModInstalls(WithBugWatch):
             if entry["id"] == "a-mod":
                 raise coded(ModIndexError("A mod couldn't be downloaded (no internet)."), "LIST-06", win=10061)
             if entry["id"] == "c-mod":
-                raise coded(OSError(None, "full", None, 112), "LIST-10")
+                raise coded(windows_error(112, "full"), "LIST-10")
         stub = SimpleNamespace(_entries=lambda ids: entries, _install_job=lambda work, done: work(lambda s: None),
                                _install_one=install, _not_all_installed=LauncherApi._not_all_installed)
         with self.assertRaises(ModIndexError) as raised:
