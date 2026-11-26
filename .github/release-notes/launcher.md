@@ -1,6 +1,26 @@
 **RUSE Launcher 0.4, for players.** It finds R.U.S.E. through Steam, and **Play** builds a modded copy of the game
 with your mods and starts it. Your Steam install is never changed.
 
+**0.4.8.23:** A required update: new terms of use and privacy notice, the game's own title by default, signed updates, a crash code for every crash, RUSE Guard's fixes and the fixes promised in 0.4.8.22's announcement.
+<!-- required update -->
+
+- **A required update:** older versions can't be used any more. When the app opens it installs this one by itself, and **Play** waits until it's in.
+- **New terms of use and privacy notice (version 5):** shown once when the app opens; **Accept** to go on. They now say plainly what RUSE Guard, Bug Watch and the apps do on your PC and what they send. Read them again any time in **Settings > Terms, credits and licences**, with the credits and the licence.
+- **The game's own title by default:** your game keeps its own R.U.S.E. title and Eugen's logo video, Vanilla too. Tick R.U.S.E. 2.0's gold title and intro in **Settings** (or on the terms screen) to have them.
+- **Vanilla is our copy too:** Play on Vanilla builds a plain copy of the game with RUSE Guard in it, started like a mod set's, never through Steam's own start. To play R.U.S.E. without our apps, start it from Steam.
+- **Updates are signed:** an update installs only when it carries our signature and is exactly the signed file. The update check waits until you've accepted the terms. If a download fails three times, the app stops trying by itself and points to the release's page.
+- **A crash code after every crash:** when a game the Launcher started crashes, it tells you so and gives a short crash code, with **Copy code**, Bug Watch on or off. Send the code and a screenshot to XUL on Discord (XUL6x3) or on GitHub, so we can look into why. With Bug Watch on, a crash we know is also explained: the unit the game was making and why.
+- **RUSE Guard:** its check for known cheat programs now runs in real multiplayer and co-op matches, with its list inside the app (nothing is downloaded for it). Steam's sign-in address is made by the app itself.
+- **Bug Watch:** our list of known crashes now comes from our server, signed, and is checked on your PC. A day's report can also list the failures you met, each by a short code and numbers only (never your words, files or names). Unticking Bug Watch deletes what it kept; shown the terms again, it asks "Keep Bug Watch on?".
+- **Settings > Your RUSE Guard code:** the code to give us with a privacy request.
+- **Microsoft WebView2** (the app's own window needs it): offered where it's missing, never forced: a ticked box in the installer, a Yes/No box when the app opens, and a card in **Settings**.
+- **Troubleshoot** now says when the app's own data files are missing, instead of "you're good to go" while Play can't build.
+- **Uninstall:** asks whether to delete the apps' settings and data too (the answer starts on No); while the other app is still installed it asks nothing and deletes nothing.
+- **Installing mods from the list:** a download that comes cut off or loses its connection is tried once more, and a broken-off download no longer stops an install of several mods part-way.
+- **Saving a mod set** while a mod in the library was being installed or replaced no longer comes back as failed (the set was saved, and saving again made a second one).
+- **Mods:** the mod check names two map mods making a map of one name before Play; a download cut short says so; a zip holding two mods is refused, naming both; a mod saved by a newer Studio is added with a word to update the Launcher; when two of your mods change the same value, the set screen says which one wins.
+- **A new map no longer crashes the game on load** when the game folder holds leftover revision folders (GitHub issue 25), and one more kind of mission script failure is guarded (a zone check on a zone with no zone info).
+
 **0.4.8.22:** Only the project page changes: its support options are updated. Nothing changes in the app.
 
 **0.4.8.21:** A fix behind the scenes: our own tests pass again on every system GitHub runs them on. Nothing changes in the app.

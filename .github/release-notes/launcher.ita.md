@@ -1,6 +1,25 @@
 **RUSE Launcher 0.4, per i giocatori.** Trova R.U.S.E. tramite Steam, e **Gioca** costruisce una copia del gioco con i
 tuoi mod e la avvia. La tua installazione di Steam non viene mai modificata.
 
+**0.4.8.23:** Un aggiornamento obbligatorio: nuovi termini di utilizzo e informativa sulla privacy, il titolo originale del gioco per impostazione predefinita, aggiornamenti firmati, un codice di crash per ogni crash, le correzioni di RUSE Guard e le correzioni promesse nell'annuncio della 0.4.8.22.
+
+- **Un aggiornamento obbligatorio:** le versioni più vecchie non si possono più usare. All'apertura l'app installa questa da sola, e **Gioca** aspetta che sia dentro.
+- **Nuovi termini di utilizzo e informativa sulla privacy (versione 5):** mostrati una volta all'apertura dell'app; **Accetta e continua** per andare avanti. Ora dicono chiaramente cosa fanno RUSE Guard, Bug Watch e le app sul tuo PC e cosa inviano. Rileggili quando vuoi in **Impostazioni > Termini, crediti e licenze**, con i crediti e la licenza.
+- **Il titolo originale del gioco per impostazione predefinita:** il tuo gioco tiene il suo titolo R.U.S.E. e il video del logo di Eugen, anche l'Originale. Spunta il titolo dorato e l'intro di R.U.S.E. 2.0 in **Impostazioni** (o nella schermata dei termini) per averli.
+- **L'Originale è anche una nostra copia:** Gioca sull'Originale costruisce una copia semplice del gioco con RUSE Guard dentro, avviata come quella di un set di mod, mai con l'avvio di Steam. Per giocare a R.U.S.E. senza le nostre app, avvialo da Steam.
+- **Gli aggiornamenti sono firmati:** un aggiornamento si installa solo se porta la nostra firma ed è esattamente il file firmato. Il controllo degli aggiornamenti aspetta che tu abbia accettato i termini. Se un download fallisce tre volte, l'app smette da sola e indica la pagina della versione.
+- **Un codice di crash dopo ogni crash:** quando un gioco avviato dal Launcher va in crash, te lo dice e dà un breve codice di crash, con **Copia il codice**, con Bug Watch attivo o no. Invia il codice e uno screenshot a XUL su Discord (XUL6x3) o su GitHub, così possiamo capire perché. Con Bug Watch attivo, un crash che conosciamo viene anche spiegato: l'unità che il gioco stava creando e perché.
+- **RUSE Guard:** il suo controllo dei programmi di cheat noti ora funziona nelle partite vere in multigiocatore e cooperativa, con il suo elenco dentro l'app (per questo non si scarica nulla). L'indirizzo di accesso di Steam lo crea l'app stessa.
+- **Bug Watch:** il nostro elenco dei crash noti ora arriva dal nostro server, firmato, ed è controllato sul tuo PC. Il rapporto di un giorno può anche elencare i guasti che hai incontrato, ciascuno con un breve codice e solo numeri (mai le tue parole, i tuoi file o i tuoi nomi). Togliendo la spunta a Bug Watch si cancella ciò che aveva conservato; se ti vengono mostrati di nuovo i termini, chiede «Lasciare Bug Watch attivo?».
+- **Impostazioni > Il tuo codice RUSE Guard:** il codice da darci con una richiesta sulla privacy.
+- **Microsoft WebView2** (la finestra dell'app ne ha bisogno): offerto dove manca, mai imposto: una casella spuntata nell'installer, una finestra Sì/No all'apertura dell'app e una scheda in **Impostazioni**.
+- **Risoluzione problemi** ora dice quando mancano i file di dati dell'app, invece di «tutto a posto» mentre Gioca non può costruire.
+- **Disinstalla:** chiede se cancellare anche le impostazioni e i dati delle app (la risposta parte su No); finché l'altra app è installata non chiede nulla e non cancella nulla.
+- **Installare mod dall'elenco:** un download che arriva tagliato o perde la connessione viene ritentato una volta, e un download interrotto non ferma più a metà l'installazione di più mod.
+- **Salvare un set di mod** mentre una mod della libreria si stava installando o sostituendo non torna più come fallito (il set era stato salvato, e salvare di nuovo ne faceva un secondo).
+- **Mod:** il controllo delle mod nomina due mod di mappa che fanno una mappa con lo stesso nome prima di Gioca; un download interrotto lo dice; uno zip con due mod viene rifiutato, con entrambi i nomi; una mod salvata da uno Studio più nuovo viene aggiunta con un avviso di aggiornare il Launcher; quando due tue mod cambiano lo stesso valore, la schermata del set dice quale vince.
+- **Una nuova mappa non manda più in crash il gioco al caricamento** quando la cartella del gioco contiene cartelle di revisione rimaste (problema GitHub 25), ed è protetto un altro tipo di errore dello script delle missioni (un controllo di zona su una zona senza informazioni di zona).
+
 **0.4.8.22:** Cambia solo la pagina del progetto: le sue opzioni di sostegno sono aggiornate. Nell'app non cambia nulla.
 
 **0.4.8.21:** Una correzione dietro le quinte: i nostri test passano di nuovo su ogni sistema in cui GitHub li esegue. Nell'app non cambia nulla.

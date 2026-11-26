@@ -1,6 +1,25 @@
 **RUSE Launcher 0.4, für Spieler.** Er findet R.U.S.E. über Steam, und **Spielen** baut eine gemoddete Kopie des
 Spiels mit deinen Mods und startet sie. Deine Steam-Installation wird nie verändert.
 
+**0.4.8.23:** Ein Pflicht-Update: neue Nutzungsbedingungen und Datenschutzerklärung, standardmäßig der eigene Titel des Spiels, signierte Updates, ein Absturzcode bei jedem Absturz, Korrekturen für RUSE Guard und die in der Ankündigung zu 0.4.8.22 versprochenen Korrekturen.
+
+- **Ein Pflicht-Update:** ältere Versionen lassen sich nicht mehr benutzen. Beim Öffnen installiert die App dieses Update von selbst, und **Spielen** wartet, bis es drin ist.
+- **Neue Nutzungsbedingungen und Datenschutzerklärung (Version 5):** werden einmal beim Öffnen der App gezeigt; mit **Akzeptieren und weiter** geht es weiter. Sie sagen jetzt klar, was RUSE Guard, Bug Watch und die Apps auf deinem PC tun und was sie senden. Lies sie jederzeit wieder unter **Einstellungen > Bedingungen, Danksagungen und Lizenzen**, mit den Danksagungen und der Lizenz.
+- **Standardmäßig der eigene Titel des Spiels:** dein Spiel behält seinen eigenen R.U.S.E.-Titel und das Logo-Video von Eugen, Original auch. Hake den goldenen Titel und das Intro von R.U.S.E. 2.0 in den **Einstellungen** an (oder auf dem Bedingungen-Bildschirm), um sie zu bekommen.
+- **Original ist auch unsere Kopie:** Spielen auf Original baut eine schlichte Kopie des Spiels mit RUSE Guard darin, gestartet wie die eines Mod-Sets, nie über Steams eigenen Start. Um R.U.S.E. ohne unsere Apps zu spielen, starte es über Steam.
+- **Updates sind signiert:** ein Update wird nur installiert, wenn es unsere Signatur trägt und genau die signierte Datei ist. Die Update-Suche wartet, bis du die Bedingungen akzeptiert hast. Schlägt ein Download dreimal fehl, hört die App von selbst auf und verweist auf die Seite der Version.
+- **Ein Absturzcode nach jedem Absturz:** stürzt ein vom Launcher gestartetes Spiel ab, sagt er es dir und gibt einen kurzen Absturzcode, mit **Code kopieren**, ob Bug Watch an oder aus ist. Schick den Code und einen Screenshot an XUL auf Discord (XUL6x3) oder auf GitHub, damit wir dem Grund nachgehen. Ist Bug Watch an, wird ein uns bekannter Absturz auch erklärt: die Einheit, die das Spiel gerade baute, und warum.
+- **RUSE Guard:** seine Prüfung auf bekannte Cheat-Programme läuft jetzt in echten Mehrspieler- und Koop-Partien, mit seiner Liste in der App (dafür wird nichts heruntergeladen). Steams Anmeldeadresse macht die App selbst.
+- **Bug Watch:** unsere Liste bekannter Abstürze kommt jetzt von unserem Server, signiert, und wird auf deinem PC geprüft. Der Bericht eines Tages kann auch die Fehler auflisten, auf die du gestoßen bist, jeden nur mit einem kurzen Code und Zahlen (nie deine Worte, Dateien oder Namen). Entfernst du den Haken bei Bug Watch, löscht es, was es gespeichert hatte; werden dir die Bedingungen erneut gezeigt, fragt es „Bug Watch anlassen?“.
+- **Einstellungen > Ihr RUSE-Guard-Code:** der Code, den du uns bei einer Datenschutzanfrage gibst.
+- **Microsoft WebView2** (das eigene Fenster der App braucht es): wird angeboten, wo es fehlt, nie erzwungen: ein angehakter Haken im Installer, ein Ja/Nein-Fenster beim Öffnen der App und eine Karte in den **Einstellungen**.
+- **Fehlersuche** sagt jetzt, wenn die eigenen Datendateien der App fehlen, statt „alles in Ordnung“, obwohl Spielen nicht bauen kann.
+- **Deinstallieren:** fragt, ob auch die Einstellungen und Daten der Apps gelöscht werden sollen (die Antwort steht zuerst auf Nein); solange die andere App noch installiert ist, fragt es nichts und löscht nichts.
+- **Mods aus der Liste installieren:** ein Download, der abgeschnitten ankommt oder die Verbindung verliert, wird einmal wiederholt, und ein abgebrochener Download hält die Installation mehrerer Mods nicht mehr mittendrin an.
+- **Ein Mod-Set speichern**, während ein Mod der Bibliothek installiert oder ersetzt wurde, kommt nicht mehr als fehlgeschlagen zurück (das Set war gespeichert, und erneutes Speichern machte ein zweites).
+- **Mods:** die Mod-Prüfung nennt vor Spielen zwei Karten-Mods, die eine Karte mit gleichem Namen machen; ein abgebrochener Download sagt es; ein Zip mit zwei Mods wird abgelehnt, mit beiden Namen; ein Mod, das von einem neueren Studio gespeichert wurde, wird mit einem Hinweis zum Aktualisieren des Launchers hinzugefügt; ändern zwei deiner Mods denselben Wert, sagt der Set-Bildschirm, welcher gewinnt.
+- **Eine neue Karte stürzt beim Laden das Spiel nicht mehr ab**, wenn der Spielordner übrig gebliebene Revisionsordner enthält (GitHub-Issue 25), und eine weitere Art von Missionsskript-Fehler ist abgesichert (eine Zonenprüfung auf einer Zone ohne Zoneninfo).
+
 **0.4.8.22:** Nur die Projektseite ändert sich: ihre Unterstützungsoptionen sind aktualisiert. In der App ändert sich nichts.
 
 **0.4.8.21:** Eine Korrektur hinter den Kulissen: unsere eigenen Tests laufen wieder auf jedem System durch, auf dem GitHub sie ausführt. In der App ändert sich nichts.

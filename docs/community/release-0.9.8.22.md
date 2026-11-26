@@ -1,6 +1,7 @@
 ---
 title: "Studio 0.9.8.22 and Launcher 0.4.8.22: your own animated models, animations for the units you pick, the Generic Horse and squads soldier by soldier"
 category: Announcements
+skip: never posted; 0.9.8.23, out after it, has its own announcement, which covers it
 order: 27
 ---
 **RUSE Studio 0.9.8.22** and **RUSE Launcher 0.4.8.22** are out:

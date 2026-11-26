@@ -1,6 +1,25 @@
 **RUSE Launcher 0.4, pro hráče.** Najde R.U.S.E. přes Steam a **Hrát** sestaví upravenou kopii hry s vašimi módy a
 spustí ji. Vaše instalace Steamu se nikdy nemění.
 
+**0.4.8.23:** Povinná aktualizace: nové podmínky používání a oznámení o ochraně soukromí, vlastní název hry ve výchozím nastavení, podepsané aktualizace, kód pádu po každém pádu, opravy RUSE Guard a opravy slíbené v oznámení k 0.4.8.22.
+
+- **Povinná aktualizace:** starší verze už nejde používat. Po otevření ji aplikace nainstaluje sama a **Hrát** počká, až bude nainstalovaná.
+- **Nové podmínky používání a oznámení o ochraně soukromí (verze 5):** zobrazí se jednou po otevření aplikace; pokračujte tlačítkem **Přijmout a pokračovat**. Nově jasně říkají, co RUSE Guard, Bug Watch a aplikace dělají na vašem PC a co odesílají. Přečtete si je znovu kdykoli v **Nastavení > Podmínky, poděkování a licence**, spolu s poděkováním a licencí.
+- **Vlastní název hry ve výchozím nastavení:** vaše hra si ponechá vlastní název R.U.S.E. a video s logem Eugenu, Původní hra také. Zaškrtněte zlatý název a intro R.U.S.E. 2.0 v **Nastavení** (nebo na obrazovce s podmínkami), abyste je měli.
+- **Původní hra je také naše kopie:** Hrát v Původní hře sestaví prostou kopii hry s RUSE Guard uvnitř, spuštěnou jako kopie sady módů, nikdy vlastním spuštěním Steamu. Chcete-li hrát R.U.S.E. bez našich aplikací, spusťte ji ze Steamu.
+- **Aktualizace jsou podepsané:** aktualizace se nainstaluje, jen když nese náš podpis a je přesně tím podepsaným souborem. Kontrola aktualizací počká, až přijmete podmínky. Pokud stahování třikrát selže, aplikace to sama přestane zkoušet a odkáže na stránku vydání.
+- **Kód pádu po každém pádu:** když hra spuštěná Launcherem spadne, řekne vám to a dá krátký kód pádu s tlačítkem **Kopírovat kód**, ať je Bug Watch zapnutý, nebo ne. Pošlete kód a snímek obrazovky XUL na Discordu (XUL6x3) nebo na GitHubu, abychom zjistili proč. Se zapnutým Bug Watch se známý pád také vysvětlí: jednotka, kterou hra vyráběla, a proč.
+- **RUSE Guard:** jeho kontrola známých podváděcích programů teď běží ve skutečných multiplayerových a kooperativních hrách a jeho seznam je uvnitř aplikace (nic se pro to nestahuje). Přihlašovací adresu Steamu vytvoří aplikace sama.
+- **Bug Watch:** náš seznam známých pádů teď přichází z našeho serveru, podepsaný, a kontroluje se na vašem PC. Denní hlášení může také vypsat selhání, na která jste narazili, každé jen krátkým kódem a čísly (nikdy vaše slova, soubory ani jména). Odškrtnutí Bug Watch smaže, co uložil; když se vám znovu ukážou podmínky, zeptá se „Nechat Bug Watch zapnutý?“.
+- **Nastavení > Váš kód RUSE Guard:** kód, který nám dáte u žádosti o ochranu soukromí.
+- **Microsoft WebView2** (vlastní okno aplikace ho potřebuje): nabízí se tam, kde chybí, nikdy se nevnucuje: zaškrtnuté políčko v instalátoru, okno Ano/Ne po otevření aplikace a karta v **Nastavení**.
+- **Řešení potíží** teď řekne, když chybí vlastní datové soubory aplikace, místo „vše v pořádku“, zatímco Hrát nemůže sestavit.
+- **Odinstalace:** zeptá se, zda smazat i nastavení a data aplikací (odpověď začíná na Ne); dokud je druhá aplikace nainstalovaná, nezeptá se na nic a nic nesmaže.
+- **Instalace módů ze seznamu:** stahování, které přijde useknuté nebo ztratí spojení, se zkusí ještě jednou a přerušené stahování už nezastaví instalaci více módů v půli.
+- **Uložení sady módů**, zatímco se mód v knihovně instaloval nebo nahrazoval, se už nevrací jako selhání (sada se uložila a další uložení udělalo druhou).
+- **Módy:** kontrola módů před Hrát jmenuje dva módy map, které dělají mapu stejného jména; useknuté stahování to řekne; zip se dvěma módy se odmítne se jmény obou; mód uložený novějším Studiem se přidá s upozorněním na aktualizaci Launcheru; když dva vaše módy mění stejnou hodnotu, obrazovka sady řekne, který vyhrává.
+- **Nová mapa už při načtení nezpůsobí pád hry**, když složka hry obsahuje zbylé složky revizí (problém GitHub 25), a ochráněn je ještě jeden druh selhání skriptu mise (kontrola zóny u zóny bez informací o zóně).
+
 **0.4.8.22:** Mění se jen stránka projektu: její možnosti podpory jsou aktualizované. V aplikaci se nic nemění.
 
 **0.4.8.21:** Oprava v pozadí: naše vlastní testy znovu procházejí na každém systému, kde je GitHub spouští. V aplikaci se nic nemění.

@@ -1,6 +1,25 @@
 **RUSE Launcher 0.4, dla graczy.** Znajduje R.U.S.E. przez Steam, a **Graj** buduje zmodowaną kopię gry z twoimi
 modami i ją uruchamia. Twoja instalacja Steam nigdy nie jest zmieniana.
 
+**0.4.8.23:** Aktualizacja obowiązkowa: nowe warunki korzystania i informacja o prywatności, własny tytuł gry domyślnie, podpisane aktualizacje, kod awarii przy każdej awarii, poprawki RUSE Guard i poprawki obiecane w ogłoszeniu 0.4.8.22.
+
+- **Aktualizacja obowiązkowa:** starszych wersji nie da się już używać. Po otwarciu aplikacja sama instaluje tę, a **Graj** czeka, aż będzie zainstalowana.
+- **Nowe warunki korzystania i informacja o prywatności (wersja 5):** pokazywane raz po otwarciu aplikacji; **Akceptuj i kontynuuj**, żeby iść dalej. Mówią teraz wprost, co RUSE Guard, Bug Watch i aplikacje robią na twoim komputerze i co wysyłają. Przeczytasz je ponownie w każdej chwili w **Ustawienia > Warunki, autorzy i licencje**, razem z autorami i licencją.
+- **Własny tytuł gry domyślnie:** twoja gra zachowuje swój tytuł R.U.S.E. i wideo z logo Eugen, Oryginał też. Zaznacz złoty tytuł i intro R.U.S.E. 2.0 w **Ustawienia** (albo na ekranie warunków), żeby je mieć.
+- **Oryginał to też nasza kopia:** Graj na Oryginale buduje zwykłą kopię gry z RUSE Guard w środku, uruchamianą jak kopia zestawu modów, nigdy przez własny start Steam. Żeby grać w R.U.S.E. bez naszych aplikacji, uruchom grę ze Steam.
+- **Aktualizacje są podpisane:** aktualizacja instaluje się tylko wtedy, gdy ma nasz podpis i jest dokładnie podpisanym plikiem. Sprawdzanie aktualizacji czeka, aż zaakceptujesz warunki. Jeśli pobieranie zawiedzie trzy razy, aplikacja sama przestaje próbować i wskazuje stronę wydania.
+- **Kod awarii po każdej awarii:** gdy gra uruchomiona przez Launcher ulegnie awarii, powie ci o tym i poda krótki kod awarii, z **Kopiuj kod**, niezależnie od tego, czy Bug Watch jest włączony. Wyślij kod i zrzut ekranu do XUL na Discordzie (XUL6x3) albo na GitHubie, żebyśmy mogli zbadać przyczynę. Przy włączonym Bug Watch znana nam awaria jest też wyjaśniona: jednostka, którą gra robiła, i dlaczego.
+- **RUSE Guard:** jego sprawdzanie znanych programów do oszukiwania działa teraz w prawdziwych meczach wieloosobowych i kooperacyjnych, z listą w aplikacji (nic nie jest do tego pobierane). Adres logowania Steam tworzy sama aplikacja.
+- **Bug Watch:** nasza lista znanych awarii pochodzi teraz z naszego serwera, podpisana, i jest sprawdzana na twoim komputerze. Raport z dnia może też wymieniać błędy, na które trafiłeś, każdy tylko jako krótki kod i liczby (nigdy twoje słowa, pliki ani nazwy). Odznaczenie Bug Watch usuwa to, co zachował; gdy warunki zostaną pokazane ponownie, pyta: „Zostawić Bug Watch włączony?”.
+- **Ustawienia > Twój kod RUSE Guard:** kod do podania nam przy prośbie dotyczącej prywatności.
+- **Microsoft WebView2** (własne okno aplikacji go potrzebuje): oferowany tam, gdzie go brak, nigdy wymuszany: zaznaczone pole w instalatorze, okno Tak/Nie po otwarciu aplikacji i karta w **Ustawienia**.
+- **Rozwiązywanie problemów** mówi teraz, gdy brakuje plików danych aplikacji, zamiast „wszystko gra”, gdy Graj nie może budować.
+- **Odinstaluj:** pyta, czy usunąć też ustawienia i dane aplikacji (odpowiedź zaczyna się od Nie); dopóki druga aplikacja jest zainstalowana, nie pyta o nic i niczego nie usuwa.
+- **Instalowanie modów z listy:** pobieranie, które przychodzi ucięte lub traci połączenie, jest ponawiane raz, a przerwane pobieranie nie zatrzymuje już w połowie instalacji kilku modów.
+- **Zapisanie zestawu modów**, gdy mod w bibliotece był instalowany lub zastępowany, nie wraca już jako nieudane (zestaw był zapisany, a ponowne zapisanie robiło drugi).
+- **Mody:** sprawdzanie modów podaje nazwy dwóch modów map robiących mapę o tej samej nazwie przed Graj; ucięte pobieranie o tym mówi; zip z dwoma modami jest odrzucany, z podaniem obu; mod zapisany przez nowsze Studio jest dodawany z uwagą, by zaktualizować Launcher; gdy dwa twoje mody zmieniają tę samą wartość, ekran zestawu mówi, który wygrywa.
+- **Nowa mapa nie powoduje już awarii gry przy wczytywaniu**, gdy folder gry zawiera pozostałe foldery rewizji (zgłoszenie GitHub 25), i zabezpieczono jeszcze jeden rodzaj błędu skryptu misji (sprawdzanie strefy w strefie bez informacji o strefie).
+
 **0.4.8.22:** Zmienia się tylko strona projektu: jej opcje wsparcia są zaktualizowane. W aplikacji nic się nie zmienia.
 
 **0.4.8.21:** Poprawka pod maską: nasze własne testy znów przechodzą na każdym systemie, na którym uruchamia je GitHub. W aplikacji nic się nie zmienia.

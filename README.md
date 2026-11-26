@@ -259,7 +259,7 @@ GitHub tickets are public, so you can send the code to sneadtristen6 in a privat
 [![tests](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/actions/workflows/tests.yml/badge.svg)](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/actions/workflows/tests.yml)
 [![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue)](LICENSE)
 
-**Launcher** for players (latest: 0.4.8.22) &middot; **Studio** for modders, a preview (latest: 0.9.8.22) &middot; Windows &middot; needs R.U.S.E. on Steam
+**Launcher** for players (latest: 0.4.8.23) &middot; **Studio** for modders, a preview (latest: 0.9.8.23) &middot; Windows &middot; needs R.U.S.E. on Steam
 
 **[Field manual (wiki)](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/wiki)** &middot;
 **[Discussions](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/discussions)** &middot;

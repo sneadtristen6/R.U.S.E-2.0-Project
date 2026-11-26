@@ -1,6 +1,25 @@
 **RUSE Launcher 0.4, para jugadores.** Encuentra R.U.S.E. a través de Steam, y **Jugar** construye una copia del juego
 con tus mods y la inicia. Tu instalación de Steam nunca se modifica.
 
+**0.4.8.23:** Una actualización obligatoria: nuevos términos de uso y aviso de privacidad, el título propio del juego por defecto, actualizaciones firmadas, un código de fallo para cada fallo, los arreglos de RUSE Guard y los arreglos prometidos en el anuncio de la 0.4.8.22.
+
+- **Una actualización obligatoria:** las versiones anteriores ya no se pueden usar. Al abrirse, la aplicación instala esta por sí sola, y **Jugar** espera a que esté dentro.
+- **Nuevos términos de uso y aviso de privacidad (versión 5):** se muestran una vez al abrir la aplicación; **Aceptar y continuar** para seguir. Ahora dicen claramente lo que RUSE Guard, Bug Watch y las aplicaciones hacen en tu PC y lo que envían. Vuelve a leerlos cuando quieras en **Ajustes > Términos, créditos y licencias**, con los créditos y la licencia.
+- **El título propio del juego por defecto:** tu juego conserva su propio título de R.U.S.E. y el vídeo del logotipo de Eugen, Original también. Marca el título dorado y la intro de R.U.S.E. 2.0 en **Ajustes** (o en la pantalla de términos) para tenerlos.
+- **Original también es nuestra copia:** Jugar con Original construye una copia sencilla del juego con RUSE Guard dentro, iniciada como la de un conjunto de mods, nunca con el inicio propio de Steam. Para jugar a R.U.S.E. sin nuestras aplicaciones, inícialo desde Steam.
+- **Las actualizaciones van firmadas:** una actualización solo se instala si lleva nuestra firma y es exactamente el archivo firmado. La búsqueda de actualizaciones espera a que hayas aceptado los términos. Si una descarga falla tres veces, la aplicación deja de intentarlo sola y señala la página de la versión.
+- **Un código de fallo después de cada fallo:** cuando un juego iniciado por el Launcher falla, te lo dice y da un código de fallo corto, con **Copiar código**, con Bug Watch activado o no. Envía el código y una captura de pantalla a XUL en Discord (XUL6x3) o en GitHub, para que investiguemos el porqué. Con Bug Watch activado, un fallo que conocemos también se explica: la unidad que el juego estaba haciendo y por qué.
+- **RUSE Guard:** su comprobación de programas de trampas conocidos ahora funciona en partidas reales multijugador y cooperativas, con su lista dentro de la aplicación (no se descarga nada para ello). La dirección de inicio de sesión de Steam la crea la propia aplicación.
+- **Bug Watch:** nuestra lista de fallos conocidos ahora viene de nuestro servidor, firmada, y se comprueba en tu PC. El informe de un día también puede listar los fallos que encontraste, cada uno con un código corto y solo números (nunca tus palabras, archivos ni nombres). Al desmarcar Bug Watch se borra lo que había guardado; si se te vuelven a mostrar los términos, pregunta «¿Dejar Bug Watch activado?».
+- **Ajustes > Tu código de RUSE Guard:** el código que debes darnos con una solicitud de privacidad.
+- **Microsoft WebView2** (la ventana propia de la aplicación lo necesita): se ofrece donde falta, nunca se impone: una casilla marcada en el instalador, un cuadro Sí/No al abrir la aplicación y una tarjeta en **Ajustes**.
+- **Solucionar problemas** ahora avisa cuando faltan los archivos de datos de la aplicación, en vez de decir «todo listo» mientras Jugar no puede construir.
+- **Desinstalar:** pregunta si borrar también los ajustes y datos de las aplicaciones (la respuesta empieza en No); mientras la otra aplicación siga instalada, no pregunta nada y no borra nada.
+- **Instalar mods desde la lista:** una descarga que llega cortada o pierde la conexión se reintenta una vez, y una descarga interrumpida ya no detiene a medias la instalación de varios mods.
+- **Guardar un conjunto de mods** mientras se instalaba o reemplazaba un mod de la biblioteca ya no vuelve como fallido (el conjunto se había guardado, y guardar de nuevo creaba un segundo).
+- **Mods:** la comprobación de mods nombra dos mods de mapa que hacen un mapa con el mismo nombre antes de Jugar; una descarga cortada lo dice; un zip con dos mods se rechaza, nombrando a los dos; un mod guardado por un Studio más nuevo se añade con un aviso para actualizar el Launcher; cuando dos de tus mods cambian el mismo valor, la pantalla del conjunto dice cuál gana.
+- **Un mapa nuevo ya no hace fallar el juego al cargar** cuando la carpeta del juego tiene carpetas de revisión sobrantes (problema 25 de GitHub), y se protege un tipo más de fallo del script de misión (una comprobación de zona en una zona sin información de zona).
+
 **0.4.8.22:** Solo cambia la página del proyecto: sus opciones de apoyo están actualizadas. En la aplicación no cambia nada.
 
 **0.4.8.21:** Un arreglo interno: nuestras propias pruebas vuelven a pasar en todos los sistemas donde GitHub las ejecuta. En la aplicación no cambia nada.

@@ -1,6 +1,29 @@
 **RUSE Studio, a preview for modders.** Browse the game's units in any of its ten languages, change them in a mod of
 your own, and test it in the game. Your Steam install is never changed.
 
+**0.9.8.23:** A required update: new terms of use and privacy notice, the game's own title by default, signed updates, a crash code for every crash, and the fixes promised in 0.9.8.22's announcement.
+<!-- required update -->
+
+- **A required update:** older versions can't be used any more. When the app opens it installs this one by itself, and **Test in game** waits until it's in.
+- **New terms of use and privacy notice (version 5):** shown once when the app opens; **Accept** to go on. They now say plainly what RUSE Guard, Bug Watch and the apps do on your PC and what they send. Read them again any time in **Settings > Terms, credits and licences**, with the credits and the licence.
+- **The game's own title by default:** your game keeps its own R.U.S.E. title and Eugen's logo video, with mods or without. Tick R.U.S.E. 2.0's gold title and intro in **Settings** (or on the terms screen) to have them.
+- **Updates are signed:** an update installs only when it carries our signature and is exactly the signed file. The update check waits until you've accepted the terms. If a download fails three times, the app stops trying by itself and points to the release's page.
+- **A crash code after a crash in Test in game:** the Studio tells you the crash and gives a short crash code, with **Copy code**. Send the code and a screenshot to XUL on Discord (XUL6x3) or on GitHub (**Report**), so we can look into why. With Bug Watch on, a crash we know is also explained: the unit the game was making and why.
+- **Bug Watch:** our list of known crashes now comes from our server, signed, and is checked on your PC. A day's report can also list the failures you met, each by a short code and numbers only (never your words, files or names). Unticking Bug Watch deletes what it kept; shown the terms again, it asks "Keep Bug Watch on?".
+- **Settings > Your RUSE Guard code:** the code to give us with a privacy request.
+- **Microsoft WebView2** (the app's own window needs it): offered where it's missing, never forced: a ticked box in the installer, a Yes/No box when the app opens, and a card in **Settings**.
+- **Uninstall:** asks whether to delete the apps' settings and data too (the answer starts on No); while the other app is still installed it asks nothing and deletes nothing.
+- **The 3D views** draw with three.js shipped inside the Studio: nothing is fetched for them.
+- **Roads** (a player's report on Discord): an end you draw onto a road now joins it wherever it lies along the road, not only near one of its points, so a drawn road is no longer refused as cut off.
+- **A new map no longer crashes the game on load** when the game folder holds leftover revision folders (GitHub issue 25): the build reads the newest by its number.
+- **The Nations tab** before the game index is built says so, with a **Build the index** button, instead of an error.
+- **Mods with mission scripts:** one more kind of mission script failure is guarded (a zone check on a zone with no zone info), so the game no longer stops on it.
+- **Making units:** the mod menu shows each mod's real name; a unit price below 0 is refused, as a research price already is; a second unit with exactly the same name is refused in every alphabet; plainer limits ("too big: the game takes at most 2,147,483,647"); a word when a copy of an upgrade stops being an upgrade; a copy of an upgrade made after its research unit was hidden no longer stops the mod building (and the Launcher's set screen says which of two mods wins when both change the same value); a warning before deleting a copied ammo that a weapon still fires, and on **Delete anyway** the weapons go back to the game's ammo; the building that builds a unit is picked from a list of the nation's own buildings.
+- **Squads, Blender and animations:** old Blender work under the same name is set aside, not picked up; each removed soldier's look is kept apart, even twice in one second; unticked bones bring the animations back untouched; Import model says what it left out of a model's animations; Custom uniform and Back to the default uniform in all 11 languages; on tanks and planes Blender's first hint says "Change the model", and **Open in Blender** is the Model row's own button; "Repaint in Blender" where only paint comes back; "Automatic" in place of "Nearest"; plainer words in the bones and squad boxes, with **Having trouble?** links and links to the wiki's how-tos.
+- **Export:** your README, credits, licence and docs folder are packed with the mod; your whole Windows user name is taken out of your README; a mod too big for the Launcher is refused before packing; Export names what it replaced; when a file of the mod's older copy in the Launcher's library is open in another program, Export finishes, says the mod wasn't added to the library, and names the file to close.
+- **Test in game and maps:** after a test, a join code says so and offers Play; Delete waits up to 10 seconds for a file another program holds, then names it; the build cache is kept with the Studio's own folder; a copy named like a game map is refused at once, before anything is made; a new map made with only a units mod picked gets a map mod of its own; the build's quick checks run before Test in game starts, so fewer starts fail; **Rename** for maps (the name in the menus); a warning for blocks and water painted over the map's own HQ.
+- **German:** two Blender lines that said "Sie" now say "du", as the rest do.
+
 **0.9.8.22:** Only the project page changes: its support options are updated. Nothing changes in the app.
 
 **0.9.8.21:** A fix behind the scenes: our own tests pass again on every system GitHub runs them on. Nothing changes in the app.
