@@ -4782,8 +4782,10 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
         return { saved: current + "/src/studio.rndf", page: valuePage(address, lang) };
       },
       // the Nations tab (StudioApi.nations_view, ruse_studio.nations): the seven nations, their lobby and army words
-      // (value_words, above), their flags and how many units each has
-      nations_view: async () => ({ mod: Boolean(current), nations: ["usa", "germany", "uk", "france", "italy", "ussr", "japan"].map((code, n) => {
+      // (value_words, above), their flags and how many units each has; ?fake=noindex: no game index yet, as the real
+      // one says it (ready false)
+      nations_view: async () => mode === "noindex" ? { mod: Boolean(current), ready: false, can_build: true, nations: [] }
+        : ({ mod: Boolean(current), ready: true, nations: ["usa", "germany", "uk", "france", "italy", "ussr", "japan"].map((code, n) => {
         const nameKey = `NATION_${n < 6 ? n : 7}`, armyKey = n < 6 ? `NAT_NAME_${n}` : null;
         const wordsOf = (key) => VALUE_LANGS.map((lang) => ({ lang, game: valueGameWords(key),
           mine: valueWords.has(key) ? valueWords.get(key)[lang] ?? null : null }));
