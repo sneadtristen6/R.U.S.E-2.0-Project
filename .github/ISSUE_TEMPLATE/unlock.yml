@@ -6,10 +6,13 @@ body:
   - type: markdown
     attributes:
       value: |
-        R.U.S.E. 2.0 works only with a copy of the game you own. If the Launcher or the Studio couldn't confirm yours
-        (a boxed copy from before R.U.S.E. was on Steam, or the check got it wrong), we'll send you an unlock code here.
-        Your code works on your PC only, so it's safe to post. **Don't post receipts, keys or anything personal here:**
-        if we need proof, we'll ask you to open a ticket on our Discord instead.
+        R.U.S.E. 2.0 works only with a copy of the game you own. If the Launcher or the Studio couldn't confirm yours (a
+        boxed copy from before R.U.S.E. was on Steam, or the check got it wrong), we'll send you an unlock code here.
+        Your code works on your PC only. It's one-way: it can't be turned back into anything about your PC. It holds no
+        name or account, but it stays the same for this PC and this version of the game, and anything you post here is
+        public. If you'd rather not post it, send it to sneadtristen6 in a private message on our Discord. **Don't post
+        receipts, keys or anything personal here:** if we need proof, we'll ask you to open a ticket on our Discord
+        instead.
   - type: input
     id: code
     attributes:

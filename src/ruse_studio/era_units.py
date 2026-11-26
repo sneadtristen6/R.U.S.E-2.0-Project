@@ -342,8 +342,10 @@ def credits_text(units: list[dict], kept: list[str] = ()) -> str:
     made += [line for line in kept if line not in made]
     if made:
         lines += [ERA_HEADING, "",
-                  "These units use free 3D models by their makers, under the licence named. Changes: fitted to the "
-                  "game (turned, scaled) and the unit's nation's markings added (older markings covered).", ""]
+                  "These units use free 3D models by their makers, under the licence named (CC BY 4.0: "
+                  "https://creativecommons.org/licenses/by/4.0/; CC0 1.0: "
+                  "https://creativecommons.org/publicdomain/zero/1.0/). Changes: fitted to the game (turned, scaled) "
+                  "and the unit's nation's markings added (older markings covered).", ""]
         lines += made
     if built:
         lines += ([""] if lines else []) + [BUILT_HEADING, ""]

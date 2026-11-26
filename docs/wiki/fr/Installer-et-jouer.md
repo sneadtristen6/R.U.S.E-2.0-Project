@@ -23,10 +23,11 @@ Les autres fichiers (`RUSE-Launcher-notes.json`, *Source code*) ne sont pas néc
 1. Ouvrez le fichier que vous avez téléchargé (en général dans votre dossier **Téléchargements**).
 2. **« Windows a protégé votre ordinateur » ?** Cliquez sur **Informations complémentaires**, puis sur **Exécuter quand
    même**. L'application est nouvelle pour la vérification de réputation de Windows ; son code est public sur ce GitHub.
-3. Avancez dans l'installateur. Laissez **Garder une copie propre des fichiers de mon jeu** coché : les applications ne
-   changent jamais le dossier de votre jeu, mais d'autres gestionnaires de mods et des modifications à la main peuvent le
-   faire, et chaque jeu moddé est construit à partir de ces fichiers. La copie est faite au premier démarrage de
-   l'application (quelques minutes, et à peu près autant de place sur le disque que le jeu).
+3. Cliquez dans l'installateur. Laissez cochée la case **Garder une copie propre des fichiers de mon jeu** : les
+   applications ne modifient jamais le dossier de votre jeu, sauf si vous leur demandez de le restaurer depuis cette
+   copie, mais d'autres gestionnaires de mods et des modifications à la main le peuvent, et chaque jeu moddé est
+   construit à partir de ces fichiers. La copie est faite au premier démarrage de l'application (quelques minutes, à peu
+   près autant d'espace disque que le jeu).
 4. Lancez **RUSE Launcher** (menu Démarrer, ou le raccourci du bureau). La première fois, **Choisissez votre langue** :
    l'une des onze, les dix du jeu et le persan (فارسی) ; le bouton de langue en haut la change à tout moment. Il trouve
    R.U.S.E. tout seul via Steam. S'il dit qu'il n'y arrive pas : **Réglages > Dossier du jeu > Choisir le dossier…** et
@@ -67,16 +68,16 @@ dossier du jeu) : cliquez sur **Convertir un ancien mod…**, choisissez son dos
 Choisissez votre ensemble de mods et appuyez sur **Jouer**. La première fois, le Launcher construit une copie moddée du
 jeu (une minute environ) ; ensuite, seulement ce qui a changé. Puis R.U.S.E. démarre, avec vos mods.
 
-**R.U.S.E. 2.0 en or** est désactivé tant que vous ne l'activez pas : d'ici là, votre jeu garde son propre titre et
-la vidéo du logo d'Eugen Systems. Pour l'activer, cochez **Utiliser le titre doré et l'intro de R.U.S.E. 2.0** sous
-**Le titre du jeu** dans les **Réglages** (l'accord que le Launcher affiche à sa première ouverture a aussi une case
-pour cela). Le jeu s'ouvre alors sur une scène de bataille, avec ou sans mods, et son menu principal, ses menus et
-ses écrans de chargement portent le titre doré. Il est fait sur votre PC à partir des fichiers de votre propre jeu la
-première fois (quelques minutes, une fois).
+**R.U.S.E. 2.0 en doré** est désactivé tant que vous ne l'activez pas : jusque-là votre jeu garde son propre titre et la
+vidéo du logo d'Eugen. Pour l'activer, cochez **Utiliser le titre doré et l'intro de R.U.S.E. 2.0** sous **Le titre du
+jeu** dans les **Réglages** (l'accord que le Launcher montre à sa première ouverture a lui aussi une case pour cela). Le
+jeu s'ouvre alors sur une scène de bataille, avec ou sans mods, et son menu principal, ses menus et ses écrans de
+chargement portent le titre doré. Il est fabriqué sur votre PC à partir des fichiers de votre propre jeu et d'une image
+et d'un son fournis avec les applications, la première fois (quelques minutes, une seule fois).
 
 > [!NOTE]
 > Lancer R.U.S.E. depuis **Steam** lance le jeu **sans** mods, comme toujours. Pour jouer avec des mods, lancez-le avec
-> **Jouer** dans le Launcher. Votre installation Steam n'est jamais modifiée.
+> **Jouer** dans le Launcher. Jouer ne modifie jamais votre installation Steam.
 
 ## Mises à jour
 
@@ -85,6 +86,10 @@ mise à jour échoue avec « certificate verify failed », téléchargez le dern
 votre navigateur et lancez-le : il s'installe par-dessus l'ancien et garde vos mods.
 
 **Mises à jour obligatoires :** une mise à jour marquée obligatoire (une mise à jour importante, comme une correction de sécurité) ne peut pas être ignorée. Une fenêtre recouvre le Launcher et la mise à jour s'installe toute seule, puis le Launcher se rouvre ; tant qu'elle n'est pas installée, **Jouer** reste désactivé. Sans Internet, la fenêtre le dit : connectez-vous et appuyez sur **Réessayer**. Le Studio fait de même, avec **Tester en jeu**.
+
+Une mise à jour ne s'installe que si elle porte notre signature. Si le Launcher ou le Studio dit qu'une nouvelle version
+n'a pas pu être confirmée, ne l'installez pas à la main, sauf si nous le disons sur notre Discord ; attendez la mise à
+jour suivante.
 
 ## Des problèmes ?
 

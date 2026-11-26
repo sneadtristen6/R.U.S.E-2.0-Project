@@ -23,13 +23,17 @@ descargas, consulta la [página del proyecto](https://github.com/sneadtristen6/R
 > **Todavía con fallos, úsalo bajo tu propio criterio:** las texturas de Map Paint y los dos mapas en blanco (Terreno
 > en blanco y Océano en blanco).
 
+**For rights holders:** si representas a Eugen Systems, o a cualquier otra persona cuyos derechos creas que este
+proyecto afecta, escribe por favor a sneadtristen6@gmail.com con el asunto «Rights holder». Respondemos en un plazo de 7
+días, y si nos pides cambiar o quitar algo tuyo, lo haremos.
+
 ## Dos aplicaciones, dos tareas
 
 | | **RUSE Launcher** | **RUSE Studio** |
 |---|---|---|
 | **Para** | todos los que juegan con mods | quienes los crean |
 | **Hace** | carga los mods en tu juego y se asegura de que funcionen juntos: cada mod con el que juegas pasa por él | crea mods: mapas nuevos, cambios de escenario, unidades, pueblos, ejércitos |
-| **Obtienes** | un juego con mods a un clic, con tu instalación de Steam intacta | un mod que puedes probar en el juego, y luego exportar y compartir |
+| **Obtienes** | un juego con mods, a un clic de distancia, con tu instalación de Steam intacta al Jugar | un mod que puedes probar en el juego, y luego exportar y compartir |
 
 Un mod creado en el Studio se juega con el Launcher: expórtalo, añádelo, juega. **Probar en el juego**, en el Studio,
 inicia por su cuenta una copia rápida de prueba, para comprobar tu trabajo sobre la marcha.

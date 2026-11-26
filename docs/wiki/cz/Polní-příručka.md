@@ -21,13 +21,17 @@ Návody krok za krokem pro **RUSE Launcher** a **RUSE Studio**. Co je to za proj
 > **Stále s chybami, používejte na vlastní uvážení:** textury Malování mapy a obě prázdné mapy (Prázdný terén a Prázdný
 > oceán).
 
+**Pro nositele práv:** pokud zastupujete Eugen Systems nebo kohokoli jiného, jehož práv se podle vás tento projekt týká,
+napište prosím e-mail na sneadtristen6@gmail.com s předmětem „Rights holder“. Odpovídáme do 7 dnů a pokud nás požádáte,
+abychom změnili nebo odstranili něco, co je vaše, uděláme to.
+
 ## Dvě aplikace, dvě úlohy
 
 | | **RUSE Launcher** | **RUSE Studio** |
 |---|---|---|
 | **Pro koho** | pro každého, kdo hraje mody | pro ty, kdo je dělají |
 | **Co dělá** | načítá mody do vaší hry a hlídá, aby spolu fungovaly: každý mod, který hrajete, jde přes něj | dělá mody: nové mapy, úpravy scénářů, jednotky, města, armády |
-| **Co získáte** | hru s mody na jedno kliknutí, vaše instalace ze Steamu zůstane netknutá | mod, který můžete vyzkoušet ve hře, pak exportovat a sdílet |
+| **Co získáte** | hra s mody na jedno kliknutí, vaše instalace Steamu zůstává při Hrát nedotčená | mod, který můžete vyzkoušet ve hře, pak exportovat a sdílet |
 
 Mod udělaný ve Studiu se hraje přes Launcher: exportujte ho, přidejte, hrajte. Tlačítko **Vyzkoušet ve hře** ve Studiu
 samo spustí rychlou testovací kopii, abyste mohli svou práci průběžně kontrolovat.

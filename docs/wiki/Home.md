@@ -21,13 +21,17 @@ Step-by-step guides for **RUSE Launcher** and **RUSE Studio**. For what the proj
 > **Still buggy, use at your own discretion:** Map Paint's textures, and both blank maps (Blank Terrain and Blank
 > Ocean).
 
+**For rights holders:** if you represent Eugen Systems, or anyone else whose rights you think this project affects,
+please email sneadtristen6@gmail.com with the subject "Rights holder". We answer within 7 days, and if you ask us to
+change or remove something of yours, we will.
+
 ## Two apps, two jobs
 
 | | **RUSE Launcher** | **RUSE Studio** |
 |---|---|---|
 | **For** | everyone who plays mods | people who make them |
 | **Does** | loads mods into your game and makes sure they work together: every mod you play goes through it | makes mods: new maps, scenario edits, units, towns, armies |
-| **You get** | a modded game, one click away, your Steam install untouched | a mod you can test in the game, then export and share |
+| **You get** | a modded game, one click away, your Steam install untouched by Play | a mod you can test in the game, then export and share |
 
 A mod made in the Studio is played through the Launcher: export it, add it, play. **Test in game** in the Studio
 starts a quick test copy on its own, to check your work as you go.

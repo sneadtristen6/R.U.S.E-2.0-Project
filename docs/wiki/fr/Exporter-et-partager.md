@@ -60,10 +60,12 @@ Dans le menu Mod du Studio, **Afficher le dossier de ce mod** ouvre le dossier d
 
 ## Ce qu'un mod peut contenir
 
-Des données seulement : nombres, textes, cartes, modèles, textures. Les programmes (`.exe`, `.dll`, scripts qui tournent
-sur un PC) sont refusés par les deux applications. Une exception : les propres scripts de mission du jeu, tels que le
-Studio les enregistre. Ils tournent dans le jeu et peuvent faire tout ce qu'il peut faire, donc n'installez ceux-là que
-d'auteurs en qui vous avez confiance ([SECURITY.md](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/blob/main/SECURITY.md)).
+Dans certains cas, des données du jeu peuvent être modifiées, mais c'est dans votre copie du jeu : un mod change les
+données (chiffres, textes, cartes, modèles, textures) de la copie moddée que les applications construisent, et certains
+mods changent là les propres scripts du jeu, comme les scripts de mission que le Studio enregistre. Ces scripts
+s'exécutent dans le jeu et peuvent faire tout ce qu'il peut faire ; n'installez-les donc que de la part d'auteurs de
+confiance ([SECURITY.md](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/blob/main/SECURITY.md)). Les programmes
+(`.exe`, `.dll`, scripts qui s'exécutent sur un PC) sont refusés par les deux applications.
 
 ## Bonnes pratiques
 

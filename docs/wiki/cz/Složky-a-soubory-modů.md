@@ -10,7 +10,7 @@
 | Mody Studia | `Documents\RUSE 2.0\Mods\<mod>` (složka Dokumenty); změny map v `Maps`, exportované soubory v `Exports`, zálohy v `Backups`. Ve Studiu je **Nastavení → Kde jsou vaše soubory** otevře jednu po druhé a **Ukázat složku tohoto módu** (nabídka módu) otevře tu, kterou upravujete |
 | Nainstalované mody launcheru | `%LOCALAPPDATA%\RUSE Mod Platform\library` |
 | Kopie hry s mody | Složka, kterou zvolíte v Nastavení (**Kam se ukládají kopie s módy**, v kterékoli aplikaci); doporučené místo je `RUSE-Instances` na stejném disku jako hra (například `D:\RUSE-Instances`), kde kopie sdílí soubory hry. Na jiném disku je každá kopie úplnou kopií hry: pomalejší a větší. Čistá záloha hry (`RUSE-Backup`) jde vedle ní. |
-| Samotná hra | Nikdy se nemění |
+| Samotná hra | Aplikace ji nikdy nemění, pokud některou nepožádáte, aby ji obnovila z její čisté zálohy |
 
 Starší verze Studia je ukládaly do `%LOCALAPPDATA%\RUSE Mod Platform` (`mods`, `maps`, `exports`, `mod-backups`): Studio je při prvním spuštění přesune do Dokumentů a řekne vám to.
 
@@ -64,7 +64,7 @@ modu. Nové mapy se ve hře hrají (2026-10-03) a **Duplikovat mapu** ve Studiu 
 | Zip obsahuje složku uvnitř složky | Launcher se podívá o jednu složku níž a najde ho. Dvě a víc níž: řekne, že nenašel žádný mod. | Zazipujte složku, ve které je `mod.toml`. |
 | Složka mapy pojmenovaná podle titulu mapy | Sestavení řekne, že to není název balíku mapy. | Přejmenujte ji na název balíku. |
 | Ručně upravený soubor má překlep | Kontrola modu jmenuje soubor a řádek. | Opravte ho, nebo ve Studiu **Odložit**. |
-| `.exe`, `.dll` nebo skript pro PC uvnitř modu | Odmítnuto: mody nesou jen data (vlastní skripty misí hry, tak jak je ukládá Studio, jsou jediná výjimka). | Vyjměte ho. |
+| `.exe`, `.dll` nebo skript pro PC uvnitř modu | Odmítnuto: žádné programy. V některých případech se mohou data hry změnit, ale týká se to vaší kopie hry: mody mění data a některé mění vlastní skripty hry, jen v upravené kopii. | Vyjměte ho. |
 
 Pokud soubor nejde přečíst, Studio ho nikdy nepřepíše: vaše práce se nikdy neztratí. **Odložit** ho přejmenuje na
 `<name>.broken.toml` vedle originálu.

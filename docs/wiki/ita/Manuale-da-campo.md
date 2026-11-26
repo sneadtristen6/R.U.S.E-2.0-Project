@@ -22,13 +22,17 @@ Guide passo passo per **RUSE Launcher** e **RUSE Studio**. Per sapere cos'è il 
 > **Ancora con bug, usali a tua discrezione:** le texture di Map Paint ed entrambe le mappe vuote (Terreno vuoto e Oceano
 > vuoto).
 
+**Per i titolari di diritti:** se rappresenti Eugen Systems, o chiunque altro i cui diritti pensi siano toccati da
+questo progetto, scrivi a sneadtristen6@gmail.com con l'oggetto "Rights holder". Rispondiamo entro 7 giorni, e se ci
+chiedi di cambiare o rimuovere qualcosa di tuo, lo faremo.
+
 ## Due app, due compiti
 
 | | **RUSE Launcher** | **RUSE Studio** |
 |---|---|---|
 | **Per** | chiunque giochi con le mod | chi le crea |
 | **Fa** | carica le mod nel tuo gioco e si assicura che funzionino insieme: ogni mod con cui giochi passa da lì | crea mod: nuove mappe, modifiche agli scenari, unità, città, eserciti |
-| **Ottieni** | un gioco moddato a un clic di distanza, con la tua installazione di Steam intatta | una mod che puoi provare in gioco, poi esportare e condividere |
+| **Ottieni** | un gioco moddato, a un clic di distanza, con la tua installazione di Steam intatta con Gioca | una mod che puoi provare in gioco, poi esportare e condividere |
 
 Una mod creata nello Studio si gioca con il Launcher: esportala, aggiungila, gioca. **Prova in gioco** nello Studio
 avvia da sé una rapida copia di prova, per controllare il tuo lavoro mentre procedi.

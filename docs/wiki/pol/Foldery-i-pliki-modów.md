@@ -10,7 +10,7 @@
 | Mody Studio | `Documents\RUSE 2.0\Mods\<mod>` (folder Dokumenty); zmiany map w `Maps`, wyeksportowane pliki w `Exports`, kopie zapasowe w `Backups`. W Studio **Ustawienia → Gdzie są twoje pliki** otwiera każdy z nich, a **Pokaż folder tego moda** (menu moda) ten, który edytujesz |
 | Mody zainstalowane w launcherze | `%LOCALAPPDATA%\RUSE Mod Platform\library` |
 | Zmodowane kopie gry | Folder, który wybierzesz w Ustawieniach (**Gdzie trafiają kopie z modami**, w dowolnej z aplikacji); zalecane miejsce to `RUSE-Instances` na tym samym dysku co gra (na przykład `D:\RUSE-Instances`), gdzie kopia dzieli pliki z grą. Na innym dysku każda kopia jest pełną kopią gry: wolniejszą i większą. Czysta kopia zapasowa gry (`RUSE-Backup`) trafia obok. |
-| Sama gra | Nigdy nie jest zmieniana |
+| Sama gra | Nigdy niezmieniana przez aplikacje, chyba że poprosisz którąś z nich o przywrócenie jej z czystej kopii zapasowej |
 
 Starsze wersje Studio trzymały je w `%LOCALAPPDATA%\RUSE Mod Platform` (`mods`, `maps`, `exports`, `mod-backups`): Studio przenosi je do Dokumentów przy pierwszym uruchomieniu i o tym mówi.
 
@@ -64,7 +64,7 @@ przy każdym modzie. Nowe mapy działają w grze (2026-10-03), a **Duplikuj map�
 | Zip zawiera folder w folderze | Launcher zagląda jeden folder niżej i go znajduje. Dwa lub więcej niżej: mówi, że nie znalazł moda. | Spakuj folder, w którym jest `mod.toml`. |
 | Folder mapy nazwany od tytułu mapy | Budowanie mówi, że to nie jest nazwa paczki mapy. | Zmień nazwę na nazwę paczki. |
 | Plik edytowany ręcznie ma literówkę | Kontrola moda podaje plik i wiersz. | Popraw go albo użyj **Odłóż** w Studio. |
-| `.exe`, `.dll` lub skrypt PC w modzie | Odrzucony: mody niosą tylko dane (własne skrypty misji gry, w postaci, w jakiej zapisuje je Studio, są jedynym wyjątkiem). | Usuń go. |
+| `.exe`, `.dll` lub skrypt PC w modzie | Odrzucane: żadnych programów. W niektórych przypadkach dane gry mogą zostać zmienione, ale dotyczy to twojej kopii gry: mody zmieniają dane, a niektóre zmieniają własne skrypty gry, tylko w kopii z modami. | Usuń go. |
 
 Jeśli pliku nie da się odczytać, Studio nigdy go nie nadpisuje: twoja praca nigdy nie przepada. **Odłóż** zmienia jego
 nazwę na `<name>.broken.toml` obok oryginału.

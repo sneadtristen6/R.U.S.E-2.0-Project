@@ -10,7 +10,7 @@
 | Les mods du Studio | `Documents\RUSE 2.0\Mods\<mod>` ; les modifs de cartes dans `Maps`, les fichiers exportés dans `Exports`, les sauvegardes dans `Backups`. Dans le Studio, **Réglages → Où sont vos fichiers** ouvre chacun d'eux, et **Afficher le dossier de ce mod** (menu du mod) ouvre celui que vous modifiez |
 | Les mods installés par le Launcher | `%LOCALAPPDATA%\RUSE Mod Platform\library` |
 | Les copies moddées du jeu | Le dossier que vous choisissez dans les Réglages (**Où vont les copies avec les mods**, dans l'une ou l'autre application) ; l'emplacement recommandé est `RUSE-Instances` sur le même disque que le jeu (par exemple `D:\RUSE-Instances`), où une copie partage les fichiers du jeu. Sur un autre disque, chaque copie est une copie complète du jeu : plus lente et plus grosse. La sauvegarde propre du jeu (`RUSE-Backup`) va à côté. |
-| Le jeu lui-même | Jamais modifié |
+| Le jeu lui-même | Jamais modifié par les applications, sauf si vous demandez à l'une ou l'autre de le restaurer depuis sa sauvegarde propre |
 
 Les anciens Studios les rangeaient dans `%LOCALAPPDATA%\RUSE Mod Platform` (`mods`, `maps`, `exports`, `mod-backups`) : le Studio les déplace vers Documents au premier démarrage, et le dit.
 
@@ -66,7 +66,7 @@ joueurs ont besoin du même mod pour y jouer ensemble, comme pour n'importe quel
 | Le zip contient un dossier dans un dossier | Le Launcher regarde un dossier plus bas et le trouve. À deux niveaux ou plus, il dit qu'il n'a trouvé aucun mod. | Zippez le dossier qui contient `mod.toml`. |
 | Un dossier de carte nommé d'après le titre de la carte | La construction dit que ce n'est pas un nom d'archive de carte. | Renommez-le avec le nom de l'archive. |
 | Un fichier modifié à la main a une faute de frappe | La vérification du mod nomme le fichier et la ligne. | Corrigez-la, ou **Mettre de côté** dans le Studio. |
-| Un `.exe`, un `.dll` ou un script de PC dans le mod | Refusé : les mods ne contiennent que des données (les propres scripts de mission du jeu, tels que le Studio les enregistre, sont la seule exception). | Retirez-le. |
+| Un `.exe`, un `.dll` ou un script de PC dans le mod | Refusé : pas de programmes. Dans certains cas, des données du jeu peuvent être modifiées, mais c'est dans votre copie du jeu : les mods changent des données, et certains changent les propres scripts du jeu, seulement dans la copie moddée. | Retirez-le. |
 
 Si un fichier ne peut pas être lu, le Studio n'écrit jamais par-dessus : votre travail n'est jamais perdu. **Mettre de
 côté** le renomme `<name>.broken.toml` à côté de l'original.

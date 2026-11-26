@@ -121,9 +121,11 @@ code. The full words: [CLAUDE.md](../CLAUDE.md).
 - **"What's coming?"** [docs/community/roadmap.md](../docs/community/roadmap.md), and for the big patch before 1.0
   (unit and building sounds), [docs/BIG_PATCH.md](../docs/BIG_PATCH.md): written up there, not in the apps yet. Music
   and voice lines are in the Studio's Music tab since 0.9.8.1.
-- **"Is there an anti-cheat?"** Yes: RUSE Guard, on in every modded copy since Launcher 0.4.8.10 and Studio
-  0.9.8.10. A game modded with cheats stays out of multiplayer, players compare join codes, and it acts only in
-  multiplayer and co-op matches. Its rules and what it collects: [SECURITY.md](../SECURITY.md).
+- **"Is there an anti-cheat?"** Yes: RUSE Guard, on in every modded copy since Launcher 0.4.8.10 and Studio 0.9.8.10. A
+  game modded with cheats or test tools plays multiplayer and co-op only with players who have the same build, and
+  players compare join codes. Its lock and its program check act only in multiplayer and co-op matches; its watcher, in
+  every modded copy, also shows on-screen notices in skirmish against the computer. Its rules and what it collects:
+  [SECURITY.md](../SECURITY.md) and the terms and privacy notice ([PRIVACY.md](../PRIVACY.md)).
 - **"How do I report a bug?"** The apps' **Report a problem** button, or
   [Discussions → Bug reports](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/discussions). Check
   [issue #15](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/issues/15) first.

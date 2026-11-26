@@ -14,9 +14,11 @@
 &nbsp;&nbsp;
 [![Podpořit na Patreonu](https://img.shields.io/badge/Support%20on-Patreon-65764A?style=for-the-badge&logo=patreon&logoColor=white)](https://www.patreon.com/SneadTristen6)
 
-<sub>Windows. Vyžaduje R.U.S.E. na Steamu. Nikdy nesahá na vaši instalaci Steamu.</sub>
+<sub>Windows. Vyžaduje R.U.S.E. na Steamu. Mody se dávají do samostatné kopie, nikdy do vaší instalace Steamu.</sub>
 
 </div>
+
+> R.U.S.E. je hra, kterou vyvinula a vydala společnost Eugen Systems. R.U.S.E. 2.0 je bezplatný fanouškovský projekt. Nevytvořila ho, neschválila ani nepodporuje společnost Eugen Systems. Není spojen ani s Valve. Potřebujete vlastní kopii R.U.S.E.
 
 > [!TIP]
 > **Jak nainstalovat a hrát (5 minut):**
@@ -34,15 +36,15 @@
 
 ## Co je R.U.S.E. 2.0
 
-**R.U.S.E. 2.0 je pokračování R.U.S.E. (2010) od fanoušků, oblíbené realtimové strategie z druhé světové války od Eugen Systems**: celá fronta na mapovém stole a bitvy vyhrávané lstí stejně jako silou. Přidává nové mapy, nové jednotky a hraní s mody na jedno stisknutí, ve dvou bezplatných aplikacích:
+**R.U.S.E. 2.0 je bezplatná platforma pro mody k R.U.S.E. (2010), vytvořená fanoušky**, realtimové strategii z druhé světové války od Eugen Systems: celá fronta na mapovém stole a bitvy vyhrávané lstí stejně jako silou. Přidává nové mapy, nové jednotky a hraní s mody na jedno stisknutí, ve dvou bezplatných aplikacích:
 
 - **RUSE Launcher pro hráče.** Vyberte sadu modů a stiskněte **Hrát**. To je vše.
 - **RUSE Studio pro moddery.** Změňte jakoukoli jednotku, vytvořte nové s vlastními 3D modely, postavte mapy od
   čistého listu nebo předělejte ty ze hry, pak stiskněte **Vyzkoušet ve hře**.
 
-**Férová hra v základu.** RUSE Guard, náš anticheat, drží cheaty mimo skutečné hry více hráčů: hra upravená s cheaty zůstane offline a hráči si porovnají kódy hry, aby věděli, že hrají stejnou hru.
+**Férová hra v základu.** RUSE Guard, náš anti-cheat: hra sestavená s cheaty nebo testovacími nástroji hraje zápasy pro více hráčů a kooperativní jen s hráči, kteří mají stejné sestavení, a hráči si porovnávají kódy hry, aby věděli, že hrají stejnou hru.
 
-**Vaše vlastní kopie, nikdy nezměněná.** Aplikace fungují jen s kopií R.U.S.E., kterou vlastníte, a sestaví z ní samostatnou upravenou kopii: mod mění jen data hry a vaší instalace ve Steamu se nikdy nedotkne.
+**Vaše kopie hry.** Aplikace fungují jen s kopií R.U.S.E., kterou vlastníte, a sestaví z ní na vašem PC samostatnou upravenou kopii. V některých případech se mohou data hry změnit, ale týká se to vaší kopie hry: té upravené kopie. Mody mění její data a některé mění její skripty; naše aplikace přidávají do jejích herních skriptů skripty RUSE Guard a několik vlastních malých pojistek; a několik sad modů také potřebuje malou záplatu jejího programového souboru. Vaše instalace Steamu zůstane, jak je, pokud Launcher nebo Studio nepožádáte, aby ji obnovily z její čisté zálohy.
 
 **Open source** (GPL-3.0), v jedenácti jazycích: deset jazyků hry a perština.
 
@@ -57,34 +59,27 @@
       <sub><b>Od 1. světové války po dnešek, vše pohromadě.</b> Dvouplošníky, bombardéry a tryskáče na jednom letišti.</sub>
     </td>
     <td width="33%" valign="top">
-      <img src="docs/images/guard-offline-message.jpg" alt="R.U.S.E. ve hře: zpráva RUSE Guard v kopii sestavené s cheaty: je pro hru offline a opouští hry více hráčů a kooperace" width="260"><br>
-      <sub><b>RUSE Guard.</b> Hra sestavená s cheaty zůstane offline.</sub>
+      <img src="docs/images/guard-offline-message.jpg" alt="R.U.S.E. ve hře: dřívější zpráva RUSE Guard v kopii sestavené s cheaty, z doby, než takové kopie směly hrát s hráči, kteří mají stejné sestavení" width="260"><br>
+      <sub><b>RUSE Guard.</b> Dřívější zpráva: dnes hra sestavená s cheaty hraje jen s hráči, kteří mají stejné sestavení.</sub>
     </td>
   </tr>
 </table>
 
-## Podpora vývoje
+## Podpořte vývoj
 
-R.U.S.E. 2.0 je můj první moddingový projekt. Pokud chcete podpořit vývoj a sledovat práci v zákulisí,
-[navštivte můj Patreon](https://www.patreon.com/SneadTristen6). Každá podpora mi pomáhá pokračovat.
+R.U.S.E. 2.0 je můj první modovací projekt, dělaný ve volném čase. Je zdarma a zůstane zdarma pro všechny. Pokud chcete podpořit mou práci na něm a sledovat dění v zákulisí, můžete poskytnout jednorázovou podporu přes [můj Patreon](https://www.patreon.com/SneadTristen6). Je to dobrovolné. Není to charitativní dar (takže není odečitatelný z daní) a nekupuje aplikace, hru, žádný mod ani žádná práva k nim.
 
-### Jednorázová podpora
+### Možnosti jednorázové podpory
 
-| Možnost | Částka | Uznání |
+| Možnost | Částka | Poděkování |
 | --- | --- | --- |
-| [Buy me a coffee](https://www.patreon.com/c/sneadtristen6/shop) | $5 jednorázově | Malé spropitné, které pomáhá udržet projekt v chodu. |
-| [Above & Beyond Supporter](https://www.patreon.com/SneadTristen6/posts/171328212) | $20 jednorázově | Vámi zvolené jméno v sekci Above & Beyond Supporters v poděkování na GitHubu a v modu. |
-| [Monumental Supporter](https://www.patreon.com/SneadTristen6/posts/monumental-100-171328695) | $100 jednorázově | Vámi zvolené jméno na prvním místě v sekci Monumental Supporters v poděkování a můžete něco ve hře pojmenovat: město, most, letiště nebo celou mapu. |
+| [Buy me a coffee](https://www.patreon.com/c/sneadtristen6/shop) | $5 jednou | Malé spropitné, které pomáhá udržet projekt v chodu. |
+| [Above & Beyond Supporter](https://www.patreon.com/SneadTristen6/posts/171328212) | $20 jednou | Vaše zvolené jméno v části Above & Beyond Supporters v poděkováních na GitHubu a v modech. |
+| [Monumental Supporter](https://www.patreon.com/SneadTristen6/posts/monumental-100-171328695) | $100 jednou | Vaše zvolené jméno jako první v části Monumental Supporters v poděkováních, naše nejvyšší poděkování podporovatelům. |
 
-Podpora jde na čas a nástroje za R.U.S.E. 2.0: nové mapy, nové jednotky, RUSE Studio a udržení hry naživu pro všechny
-hráče.
+Podpora jde do času a nástrojů za R.U.S.E. 2.0: nové mapy, nové jednotky, RUSE Studio a udržení hry naživu pro každého hráče.
 
-Uvedení jména je dobrovolné: po nákupu pošlete na Patreonu zprávu se zvoleným veřejným jménem a svolením ho
-zveřejnit, nebo zůstaňte v anonymitě. Poděkování se aktualizují s vydáními projektu. Tyto nákupy v Shopu se
-automaticky neobnovují.
-
-Monumental Supporters: ve stejné zprávě pošlete jméno, které chcete dát městu, mostu, letišti nebo mapě; objeví se v
-některé z příštích map.
+Uvedení jména je dobrovolné: po platbě pošlete zprávu na Patreonu se svým zvoleným veřejným jménem a svolením k jeho zveřejnění, nebo zvolte zůstat anonymní. Poděkování se aktualizují s vydáními projektu. Jde o jednorázové platby přes obchod na Patreonu: neobnovují se a vrácení peněz se řídí pravidly Patreonu.
 
 ## Co R.U.S.E. 2.0 mění
 
@@ -142,9 +137,9 @@ některé z příštích map.
 ### Pro hráče
 
 - **Jedno stisknutí:** vyberte sadu modů a stiskněte **Hrát**; Launcher sestaví samostatnou upravenou kopii a spustí ji.
-- **R.U.S.E. 2.0 ve zlaté:** upravená hra se otevře na bitevní scéně a její nabídky a obrazovky načítání ukazují
-  R.U.S.E. 2.0 zlatě. Je to vypnuté, dokud to nezapnete v Nastavení: do té doby si hra ponechá svůj původní název a
-  video s logem Eugen Systems.
+- **R.U.S.E. 2.0 zlatě:** upravená hra se otevře bitevní scénou a její menu a načítací obrazovky ukazují R.U.S.E. 2.0
+  zlatě. Je vypnuto, dokud to nezapnete, v Nastavení nebo políčkem na první obrazovce: do té doby si hra ponechává svůj
+  původní název a úvodní video s logem Eugen Systems.
 - **Komunitní mody tak, jak jsou** (i soubory `.rmod` z RUSE-Mod-Manager), seznam podporovaných modů k zaškrtnutí,
   pořadí načítání sdílená oběma směry s RUSE-Mod-Manager a řešení potíží, které najde, co brání tlačítku Hrát, a
   opraví to.
@@ -246,15 +241,14 @@ poznámky o vlastních souborech hry zůstávají soukromé, dokud nebudeme mít
 Všechno, co tu děláme, má pomoci komunitě a posunout tuhle hru na lepší místo. R.U.S.E. je jedna z mých
 nejoblíbenějších her vůbec a chci ji jen udělat lepší.
 
-**Jen vlastněné kopie.** Projekt R.U.S.E. 2.0 podporuje R.U.S.E. jen tehdy, když hru vlastníte na svém účtu Steam.
-Samotná hra se spustí jen pro účet Steam, který ji vlastní, a naše nástroje to nikdy neobcházejí: najdou hru přes
-vaši knihovnu Steam, upraví její samostatnou kopii a nikdy nešíří soubory hry. Nepodporujeme emulátory Steamu,
-pirátské kopie ani nic jiného, co lidem umožňuje hrát bez vlastnictví hry. Pokud hru nevlastníte, tyto nástroje vám
-nebudou fungovat a nejsou pro vás. Cokoli, co uznáme za vhodné, předáme k dalšímu řešení.
+**Jen vlastněné kopie.** Projekt R.U.S.E. 2.0 podporuje R.U.S.E. jen tehdy, když ho vlastníte. Samotná hra se spustí jen
+pro účet Steam, který ji vlastní, a naše nástroje to nikdy neobcházejí: hru najdou přes vaši knihovnu Steamu, upraví
+její samostatnou kopii a nikdy nedodávají soubory hry. Nepodporujeme emulátory Steamu, pirátské kopie ani nic jiného, co
+lidem umožňuje hrát bez vlastnění hry. Pokud hru nevlastníte, tyto nástroje vám nebudou fungovat a nejsou pro vás.
 
-Vlastníte hru jinak, třeba jako krabicovou kopii z doby, než byl R.U.S.E. na Steamu, nebo se aplikace spletly? Okno
-v aplikaci ukazuje váš kód a dvě tlačítka: otevřete tiket na Discordu nebo na GitHubu a pošleme vám odemykací kód
-pro vaše PC.
+Vlastníte ji jiným způsobem, například krabicovou kopii z doby, než bylo R.U.S.E. na Steamu, nebo se aplikace spletly?
+Okno v aplikaci má váš kód a dvě tlačítka: otevřete ticket na Discordu nebo na GitHubu a pošleme vám odemykací kód pro
+váš PC. Tickety na GitHubu jsou veřejné, takže kód můžete místo toho poslat sneadtristen6 v soukromé zprávě na Discordu.
 
 <details>
 <summary><b>Stav, dokumentace a přispívání</b></summary>
@@ -351,6 +345,12 @@ py -3 -m unittest discover -s tests
 
 </details>
 
+## Pro nositele práv
+
+Pokud zastupujete Eugen Systems nebo kohokoli jiného, jehož práv se podle vás tento projekt týká, napište prosím e-mail
+na sneadtristen6@gmail.com s předmětem „Rights holder“. Čteme každou zprávu a odpovídáme do 7 dnů. Pokud nás požádáte,
+abychom změnili nebo odstranili něco, co je vaše, uděláme to. Nemusíte nejdřív posílat formální oznámení.
+
 ## Poděkování
 
 R.U.S.E. 2.0 stavějí sneadtristen6 a Claude, s pomocí a prací lidí níže.
@@ -377,16 +377,17 @@ boku od září 2026 vytvořili:
 - **Jednotky:** změna kterékoli z nich, tvorba nových, tanky a letadla jiné armády pro národ, letadla v jakékoli roli,
   průzkumná vozidla, zbraně, které zasahují letadla, každý příznak a číslo vysvětlené a národ změněný v jiný.
 - **Hudba a mise:** skladby a repliky nahrazené ve Studiu a vlastní mise.
-- **Dvě aplikace v jedenácti jazycích** (deset jazyků hry a perština), Studio pro moddery a Launcher pro hráče, které nikdy nesahají
-  na vlastní složku hry, s kontrolou, která zastaví mod, jenž by hru rozbil, ještě než se hra spustí.
-- **RUSE Guard, náš anticheat, postavený a zapnutý:** zámek, který drží hru upravenou s cheaty offline, hlídač v každé upravené hře, kódy hry, server s obrazovkou kontroly a dohoda, kterou vidí každý hráč.
+- **Dvě aplikace v jedenácti jazycích** (deset jazyků hry a perština), Studio pro moddery a Launcher pro hráče, které
+  nechávají složku hry na pokoji, pokud některou z nich nepožádáte, aby ji obnovila z její čisté zálohy, s kontrolou,
+  která zastaví mod, jenž by hru rozbil, ještě před jejím spuštěním.
+- **RUSE Guard, náš anti-cheat, sestavený a zapnutý:** zámek, který hře modované s cheaty dovolí hrát jen s hráči, kteří mají stejné sestavení, kontrola známých podvodných nástrojů v zápasech pro více hráčů a kooperativních, hlídač v každé modované hře (na obrazovce říká, když zápas zaznamená příkaz k vytvoření jednotky nebo náhlý skok v peněžní částce některé strany), kódy hry, server a jeho obrazovka pro posuzování a dohoda, kterou vidí každý hráč.
 - **Jen vlastněné kopie:** kontrola, že hra je kopie, kterou vlastníte, odemykací kódy pro majitele, které Steam nedokáže potvrdit, a přihlášení přes Steam.
 - **Bug Watch:** hlášení o pádech a chybách, pokud ho zapnete, aby se problémy opravovaly rychleji.
 - **Velké mody:** sady modů nad 4 GB, seznamy stavby ve skupinách a sestavení zhruba čtyřikrát rychlejší (všech 366 jednotek z jiných období asi za 5 minut).
 - **První importér map pro R.U.S.E.**, pokud víme: skutečné místo převedené na mapu z vlastních dílů hry. Už sestaví část Utah Beach do mapy, která se ve hře otevře; ve Studiu zatím nefunguje úplně.
-- **Kód:** vše v `src/rusemod`, `src/ruse_studio` a `src/ruse_launcher` je náš vlastní kód, napsaný pro
-  R.U.S.E. 2.0. Ostatní, na jejichž práci staví, jsou uvedeni níže a v
-  [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+- **Kód:** vše v `src/rusemod`, `src/ruse_studio` a `src/ruse_launcher` je naše vlastní, napsané pro R.U.S.E. 2.0.
+  Několik věcí, které jsou jeho součástí, je práce jiných: zvuk motoru z intra a modely ve startovací scéně. Ty i další,
+  na jejichž práci stavíme, jsou uvedeny níže a v [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 Je to teprve začátek a čeká nás mnohem víc. Děkujeme všem níže, bez kterých by nic z toho nezačalo.
 
@@ -416,6 +417,10 @@ CC BY. Každý autor je uveden, s názvem modelu, licencí a odkazem, na stránc
 s poděkováním každého modu, který nějaký z nich používá (`CREDITS-era-units.md`), a v úplném seznamu na
 [vydání jednotek z ér](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases/tag/era-units). Co jsme změnili:
 každý byl přizpůsoben hře (otočen a zmenšen či zvětšen) a dostal označení svého národa.
+
+### Zvuk motoru z intra
+
+Zvuk motoru v intru R.U.S.E. 2.0, pro hráče, kteří zaškrtnou název a intro R.U.S.E. 2.0. Zdroj: neuvedeno.
 
 ### (Anonyme) Oozaru: testování a ladění
 
@@ -460,12 +465,30 @@ každá odpověď, slova aplikací, co je otestované), nebo na tuto stránku, a
 Nejlepší stránka, na kterou ho nasměrovat: [docs/MOD_FORMAT.md](docs/MOD_FORMAT.md) (vše, co mod umí, soubor po
 souboru). Pořád si nevíte rady? Otevřete [issue](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/issues).
 
+## Právní informace
+
+- R.U.S.E. je hra, kterou vyvinula a vydala společnost Eugen Systems. R.U.S.E. 2.0 je bezplatný fanouškovský projekt.
+  Nevytvořila ho, neschválila ani nepodporuje společnost Eugen Systems. Není spojen s Ubisoftem, vydavatelem hry do roku
+  2015, ani s Valve. R.U.S.E., Eugen Systems a Ubisoft jsou názvy svých vlastníků a Steam je ochranná známka společnosti
+  Valve Corporation; tyto názvy používáme jen k tomu, abychom řekli, s čím naše aplikace fungují.
+- Naše aplikace neobsahují žádné soubory hry a fungují jen s kopií hry, kterou vlastníte. V některých případech se mohou
+  data hry změnit, ale týká se to vaší kopie hry: samostatné upravené kopie, kterou aplikace sestaví. Vaši
+  nainstalovanou hru nechávají, jak je, pokud Launcher nebo Studio nepožádáte, aby ji obnovily z její čisté zálohy.
+- Hraní online s upravenou kopií: R.U.S.E. nemá účinný anti-cheat, a proto je RUSE Guard potřeba. Nemůžeme slíbit, jak
+  Steam nebo hra naloží s upravenou kopií online; hraní online s ní, zejména s kopií sestavenou s cheaty nebo
+  testovacími nástroji, je na vaše vlastní riziko.
+- Podpora projektu na Patreonu platí čas a nástroje správce. Není to charitativní dar a nekupuje hru, žádný její obsah
+  ani žádná práva k ní.
+- Podmínky používání a ochrana soukromí: [PRIVACY.md](PRIVACY.md). Části jiných autorů a jejich licence:
+  [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Nositelé práv: viz „Pro nositele práv“.
+
 ## Licence
 
 GNU General Public License, verze 3 ([LICENSE](LICENSE), GPL-3.0): copyright (C) 2026 sneadtristen6 a přispěvatelé
-RUSE Mod Platform. Aplikace obsahují [`src/ruse_mod_engine`](src/ruse_mod_engine/), engine RUSE-Mod-Manager od
+RUSE Mod Platform, napsáno s pomocí nástrojů AI. Aplikace obsahují [`src/ruse_mod_engine`](src/ruse_mod_engine/), engine RUSE-Mod-Manager od
 LittleGroove (GPLv3), použitý tak, jak je (viz Poděkování), a jeho licence vyžaduje celý program pod
 GPL-3.0 (do 2026-09-30 byl pod MIT). `src/ruse_mod_engine/python251` nese
-licenci Pythonu ([její LICENSE.txt](src/ruse_mod_engine/python251/LICENSE.txt)). Jde o nezávislý nástroj vytvořený
-fanoušky, který není spojený s Eugen Systems ani jimi schválený. R.U.S.E. a jeho herní data patří jejich vlastníkům;
-tento projekt nešíří žádné soubory hry a funguje jen na kopii hry, kterou vlastníte.
+licenci Pythonu ([její LICENSE.txt](src/ruse_mod_engine/python251/LICENSE.txt)). Toto je nezávislý nástroj vytvořený
+fanoušky, který není spojen s Eugen Systems ani Valve ani jimi podporován. R.U.S.E. a data jeho hry patří jejich
+vlastníkům a Steam je ochranná známka společnosti Valve Corporation. Naše aplikace neobsahují žádné soubory hry a
+fungují jen s kopií hry, kterou vlastníte.

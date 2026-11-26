@@ -22,9 +22,10 @@ Gli altri file che trovi lì (`RUSE-Launcher-notes.json`, *Source code*) non ser
 1. Apri il file che hai scaricato (di solito nella cartella **Download**).
 2. **«Windows ha protetto il PC»?** Clicca su **Ulteriori informazioni**, poi su **Esegui comunque**. L'app è nuova per il
    controllo della reputazione di Windows; il suo codice è pubblico su questo GitHub.
-3. Procedi con l'installazione. Lascia spuntato **Conserva una copia pulita dei file del gioco**: le app non cambiano mai la
-   cartella del gioco, ma altri gestori di mod e le modifiche a mano sì, e ogni gioco moddato è costruito da quei file. La
-   copia viene fatta la prima volta che l'app si avvia (qualche minuto, circa lo stesso spazio su disco del gioco).
+3. Procedi con l'installazione. Lascia spuntato **Conserva una copia pulita dei file del gioco**: le app non cambiano
+   mai la cartella del gioco a meno che tu chieda loro di ripristinarla da questa copia, ma altri gestori di mod e le
+   modifiche a mano possono farlo, e ogni gioco moddato è costruito da quei file. La copia viene fatta la prima volta
+   che l'app si avvia (qualche minuto, circa lo stesso spazio su disco del gioco).
 4. Avvia **RUSE Launcher** (menu Start o collegamento sul desktop). La prima volta, **Scegli la tua lingua**: una qualsiasi
    delle undici, le dieci del gioco e il persiano (فارسی); il pulsante della lingua in alto la cambia in qualsiasi momento.
    Trova R.U.S.E. da solo tramite Steam.
@@ -67,15 +68,15 @@ Scegli il tuo set di mod e premi **Gioca**. La prima volta il Launcher costruisc
 circa); dopo, solo ciò che è cambiato. Poi R.U.S.E. si avvia, con le tue mod.
 
 **R.U.S.E. 2.0 in oro** è spento finché non lo attivi: fino ad allora il tuo gioco tiene il suo titolo e il video del
-logo di Eugen Systems. Per attivarlo, metti la spunta a **Usa il titolo in oro e l'intro di R.U.S.E. 2.0** sotto
-**Il titolo del gioco** in **Impostazioni** (anche l'accordo che il Launcher mostra alla prima apertura ha una casella
-per questo). Il gioco allora si apre su una scena di battaglia, con le mod o senza, e il suo menu principale, i menu
-e le schermate di caricamento portano il titolo d'oro. Viene creato sul tuo PC dai file del tuo gioco la prima volta
-(qualche minuto, una volta sola).
+logo di Eugen. Per attivarlo, metti la spunta a **Usa il titolo in oro e l'intro di R.U.S.E. 2.0** sotto **Il titolo del
+gioco** in **Impostazioni** (anche l'accordo che il Launcher mostra alla prima apertura ha una casella per questo). Il
+gioco allora si apre su una scena di battaglia, con le mod o senza, e il suo menu principale, i menu e le schermate di
+caricamento portano il titolo in oro. Viene creato sul tuo PC dai file del tuo gioco e da un'immagine e un suono che
+vengono con le app, la prima volta (qualche minuto, una volta sola).
 
 > [!NOTE]
 > Avviare R.U.S.E. da **Steam** avvia il gioco **senza** mod, come sempre. Per giocare con le mod, avvialo con **Gioca**
-> nel Launcher. La tua installazione di Steam non viene mai modificata.
+> nel Launcher. Gioca non cambia mai la tua installazione di Steam.
 
 ## Aggiornamenti
 
@@ -84,6 +85,10 @@ Se l'aggiornamento fallisce con "certificate verify failed", scarica nel browser
 Passo 1 e avvialo: si installa sopra quello vecchio e tiene le tue mod.
 
 **Aggiornamenti obbligatori:** un aggiornamento segnato come obbligatorio (uno importante, come una correzione di sicurezza) non si può saltare. Un riquadro copre il Launcher e l'aggiornamento si installa da solo, poi il Launcher si riapre; finché non è installato, **Gioca** resta disattivato. Senza Internet, il riquadro lo dice: collegati e premi **Riprova**. Lo Studio fa lo stesso, con **Prova in gioco**.
+
+Un aggiornamento si installa solo quando porta la nostra firma. Se il Launcher o lo Studio dice che una nuova versione
+non ha potuto essere confermata, non installarla a mano a meno che non lo diciamo sul nostro Discord; aspetta il
+prossimo aggiornamento.
 
 ## Problemi?
 

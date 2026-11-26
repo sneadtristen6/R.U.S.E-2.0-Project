@@ -55,9 +55,12 @@ W menu moda w Studio **Pokaż folder tego moda** otwiera folder moda, którego e
 
 ## Co może zawierać mod
 
-Tylko dane: liczby, teksty, mapy, modele, tekstury. Programy (`.exe`, `.dll`, skrypty uruchamiane na PC) są odrzucane
-przez obie aplikacje. Jeden wyjątek: własne skrypty misji gry, w postaci, w jakiej zapisuje je Studio. Działają wewnątrz
-gry i mogą zrobić wszystko, co może gra, więc instaluj je tylko od autorów, którym ufasz ([SECURITY.md](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/blob/main/SECURITY.md)).
+W niektórych przypadkach dane gry mogą zostać zmienione, ale dotyczy to twojej kopii gry: mod zmienia dane (liczby,
+teksty, mapy, modele, tekstury) kopii z modami, którą budują aplikacje, a niektóre mody zmieniają tam własne skrypty
+gry, jak skrypty misji, które zapisuje Studio. Te skrypty działają wewnątrz gry i mogą robić wszystko, co ona może, więc
+instaluj je tylko od autorów, którym ufasz
+([SECURITY.md](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/blob/main/SECURITY.md)). Programy (`.exe`, `.dll`,
+skrypty uruchamiane na PC) są odrzucane przez obie aplikacje.
 
 ## Dobre praktyki
 

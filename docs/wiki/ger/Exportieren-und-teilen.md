@@ -60,9 +60,12 @@ Im Mod-Menü des Studios öffnet **Ordner dieses Mods zeigen** den Ordner des Mo
 
 ## Was ein Mod enthalten kann
 
-Nur Daten: Zahlen, Texte, Karten, Modelle, Texturen. Programme (`.exe`, `.dll`, Skripte, die auf einem PC laufen) lehnen
-beide Apps ab. Eine Ausnahme: die eigenen Missionsskripte des Spiels, so wie das Studio sie speichert. Sie laufen im
-Spiel und können alles, was es kann, also installiere sie nur von Autoren, denen du vertraust ([SECURITY.md](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/blob/main/SECURITY.md)).
+In manchen Fällen können Spieldaten geändert werden, aber nur an deiner Kopie des Spiels: Ein Mod ändert die Daten
+(Zahlen, Texte, Karten, Modelle, Texturen) der gemoddeten Kopie, die die Apps bauen, und manche Mods ändern dort die
+eigenen Skripte des Spiels, etwa die Missionsskripte, die das Studio speichert. Diese Skripte laufen im Spiel und können
+alles tun, was es kann, also installier sie nur von Autoren, denen du vertraust
+([SECURITY.md](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/blob/main/SECURITY.md)). Programme (`.exe`, `.dll`,
+Skripte, die auf einem PC laufen) werden von beiden Apps abgelehnt.
 
 ## Gute Gewohnheiten
 

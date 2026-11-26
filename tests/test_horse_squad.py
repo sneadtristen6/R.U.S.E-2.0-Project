@@ -799,9 +799,11 @@ class Credits(unittest.TestCase):
 
     def test_era_units_alone_as_before(self):
         self.assertEqual(era_units.credits_text([self.ERA]),
-                         "# Era unit models\n\nThese units use free 3D models by their makers, under the licence named. "
-                         "Changes: fitted to the game (turned, scaled) and the unit's nation's markings added (older "
-                         "markings covered).\n\n- A (WWI, USA): \"A model\" by maker, CC0, https://example.org/a.\n")
+                         "# Era unit models\n\nThese units use free 3D models by their makers, under the licence named "
+                         "(CC BY 4.0: https://creativecommons.org/licenses/by/4.0/; CC0 1.0: "
+                         "https://creativecommons.org/publicdomain/zero/1.0/). Changes: fitted to the game (turned, "
+                         "scaled) and the unit's nation's markings added (older markings covered).\n\n"
+                         "- A (WWI, USA): \"A model\" by maker, CC0, https://example.org/a.\n")
 
     def test_the_horse_squad_by_its_maker(self):
         self.assertEqual(era_units.credits_text([horse_squad.ENTRY]),

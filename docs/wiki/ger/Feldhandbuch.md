@@ -23,13 +23,17 @@ Downloads findest du auf der [Projektseite](https://github.com/sneadtristen6/R.U
 > **Noch fehlerhaft, Nutzung auf eigene Verantwortung:** die Texturen von Map Paint und beide leeren Karten (Leeres
 > Gelände und Leerer Ozean).
 
+**Für Rechteinhaber:** Wenn du Eugen Systems vertrittst oder sonst jemanden, dessen Rechte nach deiner Meinung dieses
+Projekt berührt, schreib bitte an sneadtristen6@gmail.com mit dem Betreff „Rights holder“. Wir antworten innerhalb von 7
+Tagen, und wenn du uns bittest, etwas von dir zu ändern oder zu entfernen, tun wir es.
+
 ## Zwei Apps, zwei Aufgaben
 
 | | **RUSE Launcher** | **RUSE Studio** |
 |---|---|---|
 | **Für** | alle, die Mods spielen | Leute, die sie erstellen |
 | **Macht** | lädt Mods in dein Spiel und sorgt dafür, dass sie zusammen funktionieren: jeder Mod, den du spielst, geht durch ihn | erstellt Mods: neue Karten, Szenario-Änderungen, Einheiten, Städte, Armeen |
-| **Du bekommst** | ein gemoddetes Spiel, einen Klick entfernt, deine Steam-Installation unberührt | einen Mod, den du im Spiel testen, dann exportieren und teilen kannst |
+| **Du bekommst** | ein gemoddetes Spiel, einen Klick entfernt, deine Steam-Installation von „Spielen“ unberührt | einen Mod, den du im Spiel testen, dann exportieren und teilen kannst |
 
 Ein im Studio erstellter Mod wird über den Launcher gespielt: exportieren, hinzufügen, spielen. **Im Spiel testen** im
 Studio startet selbst eine schnelle Testkopie, damit du deine Arbeit unterwegs prüfen kannst.

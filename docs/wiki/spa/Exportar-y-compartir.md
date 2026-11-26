@@ -58,9 +58,12 @@ En el menú Mod del Studio, **Mostrar la carpeta de este mod** abre la carpeta d
 
 ## Qué puede contener un mod
 
-Solo datos: números, textos, mapas, modelos, texturas. Las dos aplicaciones rechazan los programas (`.exe`, `.dll`,
-scripts que se ejecutan en un PC). Una excepción: los propios scripts de misión del juego, tal como los guarda el
-Studio. Se ejecutan dentro del juego y pueden hacer todo lo que él puede, así que instálalos solo de autores en los que confíes ([SECURITY.md](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/blob/main/SECURITY.md)).
+En algunos casos pueden cambiarse datos del juego, pero eso es en tu copia del juego: un mod cambia los datos (números,
+textos, mapas, modelos, texturas) de la copia con mods que construyen las aplicaciones, y algunos mods cambian allí los
+propios scripts del juego, como los scripts de misión que guarda el Studio. Esos scripts se ejecutan dentro del juego y
+pueden hacer todo lo que él puede, así que instálalos solo de autores en los que confíes
+([SECURITY.md](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/blob/main/SECURITY.md)). Las dos aplicaciones
+rechazan los programas (`.exe`, `.dll`, scripts que se ejecutan en un PC).
 
 ## Buenas prácticas
 
