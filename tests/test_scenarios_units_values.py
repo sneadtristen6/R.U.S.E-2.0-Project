@@ -152,28 +152,40 @@ class Values(Player):
         self.assertEqual(self.build(folder)[0], [])
         self.assertEqual(self.call("weapons", PANZER_IV, "us")["weapons"][0]["ammo"]["address"], copy)
 
-    # U-10: deleting a copied ammo that a weapon fires (Delete copy on its page) leaves the weapon firing it
-    # (Ammunition = the copy's address in src/studio.rndf; the weapon's box still names it), with no word: the mod no
-    # longer builds ("...Descriptor_Unit_Panzer_IV_G still refers to $/GFX/Everything/Ammo_Hot_75")
-    @unittest.expectedFailure
-    def test_after_the_ammo_copy_is_deleted_the_mod_builds(self):
+    # U-10 (the owner's answer, 2026-11-26, "2 A": warn, and on "Delete anyway" put each weapon that fires the copy
+    # back on the game ammo it was copied from, so the mod still builds): before, deleting a copied ammo that a weapon
+    # fires went without a word and left the weapon firing it ("...Descriptor_Unit_Panzer_IV_G still refers to
+    # $/GFX/Everything/Ammo_Hot_75")
+    def test_deleting_a_fired_ammo_copy_warns_first_and_changes_nothing(self):
+        folder = self.mod("Ammo copy warn")
+        copy = self.call("new_ammo", AMMO_75, "Hot 75")["address"]
+        self.call("set_ammo", PANZER_IV, PANZER_MOUNT, copy)
+        before = self.rndf(folder)
+        res = self.call("delete_unit", copy, None)
+        self.assertIsNone(res["deleted"], res)
+        self.assertEqual([w["address"] for w in res["ask_ammo"]], [PANZER_MOUNT])
+        self.assertTrue(res["ask_ammo"][0]["name"], res)
+        self.assertEqual(self.rndf(folder), before)                             # nothing changed
+        self.assertEqual(self.call("weapons", PANZER_IV, "us")["weapons"][0]["ammo"]["address"], copy)
+
+    def test_after_the_ammo_copy_is_deleted_anyway_the_mod_builds(self):
         folder = self.mod("Ammo copy gone")
         copy = self.call("new_ammo", AMMO_75, "Hot 75")["address"]
         self.call("set_ammo", PANZER_IV, PANZER_MOUNT, copy)
-        gone = self.call("delete_unit", copy, None)
-        self.assertNotEqual(self.call("weapons", PANZER_IV, "us")["weapons"][0]["ammo"]["address"], copy, gone)
+        gone = self.call("delete_unit", copy, "anyway")
+        self.assertEqual(gone["deleted"], copy, gone)
+        weapon = self.call("weapons", PANZER_IV, "us")["weapons"][0]
+        self.assertEqual((weapon["ammo"]["address"], weapon["edited"]), (AMMO_75, False), weapon)  # its game ammo again
         self.assertEqual(self.build(folder)[0], [], self.rndf(folder))
+        self.assertEqual(self.call("check_mod")["problems"], [])
 
-    def test_what_the_mod_check_says_after_the_ammo_copy_is_deleted(self):
-        """U-10 as it is now (passes on the code as it is; goes once U-10 is mended): the check bar, which the page
-        shows when a mod is picked and before Test in game, names nothing; the build does."""
-        folder = self.mod("Ammo copy check")
-        copy = self.call("new_ammo", AMMO_75, "Hot 75")["address"]
-        self.call("set_ammo", PANZER_IV, PANZER_MOUNT, copy)
-        self.call("delete_unit", copy, None)
-        print("\nU-10 check_mod:", self.call("check_mod")["problems"])
-        self.assertEqual(self.build(folder)[0],
-                         ["$/GFX/Everything/Descriptor_Unit_Panzer_IV_G still refers to $/GFX/Everything/Ammo_Hot_75"])
+    def test_an_ammo_copy_nothing_fires_is_deleted_at_once(self):
+        folder = self.mod("Ammo copy idle")
+        copy = self.call("new_ammo", AMMO_75, "Idle 75")["address"]
+        res = self.call("delete_unit", copy, None)
+        self.assertEqual(res["deleted"], copy, res)
+        self.assertNotIn("ask_ammo", res)
+        self.assertEqual(self.build(folder)[0], [])
 
     def test_an_ammos_words_in_every_script(self):
         """The text values a unit's page changes: an ammo's name and kind in game (its page's words boxes:

@@ -2141,6 +2141,10 @@ function copyNotice(u) {
     yes.disabled = true;
     try {
       const res = await api().delete_unit(u.address, researched);
+      if (res.ask_ammo) {  // weapons still fire this ammo copy: warned first (the owner, 2026-11-26)
+        ammoAsk(sure, u.name, res.ask_ammo, () => remove("anyway"), () => showUnit(u.address));
+        return;
+      }
       if (res.ask) {  // units are researched from it, and the modder chose to be warned first (Settings > Research)
         researchAsk(sure, u.name, res.ask, () => remove("anyway"), () => showUnit(u.address));
         return;
@@ -3999,6 +4003,22 @@ function timeUnitPicker(box, changed) {
     if (changed) changed(shown);
   });
   return pick;
+}
+
+// The warning before deleting a copied ammo that weapons still fire (StudioApi.delete_unit gave {ask_ammo}): in `box`,
+// which weapons fire it and that Delete anyway puts each back on the game ammo it was copied from, Delete anyway
+// (`goAhead`) and Cancel (`cancel`)
+function ammoAsk(box, name, weapons, goAhead, cancel) {
+  const w = state.words;
+  const anyway = el("button", { type: "button", className: "ghost danger", textContent: w.delete_anyway,
+    title: w.tip_delete_unit });
+  const keep = el("button", { type: "button", className: "ghost", textContent: w.cancel, title: w.tip_cancel });
+  anyway.addEventListener("click", () => { anyway.disabled = true; goAhead(); });
+  keep.addEventListener("click", cancel);
+  box.classList.remove("hidden");
+  box.replaceChildren(el("p", { className: "notice warn", textContent: fill(w.ammo_gone_ask,
+    { name, names: [...new Set(weapons.map((x) => x.name))].join(", ") }) }), el("div", { className: "actions" }, anyway, keep));
+  anyway.focus();
 }
 
 // The warning before taking out a unit others are researched from (StudioApi.delete_unit / era_unit_remove gave
