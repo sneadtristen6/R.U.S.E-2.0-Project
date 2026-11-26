@@ -487,6 +487,17 @@ class UpdateCalls:
         save_settings(Path(self._home), values)
         return {}
 
+    def _update_forgive(self, rel: Release) -> None:
+        """Take off the kept refusal of `rel` (a file refused as final), so it is tried once more; the tries that
+        weren't final stay."""
+        if not self._update_tries(rel).get("final"):
+            return
+        values = settings(Path(self._home))
+        tries = values.get("update_tries") if isinstance(values.get("update_tries"), dict) else {}
+        tries.pop(self.UPDATE_APP, None)
+        values["update_tries"] = tries
+        save_settings(Path(self._home), values)
+
     def _update_tried(self, rel: Release, exc: Exception) -> None:
         """Keep a failed try of `rel`: how many so far, and whether it was the wrong file (final)."""
         values = settings(Path(self._home))
@@ -512,7 +523,7 @@ class UpdateCalls:
         """This app and the version running, shown beside its name."""
         return {"app": APPS.get(self.UPDATE_APP, ""), "version": self.UPDATE_VERSION}
 
-    def update_check(self, lang: str = "us") -> dict:
+    def update_check(self, lang: str = "us", again: bool = False) -> dict:
         """Is there a newer release of this app, confirmed as ours? {"available", "version", "current" (the running
         one), "changes" (before and after, per version since the running one, in `lang` when the release's checked
         notes have it: changes_in), "page", "size", "installed" (False when running from the repo), "error",
@@ -521,7 +532,9 @@ class UpdateCalls:
         as ours: nothing to install; "version" stays the running one), "unconfirmed_version" (the newest such one),
         "refused" (the confirmed release's file isn't the one signed: not installed), "gave_up" and "tries" (it didn't
         download after TRIES tries: no install by itself any more), "why"}. Asked once per start, and again when the
-        language changes."""
+        language changes. `again`: Settings' "check for updates" (the owner's 9, 2026-11-25): a download kept as
+        refused for this version is tried once more (the kept refusal is cleared; GitHub's own listing of another
+        installer than the signed one still refuses)."""
         current = self.UPDATE_VERSION
         prefs = getattr(self, "prefs", None)   # (asked without a language: the window's own)
         said_in = lang if lang not in ("", "us") or prefs is None else (prefs().get("lang") or "us")
@@ -547,6 +560,11 @@ class UpdateCalls:
                 "installed": bool(self._update_installed()), "required": bool(rel.required)}
         if rel.ignored:
             said["unconfirmed_version"] = rel.ignored[0]
+        if again:
+            try:
+                self._update_forgive(rel)
+            except OSError:
+                pass   # (a settings file that can't be written: the refusal stays, and shows)
         tried = self._update_tries(rel)
         if rel.refused or tried.get("final"):   # signed, but the file isn't the signed one: not offered
             why = UpdateError(rel.refused) if rel.refused else UpdateError(str(tried.get("why") or ""))

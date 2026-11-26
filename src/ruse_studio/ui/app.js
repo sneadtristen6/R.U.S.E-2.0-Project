@@ -6667,7 +6667,7 @@ async function start() {
   window.addEventListener("keydown", (e) => { if ($("doctor").open) e.stopPropagation(); }, true);
   $("set-updates-check").addEventListener("click", async () => {
     $("set-updates-text").textContent = state.words.set_updates_checking;
-    try { state.update = await api().update_check(); } catch (err) { state.update = { error: (err && err.message) || String(err) }; }
+    try { state.update = await api().update_check("", true); } catch (err) { state.update = { error: (err && err.message) || String(err) }; }
     renderUpdate();
     renderSettings();
   });

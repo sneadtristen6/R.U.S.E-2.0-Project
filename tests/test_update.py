@@ -376,9 +376,9 @@ class App(UpdateCalls):
         self._update_installed = lambda: installed
         self._update_open_url = mock.Mock()
 
-    def update_check(self, lang="us"):
+    def update_check(self, lang="us", again=False):
         with mock.patch.object(releasesig, "RELEASE_KEYS", KEYS):   # the test keys stand for the owner's
-            return super().update_check(lang)
+            return super().update_check(lang, again)
 
 
 def finish(app, job):
@@ -452,6 +452,27 @@ class Calls(unittest.TestCase):
                 listed.update_install()
             newer = App(d, rels=[release("launcher-v0.3.0")])   # a newer signed release: offered again
             self.assertTrue(newer.update_check()["available"])
+
+    def test_settings_check_for_updates_tries_a_refused_download_once_more(self):
+        """The owner's 9 (2026-11-25): a download refused as final is kept for that version, and Settings' "check for
+        updates" (update_check(again=True)) clears it so it is tried once more; a start's own check doesn't."""
+        with tempfile.TemporaryDirectory() as d:
+            app = App(d)
+            app.update_check()
+            app._update_opener = lambda url: Response(bytes(len(SETUP)))   # the same size, other bytes
+            self.assertEqual(finish(app, app.update_install()["job"])["state"], "failed")
+            self.assertTrue(App(d).update_check()["refused"])               # a start: still refused
+            again = App(d)
+            said = again.update_check("us", True)                           # Settings: tried once more
+            self.assertEqual((said["available"], said.get("refused")), (True, None))
+            self.assertNotIn("launcher", kept(d).get("update_tries", {}))
+            self.assertEqual(finish(again, again.update_install()["job"])["state"], "done")
+            # the control: the wrong file again is refused as final again, and kept
+            bad = App(d)
+            bad.update_check("us", True)
+            bad._update_opener = lambda url: Response(bytes(len(SETUP)))
+            self.assertEqual(finish(bad, bad.update_install()["job"])["state"], "failed")
+            self.assertTrue(App(d).update_check()["refused"])
 
     def test_after_three_failed_tries_it_stops_by_itself_and_points_to_the_release_page(self):
         with tempfile.TemporaryDirectory() as d:

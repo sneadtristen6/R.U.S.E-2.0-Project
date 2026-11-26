@@ -1753,7 +1753,7 @@ async function start() {
   $("set-updates-check").addEventListener("click", async () => {
     state.update = { checking: true };
     renderSettings();
-    try { state.update = await api().update_check(); } catch (err) { state.update = { error: (err && err.message) || String(err) }; }
+    try { state.update = await api().update_check("", true); } catch (err) { state.update = { error: (err && err.message) || String(err) }; }
     renderUpdate();
     renderSettings();
   });
