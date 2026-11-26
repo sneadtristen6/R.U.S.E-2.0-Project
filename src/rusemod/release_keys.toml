@@ -1,8 +1,9 @@
 # The owner's release keys: the PUBLIC halves only (64 hex characters each), which every app carries to check that an
 # update is his (rusemod.releasesig). release-1 is the one he signs with at each release; release-2 is its backup, kept
-# on a USB stick. Both are filled in once he has made them with his own key tool, which prints these lines; a release
+# on a USB stick (for now on his old PC's share, his word 2026-11-26). He made both on 2026-11-26 ~16:26 with his own
+# key tool (release_key.py --backup-on-old-pc), which printed these lines and wrote them to PUBLIC-KEYS.txt; a release
 # build stops while they are empty (python -m rusemod.releasesig --check-keys, .github/workflows/release.yml).
 # Never put a private half here.
 [keys]
-release-1 = ""
-release-2 = ""
+release-1 = "04d32ad27c7c65f99173a19bf204f4709edddc0f79aae9ac827d701b7671fcd3"
+release-2 = "265b53181ff97a079c1a87eccb4d4079347468c9ba9f174931d6e8679a14c380"
