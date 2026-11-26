@@ -107,5 +107,13 @@ class Shown(unittest.TestCase):
             self.assertEqual(self.day()["updates"]["installed"], 0)
 
 
+class PublicText(unittest.TestCase):
+    def test_game_report_s_text_names_no_private_tool(self):
+        doc = bugwatch.game_report.__doc__
+        self.assertIn("Checked our_tools.json:", doc)
+        for word in ("dump_objects", "dump_strings", "chain_on_real_dumps", "dump_survey", "crash_site"):
+            self.assertNotIn(word, doc)
+
+
 if __name__ == "__main__":
     unittest.main()

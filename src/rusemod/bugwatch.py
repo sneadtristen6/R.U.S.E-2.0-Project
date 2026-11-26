@@ -1176,9 +1176,8 @@ def game_report(path) -> bool:
     report on your PC". So of any file only its header, its list of parts and its module list's names are read to tell,
     nothing else of it, and another program's crash report is never read (2026-11-24). Never raises.
 
-    Checked our_tools.json: crash_site.py and the Bug Watch rounds' crash report tools (dump_survey.py,
-    dump_objects.py, dump_strings.py, chain_on_real_dumps.py) each read a game crash report whole, for our research,
-    on this PC; none tells whose a crash report is from its module list alone, before anything else of it is read."""
+    Checked our_tools.json: none of its tools tells whose a crash report is from its module list alone, before
+    anything else of it is read."""
     try:
         with open(path, "rb") as f:
             def read(at: int, size: int) -> bytes:
