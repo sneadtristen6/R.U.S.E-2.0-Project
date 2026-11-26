@@ -1233,26 +1233,27 @@ class TheAgreementScreen(unittest.TestCase):
                 self.assertIn(key, words, f"{app}: {key} missing")
                 self.assertTrue(words[key].get("us"), f"{app}: {key} has no English")
 
-    def test_version_4_of_the_agreement(self):
-        """The agreement's version 4 (2026-11-13): the apps show it again (TERMS_VERSION), Bug Watch's version 4 fields
-        wait for it (AGREEMENT_V4), and its text, the same in both apps, says what they are in every language."""
+    def test_version_5_of_the_agreement(self):
+        """The agreement's version 5 (2026-11-26, the terms of use and privacy notice): the apps show it again
+        (TERMS_VERSION); Bug Watch's version 4 fields, which wait for version 4 or later (AGREEMENT_V4), still go under
+        it, and its text, the same in both apps, says what they are in every language."""
         import tomllib
         from rusemod import guard
-        self.assertEqual(guard.TERMS_VERSION, 4)
-        self.assertEqual(bugwatch.AGREEMENT_V4, guard.TERMS_VERSION)
+        self.assertEqual(guard.TERMS_VERSION, 5)
+        self.assertLessEqual(bugwatch.AGREEMENT_V4, guard.TERMS_VERSION)
         texts = [tomllib.loads((self.SRC / app / "words.toml").read_text(encoding="utf-8"))["agree_full"]
                  for app in ("ruse_launcher", "ruse_studio")]
         self.assertEqual(texts[0], texts[1])
         english = texts[0]["us"]
-        for said in ("Version 4, ", "how many mods of your own you had and what kinds of things they hold",
-                     "the map it was on", "the unit the game was making",
-                     "which version of this agreement you accepted", "or the names and words of your own mods"):
+        for said in ("Version 5, ", "how many mods of your own you had, and what kinds of things they hold",
+                     "the map (one of the game's own maps by its name", "the unit the game was making",
+                     "which version of these terms you accepted", "never named, and never their words, paths or files"):
             self.assertIn(said, english)
         self.assertNotIn("how many of our own mods", english)   # (version 3's slip: it meant the player's own)
         for lang, text in texts[0].items():
             lines = text.split("\n")
             self.assertEqual(len(lines), len(english.split("\n")), lang)
-            self.assertRegex(lines[1], r"4|۴", lang)
+            self.assertRegex(lines[1], r"5|۵", lang)
 
     def test_a_new_version_keeps_the_username_and_says_what_is_on(self):
         """Shown a new version, a player who has a username keeps it (asked again, a new #number would replace it);

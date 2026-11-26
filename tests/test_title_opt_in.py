@@ -232,7 +232,8 @@ class TheWords(unittest.TestCase):
             words = toml_words(app)
             for key in ("set_title_help", "tip_title_gold"):
                 english = words[key]["us"]
-                self.assertIn("off unless you tick it", english, f"{app} {key}")
+                # (version 5's help starts with it: "Off unless you tick it: ...")
+                self.assertIn("off unless you tick it", english.lower(), f"{app} {key}")
                 self.assertNotIn("Untick", english, f"{app} {key}")
             self.assertEqual(words["title_gold"]["us"], "Use the gold R.U.S.E. 2.0 title and intro")
             # every language names the logo video the game keeps (Eugen's), the box's words and the switch's
