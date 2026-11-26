@@ -417,11 +417,6 @@ credits file of any mod that uses one (`CREDITS-era-units.md`), and in the full 
 [era units release](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases/tag/era-units). What we changed:
 each was fitted to the game (turned and scaled) and given its nation's markings.
 
-### The intro's engine sound
-
-The engine sound in the R.U.S.E. 2.0 intro, for players who tick the R.U.S.E. 2.0 title and intro. Source: not
-applicable.
-
 ### (Anonyme) Oozaru: testing and debugging
 
 **(Anonyme) Oozaru tested the early apps on his own campaign mod and sent the log with every bug he found.** His
