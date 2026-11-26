@@ -49459,17 +49459,17 @@ sc = "自身，播放自己的动画"
 fa = "خودش، با انیمیشن خودش"
 
 [lm_rides_itself_how]
-us = "On long moves it goes as itself, playing one of its own animations (set under Animations). The truck picked here is the one it rides in when it's set back to its truck."
-fr = "Sur les longs trajets, elle se déplace elle-même en jouant une de ses propres animations (réglée sous Animations). Le camion choisi ici est celui qu'elle prend quand on la remet dans son camion."
-ger = "Auf langen Strecken fährt sie als sie selbst und spielt eine ihrer eigenen Animationen (unter Animationen eingestellt). Der hier gewählte Lastwagen ist der, in dem sie fährt, wenn sie wieder auf ihren Lastwagen gestellt wird."
-ita = "Nei lunghi spostamenti va da sé, con una delle sue animazioni (impostata sotto Animazioni). Il camion scelto qui è quello su cui viaggia quando la si rimette sul suo camion."
-spa = "En los trayectos largos va ella misma, con una de sus propias animaciones (ajustada en Animaciones). El camión elegido aquí es el que usa cuando se la vuelve a poner en su camión."
-pol = "Na długich trasach jedzie sama, z jedną z własnych animacji (ustawioną w Animacjach). Wybrana tu ciężarówka to ta, którą jedzie, gdy znów ustawisz jej ciężarówkę."
-ru = "На длинных переходах он движется сам, со своей анимацией (задаётся в разделе «Анимации»). Выбранный здесь грузовик он использует, когда его снова сажают в грузовик."
-cz = "Na dlouhých přesunech jede sama, s jednou ze svých animací (nastavenou v Animacích). Zde vybrané nákladní auto je to, ve kterém jede, když ji vrátíte do jejího auta."
-jpn = "長距離の移動では、独自のアニメーションの一つ（「アニメーション」で設定）を再生しながら自分で進みます。ここで選んだ車両は、車両移動に戻したときに乗る車両です。"
-sc = "长距离移动时它以自身前进，播放自己的某个动画（在“动画”中设置）。此处选的卡车是它改回乘坐卡车时使用的卡车。"
-fa = "در جابه‌جایی‌های طولانی خودش حرکت می‌کند و یکی از انیمیشن‌های خودش را پخش می‌کند (در بخش انیمیشن‌ها تنظیم می‌شود). کامیونی که این‌جا انتخاب می‌شود همانی است که وقتی دوباره به کامیونش برگردد سوارش می‌شود."
+us = "On long trips by road it goes as itself, playing one of its own animations (set under Sounds and animation, More, Its animations). The truck picked here is the one it rides in when it's set back to its truck."
+fr = "Sur les longs trajets par la route, elle se déplace elle-même en jouant une de ses propres animations (réglée sous Sons et animations, Plus, Ses animations). Le camion choisi ici est celui qu'elle prend quand on la remet dans son camion."
+ger = "Auf langen Fahrten über Straßen fährt sie als sie selbst und spielt eine ihrer eigenen Animationen (eingestellt unter Geräusche und Animation, Mehr, Seine Animationen). Der hier gewählte Lastwagen ist der, in dem sie fährt, wenn sie wieder auf ihren Lastwagen gestellt wird."
+ita = "Nei lunghi viaggi su strada va da sé, con una delle sue animazioni (impostata sotto Suoni e animazioni, Altro, Le sue animazioni). Il camion scelto qui è quello su cui viaggia quando la si rimette sul suo camion."
+spa = "En los viajes largos por carretera va ella misma, con una de sus propias animaciones (ajustada en Sonidos y animación, Más, Sus animaciones). El camión elegido aquí es el que usa cuando se la vuelve a poner en su camión."
+pol = "W długich podróżach drogą jedzie sama, z jedną z własnych animacji (ustawioną w Dźwięki i animacje, Więcej, Jej animacje). Wybrana tu ciężarówka to ta, którą jedzie, gdy znów ustawisz jej ciężarówkę."
+ru = "В долгих поездках по дорогам он движется сам, со своей анимацией (задаётся в «Звуки и анимация», «Ещё», «Её анимации»). Выбранный здесь грузовик он использует, когда его снова сажают в грузовик."
+cz = "Na dlouhých cestách po silnici jede sama, s jednou ze svých animací (nastavenou v Zvuky a animace, Více, Její animace). Zde vybrané nákladní auto je to, ve kterém jede, když ji vrátíte do jejího auta."
+jpn = "道路での長い移動では、独自のアニメーションの一つ（「サウンドとアニメーション」の「もっと見る」にある「このユニットのアニメーション」で設定）を再生しながら自分で進みます。ここで選んだ車両は、車両移動に戻したときに乗る車両です。"
+sc = "沿道路长途行驶时它以自身前进，播放自己的某个动画（在“声音与动画”的“更多”里的“它的动画”中设置）。此处选的卡车是它改回乘坐卡车时使用的卡车。"
+fa = "در سفرهای طولانی جاده‌ای خودش حرکت می‌کند و یکی از انیمیشن‌های خودش را پخش می‌کند (در «صداها و انیمیشن»، «بیشتر»، «انیمیشن‌هایش» تنظیم می‌شود). کامیونی که این‌جا انتخاب می‌شود همانی است که وقتی دوباره به کامیونش برگردد سوارش می‌شود."
 
 # the Nations tab's Keep its units / Start it empty and Research (nations.js; the owner, 2026-11-11: "Yes, add those to
 # nations tab")

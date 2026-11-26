@@ -216,6 +216,18 @@ class Item19Automatic(InElevenLanguages):
                 self.assertIn(AUTOMATIC[lang], WORDS[key][lang], (key, lang))
 
 
+class Item20RidesIn(InElevenLanguages):
+    ITEM = "20"
+
+    def test_52j_rides_in_names_the_real_place(self):
+        self.words_in_eleven_languages(["lm_rides_itself_how"])
+        us = WORDS["lm_rides_itself_how"]["us"]
+        self.assertNotIn("(set under Animations)", us)
+        self.assertIn("long trips by road", us)
+        # the Sounds and animation row, its More, and the Its animations box in it
+        self.names_in_every_language("lm_rides_itself_how", ["decoy_unit_title", "actions_title"])
+
+
         #                                         code says the same words, for every refusal)
 
 
