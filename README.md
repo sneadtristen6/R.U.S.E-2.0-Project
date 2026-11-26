@@ -281,7 +281,7 @@ browser with made-up data: `src/ruse_launcher/ui/index.html?fake`, `src/ruse_stu
 
 - **RUSE Launcher** ([`src/ruse_launcher/`](src/ruse_launcher/)), for players: it finds the game,
   lists your mod sets and has a big Play button that builds the set's modded copy and starts the game (Vanilla
-  starts through Steam). `py -3 -m ruse_launcher`. **Players never touch a file.** A
+  too, with no mods). `py -3 -m ruse_launcher`. **Players never touch a file.** A
   mod library ("Add a mod file…" for a `.rusemod` from the Studio, a `.rmod` or a `.zip`, or drop a mod file or
   folder on the window; each mod is checked first), mod sets made on screen (new, edit and reorder, rename,
   duplicate, delete), Share and "Import a load order…" for a mod set (RUSE-Mod-Manager's own text, so load orders

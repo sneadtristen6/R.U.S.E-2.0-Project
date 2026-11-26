@@ -287,8 +287,8 @@ desktopová okna postavená jako webové stránky; jednou: `py -3 -m pip install
 i v běžném prohlížeči s vymyšlenými daty: `src/ruse_launcher/ui/index.html?fake`, `src/ruse_studio/ui/index.html?fake`.
 
 - **RUSE Launcher** ([`src/ruse_launcher/`](src/ruse_launcher/)), pro hráče: najde hru,
-  vypíše vaše sady modů a má velké tlačítko Hrát, které sestaví upravenou kopii sady a spustí hru (Původní hra
-  se spouští přes Steam). `py -3 -m ruse_launcher`. **Hráči nikdy nesahají na žádný soubor.**
+  vypíše vaše sady modů a má velké tlačítko Hrát, které sestaví upravenou kopii sady a spustí hru (i Původní
+  hra, bez módů). `py -3 -m ruse_launcher`. **Hráči nikdy nesahají na žádný soubor.**
   Knihovna modů („Přidat soubor módu…“ pro `.rusemod` ze Studia, `.rmod` nebo `.zip`, nebo přetáhněte soubor či
   složku modu na okno; každý mod se nejdřív zkontroluje), sady modů vytvořené na obrazovce (nová, úprava a změna
   pořadí, přejmenování, duplikace, smazání), Sdílet a „Importovat pořadí načítání…“ pro sadu modů (vlastní text

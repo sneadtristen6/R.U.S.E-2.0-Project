@@ -295,7 +295,7 @@ navegador normal con datos inventados: `src/ruse_launcher/ui/index.html?fake`, `
 
 - **RUSE Launcher** ([`src/ruse_launcher/`](src/ruse_launcher/)), para jugadores: encuentra el juego, muestra tus
   conjuntos de mods y tiene un gran botón Jugar que construye la copia con mods del conjunto e inicia el juego
-  (Original se inicia a través de Steam). `py -3 -m ruse_launcher`. **Los jugadores nunca tocan un archivo.** Una
+  (también Original, sin mods). `py -3 -m ruse_launcher`. **Los jugadores nunca tocan un archivo.** Una
   biblioteca de mods («Añadir un archivo de mod…» para un `.rusemod` del Studio, un `.rmod` o un `.zip`, o suelta un
   archivo o una carpeta de mod en la ventana; cada mod se comprueba primero), conjuntos de mods hechos en pantalla
   (nuevo, editar y reordenar, cambiar nombre, duplicar, eliminar), Compartir e «Importar un orden de carga…» para un

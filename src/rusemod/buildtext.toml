@@ -1642,19 +1642,6 @@ jpn = "{0}：map.toml：{1}"
 sc = "{0}：map.toml：{1}"
 fa = "{0}: map.toml: {1}"
 
-[e73ac4d8f5f]
-us = "Starting R.U.S.E. through Steam…"
-fr = "Lancement de R.U.S.E. par Steam…"
-ger = "R.U.S.E. wird über Steam gestartet…"
-ita = "Avvio di R.U.S.E. tramite Steam…"
-spa = "Iniciando R.U.S.E. a través de Steam…"
-pol = "Uruchamianie R.U.S.E. przez Steam…"
-ru = "Запуск R.U.S.E. через Steam…"
-cz = "Spouštím R.U.S.E. přes Steam…"
-jpn = "Steam から R.U.S.E. を起動中…"
-sc = "正在通过 Steam 启动 R.U.S.E.…"
-fa = "در حال اجرای R.U.S.E. از طریق Steam…"
-
 [ef60996e623]
 us = "Starting R.U.S.E. from the modded copy…"
 fr = "Lancement de R.U.S.E. depuis la copie moddée…"
@@ -4550,6 +4537,19 @@ cz = "Nepodařilo se spojit s přihlašovacím serverem. Zkontrolujte připojen�
 jpn = "サインインサーバーにつながりませんでした。接続を確認して、もう一度お試しください。"
 sc = "连不上登录服务器。请检查网络连接后重试。"
 fa = "به سرور ورود دسترسی پیدا نشد. اتصالتان را بررسی کنید و دوباره امتحان کنید."
+
+[e8862be273c]
+us = "The sign-in server didn't answer. Try again in a few minutes."
+fr = "Le serveur de connexion n'a pas répondu. Réessayez dans quelques minutes."
+ger = "Der Anmeldeserver hat nicht geantwortet. Versuchen Sie es in ein paar Minuten erneut."
+ita = "Il server di accesso non ha risposto. Riprova tra qualche minuto."
+spa = "El servidor de inicio de sesión no respondió. Vuelve a intentarlo en unos minutos."
+pol = "Serwer logowania nie odpowiedział. Spróbuj ponownie za kilka minut."
+ru = "Сервер входа не ответил. Попробуйте снова через несколько минут."
+cz = "Přihlašovací server neodpověděl. Zkuste to znovu za pár minut."
+jpn = "サインインサーバーから応答がありませんでした。数分後にもう一度お試しください。"
+sc = "登录服务器没有回应。请过几分钟再试。"
+fa = "سرور ورود پاسخی نداد. چند دقیقهٔ دیگر دوباره امتحان کنید."
 
 [ed5b91da050]
 us = "the server answered {0}"

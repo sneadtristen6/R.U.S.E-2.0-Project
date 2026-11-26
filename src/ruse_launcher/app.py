@@ -88,9 +88,17 @@ def main(argv=None) -> int:
     if installed_app():  # Windows' app list shows this version (issue #15: it said 0.1.0 when 0.3.1 was installed)
         fix_app_list_version("launcher", __version__)
         log.mark("app_list")
+    # the owner's clean-ups on this PC (2026-11-25, the legal fixes' 11 A): an update's installer goes once it's in
+    # (this start is the first after it), and RUSE Guard's refused records 30 days after they were refused
+    from rusemod.guard import clear_refused
+    from rusemod.update import clear_installed
+    if installed_app():
+        clear_installed(api._home, "launcher", __version__)
+    clear_refused(api._home)
     api.use_owned_check()  # owned copies only (rusemod.owned): on in the app, off in tests of made-up games
     api.use_guard_server()  # RUSE Guard's evidence goes to the project's server from the app window; tests keep theirs
     api.use_required_updates()  # a required update goes in before Play (rusemod.update): the same
+    api.use_agreement_first()  # no update check before the agreement is accepted (rusemod.update, 18 B): the same
     api._pick_folder = lambda: pick_folder(api._window)
     api._pick_file = lambda: pick_file(api._window, MOD_FILES)
     try:  # the game's own lettering for the pages, from the player's game (rusemod.gamefont)

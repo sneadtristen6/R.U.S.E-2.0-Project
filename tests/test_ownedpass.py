@@ -108,13 +108,15 @@ class Client(unittest.TestCase):
         ownedpass._call = fn
         self.addCleanup(setattr, ownedpass, "_call", real)
 
-    def test_start_hands_back_the_code_and_link(self):
+    def test_start_hands_back_the_code_and_no_link(self):
+        # the server's login link is never passed on: the app builds Steam's address itself (the owner, 2026-11-25,
+        # the legal fixes' 13 A; tests/test_guard_changes.py SteamSignInAddress)
         self._patch_call(lambda url, data=None, timeout=30: (200, {
             "code": "C" * 43, "login_url": "https://ruse-owned.example/v1/steam/login?code=" + "C" * 43,
             "poll_every": 3, "expires_in": 600}))
         info = ownedpass.start("https://ruse-owned.example")
         self.assertEqual(info["code"], "C" * 43)
-        self.assertIn("/v1/steam/login", info["login_url"])
+        self.assertNotIn("login_url", info)
         self.assertEqual((info["poll_every"], info["expires_in"]), (3, 600))
 
     def test_start_raises_the_servers_reason_when_off(self):
@@ -234,7 +236,10 @@ class Mixin(unittest.TestCase):
         self.assertTrue(out["on"])
         self.assertEqual(out["code"], "Z" * 43)
         self.assertEqual(len(self.api.opened), 1)
-        self.assertIn("/v1/steam/login", self.api.opened[0])
+        # Steam's own sign-in page, built by the app (never the server's link), back to our server with the code
+        self.assertTrue(self.api.opened[0].startswith(ownedpass.STEAM_OPENID + "?"), self.api.opened[0])
+        self.assertIn("v1%2Fsteam%2Freturn%3Fcode%3D" + "Z" * 43, self.api.opened[0])
+        self.assertNotIn("/v1/steam/login", self.api.opened[0])
 
     def test_poll_owned_keeps_the_pass(self):
         self._on()

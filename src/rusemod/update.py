@@ -1,5 +1,7 @@
 """Updating the installed apps from GitHub Releases (PLAN.md decision 10): both apps ask for their newest release on
-start, and offer it; Update downloads its installer, checks it, and runs it silently, and the app starts again.
+start, once the player has accepted the agreement (UpdateCalls.use_agreement_first), and offer it; Update downloads
+its installer, checks it, and runs it silently, and the app starts again, which deletes the installer
+(clear_installed).
 
 - **Which release:** the newest one whose tag is `<app>-v<major.minor.patch>` (launcher-v0.2.0, studio-v0.5.0), or
   with a fourth number for a small fix (studio-v0.9.4.1: TAG_VERSION), newer than the running version, that carries
@@ -430,6 +432,33 @@ def _quit_soon(seconds: float = 1.0) -> None:
     threading.Thread(target=lambda: (time.sleep(seconds), os._exit(0)), daemon=True).start()
 
 
+_INSTALLER = re.compile(rf"^RUSE-(Launcher|Studio)-Setup-({TAG_VERSION})\.(?:exe|part)$")
+
+
+def clear_installed(home, app: str, version: str) -> list[str]:
+    """Delete this app's update installers once they're installed (the owner, 2026-11-25, the legal fixes' 11 A: an
+    update's installer is deleted once installed): in <home>/updates, where update_install downloads them, `app`'s
+    RUSE-<App>-Setup-<v> (and a download of one left half-way, .part) for the running `version` and older. The app
+    calls it as it starts, so the installer that put this version in goes at the first start after it (the installer
+    starts the app again). The other app's installers, and a newer version's not installed yet, stay. Returns the
+    names deleted."""
+    folder, gone = Path(home) / "updates", []
+    try:
+        names = sorted(p.name for p in folder.iterdir() if p.is_file())
+    except OSError:
+        return gone   # (no updates folder: nothing was ever downloaded)
+    for name in names:
+        m = _INSTALLER.match(name)
+        if not m or m.group(1) != APPS.get(app) or version_tuple(m.group(2)) > version_tuple(version):
+            continue
+        try:
+            (folder / name).unlink()
+            gone.append(name)
+        except OSError:
+            continue   # (held by another program: the next start tries again)
+    return gone
+
+
 class UpdateCalls:
     """The window API's update calls, for both apps (a mixin: the API sets UPDATE_APP and UPDATE_VERSION and has
     `_home` and `_jobs`). Tests replace `_update_fetch`, `_update_fetch_text`, `_update_fetch_sig`, `_update_opener`,
@@ -446,6 +475,19 @@ class UpdateCalls:
     _update_installed = staticmethod(installed_app)
     _update_found: Release | None = None
     _update_not_ours = False   # the last check found newer releases, none confirmed as ours
+    _update_agreed = None   # use_agreement_first: whether the player has accepted the agreement, asked at each check
+
+    def use_agreement_first(self) -> None:
+        """From the app window: no update check asks GitHub anything until the player has accepted the agreement (the
+        owner, 2026-11-25, the legal fixes' 18 B: the apps' first update check waits until the agreement is accepted).
+        Accepted: the terms version kept in settings.json is the agreement's own (rusemod.guard.TERMS_VERSION, what
+        the first-start screen, shared/agreement.js, compares), or fair play is off and no agreement shows. The page
+        asks only after its agreement screen; this holds it here too. Tests of made-up apps don't call it."""
+        from . import fairplay, guard
+
+        def agreed() -> bool:
+            return not fairplay.ON or guard.settings_of(settings(Path(self._home)))["terms"] >= guard.TERMS_VERSION
+        self._update_agreed = agreed
 
     def use_required_updates(self) -> None:
         """Play and Test in game wait for a required update (each app's app.py turns it on; tests of made-up games
@@ -531,10 +573,13 @@ class UpdateCalls:
         required update seen before, GitHub unreachable now), "unconfirmed" (newer releases are there, none confirmed
         as ours: nothing to install; "version" stays the running one), "unconfirmed_version" (the newest such one),
         "refused" (the confirmed release's file isn't the one signed: not installed), "gave_up" and "tries" (it didn't
-        download after TRIES tries: no install by itself any more), "why"}. Asked once per start, and again when the
-        language changes. `again`: Settings' "check for updates" (the owner's 9, 2026-11-25): a download kept as
-        refused for this version is tried once more (the kept refusal is cleared; GitHub's own listing of another
-        installer than the signed one still refuses)."""
+        download after TRIES tries: no install by itself any more), "why"}. Asked once per start, once the agreement
+        is accepted, and again when the language changes. Before the agreement is accepted (use_agreement_first)
+        nothing is asked: {"available": False, "current", "waiting": "agreement"}. `again`: Settings' "check for
+        updates" (the owner's 9, 2026-11-25): a download kept as refused for this version is tried once more (the kept
+        refusal is cleared; GitHub's own listing of another installer than the signed one still refuses)."""
+        if self._update_agreed is not None and not self._update_agreed():
+            return {"available": False, "current": self.UPDATE_VERSION, "waiting": "agreement"}
         current = self.UPDATE_VERSION
         prefs = getattr(self, "prefs", None)   # (asked without a language: the window's own)
         said_in = lang if lang not in ("", "us") or prefs is None else (prefs().get("lang") or "us")

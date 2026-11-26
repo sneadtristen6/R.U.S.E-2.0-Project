@@ -192,6 +192,7 @@ const SETTINGS = [  // the language isn't here: it has its own button at the top
   { id: "title", render() { renderTitle(); } },  // loaded when Settings opens (loadTitle)
   { id: "backup", render() { renderBackup(); } },  // loaded when Settings opens (loadBackup)
   { id: "bugwatch", render() { renderBugwatch(); } },  // loaded when Settings opens (loadBugwatch)
+  { id: "guardcode", render() { renderGuardCode(); } },  // loaded when Settings opens (loadGuardCode)
   { id: "updates", render() {
     const w = state.words, u = state.update || {};
     text($("set-updates-text"), u.checking ? w.set_updates_checking : u.available ? fill(w.update_out, { app: APP_NAME, version: u.version })
@@ -401,6 +402,19 @@ async function changeBugwatch(turnOn) {
   } catch (err) { state.bugwatch = { ...b, note: errorText(err), bad: true }; }
   $("bugwatch-sent").classList.add("hidden");
   renderBugwatch();
+}
+
+// --- Your RUSE Guard code, for privacy requests (rusemod.guard.privacy_code): read-only; until this install has a
+// RUSE Guard key (its first multiplayer or co-op match makes it) the section says how the code is made ---
+async function loadGuardCode() {
+  try { state.guardCode = (await api().guard_privacy_code()).code || ""; } catch (err) { state.guardCode = ""; }
+  if (state.settings) renderGuardCode();
+}
+
+function renderGuardCode() {
+  const w = state.words, node = $("guardcode-value"), code = state.guardCode || "";
+  text(node, code || w.set_guardcode_none);
+  node.title = w.tip_guardcode || "";
 }
 
 async function showBugwatch() {
@@ -1837,7 +1851,7 @@ async function start() {
   $("lang-pick-close").addEventListener("click", closeLangPick);
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && langPick && !langPick.first) closeLangPick(); });
   $("settings-open").addEventListener("click", () => {
-    state.settings = true; render(); loadWhere(); loadCopies(); loadTitle(); loadBackup(); loadBugwatch(); loadSignin();
+    state.settings = true; render(); loadWhere(); loadCopies(); loadTitle(); loadBackup(); loadBugwatch(); loadGuardCode(); loadSignin();
     loadWebview2();
   });
   $("set-webview2-install").addEventListener("click", installWebview2);
@@ -1930,11 +1944,12 @@ async function start() {
   watchCrash(0);  // a game this app started may be watched still, or have just stopped at a crash we know
   // the first screen is drawn: the start-up log (rusemod.startlog) notes it, for the troubleshooter's report
   Promise.resolve().then(() => api().start_mark("ready")).catch(() => {});  // an older back end: no log
-  checkUpdate();
+  showVersion();
   await openLangPick(true);  // until a language is picked there: "Choose your language", first
   // then the shared agreement + username (shared/agreement.js), once RUSE Guard is live, before "Choose your mods"
   await window.Agreement.open({ api: api(), words: state.words, fairOn: state.fairOn });
   await firstBackup();
+  checkUpdate();  // only once the agreement is accepted (the owner, 2026-11-25, 18 B; the back end holds it too)
   openWelcome();  // the first run: "Choose your mods"
 }
 
@@ -1954,11 +1969,15 @@ async function firstBackup() {
 // then the app closes and the installer opens it again ---
 const APP_NAME = "RUSE Launcher";
 
+// The running version beside the app's name, from the start (the update check itself waits for the agreement)
+async function showVersion() {
+  try { $("app-version").textContent = `v${(await api().app_version()).version}`; } catch { /* an older back end */ }
+}
+
 // auto: a required update installs by itself, at once (required.js shows its box meanwhile), until it has failed to
 // download a few times (u.gave_up: rusemod.update TRIES); after a failed try the check runs again without it, so what
 // the try left (a file that isn't the one signed, or the tries used up) shows at once
 async function checkUpdate(auto = true) {
-  try { $("app-version").textContent = `v${(await api().app_version()).version}`; } catch { /* an older back end */ }
   try { state.update = await api().update_check(state.lang); } catch { state.update = null; }
   renderUpdate();
   const u = state.update;

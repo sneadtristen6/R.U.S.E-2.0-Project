@@ -44,6 +44,8 @@ DEV_KEY = "guard/devkey.txt"                          # in the platform folder: 
 CLIENT_KEY = "guard/client.key"                       # this install's own signing key (made on first use)
 OUTBOX = "guard/outbox"                               # bundles waiting for a server
 REFUSED = "guard/refused"                             # bundles the server rejected for good (out of the send queue)
+REFUSED_DAYS = 30                                     # a refused bundle is deleted this many days after it was set
+#                                                       aside (the owner, 2026-11-25, the legal fixes' 11 A: clear_refused)
 SIGNATURES = "guard/signatures.json"                  # the server's list of known cheat tools (last fetched)
 SERVER = "https://ruse-guard.sneadtristen6.workers.dev"  # the project's server: the app window sets it as the default
 #                                                       (GuardCalls.use_guard_server), so tests keep their bundles
@@ -304,6 +306,28 @@ def client_key(home) -> bytes:
     return key
 
 
+PRIVACY_CODE_PREFIX = b"RUSE-GUARD-PRIVACY-1:"
+
+
+def privacy_code(client_key_hex: str) -> str:
+    """The short code that finds this install's own RUSE Guard records for a privacy request, XXXX-XXXX-XXXX: the
+    first 12 characters of base32 (RFC 4648, upper case, no padding) of SHA-256(PREFIX + the 32 key bytes), made
+    from the public key every bundle already carries as client_key. The same definition is in the server's repo."""
+    digest = hashlib.sha256(PRIVACY_CODE_PREFIX + bytes.fromhex(client_key_hex)).digest()
+    code = base64.b32encode(digest).decode("ascii").rstrip("=")[:12]
+    return "-".join(code[i:i + 4] for i in (0, 4, 8))
+
+
+def own_privacy_code(home) -> str:
+    """This install's privacy code, or "" while it has no key yet. It only reads: the key is made by the first
+    bundle (client_key), never only to show a code."""
+    try:
+        key = Path(home, CLIENT_KEY).read_bytes()
+    except OSError:
+        return ""
+    return privacy_code(ed25519.public_key(key).hex()) if len(key) == 32 else ""
+
+
 def bundle(home, log: MatchLog, *, username: str, record: dict | None, replay: Path | None, manifests: list,
            dev: DevKey, findings: list, ended: int, stop: dict | None = None) -> dict:
     """One match's evidence, in his server's shapes (ruse_guard.review.MatchBundle + server.PlayerEvidence), plus
@@ -407,7 +431,8 @@ def signatures(home, server: str = "", timeout: float = 15) -> list:
 
 def set_aside(home, path: Path) -> None:
     """Move a refused bundle out of the outbox into REFUSED: kept for a look, out of the send queue so it can't block
-    the bundles behind it."""
+    the bundles behind it, and deleted REFUSED_DAYS later (clear_refused). Its file time is set to now, so the days
+    count from when it was refused, not from when its match was kept."""
     refused = Path(home, REFUSED)
     refused.mkdir(parents=True, exist_ok=True)
     try:
@@ -417,6 +442,27 @@ def set_aside(home, path: Path) -> None:
             path.unlink()
         except OSError:
             pass
+        return
+    try:
+        os.utime(refused / path.name)
+    except OSError:
+        pass   # (its days then count from when it was kept: it goes sooner, never later)
+
+
+def clear_refused(home, now: float | None = None) -> int:
+    """Delete the refused bundles set aside REFUSED_DAYS or more ago (the owner, 2026-11-25: refused RUSE Guard records
+    are cleared after 30 days). Run at each app's start and after each delivery. A bundle refused by an app from before
+    this was written has its days counted from when its match was kept. Returns how many were deleted."""
+    now = time.time() if now is None else float(now)
+    gone = 0
+    for p in Path(home, REFUSED).glob("*.json"):
+        try:
+            if now - p.stat().st_mtime >= REFUSED_DAYS * 86400:
+                p.unlink()
+                gone += 1
+        except OSError:
+            continue   # (held by another program, or gone already: the next run tries again)
+    return gone
 
 
 def deliver(home, body: dict, server: str = "") -> str:
@@ -439,6 +485,7 @@ def deliver(home, body: dict, server: str = "") -> str:
             aside += 1
         except (OSError, ValueError, GuardError):
             break                # can't reach the server, or it's full/down (5xx): keep this and the rest, try later
+    clear_refused(home)          # the refused ones past their REFUSED_DAYS go (the apps' start clears them too)
     waiting = len(list(outbox.glob("*.json")))
     return f"sent {sent}; {waiting} waiting" + (f"; {aside} set aside" if aside else "")
 

@@ -285,6 +285,11 @@
     "modded copy ready: D:\\RUSE-Instances\\my-set  {'linked': 37, 'copied': 23, 'written': 1}",
     "Starting R.U.S.E. from the modded copy…",
   ];
+  const vanillaScript = [  // Vanilla: the modded copy with no mods, built and started like a set's (never through Steam)
+    "Building the modded copy of R.U.S.E. for Vanilla in D:\\RUSE-Instances\\Modded game…",
+    "modded copy ready: D:\\RUSE-Instances\\Modded game  {'linked': 60, 'copied': 0, 'written': 1}",
+    "Starting R.U.S.E. from the modded copy…",
+  ];
   // Sample data for the preview only: mods from the repo's mods/ folder with their real sizes and checksums; the
   // download links are placeholders until the mod index repository exists (MOD_FORMAT §15).
   const listed = [
@@ -521,6 +526,7 @@
       fair_play_on: async () => ({ on: /^(fair|agree)/.test(String(mode || "")) }),
       // the guard terms the agreement screen reads and sets (rusemod.guard; ?fake=agree starts with them unaccepted)
       guard_status: async () => ({ terms: fakeTerms, terms_version: 4, scan: false, on: true }),
+      guard_privacy_code: async () => ({ code: "FRRR-IM2K-4RUX" }),
       guard_accept_terms: async () => { fakeTerms = 4; return { terms: 4 }; },
       // (a copy built with a test tool has its join code too: it plays with players who have the same build)
       fair_play: async () => ({ built: true, code: mode === "fairchanged" ? null : myCode,
@@ -651,7 +657,7 @@
         return lists({ set: id, import: check });
       },
       play: async (id) => {
-        playing = { id, step: 0, lines: id === "vanilla" ? ["Starting R.U.S.E. through Steam…"] : script,
+        playing = { id, step: 0, lines: id === "vanilla" ? vanillaScript : script,  // (Vanilla too: our copy, no mods)
           message: "R.U.S.E. is starting." };
         crashPlayed = true;
         return { job: "fake" };
