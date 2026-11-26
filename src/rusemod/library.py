@@ -18,6 +18,7 @@ from pathlib import Path
 from rusemod import rmod
 from rusemod.build import BuildError, load_mod
 from rusemod.package import PackageError, edit_problem, info_of
+from rusemod.package import cut_short as package_cut_short
 from rusemod.package import unpack as unpack_package
 from rusemod.rndf import RndfError
 
@@ -90,7 +91,7 @@ class Library:
                     rmod.make_folder(source, incoming)
                 except BuildError as exc:
                     raise LibraryError(f"This mod can't be added: {exc}") from None
-            elif zipfile.is_zipfile(source):
+            elif zipfile.is_zipfile(source) or package_cut_short(source):   # (a cut one: said so by check)
                 _unpack(source, incoming)
             else:
                 raise LibraryError(f"{source.name} isn't a mod: add a mod file (.rusemod, .rmod or .zip), or a mod "

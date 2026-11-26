@@ -156,10 +156,10 @@ class Unusual(Library):
                 with self.assertRaises(LauncherError):
                     self.api(home=damaged.parent / "friend").add_mod(str(damaged))
 
-    @unittest.expectedFailure
     def test_FE10_a_cut_file(self):
-        """FE-10: a .rusemod cut short (a download stopped half way) is called "... isn't a mod: add a mod file
-        (.rusemod, .rmod or .zip)": it is a .rusemod, only an unfinished one."""
+        """FE-10: a .rusemod cut short (a download stopped half way) was called "... isn't a mod: add a mod file
+        (.rusemod, .rmod or .zip)": it is a .rusemod, only an unfinished one. Now said so (the owner's pick 51b,
+        accepted 2026-11-14: "A download cut short says so")."""
         self.made("Tank Test")
         out = self.exported("1.0.0")
         cut = Path(self.tmp.name) / "tank-test-1.0.0.rusemod"
@@ -167,8 +167,18 @@ class Unusual(Library):
         with self.assertRaises(LauncherError) as caught:
             self.api(home=Path(self.tmp.name) / "friend").add_mod(str(cut))
         self.assertNotIn("isn't a mod", str(caught.exception))
+        self.assertIn("cut short", str(caught.exception))
+        self.assertIn("tank-test-1.0.0.rusemod", str(caught.exception))
 
-    @unittest.expectedFailure
+    def test_a_file_that_is_no_zip_still_isn_t_a_mod_and_a_damaged_member_has_its_own_words(self):
+        """Control of FE-10: a text file named .rusemod (it does not begin like a zip) still says "isn't a mod"."""
+        notes = Path(self.tmp.name) / "notes.rusemod"
+        notes.write_text("just my notes, not a mod\n", encoding="utf-8")
+        with self.assertRaises(LauncherError) as caught:
+            self.api(home=Path(self.tmp.name) / "friend").add_mod(str(notes))
+        self.assertIn("isn't a mod", str(caught.exception))
+        self.assertNotIn("cut short", str(caught.exception))
+
     def test_FE11_a_mod_a_newer_studio_saved_in_a_newer_format(self):
         """FE-11: a mod in a newer mod format ([made_with] format above rusemod.modformat.FORMAT) is added and played
         with no word: the Studio refuses to open such a mod ("saved by a newer RUSE Studio"), but the Launcher builds

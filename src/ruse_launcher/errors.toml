@@ -1041,3 +1041,17 @@ cz = "R.U.S.E. jsme nenašli. Je nainstalovaný přes Steam?"
 jpn = "R.U.S.E. が見つかりませんでした。Steam でインストールされていますか？"
 sc = "找不到 R.U.S.E.。它是通过 Steam 安装的吗？"
 fa = "R.U.S.E. پیدا نشد. آیا از راه Steam نصب شده است؟"
+
+[e6997ed71f5]
+us = "{0} is cut short: only part of it was downloaded or copied. Get the file again."
+fr = "{0} est tronqué : seule une partie en a été téléchargée ou copiée. Récupérez à nouveau le fichier."
+ger = "{0} ist abgeschnitten: Nur ein Teil wurde heruntergeladen oder kopiert. Holen Sie sich die Datei erneut."
+ita = "{0} è incompleto: ne è stata scaricata o copiata solo una parte. Scarica di nuovo il file."
+spa = "{0} está cortado: solo se descargó o copió una parte. Vuelve a obtener el archivo."
+pol = "{0} jest ucięty: pobrano lub skopiowano tylko jego część. Pobierz plik ponownie."
+ru = "{0} обрезан: скачана или скопирована только его часть. Получите файл снова."
+cz = "{0} je useknutý: stáhla se nebo zkopírovala jen jeho část. Získejte soubor znovu."
+jpn = "{0} は途中で切れています：一部しかダウンロードまたはコピーされていません。ファイルをもう一度入手してください。"
+sc = "{0} 不完整：只下载或复制了一部分。请重新获取该文件。"
+fa = "{0} ناقص است: فقط بخشی از آن دانلود یا کپی شده است. فایل را دوباره بگیرید."
+

@@ -1217,6 +1217,16 @@ def _check_info(info: dict) -> None:
 
 
 # --- check and unpack ---
+def cut_short(path) -> bool:
+    """Whether `path` begins like a zip (a mod file is one) yet can't be read as one: a download or a copy stopped half
+    way (a zip's list of its files is written last, so a cut one has none)."""
+    try:
+        with open(path, "rb") as f:
+            return f.read(4) == b"PK\x03\x04" and not zipfile.is_zipfile(path)
+    except OSError:
+        return False
+
+
 def check(path, read: bool = True) -> dict:
     """Look inside a package: its manifest's info plus `files` (the paths inside) and `root` (the folder in the zip,
     "" when mod.toml is at the top). Refuses anything that isn't one mod folder, holds a script or program, would
@@ -1226,6 +1236,9 @@ def check(path, read: bool = True) -> dict:
     if not path.is_file():
         raise PackageError(f"{path} doesn't exist any more.")
     if not zipfile.is_zipfile(path):
+        if cut_short(path):
+            raise PackageError(f"{path.name} is cut short: only part of it was downloaded or copied. Get the file "
+                               f"again.")
         raise PackageError(f"{path.name} isn't a mod file: a mod file is a {EXTENSION} (or a .zip of a mod folder).")
     with zipfile.ZipFile(path) as z:
         entries = [e for e in z.infolist() if not e.is_dir()]
