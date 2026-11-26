@@ -1277,12 +1277,6 @@ where = "rusemod.fairplay:lock_script"
 kind = "raise"
 us = "{0} isn't a build code ({1} hex digits), so the copy's lock can't be made."
 
-[c1a065448f6]
-check = "fairplay.lock_script-2"
-where = "rusemod.fairplay:lock_script"
-kind = "raise"
-us = "The copy's lock takes its {0} lines as words, one each; it was given {1}."
-
 [c67eb540434]
 check = "filechecks.check_video.walk"
 where = "rusemod.filechecks:walk"

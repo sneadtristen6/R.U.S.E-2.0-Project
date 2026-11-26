@@ -382,7 +382,7 @@ def bundle(home, log: MatchLog, *, username: str, record: dict | None, replay: P
                               for m in manifests],
                      "dev_token": "" if not dev.valid else Path(home, DEV_KEY).read_text(encoding="utf-8").strip(),
                      "hotkeys": [[a, f] for a, f in log.hotkeys], "process_findings": findings,
-                     "stop": stop or {},  # a cheat copy's stop: what the Launcher saw of how the game closed (file_stop)
+                     "stop": stop or {},  # the offline lock's "a cheat copy was stopped" lines, read from the game's crash report
                      "ended_in_game": log.ended is not None},
         "replay": replay_b64,
     }
@@ -541,18 +541,11 @@ def collect(home, game, copy, *, username: str, scan_findings: list | None = Non
     return said
 
 
-# --- a cheat copy's stop (the owner, 2026-11-24: "Fine, change it to only go to our server."): the lock gives up a
-# match with a player whose build isn't the same and then, in a multiplayer match, closes the game at that match's
-# end-of-match screen through the game's own quit, with RUSE Guard's close number as the game's exit code
-# (rusemod.fairplay.LOCK_EXIT). The Launcher started the game, so it sees that number when the game has closed and
-# files a small signed note on our server. No crash, so the game's crash reporter has nothing to send, and RUSE Guard
-# reads no crash report at all (until 0.9.8.22 the lock crashed the game on purpose and the Launcher read RUSE
-# Guard's line out of the crash report).
-STOP_CODE = f"{0x52474C4B:#x}"   # the close number, as the note says it (rusemod.fairplay.LOCK_EXIT)
-STOP_TEXT = "the game closed with RUSE Guard's close number, which only a cheat copy's lock uses after leaving a match"
-POLL_EVERY = 1                   # seconds between looks at whether the game still runs: its close is seen at once
-
-
+# --- the offline lock's crash evidence (the owner's 2026-10-30 crash route): when the lock stops a cheat copy it
+# crashes the game on purpose, and the game's crash reporter writes a dump. The Launcher reads only RUSE Guard's own
+# marked lines from that dump here, strips any Steam ID, long id or path (defence in depth; the mark itself carries
+# none, findings F-150), and sends them as a small bundle; the dump itself never leaves the PC (no-steam-account-risk).
+GUARD_DUMPS = ("Temp/CrashRpt_*/*.dmp", "*Dumps/RUSE.exe*.dmp")  # the game's crash reporter's folder, then Windows' own
 _STEAM_ID = re.compile(rb"7656\d{13}")             # a SteamID64
 _LONG_ID = re.compile(rb"\d{9,}")                  # an account number or other long id
 _WIN_PATH = re.compile(rb"[A-Za-z]:\\[^\s\"<>|]+")  # a Windows path (the dump's module list etc.)
@@ -600,34 +593,49 @@ def read_stop(dump_path) -> dict | None:
     return {"text": _clean_stop(max(filled, key=len)), "code": "0x29a"}
 
 
-def closes_with_stop(record: dict | None) -> bool:
-    """Whether a copy's record (rusemod.fairplay.write_record) has a lock that closes the game with RUSE Guard's close
-    number: the lock's code (thirteen zeros too: a lock with no build code) and its stop. A copy from before this
-    (0.9.8.22 and older: a lock, no stop) has none."""
-    from .fairplay import LOCK_STOP
-    record = record or {}
-    return record.get("lock") is not None and record.get("stop") == LOCK_STOP
+def stop_dumps_since(since: float, local: str | None = None) -> list[Path]:
+    """The game's own crash report files written after `since` on this PC (GUARD_DUMPS under %LOCALAPPDATA%). Another
+    program can leave its crash report in the same folder (the game's crash reporter is used by other programs too):
+    that one is never read, only looked at as far as telling whose it is (rusemod.bugwatch.game_report: its module
+    list's names, nothing else of it)."""
+    from .bugwatch import game_report
+    local = local or os.environ.get("LOCALAPPDATA")
+    if not local:
+        return []
+    out = []
+    for pattern in GUARD_DUMPS:
+        for p in Path(local).glob(pattern):
+            try:
+                if p.stat().st_mtime >= since and game_report(p):
+                    out.append(p)
+            except OSError:
+                continue
+    return out
 
 
-def file_stop(home, record: dict | None, started, *, username: str, server: str = "", now=None, say=print) -> str:
-    """The game the Launcher started closed with RUSE Guard's close number: a small signed note that a cheat copy was
-    stopped, delivered or kept (deliver), filed under the player's chosen `username` (else this install's anonymous
-    id, as every bundle). Only a copy whose `record` (rusemod.fairplay's, read when the game started) has a lock that
-    closes the game this way gets one (closes_with_stop): any other copy is said in one line and nothing is sent. The
-    note holds the handle, when the game was started (`started`) and when it closed (`now`), and `stop` (STOP_TEXT,
-    STOP_CODE): no crash data, team, build or join code, files or Steam ID. Returns the line it said."""
-    if not closes_with_stop(record):
-        line = ("RUSE Guard: the game closed with RUSE Guard's close number, but this copy has no lock that closes it; "
-                "nothing was sent")
+def collect_stops(home, since, *, username: str, server: str = "", now: int | None = None, say=print,
+                  local: str | None = None) -> list[str]:
+    """After the game closed: every new crash report that carries RUSE Guard's mark (a cheat copy the offline lock
+    stopped) becomes a small signed bundle, its cleaned lines in evidence.stop, delivered or kept. Each dump is read
+    at most once per run. Returns one line per report."""
+    now = int(time.time()) if now is None else now
+    dev, said, seen = dev_key(home), [], set()
+    for dump in stop_dumps_since(since, local):
+        stop = read_stop(dump)
+        if stop is None or stop["text"] in seen:
+            continue
+        seen.add(stop["text"])
+        try:
+            started = int(Path(dump).stat().st_mtime)
+        except OSError:
+            started = now
+        log = MatchLog(started=started, multiplayer=True, coop=False, local="")
+        body = bundle(home, log, username=username, record={}, replay=None, manifests=[], dev=dev, findings=[],
+                      ended=now, stop=stop)
+        said.append(f"RUSE Guard: a cheat copy was stopped ({body['bundle_id']}): " + deliver(home, body, server))
+    for line in said:
         say(line)
-        return line
-    now = int(time.time()) if now is None else int(now)
-    log = MatchLog(started=int(started), multiplayer=True, coop=False, local="")
-    body = bundle(home, log, username=username, record={}, replay=None, manifests=[], dev=DevKey(False, "none"),
-                  findings=[], ended=now, stop={"text": STOP_TEXT, "code": STOP_CODE})
-    line = f"RUSE Guard: a cheat copy was stopped ({body['bundle_id']}): " + deliver(home, body, server)
-    say(line)
-    return line
+    return said
 
 
 # --- whether a match is on: the in-game record's lines on the game's own error output (the owner's 31 A) ---
@@ -717,35 +725,19 @@ def report_checks(home, matches, *, username: str, server: str = "", now: int | 
 
 
 class MatchWatch(threading.Thread):
-    """Runs beside the game the Launcher started: while a multiplayer match is live and the player allowed it, the
-    process scan every SCAN_EVERY seconds; when the game closes (looked at every POLL_EVERY seconds), `collect` the
-    match record, and when it closed with RUSE Guard's close number, `file_stop`. The copy's record is read when the
-    watch starts: the copy may be built again for another Play once the game has closed. Nothing is collected or filed
-    before the player accepted RUSE Guard's terms.
-    The scan looks while a multiplayer or co-op match is on (the in-game record's lines, GameLines, or the match
-    record), with the list of known cheat tools inside the app (cheat_tools); after the close, `report_checks`
-    files what it found."""
+    """Runs beside the game the Launcher started: while a multiplayer or co-op match is on (the in-game record's
+    lines, GameLines; or a match record file, should a game ever write one) and the player accepted RUSE Guard, the
+    process scan every SCAN_EVERY seconds; when the game closes, `collect` the match record, `report_checks` what the
+    scan found, then `collect_stops` any crash the offline lock caused."""
 
     def __init__(self, process, home, game, copy, *, username: str, consent: dict, manifests: list, say=print,
-                 sleep=time.sleep, clock=time.time):
+                 sleep=time.sleep, local: str | None = None):
         super().__init__(daemon=True, name="ruse-guard-watch")
-        from .fairplay import read_record
         self.process, self.home, self.game, self.copy = process, home, game, copy
         self.username, self.consent, self.manifests, self.say, self.sleep = username, consent, manifests, say, sleep
-        self.started = int(clock())   # when the game was started: the stop note's match.started
-        self.record = read_record(copy) or {}
+        self.local = local           # where the crash reports are written (%LOCALAPPDATA% when None)
+        self.started = time.time()   # only crash reports written after this are this match's
         self.findings: list[dict] = []
-        self.code = None              # the game's exit code, once it has closed
-        self.stopped = False          # a stop note was filed (file_stop): the Launcher says so once (take_stop)
-        self._told = threading.Lock()
-
-    def take_stop(self) -> bool:
-        """True once after a stop note was filed: the Launcher's page says it in the player's language."""
-        with self._told:
-            if self.stopped:
-                self.stopped = False
-                return True
-            return False
 
     def run(self) -> None:
         # the program check is part of RUSE Guard (not an opt-in): it runs whenever the player has accepted the terms
@@ -757,49 +749,25 @@ class MatchWatch(threading.Thread):
             except GuardError as e:
                 self.say(f"RUSE Guard: {e}")  # said, never a check that quietly doesn't run
         lines = getattr(self.process, "guard_lines", None)  # the game's own lines (rusemod.play.start_game_watched)
-        scan_every, looked = max(1, SCAN_EVERY // POLL_EVERY), 0
-        while True:
-            code = self.process.poll()
-            if code is not None:
-                break
-            if tools and looked % scan_every == 0:
+        while self.process.poll() is None:
+            match = lines.live() if lines is not None else None
+            if tools and (match is not None or live_multiplayer(self.copy)):
+                found = match["findings"] if match is not None else self.findings
                 try:
-                    match = lines.live() if lines is not None else None
-                    if match is not None or live_multiplayer(self.copy):
-                        found = match["findings"] if match is not None else self.findings
-                        for f in scan(tools):
-                            if f not in found:
-                                found.append(f)
-                except Exception as exc:  # noqa: BLE001  (a failed look, said; it must not end the watch: the next
-                    # scan tries again, and the close is still seen)
-                    self.say(f"RUSE Guard: the program check couldn't look this time: {type(exc).__name__}: {exc}")
-            looked += 1
-            self.sleep(POLL_EVERY)
-        self.code = code
-        if not accepted:
-            return
-        server = self.consent.get("server", "")
-        try:
+                    for f in scan(tools):
+                        if f not in found:
+                            found.append(f)
+                except (OSError, ValueError, subprocess.SubprocessError):
+                    pass  # the task list couldn't be read this time: the next scan tries again
+            self.sleep(SCAN_EVERY)
+        if accepted:
+            server = self.consent.get("server", "")
             collect(self.home, self.game, self.copy, username=self.username, scan_findings=self.findings,
                     manifests=self.manifests, server=server, say=self.say)
-        except Exception as exc:  # noqa: BLE001  (the match records' trouble must not cost the stop's note)
-            self.say(f"RUSE Guard: the match records couldn't be read or sent: {type(exc).__name__}: {exc}")
-        if lines is not None:
-            try:
+            if lines is not None:
                 if isinstance(lines, threading.Thread) and lines.is_alive():
                     lines.join(2)  # the game's last lines (a match's "end") may still be on their way
                 report_checks(self.home, lines.matches, username=self.username, server=server, say=self.say)
-            except Exception as exc:  # noqa: BLE001  (the program check's trouble must not cost the stop's note)
-                self.say(f"RUSE Guard: the program check's findings couldn't be filed: {type(exc).__name__}: {exc}")
-        from .fairplay import LOCK_EXIT
-        if code != LOCK_EXIT:
-            return
-        try:
-            file_stop(self.home, self.record, self.started, username=self.username, server=server, say=self.say)
-        except Exception as exc:  # noqa: BLE001  (said, never silent)
-            self.say(f"RUSE Guard: the note that a cheat copy was stopped couldn't be made: {type(exc).__name__}: "
-                     f"{exc}")
-            return
-        if closes_with_stop(self.record):
-            with self._told:
-                self.stopped = True
+            # the offline lock stops a cheat copy by crashing it: read that crash's marked lines and send them too
+            collect_stops(self.home, self.started, username=self.username, server=server, say=self.say,
+                          local=self.local)

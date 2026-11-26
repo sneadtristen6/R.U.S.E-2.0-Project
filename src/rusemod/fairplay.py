@@ -5,17 +5,12 @@ other people, and players who don't cheat can show it.
   cheat or a test tool: tagged "cheat" (the mod list's tag, kept next to a mod installed from it in TAGS_FILE, or the
   mod's own `[mod] tags`), or a .rmod whose game scripts call one of the game's cheat orders (CHEAT_CALLS: money,
   units or kills out of nowhere, the developer menu). The build adds our lock to such a copy
-  (gamescripts/fairplay_lock.py25) with the copy's build code in it (`build_code`, `lock_script`) and its lines in
-  the player's language (`lock_lines`: the app's own words). In a multiplayer or co-op match the lock announces
-  that code to every player's game and looks at what the others announced: every human player has the same code =
-  the match goes on (GitHub issue 24, the owner 2026-11-10: players who all have the same game play together, cheats
-  or not); anyone missing or different = it says so on screen and gives the match up a few seconds in, as it did for
-  every such match before. In a multiplayer match (not co-op) it then closes the game at that match's end-of-match
-  screen through the game's own quit, with RUSE Guard's close number as the exit code (LOCK_EXIT); the Launcher that
-  started the game reads it and files a note on our server (rusemod.guard.file_stop; the owner, 2026-11-24: "change
-  it to only go to our server"). The leaving passed in the game (the 10-30/31 multiplayer tests); the same-build
-  match is NOT TESTED in the game yet (docs/TESTS.md F5), nor is the close (it replaces the stop at the end screen
-  of 0.9.8.22 and before, which crashed the game on purpose).
+  (gamescripts/fairplay_lock.py25) with the copy's build code in it (`build_code`, `lock_script`). In a multiplayer
+  or co-op match the lock announces that code to every player's game and looks at what the others announced: every
+  human player has the same code = the match goes on (GitHub issue 24, the owner 2026-11-10: players who all have
+  the same game play together, cheats or not); anyone missing or different = it says so on screen and gives the
+  match up a few seconds in, as it did for every such match before. The leaving passed in the game (the 10-30/31
+  multiplayer tests); the same-build match is NOT TESTED in the game yet (docs/TESTS.md F5).
 - Every copy gets a join code (rusemod.lock): the game build, the mods and their versions, the fingerprint.
   Two players with the same code have the same game; a different code says what differs (`compare`). A cheat copy
   has one too, so the players of a same-build match can compare before they start.
@@ -50,35 +45,16 @@ LOCK, WATCH = "fairplay_lock", "fairplay_watch"
 BUILD_CODE_DIGITS = 13                    # a cheat copy's build code: this many hex digits (52 bits), in its lock
 NO_BUILD_CODE = "0" * BUILD_CODE_DIGITS   # a lock with no build code: it matches no copy, so it leaves every match
 _CODE_NAME = b"_fairplay_lock_code"       # the name the lock's source sets its build code to (fairplay_lock.py25)
-_WORDS_NAME = b"_fairplay_lock_words"     # and the name it sets its lines in the player's language to
 LOCK_FIRST, LOCK_VERSION = 0x40000000, 1  # the lock's announcement: its numbers' start and its version (lock_numbers)
-# RUSE Guard's close number: the exit code the lock closes the game with after it left a multiplayer match
-# (fairplay_lock.py25 _fairplay_lock_exit, "RGLK"). None of the game's own endings uses it; rusemod.guard looks for it
-LOCK_EXIT = 0x52474C4B
-LOCK_STOP = "exit"  # how a copy's lock stops it, in the copy's record ("stop"): it closes the game with LOCK_EXIT
-# The lock's lines (fairplay_lock.py25), in English, by their names in both apps' words (words.toml: the same English
-# for "us"), in the order the lock takes them: at a match's start, the same build, leaving, the close refused
-LOCK_LINES = {
-    "guard_lock_check": "RUSE Guard: this copy of R.U.S.E. was built with cheats or test tools. Checking that every "
-                        "player in this match has the same build...",
-    "guard_lock_same": "RUSE Guard: every player in this match has the same build as you, cheats and test tools "
-                       "included. The match goes on.",
-    "guard_lock_leave": "RUSE Guard: not every player in this match has the same build as you, so this copy leaves "
-                        "the match. A copy built with cheats or test tools only plays with players who built the same "
-                        "mods: compare join codes in the Launcher.",
-    "guard_lock_cant_close": "RUSE Guard: this copy left the match, but it couldn't close the game by itself. Please "
-                             "quit the game.",
-}
 GUARD = "guard_hash"  # RUSE Guard's in-game record (DomesticNukes' §3.2/§3.4; multiplayer only; rusemod.guard)
 # FAIR PLAY IS SWITCHED ON for the release (the owner, 2026-10-31: "this is going out", after the 10-30/31
 # multiplayer tests with a real opponent). Written on 2026-10-04 and held off until then (docs/BIG_PATCH.md).
 # Off, the build checks no mods, adds no scripts and leaves no record; the Launcher shows no join code, no badges,
 # no trust tick, and Play doesn't wait for one. Tests that need it off patch this line.
 ON = True
-# Our game scripts go into every build: the lock's leaving passed in the game (the 10-30/31 multiplayer tests: it
-# surrendered a cheat copy and stopped it on the end-of-match screen, then by a crash; its close there through the
-# game's own quit is not tested in the game yet), and the watcher and the record let no error out at any of the
-# game's nine calls (checked with failing game objects at each). Off, no scripts go in; a test copy passes
+# Our game scripts go into every build: the lock passed in the game (the 10-30/31 multiplayer tests: it surrendered
+# a cheat copy and stopped it on the end-of-match screen), and the watcher and the record let no error out at any
+# of the game's nine calls (checked with failing game objects at each). Off, no scripts go in; a test copy passes
 # `FairPlay(scripts=...)` itself.
 IN_BUILDS = True
 MAP_SCRIPTS = "IA_Common.dat"         # the pack with the maps' own match scripts: ours go there (1.5 MB)
@@ -220,7 +196,6 @@ class FairPlay:
     watch: bool = True
     scripts: bool | None = None  # our game scripts in the copy: None = IN_BUILDS (off until tested in the game)
     dev: bool = False             # a valid RUSE Guard dev key on this PC: the one way past the offline lock
-    lines: tuple | None = None    # the lock's lines in the player's language (lock_lines), None: its English
 
     @property
     def offline(self) -> list[str]:
@@ -230,19 +205,13 @@ class FairPlay:
     def script_mods(self) -> list[str]:
         return [m.name for m in self.mods if m.scripts]
 
-    @property
-    def locked(self) -> bool:
-        """Whether this copy gets the lock: fair play and our scripts on, a cheat or a test tool in it, no dev key."""
-        return ON and bool(IN_BUILDS if self.scripts is None else self.scripts) and bool(self.offline) and not self.dev
-
     def patches(self, code: str = NO_BUILD_CODE) -> list[bytes]:
         """Our game scripts this copy gets, compiled: a cheat copy's lock with the copy's build `code` in it
-        (build_code; left out, the lock has none and leaves every match) and its lines in the player's language
-        (`lines`), the watcher, the record."""
+        (build_code; left out, the lock has none and leaves every match), the watcher, the record."""
         if not ON or not (IN_BUILDS if self.scripts is None else self.scripts):
             return []
-        return ([lock_script(code, self.lines)] if self.locked else []) + \
-            [game_script(name) for name in (WATCH, GUARD) if self.watch]
+        lock = bool(self.offline) and not self.dev
+        return ([lock_script(code)] if lock else []) + [game_script(name) for name in (WATCH, GUARD) if self.watch]
 
 
 def check(folders, watch: bool = True, home=None) -> FairPlay:
@@ -272,42 +241,18 @@ def build_code(build_id, fp: bytes | None, mods) -> str:
     return code if code != NO_BUILD_CODE else "1" + code[1:]
 
 
-def lock_lines(words: dict | None) -> tuple[str, ...] | None:
-    """The lock's lines (LOCK_LINES, in their order) in the player's language, from an app's `words` in that language
-    (its words.toml: ruse_launcher.api.words, ruse_studio.api.words); a line the words haven't got stays English. None
-    without words, or when every line is the English one (the lock then says its own English)."""
-    if not words:
-        return None
-    lines = tuple(str(words.get(name) or english) for name, english in LOCK_LINES.items())
-    # a line in a script the game can't draw stays English: Persian's (his game test 2026-11-26, step 4: every letter a
-    # box; his 23: "else English in the game")
-    lines = tuple(english if NOT_DRAWN.search(line) else line for line, english in zip(lines, LOCK_LINES.values()))
-    return None if lines == tuple(LOCK_LINES.values()) else lines
-
-
-NOT_DRAWN = re.compile("[؀-ۿݐ-ݿﭐ-﷿ﹰ-﻿]")   # the Arabic script blocks (Persian's)
-
-
-def lock_script(code: str = NO_BUILD_CODE, lines: tuple | None = None) -> bytes:
+def lock_script(code: str = NO_BUILD_CODE) -> bytes:
     """The lock of a cheat copy, compiled, with the copy's build code in it: the constant its top level sets
     `_fairplay_lock_code` to. Two copies whose locks carry the same code play multiplayer and co-op together; a lock
-    with NO_BUILD_CODE matches no other copy. `lines` (lock_lines): its four lines in the player's language, the
-    constant it sets `_fairplay_lock_words` to; None: the lock says its English."""
+    with NO_BUILD_CODE matches no other copy."""
     if not re.fullmatch(r"[0-9a-f]{%d}" % BUILD_CODE_DIGITS, code):
         # not a game rule: what the lock's two orders carry
         raise FairPlayError(f"{code!r} isn't a build code ({BUILD_CODE_DIGITS} hex digits), so the copy's lock can't "
                             f"be made.")
-    if lines is not None and (len(lines) != len(LOCK_LINES) or not all(isinstance(t, str) and t for t in lines)):
-        # not a game rule: what the lock's source takes (fairplay_lock.py25 say)
-        raise FairPlayError(f"The copy's lock takes its {len(LOCK_LINES)} lines as words, one each; it was given "
-                            f"{lines!r}.")
     try:
-        lock = pyscript.with_value(pyscript.load(game_script(LOCK)), _CODE_NAME, code.encode("ascii"))
-        if lines is not None:
-            lock = pyscript.with_value(lock, _WORDS_NAME, tuple(lines))
-        return pyscript.dump(lock)
+        return pyscript.dump(pyscript.with_value(pyscript.load(game_script(LOCK)), _CODE_NAME, code.encode("ascii")))
     except pyscript.ScriptError as exc:
-        raise FairPlayError(f"The copy's lock can't take its build code or its lines: {exc}") from None
+        raise FairPlayError(f"The copy's lock can't take its build code: {exc}") from None
 
 
 def lock_numbers(code: str) -> tuple[int, int]:
@@ -320,33 +265,19 @@ def lock_numbers(code: str) -> tuple[int, int]:
     return LOCK_FIRST | LOCK_VERSION << 24 | int(code[:6], 16), LOCK_FIRST | 1 << 28 | int(code[6:], 16)
 
 
-def _top_value(script: bytes, name: bytes):
-    """The constant a compiled script's top level sets `name` to (KeyError when it sets none)."""
-    top = pyscript.load(script)
-    ins = pyscript.instructions(top.code)
-    for k in range(1, len(ins)):
-        if ins[k][1] == pyscript.STORE_NAME and top.names[ins[k][2]] == name and ins[k - 1][1] == pyscript.LOAD_CONST:
-            return top.consts[ins[k - 1][2]]
-    raise KeyError(name)
-
-
 def lock_code_of(script: bytes) -> str | None:
     """The build code in a compiled lock (lock_script), or None when the script sets none; for checks and tests."""
     try:
-        value = _top_value(script, _CODE_NAME)
-        return value.decode("ascii") if isinstance(value, bytes) else None
-    except (pyscript.ScriptError, IndexError, UnicodeDecodeError, AttributeError, KeyError):
-        return None
-
-
-def lock_words_of(script: bytes) -> tuple | None:
-    """The lines in the player's language in a compiled lock (lock_script; empty ones: its English), or None when the
-    script sets none; for checks and tests (the test copy's check)."""
-    try:
-        value = _top_value(script, _WORDS_NAME)
-        return value if isinstance(value, tuple) else None
-    except (pyscript.ScriptError, IndexError, AttributeError, KeyError):
-        return None
+        top = pyscript.load(script)
+        ins = pyscript.instructions(top.code)
+        for k in range(1, len(ins)):
+            if ins[k][1] == pyscript.STORE_NAME and top.names[ins[k][2]] == _CODE_NAME \
+                    and ins[k - 1][1] == pyscript.LOAD_CONST:
+                value = top.consts[ins[k - 1][2]]
+                return value.decode("ascii") if isinstance(value, bytes) else None
+    except (pyscript.ScriptError, IndexError, UnicodeDecodeError, AttributeError):
+        pass
+    return None
 
 
 def script_is_current(name: str) -> bool:
@@ -452,10 +383,8 @@ def write_record(instance, build_id, fp: bytes | None, mods, fair: FairPlay, wri
     """Leave the build's record in the copy: the join code (None when the mods change nothing in how the game plays,
     or their versions don't fit a code), why it's a cheat copy (`offline`; `why` is then "offline", and the copy has
     its join code all the same: its players compare codes before a same-build match), the build code in its lock
-    (`lock_code`, None when it has no lock) and how that lock stops the copy (`stop`: LOCK_STOP, it closes the game
-    with LOCK_EXIT; the Launcher files a stop only for a record that says so, rusemod.guard.file_stop), its script
-    mods, the watcher, and every file the build wrote (`written`: paths relative to the copy) with its size, time and
-    SHA-256."""
+    (`lock_code`, None when it has no lock), its script mods, the watcher, and every file the build wrote
+    (`written`: paths relative to the copy) with its size, time and SHA-256."""
     instance = Path(instance)
     code, why = None, "offline" if fair.offline else None
     if fp is None:
@@ -467,8 +396,7 @@ def write_record(instance, build_id, fp: bytes | None, mods, fair: FairPlay, wri
             why = why or f"no join code: {exc}"
     record = {"version": 1, "build": str(build_id), "code": code, "why": why,
               "fingerprint": fingerprint_text(fp) if fp else None, "mods": [[str(i), str(v)] for i, v in mods],
-              "offline": fair.offline, "lock": lock_code, "stop": LOCK_STOP if lock_code else None,
-              "scripts": fair.script_mods, "watch": fair.watch,
+              "offline": fair.offline, "lock": lock_code, "scripts": fair.script_mods, "watch": fair.watch,
               "files": {str(rel).replace("\\", "/"): _stat(instance / rel, True) for rel in written}}
     (instance / RECORD).write_text(json.dumps(record, indent=1), encoding="utf-8")
     return record

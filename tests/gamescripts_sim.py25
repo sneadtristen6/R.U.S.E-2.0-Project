@@ -9,9 +9,6 @@
 # record.bin, and lock_old.bin when the released lock from before the same-build check is at hand. With
 # joined_a.bin, joined_a2.bin and joined_b.bin there too (the game's own Battles launcher script with a copy's
 # scripts after it, one module, made from the game's file where the game is installed), those are played as well.
-# lock_fr.bin and lock_fa.bin are lock A with its lines in French and in Persian (the app's words), and words.txt
-# holds those lines (UTF-8, one per line: four French, then four Persian), to see the very text said in the game.
-# numbers.txt has the numbers each code announces and, on its "exit" line, RUSE Guard's close number.
 #
 # What stands in for the game (each point checked against the game on 2026-11-10; the checks are in the project's
 # private notes):
@@ -26,13 +23,6 @@
 # - A script error that leaves a call from the game stops that PC's game (code 0x29a): here it is caught per PC and
 #   counted as "the game stopped", which a check then expects or not.
 # - Timers are in game seconds, the same on every PC (the match is lockstep).
-# - The end-of-match screens as the game's own script has them (headup/end_game_screens, data revision 190852, read
-#   2026-11-24): every screen keeps its match's world as _world; the multiplayer screen's show method is the one the
-#   non-ranked multiplayer screen and the Battles screen inherit, while the ranked screen and the solo family (a co-op
-#   challenge's screen among them) have their own. A match's end picks its screen as the game's
-#   World.InstancieEndGameScreen does: ranked, else multiplayer, else Battles; a co-op challenge's is the solo kind.
-# - _sysutils.TerminateSelf, the game's own quit, as the game registers it: positional arguments only, a number and
-#   an optional true/false. Called, it closes that PC's game with the number as its exit code.
 import gc
 import marshal
 import os
@@ -46,7 +36,7 @@ TICK = 0.1
 GAME_MODULES = ('front', 'front.game_rules', 'front.key_management', 'base', 'base.actions', 'base.actions.helpers',
                 'base.world_helper', '_network', '_actions', '_enum_for_game_play', '_piggybank', 'headup',
                 'headup.end_game_screens', 'leveldesign', 'leveldesign.launcheffetmap',
-                'leveldesign.descriptorspecial', '_sysutils')
+                'leveldesign.descriptorspecial')
 
 
 def blob(name):
@@ -171,12 +161,9 @@ class PC(object):
         self.scripts = scripts
         self.modules = None
         self.world = None
-        self.stopped = None          # why this PC's game stopped (a script error left a call, or its quit), else None
+        self.stopped = None          # why this PC's game stopped (a script error left a call), else None
         self.said = []
         self.loaded = False
-        self.quits = []              # (tick, the arguments) of every call of the game's quit
-        self.quit_mode = 'works'     # 'refuses' (the quit raises), 'no function' or 'no module' (set before Sim())
-        self.letters = 'all'         # 'ascii': the game's on-screen message refuses any other letter
 
     # --- this PC's game modules ---
     def make_modules(self, sim):
@@ -193,52 +180,9 @@ class PC(object):
             def before_start_game(self):
                 pass
 
-        # the game's end screens (headup/end_game_screens): the base keeps its match's world as _world first thing;
-        # the multiplayer screen's show method is inherited by NotChampionship and Battle, while Championship and the
-        # solo family have their own
-        class EndGameScreen(object):
-            def __init__(self, world, gagnant=None, condition=None):
-                self._world = world
-
-            def _show_end_game_screen(self, stats):
-                raise NotImplementedError()
-
-            def show(self):  # the game: __init__ ... _update_and_save_profile_IFN -> _show_end_game_screen
-                self._show_end_game_screen(None)
-
-        class EndGameScreenMulti(EndGameScreen):
+        class EndGameScreenMulti(object):
             def _show_end_game_screen(self, stats):
                 pc.end_screens = getattr(pc, 'end_screens', 0) + 1
-
-        class EndGameScreenMultiNotChampionship(EndGameScreenMulti):
-            pass
-
-        class EndGameScreenMultiChampionship(EndGameScreenMulti):
-            def _show_end_game_screen(self, stats):
-                pc.end_screens = getattr(pc, 'end_screens', 0) + 1
-
-        class EndGameScreenMultiBattle(EndGameScreenMulti):
-            pass
-
-        class EndGameScreenSolo(EndGameScreen):
-            def _show_end_game_screen(self, stats):
-                pc.end_screens = getattr(pc, 'end_screens', 0) + 1
-
-        class EndGameScreenSoloChallenge(EndGameScreenSolo):
-            pass
-
-        # _sysutils.TerminateSelf as the game registers it: positional arguments only, "i|b"
-        def TerminateSelf(*args, **keywords):
-            if keywords:
-                raise TypeError('TerminateSelf() takes no keyword arguments')
-            if pc.quit_mode == 'refuses':
-                raise TypeError('TerminateSelf: the game refused it')
-            if not 1 <= len(args) <= 2 or not isinstance(args[0], (int, long)):
-                raise TypeError('TerminateSelf(int exitcode, bool brutal=False)')
-            pc.quits.append((sim.tick, args))
-            if pc.stopped is None:
-                pc.stopped = CLOSED
-            return None
 
         # base.actions.helpers: the game's own lines for these orders, as its script has them
         def Send_Surrender(team):
@@ -304,17 +248,7 @@ class PC(object):
         module('_enum_for_game_play', NiveauIA=NiveauIA, BatimentEnum=BatimentEnum, TGameTimerMode=TGameTimerMode,
                TPopCapConfig=TPopCapConfig)
         module('_piggybank', TPackSignaux_PiggyBank_Listener=type('TPackSignaux_PiggyBank_Listener', (object,), {}))
-        module('headup', end_game_screens=module(
-            'headup.end_game_screens', EndGameScreen=EndGameScreen, EndGameScreenMulti=EndGameScreenMulti,
-            EndGameScreenMultiNotChampionship=EndGameScreenMultiNotChampionship,
-            EndGameScreenMultiChampionship=EndGameScreenMultiChampionship,
-            EndGameScreenMultiBattle=EndGameScreenMultiBattle, EndGameScreenSolo=EndGameScreenSolo,
-            EndGameScreenSoloChallenge=EndGameScreenSoloChallenge))
-        if pc.quit_mode != 'no module':
-            if pc.quit_mode == 'no function':
-                module('_sysutils')
-            else:
-                module('_sysutils', TerminateSelf=TerminateSelf)
+        module('headup', end_game_screens=module('headup.end_game_screens', EndGameScreenMulti=EndGameScreenMulti))
         self.modules = mods
 
     def enter(self):
@@ -379,8 +313,6 @@ class World(object):
         return self._manager
 
     def display_debug_message(self, text, seconds):
-        if self.pc.letters == 'ascii':
-            text.encode('ascii')     # a game that can't take these letters refuses them (an error)
         self.pc.said.append((self.sim.tick, text))
 
     def register_function_to_call_at_kill(self, call):
@@ -409,28 +341,21 @@ class Sim(object):
 
     def __init__(self, pcs):
         self.pcs = pcs
-        self.multi, self.coop, self.ranked = True, False, False
-        self.end_kind = None
+        self.multi, self.coop = True, False
         self.tick = 0
         self.net = None
         for pc in pcs:
             pc.make_modules(self)
 
-    def match(self, sides, local, seconds=12.0, delay=3, multi=True, coop=False, during=None, ranked=False,
-              same_world=False, end_kind=None, replay=False):
+    def match(self, sides, local, seconds=12.0, delay=3, multi=True, coop=False, during=None, replay=False):
         """Play one match. sides: [(number, 'human' | 'computer')]; local: {pc name: its side's number, or None for
-        an observer}; during: {tick: call(sim)} for what happens meanwhile; ranked: a ranked match (its own end
-        screen); same_world: the game hands this match the world of the one before; end_kind: the end screen's class,
-        for a case that sets it itself; replay: watched as a replay. Returns the orders sent."""
-        self.multi, self.coop, self.ranked = multi, coop, ranked
-        self.end_kind = end_kind
+        an observer}; during: {tick: call(sim)} for what happens meanwhile; replay: watched as a replay. Returns the
+        orders sent."""
+        self.multi, self.coop = multi, coop
         self.tick = 0
         self.net = Net(delay)
         for pc in self.pcs:
-            if same_world and pc.world is not None:  # a game that hands the next match the same world
-                pc.world.timers = []
-            else:
-                pc.world = World(self, pc, sides, local[pc.name])
+            pc.world = World(self, pc, sides, local[pc.name])
             pc.world.replay = replay
             pc.said = []
             pc.end_screens = 0
@@ -458,21 +383,9 @@ class Sim(object):
                 pc.world.timers = [(t, c) for t, c in pc.world.timers if t > self.tick]
                 for call in due:
                     pc.call(call)
-        for pc in self.pcs:  # the match ends: its end-of-match screen, on every PC still running, picked as the
-            # game's World.InstancieEndGameScreen picks it (ranked, multiplayer, else Battles); co-op: the solo kind
+        for pc in self.pcs:  # the match ends: its end-of-match screen, on every PC still running
             def end(pc=pc):
-                screens = sys.modules['headup.end_game_screens']
-                if self.end_kind:
-                    kind = getattr(screens, self.end_kind)
-                elif self.coop:
-                    kind = screens.EndGameScreenSoloChallenge
-                elif self.ranked:
-                    kind = screens.EndGameScreenMultiChampionship
-                elif self.multi:
-                    kind = screens.EndGameScreenMultiNotChampionship
-                else:
-                    kind = screens.EndGameScreenMultiBattle
-                kind(pc.world).show()
+                sys.modules['headup.end_game_screens'].EndGameScreenMulti()._show_end_game_screen(None)
             pc.call(end)
         return self.net.sent
 
@@ -520,14 +433,6 @@ def says(pc, words):
     return [t for t, text in pc.said if words in text]
 
 
-CLOSED = 'closed by its own quit'   # what a PC's game stopped by, when it was the game's quit
-END_TICK = 120                      # a 12-second match's end screen
-
-
-def quits(pc):
-    return pc.quits
-
-
 FAILS = []
 
 
@@ -552,15 +457,11 @@ PLAIN = ()                     # the game as bought
 LEAVE_TICK = 70                # 7.0 seconds in: the lock's decision
 RESULTS = []
 NUMBERS = {}                   # numbers.txt, when there: "a <first> <second>" as rusemod.fairplay.lock_numbers says
-LOCK_EXIT = 0x52474C4B         # RUSE Guard's close number; numbers.txt's "exit <number>" (rusemod.fairplay.LOCK_EXIT)
 if os.path.isfile(os.path.join(FOLDER, 'numbers.txt')):
     for line in open(os.path.join(FOLDER, 'numbers.txt')).read().split('\n'):
         parts = line.split()
         if len(parts) == 3:
             NUMBERS[parts[0]] = [int(parts[1]), int(parts[2])]
-        elif len(parts) == 2 and parts[0] == 'exit':
-            LOCK_EXIT = int(parts[1])
-CLOSE = [(END_TICK, (LOCK_EXIT, False))]   # one close, with the number, not brutal, on the end screen
 
 
 def scenario(name):
@@ -614,9 +515,8 @@ def _(name):
     expect(name, 'the plain game saw the surrender', surrendered(other, 0) is not None, True)
     expect(name, 'the plain game sent anything', [o for who, t, o, f in orders if who == 'plain'], [])
     expect(name, 'the cheat copy said it leaves', says(cheat, 'leaves the match'), [LEAVE_TICK])
-    expect(name, 'the cheat copy closed the game on its end screen, with the number', (cheat.stopped, quits(cheat)),
-           (CLOSED, CLOSE))
-    expect(name, 'the plain game closed', (other.stopped, quits(other)), (None, []))
+    expect(name, 'the cheat copy was stopped on its end screen', (cheat.stopped or '')[:28],
+           'RuntimeError: RUSEGUARD-LOCK')
     expect(name, 'the plain game\'s end screens', other.end_screens, 1)
     untouched(name, other)
     lookups = other.world.camps[0].factories[HEADQUARTER].lookups
@@ -641,8 +541,12 @@ def _(name):
     orders = sim.match([(0, 'human'), (1, 'human')], {'one': 0, 'other': 1})
     for pc in (p1, p2):
         expect(name, '%s surrendered at' % pc.name, [t for t, f in sent(orders, pc.name, 'Surrender')], [LEAVE_TICK])
-        expect(name, '%s closed the game on its end screen, with the number' % pc.name, (pc.stopped, quits(pc)),
-               (CLOSED, CLOSE))
+        expect(name, '%s was stopped on its end screen' % pc.name, (pc.stopped or '')[:28],
+               'RuntimeError: RUSEGUARD-LOCK')
+        # the stop's line is the one the Launcher reads from the game's crash report: filled in, with its end mark
+        expect(name, '%s: the stop line is filled in' % pc.name,
+               ('%' not in pc.stopped, pc.stopped.endswith('RUSEGUARD-END'),
+                'multi 1 coop 0 local %d' % {'one': 0, 'other': 1}[pc.name] in pc.stopped), (True, True, True))
     if 'b' in NUMBERS:
         expect(name, 'the other build\'s numbers', [f[1] for t, f in sent(orders, 'other', 'AnnuleProduction')],
                NUMBERS['b'])
@@ -1012,10 +916,8 @@ def _(name):
         sim.match([(0, 'human'), (1, 'human')], {'cheat': 0, 'plain': 1}, seconds=15.0)
     lines, back = game_errors(play)
     expect(name, 'the lines before the end screen stopped it', lines, [LIVE_1_0])
-    # (the join, 11-26: with legal/clean-stop the copy closes the game by its own quit on its end screen; the crash
-    # route this case was written against, 'RuntimeError: RUSEGUARD-LOCK', is gone)
-    expect(name, 'the cheat copy was stopped on its end screen', (cheat.stopped or '')[:22],
-           'closed by its own quit')
+    expect(name, 'the cheat copy was stopped on its end screen', (cheat.stopped or '')[:28],
+           'RuntimeError: RUSEGUARD-LOCK')
 
 
 # --- game objects that fail on every use: what may never let an error out, even in a cheat copy ---
@@ -1064,235 +966,6 @@ def _(name):
             FAILS.append('%s: the lock let an error out: %s' % (name, e))
     except Boom, e:
         FAILS.append('%s: the lock let an error out: %s' % (name, e))
-
-
-# --- the close at the end-of-match screen (the owner, 2026-11-24: "change it to only go to our server"; his 22 A and
-# 35 A, 2026-11-25): only the end screen of the very match the copy left, a multiplayer one, closes the game ---
-def leave_before_end(pc):
-    def go(sim):
-        pc.stopped = 'quit to the menu before the end screen'
-    return go
-
-
-def back_in_menus(pc):
-    pc.stopped = None   # the game still runs: the player is back in the menus
-
-
-@scenario('left a match and quit to the menu before its end screen, then a skirmish against the computer: no close')
-def _(name):
-    p1, p3 = PC('one', CHEAT_A), PC('plain', PLAIN)
-    sim = Sim([p1, p3])
-    orders = sim.match([(0, 'human'), (1, 'human')], {'one': 0, 'plain': 1}, during={END_TICK: leave_before_end(p1)})
-    expect(name, 'the first match was left', len(sent(orders, 'one', 'Surrender')), 1)
-    expect(name, 'no close without the end screen', quits(p1), [])
-    back_in_menus(p1)
-    sim.pcs = [p1]
-    orders = sim.match([(0, 'human'), (1, 'computer')], {'one': 0}, multi=False, coop=False)
-    expect(name, 'orders in the skirmish', orders, [])
-    expect(name, 'the skirmish end screen', (quits(p1), p1.stopped, p1.end_screens), ([], None, 1))
-
-
-@scenario('a co-op match left (its end screen is the solo kind), then a skirmish against the computer: no close')
-def _(name):
-    p1, p3 = PC('one', CHEAT_A), PC('plain', PLAIN)
-    sim = Sim([p1, p3])
-    orders = sim.match([(0, 'human'), (1, 'human'), (2, 'computer')], {'one': 0, 'plain': 1}, multi=False, coop=True)
-    expect(name, 'the co-op match was given up', len(sent(orders, 'one', 'Surrender')), 1)
-    expect(name, 'the co-op end screen (co-op only gives up)', (quits(p1), p1.stopped), ([], None))
-    sim.pcs = [p1]
-    sim.match([(0, 'human'), (1, 'computer')], {'one': 0}, multi=False, coop=False)
-    expect(name, 'the skirmish end screen', (quits(p1), p1.stopped), ([], None))
-
-
-@scenario('a ranked match left (its end screen has its own show), then a skirmish: no close, only given up')
-def _(name):
-    p1, p3 = PC('one', CHEAT_A), PC('plain', PLAIN)
-    sim = Sim([p1, p3])
-    orders = sim.match([(0, 'human'), (1, 'human')], {'one': 0, 'plain': 1}, ranked=True)
-    expect(name, 'the ranked match was given up', len(sent(orders, 'one', 'Surrender')), 1)
-    expect(name, 'the ranked end screen (ranked only gives up)', (quits(p1), p1.stopped), ([], None))
-    sim.pcs = [p1]
-    sim.match([(0, 'human'), (1, 'computer')], {'one': 0}, multi=False, coop=False)
-    expect(name, 'the skirmish end screen', (quits(p1), p1.stopped), ([], None))
-
-
-@scenario('another match\'s end screen with no match start between (a replay\'s, say): no close')
-def _(name):
-    p1, p3 = PC('one', CHEAT_A), PC('plain', PLAIN)
-    sim = Sim([p1, p3])
-    sim.match([(0, 'human'), (1, 'human')], {'one': 0, 'plain': 1}, during={END_TICK: leave_before_end(p1)})
-    back_in_menus(p1)
-    other = World(sim, p1, [(0, 'human'), (1, 'computer')], 0)
-
-    def show():
-        sys.modules['headup.end_game_screens'].EndGameScreenMultiBattle(other).show()
-    p1.call(show)
-    expect(name, 'closes, stopped', (quits(p1), p1.stopped), ([], None))
-
-
-@scenario('the game refuses its quit: the copy says so once, on its own end screen, with no error and no second try')
-def _(name):
-    cheat, other = PC('cheat', CHEAT_A), PC('plain', PLAIN)
-    cheat.quit_mode = 'refuses'
-    sim = Sim([cheat, other])
-    sim.match([(0, 'human'), (1, 'human')], {'cheat': 0, 'plain': 1})
-    left = cheat.world
-
-    def again():
-        sys.modules['headup.end_game_screens'].EndGameScreenMultiNotChampionship(left).show()
-    cheat.call(again)
-    expect(name, 'an error left', cheat.stopped, None)
-    expect(name, 'said it could not close (once, at the end screen)', says(cheat, "couldn't close the game"),
-           [END_TICK])
-    expect(name, 'closes', quits(cheat), [])
-
-
-@scenario('the game has no _sysutils, or no TerminateSelf: no error, the line once, the surrender as before')
-def _(name):
-    for mode in ('no module', 'no function'):
-        cheat, other = PC('cheat', CHEAT_A), PC('plain', PLAIN)
-        cheat.quit_mode = mode
-        sim = Sim([cheat, other])
-        orders = sim.match([(0, 'human'), (1, 'human')], {'cheat': 0, 'plain': 1})
-        expect(name, '%s: surrendered' % mode, len(sent(orders, 'cheat', 'Surrender')), 1)
-        expect(name, '%s: an error left' % mode, cheat.stopped, None)
-        expect(name, '%s: said it could not close' % mode, len(says(cheat, "couldn't close the game")), 1)
-
-
-@scenario('the game refuses the surrender: no error leaves; the copy closes the game at once with the number')
-def _(name):
-    p1, p3 = PC('one', CHEAT_A), PC('plain', PLAIN)
-    sim = Sim([p1, p3])
-
-    def broken(team):
-        raise RuntimeError('the game refused the surrender')
-    p1.modules['base.actions.helpers'].Send_Surrender = broken
-    sim.match([(0, 'human'), (1, 'human')], {'one': 0, 'plain': 1})
-    expect(name, 'how it ended', (p1.stopped, quits(p1)), (CLOSED, [(LEAVE_TICK, (LOCK_EXIT, False))]))
-    expect(name, 'the plain game', (p3.stopped, quits(p3)), (None, []))
-
-
-@scenario('the game refuses the surrender AND its quit: no error, the line, the copy stays')
-def _(name):
-    p1, p3 = PC('one', CHEAT_A), PC('plain', PLAIN)
-    p1.quit_mode = 'refuses'
-    sim = Sim([p1, p3])
-
-    def broken(team):
-        raise RuntimeError('the game refused the surrender')
-    p1.modules['base.actions.helpers'].Send_Surrender = broken
-    sim.match([(0, 'human'), (1, 'human')], {'one': 0, 'plain': 1})
-    expect(name, 'an error left', p1.stopped, None)
-    expect(name, 'said it could not close', says(p1, "couldn't close the game"), [LEAVE_TICK])
-
-
-@scenario('matches that never close: the same build, one human with computers, co-op with the same build, honest')
-def _(name):
-    p1, p2 = PC('first', CHEAT_A), PC('friend', CHEAT_A2)
-    Sim([p1, p2]).match([(0, 'human'), (1, 'human'), (2, 'computer')], {'first': 0, 'friend': 1})
-    alone = PC('alone', CHEAT_A)
-    Sim([alone]).match([(0, 'human'), (1, 'computer')], {'alone': 0})
-    pcs = [PC('p%d' % k, (CHEAT_A, CHEAT_A2)[k % 2]) for k in range(4)]
-    Sim(pcs).match([(k, 'human') for k in range(4)] + [(4, 'computer')], dict([('p%d' % k, k) for k in range(4)]),
-                   multi=False, coop=True)
-    honest, cheat = PC('honest', HONEST), PC('cheat', CHEAT_A)
-    Sim([honest, cheat]).match([(0, 'human'), (1, 'human')], {'honest': 0, 'cheat': 1})
-    for pc in [p1, p2, alone, honest] + pcs:
-        expect(name, '%s: closes, stopped' % pc.name, (quits(pc), pc.stopped), ([], None))
-
-
-@scenario('an end screen whose world fails on every use: the lock lets no error out')
-def _(name):
-    p1, p3 = PC('one', CHEAT_A), PC('plain', PLAIN)
-    sim = Sim([p1, p3])
-    sim.match([(0, 'human'), (1, 'human')], {'one': 0, 'plain': 1}, during={END_TICK: leave_before_end(p1)})
-    back_in_menus(p1)
-
-    def show():
-        screens = sys.modules['headup.end_game_screens']
-
-        class Odd(screens.EndGameScreenMulti):
-            _world = property(lambda self: Bomb()())
-        Odd.__new__(Odd)._show_end_game_screen(None)
-    p1.call(show)
-    expect(name, 'an error left', p1.stopped, None)
-
-
-@scenario('the next match is handed the SAME world: the match start alone clears the leave, so no close')
-def _(name):
-    p1, p3 = PC('one', CHEAT_A), PC('plain', PLAIN)
-    sim = Sim([p1, p3])
-    sim.match([(0, 'human'), (1, 'human')], {'one': 0, 'plain': 1}, during={END_TICK: leave_before_end(p1)})
-    back_in_menus(p1)
-    sim.pcs = [p1]
-    sim.match([(0, 'human'), (1, 'computer')], {'one': 0}, multi=False, coop=False, same_world=True)
-    expect(name, 'the skirmish end screen', (quits(p1), p1.stopped), ([], None))
-
-
-@scenario('a co-op match left whose end screen IS the multiplayer kind (if the game showed one): no close')
-def _(name):
-    p1, p3 = PC('one', CHEAT_A), PC('plain', PLAIN)
-    sim = Sim([p1, p3])
-    orders = sim.match([(0, 'human'), (1, 'human'), (2, 'computer')], {'one': 0, 'plain': 1}, multi=False, coop=True,
-                       end_kind='EndGameScreenMultiBattle')
-    expect(name, 'the co-op match was given up', len(sent(orders, 'one', 'Surrender')), 1)
-    expect(name, 'that end screen', (quits(p1), p1.stopped, p1.end_screens), ([], None, 1))
-    orders = sim.match([(0, 'human'), (1, 'human')], {'one': 0, 'plain': 1}, multi=True, coop=True,
-                       end_kind='EndGameScreenMultiNotChampionship')
-    expect(name, 'a match that says both multiplayer and co-op: given up', len(sent(orders, 'one', 'Surrender')), 1)
-    expect(name, 'a match that says both: closes', quits(p1), [])
-
-
-@scenario('the first close refused, the copy stays on; a later match of the session left again closes, once')
-def _(name):
-    p1, p3 = PC('one', CHEAT_A), PC('plain', PLAIN)
-    p1.quit_mode = 'refuses'
-    sim = Sim([p1, p3])
-    sim.match([(0, 'human'), (1, 'human')], {'one': 0, 'plain': 1})
-    p1.quit_mode = 'works'
-    sim.match([(0, 'human'), (1, 'human')], {'one': 0, 'plain': 1})
-    expect(name, 'closes', quits(p1), CLOSE)
-
-
-# --- the lock's lines in the player's language (the owner's 23, 2026-11-25: "Yes, I agree with 23 in every
-# language"): a copy built in French or Persian says the very lines the app gave the build ---
-WORDS = []
-if have('lock_fr') and have('lock_fa') and os.path.isfile(os.path.join(FOLDER, 'words.txt')):
-    WORDS = open(os.path.join(FOLDER, 'words.txt'), 'rb').read().decode('utf-8').split('\n')
-    LOCK_FR, LOCK_FA = (blob('lock_fr'), WATCH, RECORD), (blob('lock_fa'), WATCH, RECORD)
-    FRENCH, PERSIAN = WORDS[0:4], WORDS[4:8]
-    ENGLISH_CHECK = 'Checking that every player in this match has the same build'
-
-    @scenario('a cheat copy built in French says every line in French, the very text the app gave, no English')
-    def _(name):
-        cheat, other = PC('cheat', LOCK_FR), PC('plain', PLAIN)
-        sim = Sim([cheat, other])
-        sim.match([(0, 'human'), (1, 'human')], {'cheat': 0, 'plain': 1})
-        expect(name, 'what it said', [text for t, text in cheat.said], [FRENCH[0], FRENCH[2]])
-        expect(name, 'how it ended', (cheat.stopped, quits(cheat)), (CLOSED, CLOSE))
-        p1, p2 = PC('one', LOCK_FR), PC('two', CHEAT_A2)   # the same build, one copy built in French
-        Sim([p1, p2]).match([(0, 'human'), (1, 'human')], {'one': 0, 'two': 1})
-        expect(name, 'the same build, in French', [text for t, text in p1.said], [FRENCH[0], FRENCH[1]])
-        expect(name, 'the other, in English', len(says(p2, 'The match goes on')), 1)
-        refused = PC('refused', LOCK_FR)
-        refused.quit_mode = 'refuses'
-        Sim([refused, PC('plain', PLAIN)]).match([(0, 'human'), (1, 'human')], {'refused': 0, 'plain': 1})
-        expect(name, 'the close refused, in French', [text for t, text in refused.said][-1:], [FRENCH[3]])
-
-    @scenario('built in Persian: the Persian lines; a game that refuses those letters says the English, no error')
-    def _(name):
-        cheat, other = PC('cheat', LOCK_FA), PC('plain', PLAIN)
-        Sim([cheat, other]).match([(0, 'human'), (1, 'human')], {'cheat': 0, 'plain': 1})
-        expect(name, 'what it said', [text for t, text in cheat.said], [PERSIAN[0], PERSIAN[2]])
-        no_letters = PC('ascii', LOCK_FA)
-        no_letters.letters = 'ascii'
-        no_letters.quit_mode = 'refuses'
-        Sim([no_letters, PC('plain', PLAIN)]).match([(0, 'human'), (1, 'human')], {'ascii': 0, 'plain': 1})
-        said = [text for t, text in no_letters.said]
-        expect(name, 'the English instead, every line', (len(said), ENGLISH_CHECK in said[0],
-                                                          'leaves the match' in said[1],
-                                                          "couldn't close the game" in said[2]), (3, True, True, True))
-        expect(name, 'an error left', no_letters.stopped, None)
 
 
 for name, ok in RESULTS:

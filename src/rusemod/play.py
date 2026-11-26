@@ -72,15 +72,12 @@ def _code_id() -> dict:
 CODE = _code_id()  # taken once, as the program starts: an edit made to the code later shows after a restart
 
 
-def built_from(game: Path, mod_paths, pack: str = DEFAULT_PACK, title: bool = False,
-               lock_lines: tuple | None = None) -> dict:
+def built_from(game: Path, mod_paths, pack: str = DEFAULT_PACK, title: bool = False) -> dict:
     """What a modded copy is built from, for rusemod.instance.needs_build: the mods in their order (every file of
     each), the game (its Steam build, and every file's size and time), the pack the units come from, the app's code
-    (CODE) and whether it has R.U.S.E. 2.0's title (rusemod.signature, the player's opt-in); for a cheat copy whose lock speaks
-    the player's language, its lines (`lock_lines`, rusemod.fairplay.lock_lines: another language builds the copy
-    again; a copy without a lock never builds again for a language). Taken before the mods are read and again after
-    the build (Starter.modded): a copy whose mods changed in between keeps no record, so the next Play builds. `key`
-    is the SHA-256 of all of it."""
+    (CODE) and whether it has R.U.S.E. 2.0's title (rusemod.signature, the player's opt-in). Taken before the mods
+    are read and again after the build (Starter.modded): a copy whose mods changed in between keeps no record, so the
+    next Play builds. `key` is the SHA-256 of all of it."""
     game = Path(game)
     files = []
     for root, _dirs, names in os.walk(game):
@@ -108,8 +105,6 @@ def built_from(game: Path, mod_paths, pack: str = DEFAULT_PACK, title: bool = Fa
     parts = {"game": os.path.normcase(str(game.resolve())), "build": build,
              "game_files": hashlib.sha256(json.dumps(sorted(files, key=lambda f: f[0])).encode()).hexdigest(),
              "mods": mods, "pack": pack, "code": CODE, "title": "R.U.S.E. 2.0" if title else "game"}
-    if lock_lines is not None:
-        parts["lock_lines"] = list(lock_lines)
     return {"key": hashlib.sha256(json.dumps(parts, sort_keys=True).encode()).hexdigest(), **parts}
 
 
@@ -155,8 +150,7 @@ def open_url(url: str) -> None:
 
 
 def start_game(exe: Path):
-    """Start the game; the running process (RUSE Guard's match watch follows it and reads the exit code it closes
-    with, rusemod.guard.MatchWatch)."""
+    """Start the game; the running process (RUSE Guard's match watch follows it, rusemod.guard)."""
     return subprocess.Popen([str(exe)], cwd=str(exe.parent))
 
 
@@ -315,15 +309,6 @@ class Starter:
         self.owned = None
         # a required update (rusemod.update.UpdateCalls.use_required_updates): the message while it isn't in, else None
         self.required = None
-        self.game = None          # the game this app last started from a modded copy (its process), for game_running
-        self.guard_watch = None   # RUSE Guard's match watch beside it (rusemod.guard.MatchWatch), when one runs
-
-    def game_running(self) -> bool:
-        """Whether the game this app last started is still running (the Launcher asks before it closes then)."""
-        try:
-            return self.game is not None and self.game.poll() is None
-        except Exception:  # noqa: BLE001  (a process that can't be asked: never keeps the app from closing)
-            return False
 
     def modded(self, game: Path, mod_folders, instance: Path, name: str, say, watch: bool = True,
                guard: dict | None = None, words: dict | None = None, cut_off_errors: bool = False,
@@ -341,8 +326,7 @@ class Starter:
         When the copy was last built from these same mods (every file as it was), this game build and this app, and
         is still as that build left it, nothing is built: the game starts from it (rusemod.instance.needs_build). A
         mod changed while the build read it leaves the copy with no record, so the next Play builds again.
-        `words`: the app's words in the player's language, for the lines meant for the player (in_words) and the
-        lines a cheat copy's lock says in the game (rusemod.fairplay.lock_lines).
+        `words`: the app's words in the player's language, for the lines meant for the player (in_words).
         `cut_off_errors`: ground the mods cut off from the rest of a map stops the build (the Studio's Test in game)
         instead of being a warning (build_and_write). `title`: the copy gets R.U.S.E. 2.0's gold title (the
         player's opt-in: rusemod.signature.title_on), or the game's own (the default). `cache_home`: the app's own
@@ -383,8 +367,6 @@ class Starter:
         refuse_if_running(str(instance))  # before anything is built: a game still running from the copy is said at once
         home = (guard or {}).get("home")
         fair = fairplay.check([Path(m) for m in mod_folders], watch, home) if fairplay.ON else fairplay.FairPlay()
-        fair.lines = fairplay.lock_lines(words)  # a cheat copy's lock speaks the player's language (the app's words)
-        lines = fair.lines if fair.locked else None
         lock = instance.parent / BUILDING
         try:
             lock.parent.mkdir(parents=True, exist_ok=True)
@@ -399,7 +381,7 @@ class Starter:
         result = None
         try:
             try:   # before the mods are read, and again after
-                made_from = built_from(game, mod_folders, title=title, lock_lines=lines)
+                made_from = built_from(game, mod_folders, title=title)
                 stamps = mod_stamps(mod_folders)
             except OSError as exc:  # (the game's or the mods' files unread: its code and Windows error number)
                 coded(exc, "PLAY-28")
@@ -413,7 +395,7 @@ class Starter:
                 result = build_and_write(game, mods, instance=instance, say=say, cache=build_cache(cache_home),
                                          cut_off_errors=cut_off_errors, signature=title,
                                          built_from=made_from, fairplay=fair)
-                if built_from(game, mod_folders, title=title, lock_lines=lines)["key"] != made_from["key"] \
+                if built_from(game, mod_folders, title=title)["key"] != made_from["key"] \
                         or mod_stamps(mod_folders) != stamps:
                     forget(str(instance))  # changed while the build read it: the copy may hold some of each
             else:
@@ -464,9 +446,8 @@ class Starter:
                 bugwatch.CodeWatch(process).start()
             if fairplay.ON and guard and process is not None:  # RUSE Guard: the match watch (multiplayer only)
                 from .guard import MatchWatch, check_manifest
-                # the match is filed under the player's chosen username (Nick#4821), never their Steam ID; the stop of a
-                # cheat copy too, which the watch sees from how the game closed (the Studio's Test in game passes no
-                # `guard`, so it starts no watch and files no stop: the owner's 23, 2026-11-25)
+                # the match is filed under the player's chosen username (Nick#4821), never their Steam ID (the Studio's
+                # Test in game passes no `guard`, so it starts no watch: the owner's 23, 2026-11-25)
                 username = (settings(home).get("player") or {}).get("name", "")
                 self.guard_watch = MatchWatch(process, home, game, instance, username=username,
                                               consent=guard.get("consent", {}),
