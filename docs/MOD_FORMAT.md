@@ -1689,8 +1689,9 @@ points = [[500000.0, 650000.0], [640000.0, 700000.0], [800000.0, 650000.0]]
 join = 20000.0       # an end this near a road joins it (a junction); else it's a dead end (default 20000, ~77 m)
 ```
 
-- The line gets points about 2,300 map units apart, linked in a chain; each end is linked to the nearest road point
-  within `join`.
+- The line gets points about 2,300 map units apart, linked in a chain; each end is linked to the road it lies within
+  `join` of, measured to the road's line, at the nearer point of that stretch of road (a game map's road points are
+  up to 450 m apart, so an end drawn on a road between two of them still joins it).
 - Proven in the game (Blitz, 2026-09-30): **supply routes follow it** (a depot's route took a new shortcut road).
 - Units plan along a road only where the movement says they can follow it. The build adds that for the new road in
   both the infantry and the vehicles' movement, the way the shipped maps have it for theirs, never through a `movement.toml` block or a solid building of that movement's
