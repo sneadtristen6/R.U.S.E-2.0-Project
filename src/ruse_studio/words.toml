@@ -798,17 +798,17 @@ sc = "{points} 个点，{triangles} 个三角形"
 fa = "{points} نقطه، {triangles} مثلث"
 
 [no_viewer]
-us = "The map view couldn't load its 3D library (it needs the internet the first time)."
-fr = "La vue de carte n'a pas pu charger sa bibliothèque 3D (il faut Internet la première fois)."
-ger = "Die Kartenansicht konnte ihre 3D-Bibliothek nicht laden (beim ersten Mal braucht sie Internet)."
-ita = "La vista mappa non ha potuto caricare la libreria 3D (la prima volta serve Internet)."
-spa = "La vista de mapa no pudo cargar su biblioteca 3D (la primera vez necesita Internet)."
-pol = "Widok mapy nie mógł wczytać biblioteki 3D (za pierwszym razem potrzebny jest internet)."
-ru = "Не удалось загрузить 3D-библиотеку для просмотра карты (в первый раз нужен интернет)."
-cz = "Zobrazení mapy nemohlo načíst 3D knihovnu (poprvé potřebuje internet)."
-jpn = "マップ表示の3Dライブラリを読み込めませんでした（初回はインターネットが必要です）。"
-sc = "地图视图无法加载 3D 库（首次需要联网）。"
-fa = "نمای نقشه نتوانست کتابخانهٔ سه‌بعدی‌اش را بارگذاری کند (بار اول به اینترنت نیاز دارد)."
+us = "The map view couldn't start its 3D view on this PC."
+fr = "La vue de carte n'a pas pu démarrer sa vue 3D sur ce PC."
+ger = "Die Kartenansicht konnte ihre 3D-Ansicht auf diesem PC nicht starten."
+ita = "La vista mappa non è riuscita ad avviare la vista 3D su questo PC."
+spa = "La vista de mapa no pudo iniciar su vista 3D en este PC."
+pol = "Widok mapy nie mógł uruchomić widoku 3D na tym komputerze."
+ru = "Просмотр карты не смог запустить 3D-вид на этом ПК."
+cz = "Zobrazení mapy nemohlo na tomto PC spustit 3D pohled."
+jpn = "マップ表示はこの PC で3D表示を開始できませんでした。"
+sc = "地图视图无法在这台电脑上启动 3D 视图。"
+fa = "نمای نقشه نتوانست نمای سه‌بعدی‌اش را روی این رایانه راه بیندازد."
 
 [ground_loading]
 us = "Loading the real ground textures… {progress}"
@@ -2229,6 +2229,87 @@ jpn = "更新できませんでした：{why}"
 sc = "更新失败：{why}"
 fa = "به‌روزرسانی انجام نشد: {why}"
 
+# --- an update that can't be confirmed as ours (rusemod.update, rusemod.releasesig: the owner's signature), and one
+# that didn't download after a few tries (rusemod.update TRIES)
+
+[update_not_ours]
+us = "{app} {version} is out, but we can't confirm it's ours, so it won't be installed. Don't install it by hand unless we say so on our Discord. Your app keeps working as before."
+fr = "{app} {version} est disponible, mais nous ne pouvons pas confirmer qu'il vient de nous, il ne sera donc pas installé. Ne l'installez pas vous-même, sauf si nous le disons sur notre Discord. Votre application continue de fonctionner comme avant."
+ger = "{app} {version} ist erschienen, aber wir können nicht bestätigen, dass es von uns ist, deshalb wird es nicht installiert. Installieren Sie es nicht selbst, außer wir sagen es auf unserem Discord. Ihre App funktioniert weiter wie bisher."
+ita = "{app} {version} è disponibile, ma non possiamo confermare che sia nostro, quindi non verrà installato. Non installarlo a mano, a meno che non lo diciamo sul nostro Discord. La tua app continua a funzionare come prima."
+spa = "{app} {version} ya está disponible, pero no podemos confirmar que sea nuestro, así que no se instalará. No lo instales a mano, salvo que lo digamos en nuestro Discord. Tu aplicación sigue funcionando como antes."
+pol = "Dostępna jest wersja {app} {version}, ale nie możemy potwierdzić, że jest nasza, więc nie zostanie zainstalowana. Nie instaluj jej ręcznie, chyba że powiemy o tym na naszym Discordzie. Twoja aplikacja działa dalej jak wcześniej."
+ru = "Вышла версия {app} {version}, но мы не можем подтвердить, что она наша, поэтому она не будет установлена. Не устанавливайте её вручную, если мы не скажем об этом в нашем Discord. Ваше приложение работает как раньше."
+cz = "Je k dispozici {app} {version}, ale nemůžeme potvrdit, že je od nás, a proto se nenainstaluje. Neinstalujte ji ručně, pokud to neřekneme na našem Discordu. Vaše aplikace dál funguje jako dřív."
+jpn = "{app} {version} が公開されましたが、私たちのものだと確認できないため、インストールしません。私たちの Discord で案内するまで、自分でインストールしないでください。アプリはこれまでどおり使えます。"
+sc = "{app} {version} 已发布，但我们无法确认它出自我们之手，所以不会安装。除非我们在 Discord 上说可以，否则请不要手动安装。你的应用会照常工作。"
+fa = "{app} {version} منتشر شده، ولی نمی‌توانیم تأیید کنیم که از ماست، برای همین نصب نمی‌شود. آن را خودتان نصب نکنید، مگر اینکه در Discord ما بگوییم. برنامهٔ شما مثل قبل کار می‌کند."
+
+[update_ignored]
+us = "({version} is out too, but we can't confirm it's ours, so it's skipped.)"
+fr = "({version} est aussi disponible, mais nous ne pouvons pas confirmer qu'il vient de nous, il est donc ignoré.)"
+ger = "({version} ist auch erschienen, aber wir können nicht bestätigen, dass es von uns ist, deshalb wird es übersprungen.)"
+ita = "(È uscito anche {version}, ma non possiamo confermare che sia nostro, quindi viene saltato.)"
+spa = "(También ha salido {version}, pero no podemos confirmar que sea nuestro, así que se omite.)"
+pol = "(Wyszła też wersja {version}, ale nie możemy potwierdzić, że jest nasza, więc jest pomijana.)"
+ru = "(Вышла и версия {version}, но мы не можем подтвердить, что она наша, поэтому она пропущена.)"
+cz = "(Vyšla i verze {version}, ale nemůžeme potvrdit, že je od nás, a proto se přeskakuje.)"
+jpn = "（{version} も出ていますが、私たちのものだと確認できないため、飛ばします。）"
+sc = "（{version} 也已发布，但我们无法确认它出自我们之手，所以跳过。）"
+fa = "({version} هم منتشر شده، ولی نمی‌توانیم تأیید کنیم که از ماست، برای همین کنار گذاشته می‌شود.)"
+
+[update_gave_up]
+us = "It didn't download after {tries} tries, so the app stopped trying by itself. You can download it from its release page."
+fr = "Le téléchargement a échoué {tries} fois, l'application a donc arrêté d'essayer toute seule. Vous pouvez la télécharger depuis sa page de version."
+ger = "Der Download ist {tries}-mal fehlgeschlagen, deshalb versucht die App es nicht mehr von selbst. Sie können es von seiner Release-Seite herunterladen."
+ita = "Il download non è riuscito dopo {tries} tentativi, quindi l'app ha smesso di riprovare da sola. Puoi scaricarlo dalla sua pagina della release."
+spa = "No se descargó tras {tries} intentos, así que la aplicación dejó de intentarlo sola. Puedes descargarla desde su página de la versión."
+pol = "Nie udało się jej pobrać po {tries} próbach, więc aplikacja przestała próbować sama. Możesz ją pobrać ze strony wydania."
+ru = "Обновление не скачалось после {tries} попыток, поэтому приложение больше не пытается само. Его можно скачать со страницы выпуска."
+cz = "Aktualizace se nestáhla ani po {tries} pokusech, a proto to aplikace sama přestala zkoušet. Můžete ji stáhnout ze stránky vydání."
+jpn = "{tries} 回ダウンロードに失敗したため、アプリは自分で試すのをやめました。リリースページからダウンロードできます。"
+sc = "下载失败了 {tries} 次，所以应用不再自动重试。你可以在它的发布页面下载。"
+fa = "پس از {tries} بار تلاش دانلود نشد، برای همین برنامه دیگر خودش تلاش نمی‌کند. می‌توانید آن را از صفحهٔ انتشارش دانلود کنید."
+
+[update_discord]
+us = "Our Discord"
+fr = "Notre Discord"
+ger = "Unser Discord"
+ita = "Il nostro Discord"
+spa = "Nuestro Discord"
+pol = "Nasz Discord"
+ru = "Наш Discord"
+cz = "Náš Discord"
+jpn = "私たちの Discord"
+sc = "我们的 Discord"
+fa = "Discord ما"
+
+[tip_update_discord]
+us = "Open the R.U.S.E. 2.0 Discord in your browser. We say there what to do about this update."
+fr = "Ouvrir le Discord de R.U.S.E. 2.0 dans votre navigateur. Nous y disons quoi faire pour cette mise à jour."
+ger = "Den Discord von R.U.S.E. 2.0 im Browser öffnen. Dort sagen wir, was mit diesem Update zu tun ist."
+ita = "Apri il Discord di R.U.S.E. 2.0 nel browser. Lì diciamo cosa fare con questo aggiornamento."
+spa = "Abre el Discord de R.U.S.E. 2.0 en tu navegador. Allí decimos qué hacer con esta actualización."
+pol = "Otwórz Discord R.U.S.E. 2.0 w przeglądarce. Piszemy tam, co zrobić z tą aktualizacją."
+ru = "Открыть Discord R.U.S.E. 2.0 в браузере. Там мы говорим, что делать с этим обновлением."
+cz = "Otevřít Discord R.U.S.E. 2.0 v prohlížeči. Píšeme tam, co s touto aktualizací dělat."
+jpn = "R.U.S.E. 2.0 の Discord をブラウザーで開きます。この更新をどうするかはそこで案内します。"
+sc = "在浏览器中打开 R.U.S.E. 2.0 的 Discord。我们会在那里说明如何处理这个更新。"
+fa = "Discord پروژهٔ R.U.S.E. 2.0 را در مرورگر باز می‌کند. آنجا می‌گوییم با این به‌روزرسانی چه کنید."
+
+[tip_release_page]
+us = "Open this update's page on GitHub in your browser. You can download its installer there."
+fr = "Ouvrir la page de cette mise à jour sur GitHub dans votre navigateur. Vous pouvez y télécharger son installateur."
+ger = "Die Seite dieses Updates auf GitHub im Browser öffnen. Dort können Sie sein Installationsprogramm herunterladen."
+ita = "Apri la pagina di questo aggiornamento su GitHub nel browser. Lì puoi scaricarne il programma di installazione."
+spa = "Abre la página de esta actualización en GitHub en tu navegador. Allí puedes descargar su instalador."
+pol = "Otwórz stronę tej aktualizacji na GitHubie w przeglądarce. Możesz tam pobrać jej instalator."
+ru = "Открыть страницу этого обновления на GitHub в браузере. Там можно скачать его установщик."
+cz = "Otevřít stránku této aktualizace na GitHubu v prohlížeči. Můžete tam stáhnout její instalátor."
+jpn = "この更新の GitHub ページをブラウザーで開きます。そこからインストーラーをダウンロードできます。"
+sc = "在浏览器中打开这个更新在 GitHub 上的页面。你可以在那里下载它的安装程序。"
+fa = "صفحهٔ این به‌روزرسانی را روی GitHub در مرورگر باز می‌کند. می‌توانید نصب‌کننده‌اش را آنجا دانلود کنید."
+
 # --- ammunition (what a weapon fires), weapons, flags ---
 
 [update_required_title]
@@ -2282,6 +2363,32 @@ cz = "{app} {version} je povinná aktualizace. Tato kopie běží z repozitáře
 jpn = "{app} {version} は必須のアップデートです。このコピーはリポジトリから実行されています。git pull で更新してから、もう一度起動してください。"
 sc = "{app} {version} 是必需的更新。此副本从代码仓库运行：请用 git pull 更新，然后重新启动。"
 fa = "{app} {version} یک به‌روزرسانی ضروری است. این نسخه از مخزن اجرا می‌شود: با git pull به‌روزش کنید و دوباره اجرایش کنید."
+
+[update_required_not_ours]
+us = "{app} {version} is a required update, but the file on GitHub isn't the one we signed, so it wasn't installed. Don't install it by hand: look on our Discord for what to do. Until it's in, Play and Test in game stay off."
+fr = "{app} {version} est une mise à jour obligatoire, mais le fichier sur GitHub n'est pas celui que nous avons signé, elle n'a donc pas été installée. Ne l'installez pas vous-même : regardez sur notre Discord ce qu'il faut faire. Tant qu'elle n'est pas installée, Jouer et Tester en jeu restent désactivés."
+ger = "{app} {version} ist ein notwendiges Update, aber die Datei auf GitHub ist nicht die von uns signierte, deshalb wurde es nicht installiert. Installieren Sie es nicht selbst: Auf unserem Discord steht, was zu tun ist. Bis es installiert ist, bleiben Spielen und Im Spiel testen gesperrt."
+ita = "{app} {version} è un aggiornamento obbligatorio, ma il file su GitHub non è quello che abbiamo firmato, quindi non è stato installato. Non installarlo a mano: guarda sul nostro Discord cosa fare. Finché non è installato, Gioca e Prova in gioco restano disattivati."
+spa = "{app} {version} es una actualización obligatoria, pero el archivo en GitHub no es el que firmamos, así que no se ha instalado. No la instales a mano: mira en nuestro Discord qué hacer. Hasta que esté instalada, Jugar y Probar en el juego siguen desactivados."
+pol = "{app} {version} to wymagana aktualizacja, ale plik na GitHubie nie jest tym, który podpisaliśmy, więc nie została zainstalowana. Nie instaluj jej ręcznie: na naszym Discordzie piszemy, co zrobić. Dopóki nie zostanie zainstalowana, Graj i Testuj w grze pozostają wyłączone."
+ru = "{app} {version} — обязательное обновление, но файл на GitHub не тот, что мы подписали, поэтому оно не установлено. Не устанавливайте его вручную: что делать, смотрите в нашем Discord. Пока оно не установлено, «Играть» и «Проверить в игре» недоступны."
+cz = "{app} {version} je povinná aktualizace, ale soubor na GitHubu není ten, který jsme podepsali, a proto se nenainstalovala. Neinstalujte ji ručně: co dělat, najdete na našem Discordu. Dokud nebude nainstalovaná, Hrát a Vyzkoušet ve hře zůstanou vypnuté."
+jpn = "{app} {version} は必須のアップデートですが、GitHub 上のファイルが私たちの署名したものと違うため、インストールしませんでした。自分でインストールせず、どうするかは私たちの Discord を見てください。インストールされるまで、「プレイ」と「ゲームでテスト」は使えません。"
+sc = "{app} {version} 是必需的更新，但 GitHub 上的文件不是我们签名的那个，所以没有安装。请不要手动安装：去我们的 Discord 看看该怎么做。安装之前，“开始游戏”和“在游戏中测试”无法使用。"
+fa = "{app} {version} یک به‌روزرسانی ضروری است، ولی فایل روی GitHub همانی نیست که ما امضا کرده‌ایم، برای همین نصب نشد. آن را خودتان نصب نکنید: ببینید در Discord ما چه باید کرد. تا وقتی نصب نشده، «بازی» و «آزمایش در بازی» خاموش می‌مانند."
+
+[update_required_gave_up]
+us = "{app} {version} is a required update, and it didn't download after {tries} tries, so the app stopped trying by itself. Download it from its release page and run it, or press Try again. Until it's in, Play and Test in game stay off."
+fr = "{app} {version} est une mise à jour obligatoire, et son téléchargement a échoué {tries} fois, l'application a donc arrêté d'essayer toute seule. Téléchargez-la depuis sa page de version et lancez-la, ou appuyez sur Réessayer. Tant qu'elle n'est pas installée, Jouer et Tester en jeu restent désactivés."
+ger = "{app} {version} ist ein notwendiges Update, und der Download ist {tries}-mal fehlgeschlagen, deshalb versucht die App es nicht mehr von selbst. Laden Sie es von seiner Release-Seite herunter und starten Sie es, oder klicken Sie auf Erneut versuchen. Bis es installiert ist, bleiben Spielen und Im Spiel testen gesperrt."
+ita = "{app} {version} è un aggiornamento obbligatorio e non si è scaricato dopo {tries} tentativi, quindi l'app ha smesso di riprovare da sola. Scaricalo dalla sua pagina della release e avvialo, oppure premi Riprova. Finché non è installato, Gioca e Prova in gioco restano disattivati."
+spa = "{app} {version} es una actualización obligatoria y no se descargó tras {tries} intentos, así que la aplicación dejó de intentarlo sola. Descárgala desde su página de la versión y ábrela, o pulsa Reintentar. Hasta que esté instalada, Jugar y Probar en el juego siguen desactivados."
+pol = "{app} {version} to wymagana aktualizacja, której nie udało się pobrać po {tries} próbach, więc aplikacja przestała próbować sama. Pobierz ją ze strony wydania i uruchom albo naciśnij Spróbuj ponownie. Dopóki nie zostanie zainstalowana, Graj i Testuj w grze pozostają wyłączone."
+ru = "{app} {version} — обязательное обновление, и оно не скачалось после {tries} попыток, поэтому приложение больше не пытается само. Скачайте его со страницы выпуска и запустите или нажмите «Повторить». Пока оно не установлено, «Играть» и «Проверить в игре» недоступны."
+cz = "{app} {version} je povinná aktualizace a nestáhla se ani po {tries} pokusech, a proto to aplikace sama přestala zkoušet. Stáhněte ji ze stránky vydání a spusťte, nebo stiskněte Zkusit znovu. Dokud nebude nainstalovaná, Hrát a Vyzkoušet ve hře zůstanou vypnuté."
+jpn = "{app} {version} は必須のアップデートですが、{tries} 回ダウンロードに失敗したため、アプリは自分で試すのをやめました。リリースページからダウンロードして実行するか、「もう一度試す」を押してください。インストールされるまで、「プレイ」と「ゲームでテスト」は使えません。"
+sc = "{app} {version} 是必需的更新，但下载失败了 {tries} 次，所以应用不再自动重试。请在它的发布页面下载并运行，或点“重试”。安装之前，“开始游戏”和“在游戏中测试”无法使用。"
+fa = "{app} {version} یک به‌روزرسانی ضروری است و پس از {tries} بار تلاش دانلود نشد، برای همین برنامه دیگر خودش تلاش نمی‌کند. آن را از صفحهٔ انتشارش دانلود و اجرا کنید، یا «تلاش دوباره» را بزنید. تا وقتی نصب نشده، «بازی» و «آزمایش در بازی» خاموش می‌مانند."
 
 [update_required_again]
 us = "Try again"
@@ -43118,17 +43225,17 @@ sc = "没有单位使用此动画，因此无法展示模型；但仍可修改�
 fa = "هیچ یگانی این انیمیشن را پخش نمی‌کند، پس مدلی برای نشان دادنش نیست؛ با این حال می‌توانید آن را تغییر دهید."
 
 [decoy_anim_no_3d]
-us = "The 3D view needs the internet once (three.js); the changes still save."
-fr = "La vue 3D a besoin d'internet une fois (three.js) ; les changements s'enregistrent quand même."
-ger = "Die 3D-Ansicht braucht einmal Internet (three.js); Änderungen werden trotzdem gespeichert."
-ita = "La vista 3D serve internet una volta (three.js); le modifiche si salvano comunque."
-spa = "La vista 3D necesita internet una vez (three.js); los cambios se guardan igualmente."
-pol = "Widok 3D potrzebuje raz internetu (three.js); zmiany i tak się zapisują."
-ru = "Для 3D-вида один раз нужен интернет (three.js); изменения всё равно сохраняются."
-cz = "3D pohled jednou potřebuje internet (three.js); změny se uloží i tak."
-jpn = "3D表示には一度インターネットが必要です（three.js）。変更は保存されます。"
-sc = "3D 视图需要联网一次（three.js）；修改仍会保存。"
-fa = "نمای سه‌بعدی یک بار به اینترنت نیاز دارد (three.js)؛ تغییرها در هر حال ذخیره می‌شوند."
+us = "The 3D view couldn't start on this PC; the changes still save."
+fr = "La vue 3D n'a pas pu démarrer sur ce PC ; les changements s'enregistrent quand même."
+ger = "Die 3D-Ansicht konnte auf diesem PC nicht starten; Änderungen werden trotzdem gespeichert."
+ita = "La vista 3D non è riuscita ad avviarsi su questo PC; le modifiche si salvano comunque."
+spa = "La vista 3D no pudo iniciarse en este PC; los cambios se guardan igualmente."
+pol = "Widok 3D nie mógł się uruchomić na tym komputerze; zmiany i tak się zapisują."
+ru = "3D-вид не смог запуститься на этом ПК; изменения всё равно сохраняются."
+cz = "3D pohled se na tomto PC nemohl spustit; změny se uloží i tak."
+jpn = "この PC では3D表示を開始できませんでした。変更は保存されます。"
+sc = "3D 视图无法在这台电脑上启动；修改仍会保存。"
+fa = "نمای سه‌بعدی روی این رایانه راه نیفتاد؛ تغییرها در هر حال ذخیره می‌شوند."
 
 [decoy_anim_on]
 us = "On {model}, {sec} s long, as your mod makes it. Drag to turn, wheel to zoom."

@@ -2,3 +2,5 @@
 * text=auto eol=lf
 *.png binary
 *.dds binary
+# three.js as its makers published it (THIRD_PARTY_NOTICES.md records each file's SHA-256): kept byte for byte
+src/ruse_studio/ui/three/** -text -diff

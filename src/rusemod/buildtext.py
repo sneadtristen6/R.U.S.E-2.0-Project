@@ -34,7 +34,7 @@ ENDS = {
     "ruse_studio/homemove.py": {"start": 1},
     "ruse_launcher/api.py": {"start": 1, "fail": 0, "_install_job": 1},
     "rusemod/backup.py": {"_backup_start": 2, "BackupError": 0},
-    "rusemod/update.py": {"start": 1, "UpdateError": 0},
+    "rusemod/update.py": {"start": 1, "UpdateError": 0, "_refused": 0},
     "rusemod/webui.py": {"_said": 0},
     "rusemod/play.py": {"BuildError": 0},
     # the refusals of the calls both apps share (a backup's, the updates', the sign-in's: rusemod.update.words says

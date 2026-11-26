@@ -10,9 +10,9 @@
            background: rgba(0, 0, 0, 0.6); border-radius: 8px; }
     #hud b { color: #c8a64b; }
   </style>
-  <!-- the 3D library (three.js, MIT) comes from the internet for this check; the real Studio will ship its own copy -->
+  <!-- the 3D library (three.js 0.170.0, MIT) ships inside the Studio (ui/three): nothing comes from the internet -->
   <script type="importmap">
-    { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.min.js" } }
+    { "imports": { "three": "./three/three.module.min.js" } }
   </script>
 </head>
 <body>
@@ -26,7 +26,7 @@
     try {
       THREE = await import("three");
     } catch (e) {
-      show(["Couldn't load the 3D library (three.js). Is this PC online?", String(e)]);
+      show(["Couldn't load the 3D library (three.js) that comes with the Studio.", String(e)]);
       throw e;
     }
     const renderer = new THREE.WebGLRenderer({ antialias: true });

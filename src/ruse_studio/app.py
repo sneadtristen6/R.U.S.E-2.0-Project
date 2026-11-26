@@ -100,7 +100,11 @@ def main(argv=None) -> int:
     if args.self_test:
         startlog.stop()  # the build's check, not a start
         return self_test(args.self_test, UI, ["index.html", "app.js", "maps.js", "style.css", "spike3d.html", "owned.js", "rtl.js",
-                                               "required.js", "ownedsignin.js"], [
+                                               "required.js", "ownedsignin.js",
+                                               # the 3D views' library, inside the Studio (THIRD_PARTY_NOTICES.md)
+                                               "three/three.module.min.js", "three/addons/controls/OrbitControls.js",
+                                               "three/addons/loaders/GLTFLoader.js",
+                                               "three/addons/utils/BufferGeometryUtils.js", "three/LICENSE"], [
             ("the Studio answers", lambda: api.status()),
             ("the Studio's words", lambda: f"{len(words('fr'))} in French, e.g. {words('fr')['search']!r}"),
             ("the Studio's errors in the player's language", _errors_worded),

@@ -2156,8 +2156,8 @@ function copyNotice(u) {
 }
 
 // --- a unit's 3D model on its page, turning slowly until it's dragged (api.unit_preview: the game's model as a .glb
-// from rusemod.gltf, made once per game build and kept in the cache). three.js comes from the internet, as for the
-// Maps view (index.html). One renderer for every page, moved into the page shown. The mod's paint (what Bring back
+// from rusemod.gltf, made once per game build and kept in the cache). three.js comes with the Studio, as for the
+// Maps view (index.html, ui/three). One renderer for every page, moved into the page shown. The mod's paint (what Bring back
 // put in it) goes on in place of the game's picture; a plane's propeller discs (`<model>_propeller` in the game's own
 // models, `helice_hs_<number>` in a model of its own) show the game's own see-through picture of a spinning propeller
 // (api.unit_preview "disc"), and are left out when it can't be had. ---
@@ -6233,6 +6233,7 @@ const SETTINGS = [  // the language isn't here: it has its own button at the top
     const w = state.words, u = state.update || {};
     if (!state.version) state.version = (await api().game_folder()).version;
     $("set-updates-text").textContent = u.available ? fill(w.update_out || "", { app: APP_NAME, version: u.version })
+      : u.unconfirmed || u.refused ? fill(w.update_not_ours || "", { app: APP_NAME, version: u.unconfirmed_version || u.version })
       : u.error ? u.error : fill(w.set_updates_latest, { version: state.version || "" });
     $("set-updates-check").textContent = w.set_updates_check;
   } },
@@ -6559,12 +6560,15 @@ window.openSettings = (id) => {
 // then the app closes and the installer opens it again ---
 const APP_NAME = "RUSE Studio";
 
-async function checkUpdate() {
+// auto: a required update installs by itself, at once (required.js shows its box meanwhile), until it has failed to
+// download a few times (u.gave_up: rusemod.update TRIES); after a failed try the check runs again without it, so what
+// the try left (a file that isn't the one signed, or the tries used up) shows at once
+async function checkUpdate(auto = true) {
   try { $("app-version").textContent = `v${(await api().app_version()).version}`; } catch { /* an older back end */ }
   try { state.update = await api().update_check(state.lang); } catch { state.update = null; }
   renderUpdate();
-  const u = state.update;  // a required update installs by itself, at once (required.js shows its box meanwhile)
-  if (u && u.required && u.available && u.installed && !state.updating) installUpdate();
+  const u = state.update;
+  if (auto && u && u.required && u.available && u.installed && !u.gave_up && !state.updating) installUpdate();
 }
 
 // The language changed: what's new again, in it (the release's notes in every language, English for one they lack)
@@ -6585,18 +6589,33 @@ function richText(s) {
   return out;
 }
 
+// An update that can't be confirmed as ours (no signature of ours that fits, or a file that isn't the one signed:
+// rusemod.update) offers nothing to install: the bar says so and its one button opens our Discord (the owner,
+// 2026-11-25). One that didn't download after a few tries points to its release page.
 function renderUpdate() {
-  const u = state.update, w = state.words, bar = $("update-bar");
+  const u = state.update, w = state.words, bar = $("update-bar"), page = $("update-page");
   window.requiredUpdate({ u, w, app: APP_NAME, note: state.updateNote, updating: state.updating,
-    again: () => (u && u.offline ? checkUpdate() : installUpdate()) });
-  if (!u || !u.available || !w.update_out) { bar.classList.add("hidden"); return; }
+    again: () => (u && u.offline ? checkUpdate() : installUpdate()), page: () => api().update_page().catch(() => {}) });
+  const notOurs = Boolean(u && (u.unconfirmed || u.refused));
+  if (!u || !(u.available || notOurs) || !w.update_out) { bar.classList.add("hidden"); return; }
+  page.textContent = notOurs ? w.update_discord : w.release_page;
+  page.title = (notOurs ? w.tip_update_discord : w.tip_release_page) || "";
+  page.classList.toggle("hidden", !notOurs && !u.gave_up);
+  $("update-now").classList.toggle("hidden", notOurs || !u.installed);
+  $("update-info").classList.toggle("hidden", notOurs);
+  bar.classList.remove("hidden");
+  if (notOurs) {
+    $("update-text").textContent = fill(w.update_not_ours, { app: APP_NAME, version: u.unconfirmed_version || u.version });
+    renderChanges();
+    return;
+  }
   $("update-text").textContent = state.updateNote
-    || fill(w.update_out, { app: APP_NAME, version: u.version }) + (u.installed ? "" : " " + w.update_repo);
+    || fill(w.update_out, { app: APP_NAME, version: u.version }) + (u.installed ? "" : " " + w.update_repo)
+      + (u.unconfirmed_version ? " " + fill(w.update_ignored, { version: u.unconfirmed_version }) : "")
+      + (u.gave_up ? " " + fill(w.update_gave_up, { tries: u.tries }) : "");
   $("update-now").textContent = w.update_now;
-  $("update-now").classList.toggle("hidden", !u.installed);
   $("update-now").disabled = Boolean(state.updating);
   $("update-info").textContent = w.whats_new;
-  bar.classList.remove("hidden");
   renderChanges();
 }
 
@@ -6630,6 +6649,7 @@ async function installUpdate() {
     state.updating = false;
     state.updateNote = fill(w.update_failed, { why: (err && err.message) || String(err) });
     renderUpdate();
+    checkUpdate(false);
     return;
   }
   let seen = 0;
@@ -6644,6 +6664,7 @@ async function installUpdate() {
     if (j.state === "failed") { state.updating = false; state.updateNote = fill(w.update_failed, { why: j.message }); }
     else state.updateNote = fill(w.update_installing, { app: APP_NAME });
     renderUpdate();
+    if (j.state === "failed") checkUpdate(false);  // the try is kept: a wrong file, or the tries used up, shows now
   };
   tick();
 }
@@ -6683,7 +6704,7 @@ async function start() {
   $("set-webview2-install").addEventListener("click", installWebview2);
   $("set-updates-check").addEventListener("click", async () => {
     $("set-updates-text").textContent = state.words.set_updates_checking;
-    try { state.update = await api().update_check(); } catch (err) { state.update = { error: (err && err.message) || String(err) }; }
+    try { state.update = await api().update_check("", true); } catch (err) { state.update = { error: (err && err.message) || String(err) }; }
     renderUpdate();
     renderSettings();
   });
@@ -6750,7 +6771,8 @@ async function start() {
   }
   $("update-now").addEventListener("click", installUpdate);
   $("update-info").addEventListener("click", () => { state.showChanges = !state.showChanges; renderChanges(); });
-  await setLanguage(state.lang);
+  $("update-page").addEventListener("click", () => api().update_page().catch(() => {}));  // our Discord, or the release page
+await setLanguage(state.lang);
   // the first screen is drawn: the start-up log (rusemod.startlog) notes it, for the troubleshooter's report
   Promise.resolve().then(() => api().start_mark("ready")).catch(() => {});  // an older back end: no log
   checkUpdate();

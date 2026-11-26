@@ -309,7 +309,7 @@ class ARequiredUpdate(Watched):
         la.use_required_updates()
         from rusemod.home import save_settings
         values = self.settings()
-        values["required_update"] = {"launcher": "99.0.0"}
+        values["required_signed"] = {"launcher": "99.0.0"}   # (a threshold the owner signed: rusemod.update)
         save_settings(self.home, values)
         folder = self.a_mod()
         la.add_mod(str(folder))

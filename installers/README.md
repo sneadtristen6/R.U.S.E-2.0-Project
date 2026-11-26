@@ -7,7 +7,10 @@ Nobody needs Python or Git to use them.
 
 **Players: the Releases page.** Each version is published as a GitHub Release (`.github/workflows/release.yml`):
 push a tag `launcher-v<version>` or `studio-v<version>` (it must equal the app's `__version__`), and GitHub builds,
-test-installs and attaches `RUSE-Launcher-Setup-<version>.exe` itself, not zipped, with its SHA-256 in the notes.
+test-installs and attaches `RUSE-Launcher-Setup-<version>.exe` itself, not zipped, with its SHA-256 in the notes, to
+a draft release with a record of how it was built (an attestation). The maintainer checks that record on his PC,
+signs the files with the project's release key (`RUSE-Launcher-Setup-<version>.exe.sig` beside them) and publishes
+the release; the apps install an update only with that signature (`src/rusemod/releasesig.py`).
 Releases need no GitHub login and don't expire, and every player downloads the same file from the same address.
 
 **Testers: the latest build.** GitHub also builds both apps on every push to `main` that changes them
@@ -23,8 +26,8 @@ build was checked (its SHA-256 matched GitHub's record, and Windows Defender fou
 
 1. **Releases, not test builds** (done): one stable file per version at a GitHub address, so its reputation grows as
    people download it. Don't publish a new version without a reason; each new file starts from zero.
-2. **Updates from inside the apps** (done: both offer their new versions, check the file and install it): after the
-   first install, updates never pass through a
+2. **Updates from inside the apps** (done: both offer their new versions, check the file's signature and install
+   it): after the first install, updates never pass through a
    browser, so the warning can only ever appear once, at the first download.
 3. **Report false alarms** for each release (needs the owner's go, since it sends the file to Google and Microsoft):
    Google Safe Browsing's error report and Microsoft's file submission (Defender and SmartScreen) usually clear a
