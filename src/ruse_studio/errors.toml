@@ -7582,3 +7582,31 @@ cz = "Hra už má mapu s názvem {0}. Dejte nové mapě jiný název."
 jpn = "ゲームにはすでに {0} という名前のマップがあります。新しいマップには別の名前を付けてください。"
 sc = "游戏里已经有名为 {0} 的地图。请给新地图起另一个名称。"
 fa = "بازی از قبل نقشه‌ای به نام {0} دارد. برای نقشهٔ جدید نام دیگری بگذارید."
+
+# Pick 25 (the owner's 5 A, 2026-11-26): the older way back from Blender is refused for a squad on bones of its own
+# (ruse_studio.oneblender.blender_back)
+[efe00c45718]
+us = "This squad was opened in Blender the older way, and the Studio no longer takes that way back for a squad with bones of its own. What that Blender sent is kept in {0}. Use Open in Blender on this squad, change it there, then Bring my changes back."
+fr = "Cette escouade a été ouverte dans Blender à l'ancienne, et le Studio ne reprend plus cette voie pour une escouade qui a ses propres os. Ce que ce Blender a envoyé est gardé dans {0}. Utilisez Ouvrir dans Blender sur cette escouade, modifiez-la là-bas, puis Ramener mes changements."
+ger = "Dieser Trupp wurde auf dem älteren Weg in Blender geöffnet, und das Studio nimmt diesen Weg bei einem Trupp mit eigenen Knochen nicht mehr zurück. Was dieses Blender gesendet hat, liegt in {0}. Nutze In Blender öffnen bei diesem Trupp, ändere ihn dort, dann Meine Änderungen zurückholen."
+ita = "Questa squadra è stata aperta in Blender nel modo più vecchio, e lo Studio non riprende più quella via per una squadra con ossa proprie. Quello che quel Blender ha inviato è conservato in {0}. Usa Apri in Blender su questa squadra, modificala lì, poi Riporta le mie modifiche."
+spa = "Este pelotón se abrió en Blender a la manera antigua, y el Studio ya no recoge ese camino para un pelotón con huesos propios. Lo que ese Blender envió se guarda en {0}. Usa Abrir en Blender en este pelotón, cámbialo allí y luego Traer mis cambios."
+pol = "Ten oddział otwarto w Blenderze starszym sposobem, a Studio nie przyjmuje już tą drogą oddziału z własnymi kośćmi. To, co ten Blender wysłał, jest zachowane w {0}. Użyj Otwórz w Blenderze przy tym oddziale, zmień go tam, potem Przenieś moje zmiany."
+ru = "Этот отряд открыли в Blender по-старому, и Studio больше не принимает такой путь назад для отряда с собственными костями. То, что отправил тот Blender, сохранено в {0}. Нажмите «Открыть в Blender» у этого отряда, измените его там, затем «Вернуть мои изменения»."
+cz = "Toto družstvo bylo otevřeno v Blenderu starším způsobem a Studio už tuto cestu zpět pro družstvo s vlastními kostmi nepřijímá. Co ten Blender poslal, je uloženo v {0}. Použij u tohoto družstva Otevřít v Blenderu, změň ho tam, pak Přenést moje změny."
+jpn = "この分隊は古い方法でBlenderに開かれており、独自の骨を持つ分隊については、Studioはもうその方法では受け取りません。そのBlenderが送った内容は {0} に残してあります。この分隊で「Blenderで開く」を使い、そこで変更してから「変更を戻す」を押してください。"
+sc = "这个小队是用旧方式在 Blender 中打开的，对于有自己骨骼的小队，Studio 不再通过这种方式带回。那个 Blender 发送的内容保存在 {0}。请对这个小队使用“在 Blender 中打开”，在那里修改，然后点击“带回我的修改”。"
+fa = "این جوخه به روش قدیمی در Blender باز شده بود و استودیو دیگر برای جوخه‌ای با استخوان‌های خودش این راه را نمی‌پذیرد. آنچه آن Blender فرستاد در {0} نگه داشته شده است. برای این جوخه «باز کردن در Blender» را بزنید، همان‌جا تغییرش دهید، بعد «بازگرداندن تغییراتم»."
+
+[e3f1a1418f6]
+us = "This squad was opened in Blender the older way, and the Studio no longer takes that way back for a squad with bones of its own. Use Open in Blender on this squad, change it there, then Bring my changes back."
+fr = "Cette escouade a été ouverte dans Blender à l'ancienne, et le Studio ne reprend plus cette voie pour une escouade qui a ses propres os. Utilisez Ouvrir dans Blender sur cette escouade, modifiez-la là-bas, puis Ramener mes changements."
+ger = "Dieser Trupp wurde auf dem älteren Weg in Blender geöffnet, und das Studio nimmt diesen Weg bei einem Trupp mit eigenen Knochen nicht mehr zurück. Nutze In Blender öffnen bei diesem Trupp, ändere ihn dort, dann Meine Änderungen zurückholen."
+ita = "Questa squadra è stata aperta in Blender nel modo più vecchio, e lo Studio non riprende più quella via per una squadra con ossa proprie. Usa Apri in Blender su questa squadra, modificala lì, poi Riporta le mie modifiche."
+spa = "Este pelotón se abrió en Blender a la manera antigua, y el Studio ya no recoge ese camino para un pelotón con huesos propios. Usa Abrir en Blender en este pelotón, cámbialo allí y luego Traer mis cambios."
+pol = "Ten oddział otwarto w Blenderze starszym sposobem, a Studio nie przyjmuje już tą drogą oddziału z własnymi kośćmi. Użyj Otwórz w Blenderze przy tym oddziale, zmień go tam, potem Przenieś moje zmiany."
+ru = "Этот отряд открыли в Blender по-старому, и Studio больше не принимает такой путь назад для отряда с собственными костями. Нажмите «Открыть в Blender» у этого отряда, измените его там, затем «Вернуть мои изменения»."
+cz = "Toto družstvo bylo otevřeno v Blenderu starším způsobem a Studio už tuto cestu zpět pro družstvo s vlastními kostmi nepřijímá. Použij u tohoto družstva Otevřít v Blenderu, změň ho tam, pak Přenést moje změny."
+jpn = "この分隊は古い方法でBlenderに開かれており、独自の骨を持つ分隊については、Studioはもうその方法では受け取りません。この分隊で「Blenderで開く」を使い、そこで変更してから「変更を戻す」を押してください。"
+sc = "这个小队是用旧方式在 Blender 中打开的，对于有自己骨骼的小队，Studio 不再通过这种方式带回。请对这个小队使用“在 Blender 中打开”，在那里修改，然后点击“带回我的修改”。"
+fa = "این جوخه به روش قدیمی در Blender باز شده بود و استودیو دیگر برای جوخه‌ای با استخوان‌های خودش این راه را نمی‌پذیرد. برای این جوخه «باز کردن در Blender» را بزنید، همان‌جا تغییرش دهید، بعد «بازگرداندن تغییراتم»."

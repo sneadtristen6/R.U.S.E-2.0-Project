@@ -21,6 +21,10 @@ from __future__ import annotations
 import re
 import tomllib
 
+# the mod's list files the build reads whole, which Set aside can take out (renamed <name>.broken.toml, never lost): the
+# build-menu groups and the animations files (the owner's "7 A", 2026-11-26); modcheck names them, the Studio sets them aside
+LIST_FILES = ("menu_groups.toml", "files/anim/units.toml", "files/anim/copies.toml", "files/anim/clips.toml")
+
 # the items of a map file, as its reader names them in a problem -> (its table in the file, its words key)
 ITEMS = {"stroke": "stroke", "erase area": "erase", "object": "object", "move": "move", "remove": "remove",
          "set": "set", "place": "place", "spawn": "spawn", "start": "start", "paint": "paint", "block": "block",
@@ -84,6 +88,8 @@ def explain(problem: dict) -> dict:
         plain.update(kind="unit_file" if m["file"].endswith(".rndf") else "text_file", file=m["file"],
                      line=int(m["line"]))
         fixes.append({"fix": "set_aside", "file": m["file"]})
+    elif problem.get("file") in LIST_FILES:   # (modcheck.list_file_in: the build-menu groups, the animations files)
+        plain.update(kind="list_file", file=problem["file"])
     elif _MANIFEST.search(raw):
         plain.update(kind="manifest", file="mod.toml")
     if problem.get("set_aside") and not any(f["fix"] == "set_aside" for f in fixes):

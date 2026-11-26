@@ -64,6 +64,17 @@ class OneBlenderCalls:
             _read(sent).get("session") == state.get("session")
         return bool(running or waiting), state.get("session")
 
+    def _squad_adding(self, address: str) -> bool:
+        """Whether the squad's own Blender was opened by Add a soldier (its manifest names the new soldier)."""
+        work = self._squad_work(address)
+        return work is not None and bool(_read(work / "squad.json").get("adding"))
+
+    def _set_aside_old(self, address: str) -> Path | None:
+        """The squad's last sending, never brought back, moved aside (squadblender._set_aside); its folder, or None
+        when there was none."""
+        work = self._squad_work(address)
+        return None if work is None else self._set_aside(work, _read(work / "state.json"))
+
     def _door_open(self, address: str, state: dict) -> bool:
         """Whether the Blender the one button last opened for this unit (one.json's `state`: its door and kind) is still
         open: then Bring my changes back can take what it sends again."""
@@ -194,6 +205,19 @@ class OneBlenderCalls:
             # back, and nothing in it was unticked; one.json stays the one button's
             pending, session = self._squad_door(address)
             if pending and (door != "squad" or state.get("session") != session):
+                if self._own_bones(address) and not self._squad_adding(address):
+                    # pick 25 (the owner's 5 A, 2026-11-26): the older way back takes every animation of a squad on
+                    # bones of its own as Blender sends it; only Open in Blender brings those back (Add a soldier's own
+                    # Blender stays: it brings back the new soldier, nothing else)
+                    folder = self._set_aside_old(address)
+                    if folder is not None:
+                        raise StudioError(f"This squad was opened in Blender the older way, and the Studio no longer "
+                                          f"takes that way back for a squad with bones of its own. What that Blender "
+                                          f"sent is kept in {folder}. Use Open in Blender on this squad, change it "
+                                          f"there, then Bring my changes back.")
+                    raise StudioError("This squad was opened in Blender the older way, and the Studio no longer takes "
+                                      "that way back for a squad with bones of its own. Use Open in Blender on this "
+                                      "squad, change it there, then Bring my changes back.")
                 back = self.squad_blender_back(address, lang)
                 return {**back, "door": "squad"}
         if door is None:

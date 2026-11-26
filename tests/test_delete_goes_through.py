@@ -366,16 +366,60 @@ class HeldOnAModFolder(unittest.TestCase):
         self.assertIn(self.tail, load_mod(self.mod)[0].cards)
         self.assertEqual(record(self.mod), {})
 
-    def test_a_unit_made_again_while_its_old_card_is_still_held_takes_it_as_its_own(self):
-        """Made again while the program still holds the old card: what can't be taken out yet is the new unit's, read by
-        the build and packed (the page shows that card as its own too: api._own_card_file), never taken out later."""
+    def test_a_unit_made_again_while_its_old_card_is_still_held_never_wears_it(self):
+        """Pick 21 (the owner's "4 A", 2026-11-26): made again while the program still holds the old card, the new
+        unit never wears it: the build and Export leave it out, and it is taken out once the program lets go."""
+        f = self.held(self.card)
+        with quick():
+            ModEdits(self.mod).remove_unit(UNIT)
+        ModEdits(self.mod).add_unit(UNIT, SOURCE, "Lancer", {})
+        self.assertNotIn(self.tail, load_mod(self.mod)[0].cards)
+        self.assertNotIn(self.card, package.files_of(self.mod))
+        self.assertEqual([e["path"] for e in record(self.mod)["files"]], [f"files/cards/{self.tail}.png"])
+        f.close()
+        from rusemod import holding
+        self.assertEqual(holding.clear(self.mod), [f"files/cards/{self.tail}.png"])
+        self.assertFalse(self.card.exists())
+        self.assertEqual(record(self.mod), {})
+
+    def test_the_new_unit_s_own_write_with_the_very_bytes_and_time_is_told_by_the_studio_s_note(self):
+        """The same, then the new unit writes its own card with the very bytes and time Delete left (a copy that keeps
+        its source's time): without the Studio's note of the save (SHA-256) it is still the old file's; with it, its own."""
+        from rusemod import holding
+        f = self.held(self.card)
+        with quick():
+            ModEdits(self.mod).remove_unit(UNIT)
+        ModEdits(self.mod).add_unit(UNIT, SOURCE, "Lancer", {})
+        line = record(self.mod)["files"][0]
+        self.assertNotIn(self.tail, load_mod(self.mod)[0].cards)
+        data = self.card.read_bytes()
+        with open(self.card, "r+b") as w:   # (written in place, the very same bytes; its time put back as it was)
+            w.write(data)
+        os.utime(self.card, ns=(line["time"], line["time"]))
+        self.assertEqual((self.card.stat().st_size, self.card.stat().st_mtime_ns), (line["size"], line["time"]))
+        self.assertNotIn(self.tail, load_mod(self.mod)[0].cards)       # (no note: the old file)
+        holding.note(self.mod, [self.card])
+        self.assertIn(self.tail, load_mod(self.mod)[0].cards)          # (noted: the new unit's own)
+        self.assertIn(self.card, package.files_of(self.mod))
+        f.close()
+        self.assertEqual(holding.clear(self.mod), [])
+        self.assertTrue(self.card.is_file())
+        self.assertEqual(record(self.mod), {})
+        self.assertFalse((self.mod / ".taking-out").exists())
+
+    def test_a_note_of_the_studio_s_other_bytes_does_not_make_the_old_file_the_new_unit_s(self):
+        """A plausible mistake: a note naming the path with other bytes (SHA-256 differs) tells nothing."""
+        from rusemod import holding
         self.held(self.card)
         with quick():
             ModEdits(self.mod).remove_unit(UNIT)
         ModEdits(self.mod).add_unit(UNIT, SOURCE, "Lancer", {})
-        self.assertEqual(record(self.mod), {})
-        self.assertIn(self.tail, load_mod(self.mod)[0].cards)
-        self.assertIn(self.card, package.files_of(self.mod))
+        other = self.mod / "other.bin"
+        other.write_bytes(b"other bytes")
+        os.makedirs(self.mod / ".taking-out", exist_ok=True)
+        (self.mod / ".taking-out" / "wrote.json").write_text(
+            json.dumps({"files": {f"files/cards/{self.tail}.png": holding._sha(other)}}), encoding="utf-8")
+        self.assertNotIn(self.tail, load_mod(self.mod)[0].cards)
 
     def test_a_groups_draft_never_touches_the_record(self):
         """groups.Draft adds units in memory only (a unit's group worked out before it's made): the record on disk stays."""

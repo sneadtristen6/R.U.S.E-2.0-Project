@@ -15,6 +15,7 @@ empty ("holds"). The record and the holding folders are the Studio's own: .takin
 never reads and a package never takes."""
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import shutil
@@ -24,6 +25,7 @@ from pathlib import Path
 
 FOLDER = ".taking-out"      # <mod>/.taking-out/: the holding folders of the Studio's take-outs, and this record
 RECORD = "waiting.json"
+NOTE = "wrote.json"         # <mod>/.taking-out/wrote.json: the Studio's note of its own saves (see note)
 
 
 def record_path(mod) -> Path:
@@ -52,8 +54,10 @@ def read(mod) -> dict:
         return out
     for e in data.get("files") or []:
         if isinstance(e, dict) and _safe(e.get("path")) and type(e.get("size")) is int and type(e.get("time")) is int:
-            out["files"].append({"unit": str(e.get("unit") or ""), "path": e["path"], "size": e["size"],
-                                 "time": e["time"]})
+            line = {"unit": str(e.get("unit") or ""), "path": e["path"], "size": e["size"], "time": e["time"]}
+            if e.get("reborn") is True:
+                line["reborn"] = True
+            out["files"].append(line)
     for e in data.get("folders") or []:
         if isinstance(e, dict) and _safe(e.get("path")):
             out["folders"].append({"unit": str(e.get("unit") or ""), "path": e["path"]})
@@ -69,11 +73,14 @@ def _write(mod, rec: dict) -> None:
     f = record_path(mod)
     if not (rec["files"] or rec["folders"] or rec["holds"]):
         f.unlink(missing_ok=True)
+        (f.parent / NOTE).unlink(missing_ok=True)
         try:
             f.parent.rmdir()   # (when empty)
         except OSError:
             pass
         return
+    if not any(e.get("reborn") for e in rec["files"]):
+        (f.parent / NOTE).unlink(missing_ok=True)   # (nothing is waiting to be told from a new write)
     f.parent.mkdir(parents=True, exist_ok=True)
     part = f.with_name(f.name + ".partial")
     try:
@@ -152,7 +159,72 @@ def waiting_files(mod) -> set[str]:
     mod = Path(mod)
     if not record_path(mod).is_file():
         return set()
-    return {_key(mod / e["path"]) for e in read(mod)["files"] if _there(mod, e)}
+    wrote = _wrote(mod)
+    return {_key(mod / e["path"]) for e in read(mod)["files"] if _there(mod, e) and not _new_units(mod, e, wrote)}
+
+
+def _wrote(mod: Path) -> dict:
+    """The Studio's note of its saves: {path in the mod: SHA-256 of the bytes it wrote}; empty without a note."""
+    try:
+        data = json.loads((mod / FOLDER / NOTE).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    files = data.get("files") if isinstance(data, dict) else None
+    return {k: v for k, v in files.items() if isinstance(k, str) and isinstance(v, str)} if isinstance(files, dict) else {}
+
+
+def _sha(path) -> str | None:
+    h = hashlib.sha256()
+    try:
+        with open(path, "rb") as f:
+            for block in iter(lambda: f.read(1 << 20), b""):
+                h.update(block)
+    except OSError:
+        return None
+    return h.hexdigest()
+
+
+def _new_units(mod: Path, e: dict, wrote: dict) -> bool:
+    """Whether the record's file `e`, of a unit made again since (reborn), is the new unit's own: written since (not as
+    Delete left it), or, when its size and time are the very ones Delete left (a copy of the same source's clips keeps
+    their times), the Studio's note says it wrote that path with these very bytes (their SHA-256). The old file left
+    as it was is never the new unit's: it stays out of the build."""
+    if not e.get("reborn"):
+        return False
+    if not _as_left(mod, e):
+        return True
+    sha = wrote.get(e["path"])
+    return sha is not None and sha == _sha(mod / e["path"])
+
+
+def note(mod, paths) -> None:
+    """The Studio has written these files of the mod (a unit's card, model, look, a clip copied for it): while a unit
+    made again has a leftover file waiting, name each of them that the record names, with the SHA-256 of what was
+    written, in <mod>/.taking-out/wrote.json. forget() makes the old file's line "reborn"; this note is how a new write
+    with the very size and time Delete left is told from the old file. Nothing is written when no leftover waits.
+    OSError when the note can't be written."""
+    mod = Path(mod)
+    if not record_path(mod).is_file():
+        return
+    rec = read(mod)
+    reborn = {e["path"] for e in rec["files"] if e.get("reborn")}
+    if not reborn:
+        return
+    got = _wrote(mod)
+    for path in paths:
+        rel = _rel(mod, path)
+        if rel in reborn:
+            sha = _sha(path)
+            if sha is not None:
+                got[rel] = sha
+    f = mod / FOLDER / NOTE
+    part = f.with_name(f.name + ".partial")
+    try:
+        part.write_text(json.dumps({"files": got}, indent=1) + "\n", encoding="utf-8")
+        os.replace(part, f)
+    except OSError:
+        part.unlink(missing_ok=True)
+        raise
 
 
 def skip_of(mod):
@@ -189,9 +261,12 @@ def clear(mod) -> list[str]:
     rec = read(mod)
     gone, files, folders, holds = [], [], [], list(rec["holds"])
     trash = None
+    wrote = _wrote(mod)
     for e in rec["files"]:
         if not _there(mod, e):
             continue                                  # (gone: its line goes)
+        if _new_units(mod, e, wrote):
+            continue                                  # (a unit made again wrote it: its own, never taken out)
         if not _as_left(mod, e):
             files.append(e)                           # (written since by the program that held it: kept, never taken
             continue                                  #  out, and out of the build while its unit is gone)
@@ -247,7 +322,22 @@ def forget(mod, unit: str) -> None:
         return
     clear(mod)
     rec = read(mod)
-    left = {"files": [e for e in rec["files"] if e["unit"] != unit],
+    # a file of the old unit still exactly as Delete left it (held by a program) stays named, out of the build: the new
+    # unit never wears it, unless its own write is in the Studio's note (note); one written since is the new unit's
+    files = [dict(e, reborn=True) if e["unit"] == unit and _as_left(mod, e) else e
+             for e in rec["files"] if e["unit"] != unit or _as_left(mod, e)]
+    fresh = {e["path"] for e in rec["files"] if e["unit"] == unit and not e.get("reborn")}
+    got = _wrote(mod)
+    if fresh & set(got):   # (a note of an earlier unit's saves at these paths is nothing to this one)
+        part = (mod / FOLDER / NOTE).with_name(NOTE + ".partial")
+        try:
+            part.write_text(json.dumps({"files": {k: v for k, v in got.items() if k not in fresh}}) + "\n",
+                            encoding="utf-8")
+            os.replace(part, mod / FOLDER / NOTE)
+        except OSError:
+            part.unlink(missing_ok=True)
+            raise
+    left = {"files": files,
             "folders": [e for e in rec["folders"] if e["unit"] != unit], "holds": rec["holds"]}
     if left != rec:
         _write(mod, left)

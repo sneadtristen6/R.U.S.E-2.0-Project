@@ -32,7 +32,7 @@ from dataclasses import asdict, replace
 from decimal import ROUND_HALF_UP, Decimal
 from pathlib import Path, PurePosixPath
 
-from rusemod import (ai, buildtext, doctor, economy, flaginfo, gamefiles, identity, loc, mapscripts, missions,
+from rusemod import (ai, buildtext, doctor, economy, flaginfo, gamefiles, holding, identity, loc, mapscripts, missions,
                      mod_index, modformat, newmap, numberinfo, package, packfiles, scenario, scenery, schema,
                      startlog, values as every_value, yourfiles)
 from rusemod.backup import BackupCalls
@@ -42,6 +42,7 @@ from rusemod.codes import coded
 from rusemod.community import APP_NAMES, REPO_URL, CommunityCalls, private_paths_out
 from rusemod.guardcalls import GuardCalls
 from rusemod.termscalls import TermsCalls
+from rusemod.plainproblems import LIST_FILES
 from rusemod.owned import OwnedCalls
 from rusemod.ownedpass import OwnedPassCalls
 from rusemod.update import UpdateCalls
@@ -6063,7 +6064,8 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         return self.check_mod()
 
     def set_aside(self, file: str, where: str = "mod") -> dict:
-        """Take a broken map, unit changes or text file (`file`: its path in the mod, as check_mod gives it; `where`
+        """Take a broken map, unit changes, text, build-menu groups or animations file (`file`: its path in the mod, as
+        check_mod gives it; `where`
         "map": in the map's own folder) out of the current mod: it's renamed beside it (_aside), never deleted, and the
         build skips it. Returns check_mod() and "kept": the renamed file."""
         folder = self._checked_dir(where)
@@ -6072,7 +6074,9 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         map_file = path.name in MAP_FILES and path.parent.parent == folder / "maps"
         unit_file = path.suffix.lower() == ".rndf" and (folder / "src") in path.parents
         text_file = path.suffix.lower() == ".csv" and path.parent == folder / "text"
-        if not (map_file or unit_file or text_file) or not path.is_file():
+        # the build-menu groups and the animations files (the owner's "7 A", 2026-11-26): renamed <name>.broken.toml
+        list_file = str(file or "").replace("\\", "/") in LIST_FILES
+        if not (map_file or unit_file or text_file or list_file) or not path.is_file():
             raise StudioError(f"{file} isn't one of this mod's files")
         with self._saving:
             try:
@@ -9509,6 +9513,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         part = to.with_name(to.name + ".part")
         part.write_bytes(data)
         part.replace(to)
+        holding.note(mod, [to])   # (the Studio's note of what it wrote: a leftover of a deleted unit's card, same size and time)
         return {"card": self._card_view(address),
                 "message": f"The card is in {mod.name} now. Click Test in game to see it in the build menu."}
 
