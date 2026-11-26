@@ -237,6 +237,15 @@ class Item21OnlyThisUnitTooltip(InElevenLanguages):
             self.assertNotIn(OLD_END[lang], WORDS["tip_decoy_anim_for_unit"][lang], lang)
 
 
+class Item22CopyTooltip(InElevenLanguages):
+    ITEM = "22"
+
+    def test_52l_copy_this_animation_s_tooltip_no_longer_says_not_tried(self):
+        self.words_in_eleven_languages(["tip_decoy_copy_make"])
+        for lang in LANGS:
+            self.assertNotIn(OLD_END[lang], WORDS["tip_decoy_copy_make"][lang], lang)
+
+
         #                                         code says the same words, for every refusal)
 
 
