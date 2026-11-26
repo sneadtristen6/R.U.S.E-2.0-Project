@@ -128,9 +128,19 @@ class Installer(unittest.TestCase):
         self.assertIn("MB_YESNO or MB_DEFBUTTON2", code)         # the second button, No, is the default
         self.assertIn("not UninstallSilent", code)               # a silent uninstall deletes nothing
         self.assertIn("usPostUninstall", code)
-        self.assertEqual(code.count("DelTree"), 1)
+        self.assertEqual(self.ISS.count("DelTree"), 1)           # one place deletes folders
         self.assertIn("{localappdata}\\RUSE Mod Platform", code)   # only the default platform folder
         self.assertNotIn("PLATFORM_HOME", code)                   # a folder set by hand is never deleted
+
+    def test_old_player_folders_are_kept(self):
+        # before 2026-10-30 the player's mods, maps, exports and backups lived in the platform folder; a Yes must not
+        # delete them for a player whose Studio has not moved them to Documents yet
+        from rusemod.yourfiles import OLD_NAMES
+        func = self.ISS[self.ISS.index("function IsOldPlayerFolder"):self.ISS.index("procedure DeleteSettingsAndData")]
+        self.assertEqual(set(re.findall(r"Name, '([^']+)'", func)), set(OLD_NAMES.values()))
+        body = self.ISS[self.ISS.index("procedure DeleteSettingsAndData"):self.ISS.index("procedure CurUninstallStepChanged")]
+        self.assertRegex(body, r"if not IsOldPlayerFolder\(Found\.Name\) then\s+DelTree")
+        self.assertNotIn("DelTree(Folder", self.ISS)             # never the whole folder in one go
 
     def test_it_is_worded_in_all_eleven_languages(self):
         languages = re.findall(r'^Name: "(\w+)"; MessagesFile', self.ISS, re.M)
