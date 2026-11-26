@@ -17,8 +17,7 @@ the codes they were given in settings.json ("unlocks").
 The code is open, so anyone can take a check out of it: this stops a pirated copy from being modded and played with
 the apps as they are released, not someone who rebuilds them.
 
-Checked our_tools.json: its tools study the game's code; none hashes a file or reads a file's signature, which is all
-this module does.
+This module only hashes files and reads a file's signature.
 """
 from __future__ import annotations
 

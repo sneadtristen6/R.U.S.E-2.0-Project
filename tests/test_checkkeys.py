@@ -7,8 +7,8 @@ engine's errors, the apps' own steps before a build); a key once given stays; a 
 made it; a failed Play says how far it got and which mods were on, the player's own only as counts. Never the words.
 No network, no game: the game's program here is a two-byte stand-in file in a temporary folder.
 
-Checked our_tools.json: none of its entries is for this; the test reads no program file, it only names a stand-in
-file the way rusemod.play looks for the game's in a modded copy.
+The test reads no program file, it only names a stand-in file the way rusemod.play looks for the game's in a modded
+copy.
 """
 import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import os

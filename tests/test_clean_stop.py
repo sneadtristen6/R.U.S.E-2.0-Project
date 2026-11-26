@@ -13,9 +13,8 @@ tests/gamescripts_sim.py25 plays it under the game's own Python); here what the 
 Nothing starts and nothing leaves the PC: the build is a stand-in that writes the copy's record as the build does, the
 game is a stand-in process, and no RUSE Guard server is set (a note stays in the outbox).
 
-Checked our_tools.json: none of the listed tools that read the game applies, because this test reads nothing of it:
-its build stand-in only writes a few bytes under the game's file name into a temporary copy, where the Starter looks
-for the game to start (rusemod.play)."""
+This test reads nothing of the game: its build stand-in only writes a few bytes under the game's file name into a
+temporary copy, where the Starter looks for the game to start (rusemod.play)."""
 import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import json
 import shutil

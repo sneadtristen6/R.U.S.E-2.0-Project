@@ -1,7 +1,7 @@
 """Bug Watch (rusemod.bugwatch): opt-in counts, what's sent and when, crashes. No network: the sends go to a fake.
 
-Checked our_tools.json: none of its tools reads a crash report; these tests read nothing of the game, only a small
-crash report file they make themselves (one module named like the game).
+These tests read nothing of the game, only a small crash report file they make themselves (one module named like the
+game).
 """
 import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import json

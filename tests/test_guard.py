@@ -2,8 +2,8 @@
 manifests, the in-game record, the process scan, its list inside the app and the game's lines that say a match is on,
 and a match's evidence bundle kept or sent.
 
-Checked our_tools.json: none of its tools tests the Launcher's own code; these tests read no program: where they name
-the game's program file, it is a made-up path handed to a stand-in for starting a program."""
+These tests read no program: where they name the game's program file, it is a made-up path handed to a stand-in for
+starting a program."""
 import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import io
 import json
@@ -606,8 +606,7 @@ class ProgramCheck(unittest.TestCase):
     def test_the_launcher_starts_the_game_with_its_error_output_read(self):
         """The Launcher starts the game with its error output on a pipe that is read (start_game_watched); the
         Studio's Test in game as before, without it. Until Launcher 0.4.8.22 the game's output wasn't read at all.
-        Checked our_tools.json: no tool there covers this; the game's program file named here is a made-up path
-        handed to a stand-in for starting a program, never read."""
+        The game's program file named here is a made-up path handed to a stand-in for starting a program, never read."""
         import inspect
         from rusemod import play
         from ruse_launcher.api import LauncherApi
@@ -622,7 +621,7 @@ class ProgramCheck(unittest.TestCase):
                 now = int(time.time())
                 self.stderr = io.BytesIO(STEAM + said_at("live multi 1 coop 0", now) + said_at("end", now))
         with mock.patch.object(play.subprocess, "Popen", Popen):
-            process = launcher_start(self.dir / "RUSE.exe")  # (Checked our_tools.json: a made-up path, never read)
+            process = launcher_start(self.dir / "RUSE.exe")  # (a made-up path, never read)
         self.assertEqual(made, [([str(self.dir / "RUSE.exe")], {"cwd": str(self.dir), "stdin": play.subprocess.DEVNULL,
                                                                  "stdout": play.subprocess.DEVNULL,
                                                                  "stderr": play.subprocess.PIPE})])

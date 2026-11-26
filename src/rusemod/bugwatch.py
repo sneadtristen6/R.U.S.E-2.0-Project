@@ -90,13 +90,12 @@ to send us with a screenshot. With Bug Watch off, CodeWatch reads the game's own
 does; with it on, GameWatch puts the same code in its notice. Nothing more is counted, kept or sent for it: the code
 goes in no report, and without Bug Watch the apps don't contact our server for it.
 
-Checked our_tools.json: crash_site.py reads a whole crash report for our own research and is private; this module
-reads only the exception record, the module list and the crashed thread's stack of the game's crash report (and, at
-a crash we know, the memory the report kept round that stack's words, for the unit), on the player's PC, as any crash
-reporter does, and sends the crash code, the module's name and the offset, the access and the chain, and under
-version 4 the unit as above, nothing more (the plan, §2). For the chain it reads the copy's RUSE.exe section table and
-the few bytes before each stack word that points into it: a word right after a call is where that call returns to
-(2026-11-02, the owner's "Yes, add it": a player's crash report named only where the game stopped)."""
+This module reads only the exception record, the module list and the crashed thread's stack of the game's crash report
+(and, at a crash we know, the memory the report kept round that stack's words, for the unit), on the player's PC, as
+any crash reporter does, and sends the crash code, the module's name and the offset, the access and the chain, and
+under version 4 the unit as above, nothing more (the plan, §2). For the chain it reads the copy's RUSE.exe section
+table and the few bytes before each stack word that points into it: a word right after a call is where that call
+returns to (2026-11-02, the owner's "Yes, add it": a player's crash report named only where the game stopped)."""
 from __future__ import annotations
 
 import bisect
@@ -1360,10 +1359,7 @@ def game_report(path) -> bool:
     read_dump finds the game in a report). The game's crash reporter is used by other programs too, and their reports
     can lie in the same folder; the agreement says "When the game writes its own crash report, the apps read that
     report on your PC". So of any file only its header, its list of parts and its module list's names are read to tell,
-    nothing else of it, and another program's crash report is never read (2026-11-24). Never raises.
-
-    Checked our_tools.json: none of its tools tells whose a crash report is from its module list alone, before
-    anything else of it is read."""
+    nothing else of it, and another program's crash report is never read (2026-11-24). Never raises."""
     try:
         with open(path, "rb") as f:
             def read(at: int, size: int) -> bytes:

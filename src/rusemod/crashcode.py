@@ -23,8 +23,7 @@ This file holds no number of the game: what it packs comes from the crash report
 
 Sixty bits, written as twelve Crockford letters and digits in three groups: 8K2M-4TQ7-X0PA.
 
-Checked our_tools.json: none of its tools makes a short code for a player to tell us; this file reads no program and no
-crash report itself, it packs the few fields rusemod.bugwatch.read_dump read.
+This file reads no program and no crash report itself, it packs the few fields rusemod.bugwatch.read_dump read.
 """
 from __future__ import annotations
 

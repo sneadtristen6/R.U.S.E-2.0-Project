@@ -425,6 +425,12 @@ where = "rusemod.brush:parse_strokes"
 kind = "raise"
 us = "{0}: within (paint only inside a relief's area) is for the paint, stamp, texture and tint brushes"
 
+[ccc5525913e]
+check = "build._mod_text"
+where = "rusemod.build:_mod_text"
+kind = "raise"
+us = "{0}:{1}: isn't saved as UTF-8 text, so it can't be read. Save it as UTF-8 (in Notepad: Save as, Encoding UTF-8; in Excel: Save as, CSV UTF-8 (Comma delimited))."
+
 [ce03884e52e]
 check = "build.load_mod"
 where = "rusemod.build:load_mod"
@@ -581,17 +587,17 @@ where = "rusemod.build:spawn_models"
 kind = "mistake"
 us = "{0}: the spawned {1} use {2}'s unit models, which a skirmish loads only when a player has {3}, and {4}: the game would crash as the match starts (a D-Day test with Japanese units spawned and no Japanese player did). Spawn units whose models every match has, or leave these out"
 
-[c05b432d5e0]
-check = "build.rmod_far_upgrades"
-where = "rusemod.build:rmod_far_upgrades"
-kind = "mistake"
-us = "{0}"
-
 [c80c0ecd15e]
 check = "build.rmod_far_upgrades-2"
 where = "rusemod.build:rmod_far_upgrades"
 kind = "mistake"
 us = "the skirmish unit packs can't be written: {0}"
+
+[c05b432d5e0]
+check = "build.rmod_far_upgrades"
+where = "rusemod.build:rmod_far_upgrades"
+kind = "mistake"
+us = "{0}"
 
 [ce247f6ff6d]
 check = "build.unit_cards"
@@ -1270,6 +1276,12 @@ check = "fairplay.lock_script"
 where = "rusemod.fairplay:lock_script"
 kind = "raise"
 us = "{0} isn't a build code ({1} hex digits), so the copy's lock can't be made."
+
+[c1a065448f6]
+check = "fairplay.lock_script-2"
+where = "rusemod.fairplay:lock_script"
+kind = "raise"
+us = "The copy's lock takes its {0} lines as words, one each; it was given {1}."
 
 [c67eb540434]
 check = "filechecks.check_video.walk"
@@ -2584,9 +2596,3 @@ check = "launcher.play.game-not-found"
 where = "ruse_launcher.api:_play"
 kind = "raise"
 us = "We couldn't find R.U.S.E. Choose its folder first."
-
-[ccc5525913e]
-check = "build._mod_text"
-where = "rusemod.build:_mod_text"
-kind = "raise"
-us = "{0}:{1}: isn't saved as UTF-8 text, so it can't be read. Save it as UTF-8 (in Notepad: Save as, Encoding UTF-8; in Excel: Save as, CSV UTF-8 (Comma delimited))."

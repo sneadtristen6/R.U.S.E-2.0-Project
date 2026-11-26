@@ -6,8 +6,7 @@ The list here is MadeUp: the same reasons and the same ties as the real list's p
 private list's own test checks that none is one of the real list's). Its signature is made with the published test
 key of RFC 8032 (section 7.1, test 1), which nothing trusts: no key of ours is made or read here.
 
-Checked our_tools.json: none of its tools makes or checks the list or the crash code; these tests read no program and
-no real crash report.
+These tests read no program and no real crash report.
 """
 import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import ast

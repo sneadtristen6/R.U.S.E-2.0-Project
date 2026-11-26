@@ -1,7 +1,7 @@
 """Owned copies only (rusemod.owned): the signatures, the codes, the folder check, unlocking, and the gate both apps
 start a modded game through.
 
-Checked our_tools.json: its tools study the game's code; these tests only hash made-up files and read a signature.
+These tests only hash made-up files and read a signature.
 """
 import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import shutil

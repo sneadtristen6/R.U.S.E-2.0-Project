@@ -2910,3 +2910,8 @@ since = "0.9.8.23/0.4.8.23"
 place = "build._mod_text"
 check = "build._mod_text"
 since = "0.9.8.23/0.4.8.23"
+
+[BLD-461]
+place = "fairplay.lock_script"
+check = "fairplay.lock_script-2"
+since = "0.9.8.23/0.4.8.23"

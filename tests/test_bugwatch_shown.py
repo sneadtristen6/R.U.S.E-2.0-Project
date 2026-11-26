@@ -110,7 +110,7 @@ class Shown(unittest.TestCase):
 class PublicText(unittest.TestCase):
     def test_game_report_s_text_names_no_private_tool(self):
         doc = bugwatch.game_report.__doc__
-        self.assertIn("Checked our_tools.json:", doc)
+        self.assertNotIn("Checked our_tools.json", doc)   # (out at 0.9.8.23: his "1 yes", 2026-11-25)
         for word in ("dump_objects", "dump_strings", "chain_on_real_dumps", "dump_survey", "crash_site"):
             self.assertNotIn(word, doc)
 

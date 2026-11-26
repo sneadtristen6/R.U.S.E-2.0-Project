@@ -8,8 +8,7 @@ The list is fetched while the game runs, only under version 5 of the agreement, 
 "couldn't check", and counted. The crash code: made on the PC from where the game stopped, told to the window, and
 nothing more counted, kept or sent for it.
 
-Checked our_tools.json: crash_site.py, dump_survey.py, all_dump_rows.py and try_reader.py read real crash reports on
-this PC for our research; none runs the apps' game watch on made-up ones. These tests read no program and no real
+These tests read no program and no real
 crash report: the made-up reports and program files are test_bugwatch's (Crashes, KnownCrashes), every number made up.
 """
 import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)

@@ -10,9 +10,8 @@
 Nothing here reaches a server or starts anything: the sign-in server, GitHub, the RUSE Guard server and the game are
 stand-ins (a made-up game folder, faked calls, a local web server).
 
-Checked our_tools.json: its tools that read the game's own code study that code; these tests read none of it. The
-RUSE.exe named here is the made-up game's two-byte stand-in that test_launcher's Base writes, handed to a stand-in that
-"starts" it."""
+These tests read none of the game's code. The RUSE.exe named here is the made-up game's two-byte stand-in that
+test_launcher's Base writes, handed to a stand-in that "starts" it."""
 import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import json
 import os

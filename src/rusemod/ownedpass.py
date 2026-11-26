@@ -18,8 +18,7 @@ Switched on for the release (the owner, 2026-10-31), with RUSE Guard; the server
 Cloudflare too. Off (ON False), owned_pass_ok() is True for everyone, so nothing is gated and the sign-in screen
 shows none of it. On, the apps ask to sign in once, and the Launcher's Settings opens the sign-in any time.
 
-Checked our_tools.json: its tools study the game's code; none signs in to Steam or checks a token, which is all this
-module does, reusing rusemod.owned's own Ed25519 and rusemod.steam's APP_ID.
+This module only signs in to Steam and checks a token, reusing rusemod.owned's own Ed25519 and rusemod.steam's APP_ID.
 """
 from __future__ import annotations
 
@@ -161,11 +160,14 @@ def start(server: str = SERVER, timeout: float = TIMEOUT) -> dict:
     if status == 200 and isinstance(body.get("code"), str) and _CODE.match(body["code"]):
         return {"code": body["code"], "poll_every": _pos(body.get("poll_every"), 3),
                 "expires_in": _pos(body.get("expires_in"), 600)}
-    # an answer with no code we can use (nothing to open), or a refusal with its reason. (Bug Watch: the server
-    # answered but started no sign-in, with its answer number; never its reason's words)
-    reason = "" if status == 200 else str(body.get("reason") or "")
-    raise coded(OwnedPassError(reason or "The sign-in server didn't answer. Try again in a few minutes."), "SIGN-03",
-                http=status)
+    # (Bug Watch: the server answered but started no sign-in, with its answer number; never its reason's words. The
+    # code written once, for both raises; each message written out, so its words in the player's language are found)
+    no_sign_in = "SIGN-03"
+    if status == 200:   # an answer with no code we can use: nothing to open
+        raise coded(OwnedPassError("The sign-in server didn't answer. Try again in a few minutes."), no_sign_in,
+                    http=status)
+    raise coded(OwnedPassError(str(body.get("reason") or "The sign-in server didn't answer. Try again in a few minutes.")),
+                no_sign_in, http=status)
 
 
 def steam_login_url(server: str, code: str) -> str:

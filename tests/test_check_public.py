@@ -1,8 +1,8 @@
 """The public-repo guard (tools/check_public.py): private material, game files and program addresses are refused.
 
-Checked our_tools.json: none of its tools runs this check; these tests read no program, only made-up lines that name
-the words the check refuses, and the crash table as 0.9.8.22 released it, from this repository's history, never
-written out (its numbers are looked for in every public file by the private leak scan instead)."""
+These tests read no program, only made-up lines that name the words the check refuses, and the crash table as 0.9.8.22
+released it, from this repository's history, never written out (its numbers are looked for in every public file by the
+private leak scan instead)."""
 import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import sys
 import unittest
