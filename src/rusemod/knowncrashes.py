@@ -54,7 +54,7 @@ TEST_PUBLICS = frozenset({
     bytes.fromhex("d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a"),
     bytes.fromhex("3d4017c3e843895a92b70aa74d1b7ebc9c982ccf2ec4968cc0cd55f12af4660c"),
 })
-MOST_BYTES = 64 * 1024                                # the most a served list (and the list's own text) may weigh
+MOST_BYTES = 64 * 1024                                  # the most a served list (and the list's own text) may weigh
 FRESH = 24 * 3600                                       # seconds a checked list is used before it's asked for again
 TIMEOUT = 15                                            # seconds for the download
 WAIT_AT_CRASH = 30                                      # seconds GameWatch waits for a download still running at a crash
