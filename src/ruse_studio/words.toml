@@ -46804,17 +46804,17 @@ sc = "未带回，因为在 Blender 中它不在任何士兵身上：{names}。"
 fa = "بازگردانده نشد، چون در Blender روی هیچ سربازی نبود: {names}."
 
 [model_no_bone]
-us = "{n} point(s) of your model have no bone, so they move with the soldier's hips only. To make them move with an arm or a leg: in Blender, pick your model, go to Weight Paint and paint those points onto the bone, then send it again."
-fr = "{n} point(s) de votre modèle n'ont pas d'os : ils ne bougent qu'avec les hanches du soldat. Pour qu'ils suivent un bras ou une jambe : dans Blender, choisissez votre modèle, passez en Weight Paint et peignez ces points sur l'os, puis renvoyez-le."
-ger = "{n} Punkt(e) deines Modells haben keinen Knochen und bewegen sich nur mit der Hüfte des Soldaten. Damit sie einem Arm oder Bein folgen: in Blender dein Modell wählen, zu Weight Paint wechseln, diese Punkte auf den Knochen malen und es erneut senden."
-ita = "{n} punto/i del tuo modello non hanno un osso, quindi si muovono solo con i fianchi del soldato. Per farli seguire un braccio o una gamba: in Blender scegli il tuo modello, passa a Weight Paint, dipingi quei punti sull'osso e invialo di nuovo."
-spa = "{n} punto(s) de tu modelo no tienen hueso, así que solo se mueven con la cadera del soldado. Para que sigan un brazo o una pierna: en Blender elige tu modelo, pasa a Weight Paint, pinta esos puntos sobre el hueso y envíalo otra vez."
-pol = "{n} punkt(y) twojego modelu nie mają kości, więc ruszają się tylko z biodrami żołnierza. Aby szły za ręką lub nogą: w Blenderze wybierz swój model, przejdź do Weight Paint, pomaluj te punkty na kość i wyślij go ponownie."
-ru = "У {n} точек вашей модели нет кости, поэтому они двигаются только с бёдрами солдата. Чтобы они двигались с рукой или ногой: в Blender выберите модель, перейдите в Weight Paint, закрасьте эти точки на кость и отправьте модель снова."
-cz = "{n} bod(ů) tvého modelu nemá kost, takže se hýbou jen s boky vojáka. Aby šly s rukou nebo nohou: v Blenderu vyber svůj model, přepni na Weight Paint, namaluj ty body na kost a pošli ho znovu."
-jpn = "モデルの{n}個の点に骨がないため、兵士の腰と一緒にしか動きません。腕や脚と一緒に動かすには、Blenderでモデルを選び、Weight Paintでその点を骨に塗ってから、もう一度送ってください。"
-sc = "你的模型有 {n} 个点没有骨骼，所以它们只随士兵的髋部移动。要让它们随手臂或腿移动：在 Blender 中选择你的模型，切换到 Weight Paint，把这些点画到骨骼上，然后再发送一次。"
-fa = "{n} نقطه از مدل شما استخوان ندارد، پس فقط با لگن سرباز حرکت می‌کند. برای اینکه با دست یا پا حرکت کنند: در Blender مدلتان را انتخاب کنید، به Weight Paint بروید، آن نقطه‌ها را روی استخوان رنگ کنید و دوباره بفرستید."
+us = "{n} point(s) of your model follow no bone, so they move with the soldier's hips only. Open him again with Open in Blender, paint those points onto a bone (Weight Paint), then send him back."
+fr = "{n} point(s) de votre modèle ne suivent aucun os : ils ne bougent qu'avec les hanches du soldat. Rouvrez-le avec Ouvrir dans Blender, peignez ces points sur un os (Weight Paint), puis renvoyez-le."
+ger = "{n} Punkt(e) deines Modells folgen keinem Knochen und bewegen sich nur mit der Hüfte des Soldaten. Öffne ihn noch einmal mit In Blender öffnen, male diese Punkte auf einen Knochen (Weight Paint) und sende ihn zurück."
+ita = "{n} punto/i del tuo modello non seguono nessun osso, quindi si muovono solo con i fianchi del soldato. Riaprilo con Apri in Blender, dipingi quei punti su un osso (Weight Paint) e rimandalo indietro."
+spa = "{n} punto(s) de tu modelo no siguen ningún hueso, así que solo se mueven con la cadera del soldado. Ábrelo otra vez con Abrir en Blender, pinta esos puntos sobre un hueso (Weight Paint) y envíalo de vuelta."
+pol = "{n} punkt(y) twojego modelu nie idą za żadną kością, więc ruszają się tylko z biodrami żołnierza. Otwórz go ponownie przez Otwórz w Blenderze, pomaluj te punkty na kość (Weight Paint) i wyślij z powrotem."
+ru = "{n} точек вашей модели не следуют ни за одной костью, поэтому они двигаются только с бёдрами солдата. Откройте его снова через «Открыть в Blender», закрасьте эти точки на кость (Weight Paint) и отправьте обратно."
+cz = "{n} bod(ů) tvého modelu nenásleduje žádnou kost, takže se hýbou jen s boky vojáka. Otevři ho znovu přes Otevřít v Blenderu, namaluj ty body na kost (Weight Paint) a pošli ho zpět."
+jpn = "モデルの{n}個の点はどの骨にも付いていないため、兵士の腰と一緒にしか動きません。「Blenderで開く」でもう一度開き、その点を骨に塗って（Weight Paint）、送り返してください。"
+sc = "你的模型有 {n} 个点没有跟随任何骨骼，所以它们只随士兵的髋部移动。请用“在 Blender 中打开”再次打开他，把这些点画到某根骨骼上（Weight Paint），然后再发送回来。"
+fa = "{n} نقطه از مدل شما هیچ استخوانی را دنبال نمی‌کند، پس فقط با لگن سرباز حرکت می‌کند. او را دوباره با «باز کردن در Blender» باز کنید، آن نقطه‌ها را روی یک استخوان رنگ کنید (Weight Paint) و دوباره بفرستید."
 
 # --- what a model's import couldn't keep of its own shine and side-colour layer (the alpha of its pictures), said on
 # the page (app.js alphaLostLines): a Bring back from Blender's parts that came back without it, and a picture whose

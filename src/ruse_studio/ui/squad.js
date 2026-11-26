@@ -601,7 +601,7 @@
           if (own.missing && own.missing.length) {
             notes.push(el("p", { className: "notice warn", textContent: fill(w.model_missing, { names: own.missing.join(", ") }) }));
           }
-          if (own.no_bone) notes.push(el("p", { className: "notice warn", textContent: fill(w.model_no_bone, { n: own.no_bone }) }));
+          if (own.no_bone) notes.push(helpLine(fill(w.model_no_bone, { n: own.no_bone }), "bones", "notice warn"));   // (with the Having trouble? link)
           notes.push(el("p", { className: "muted small", textContent: own.own_skeleton ? w.model_own_bones_fit : w.model_squad_fit }));
           if (look.own_copy) notes.push(el("p", { className: "notice warn", textContent: fill(w.squad_both, { who: s.label }) }));
           if (own.rigged) notes.push(fitBox(address, () => reload(true), "problems"));   // (what of it won't work in the game)

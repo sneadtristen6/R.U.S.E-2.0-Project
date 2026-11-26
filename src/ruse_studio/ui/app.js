@@ -3530,7 +3530,7 @@ function modelBox(address, info, draw, changed) {
     }
     // points the model file gave no bone (Blender's automatic weights leave some): they follow the hips
     // (rusemod.modelin.BLENDER_NO_BONE; item 4, 2026-11-10)
-    if (own.no_bone) box.append(el("p", { className: "notice warn", textContent: fill(w.model_no_bone, { n: own.no_bone }) }));
+    if (own.no_bone) box.append(helpLine(fill(w.model_no_bone, { n: own.no_bone }), "bones", "notice warn"));   // (with the Having trouble? link)
     // parts without their own shine and side colour, and why (a Bring back from Blender, a picture of another size),
     // for as long as the model has them
     for (const line of alphaLostLines(own)) box.append(el("p", { className: "notice warn", textContent: line }));

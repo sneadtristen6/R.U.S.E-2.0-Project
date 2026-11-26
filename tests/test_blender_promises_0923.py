@@ -131,6 +131,19 @@ class Item13SplitLine(InElevenLanguages):
                                                          "of the body walks or the legs aim.")
 
 
+class Item14PointsWithNoBone(InElevenLanguages):
+    ITEM = "14"
+
+    def test_52d_points_that_follow_no_bone(self):
+        self.words_in_eleven_languages(["model_no_bone"])
+        us = WORDS["model_no_bone"]["us"]
+        self.assertIn("Open in Blender", us)
+        self.assertNotIn("go to Weight Paint", us)
+        self.names_in_every_language("model_no_bone", ["look_open"])
+        for name in ("app.js", "squad.js"):   # (shown on both pages, each with the link)
+            self.assertRegex(js(name), r'helpLine\(fill\(w\.model_no_bone, \{ n: own\.no_bone \}\), "bones", "notice warn"\)')
+
+
 class WikiPages(InElevenLanguages):
     def topic_opens_each_language_s_page(self, topic, us, fr):
         self.assertEqual(sorted(WIKI_TOPICS[topic]), sorted(LANGS))
