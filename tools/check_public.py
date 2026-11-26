@@ -37,7 +37,10 @@ KEPT_PRIVATE = re.compile(r"^(?:listings/|prototypes/|ruse_edat\.py$|"
 GAME_FILES = {".dat", ".ndfbin", ".gladndfbin", ".dic", ".tgv", ".tgv_pc", ".spk", ".spkpc", ".ppk", ".ipk", ".xyz",
               ".boobspc", ".kdt", ".tms", ".tmst", ".tmst_pc", ".tmst_chunk_pc", ".scenario", ".ess", ".win", ".sdb",
               ".rmod", ".ase2ndfbin", ".exe", ".dll", ".pdb", ".idb", ".i64", ".gzf"}
-PROGRAM = re.compile(r"\bFUN_[0-9A-Fa-f]{6,}\b|\b0x14[0-9A-Fa-f]{7}\b|\bsub_14[0-9A-Fa-f]{7}\b")
+# (an address also as a debugger prints it: zeros before the 14 of the load address, "_" between digits, or split by
+# a backtick after the eighth digit)
+PROGRAM = re.compile(r"\bFUN_[0-9A-Fa-f]{6,}\b|\b0x[0_]*14(?:_?[0-9A-Fa-f]){7}\b|\bsub_14[0-9A-Fa-f]{7}\b|"
+                     r"\b0*1`4[0-9A-Fa-f]{7}\b")
 # words that say what the game's program does or holds (the owner: "NO do not mention exe in public"): public text
 # says what the game does with its data, never what's inside RUSE.exe
 WORDING = re.compile(r"RUSE\.exe'?s\b|RUSE\.exe (?:does|reads|checks|holds|keeps|decides|loads|has|uses|calls)\b|"

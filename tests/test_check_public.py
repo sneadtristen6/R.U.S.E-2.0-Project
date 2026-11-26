@@ -130,6 +130,7 @@ class Guard(unittest.TestCase):
                      "docs/crashes.md"):
             self.assertEqual(len(check({path: where})), 1, path)
         refused = [b"# FUN_1400abc00 makes the parts\n", b"PLACE = 0x1400abd00\n",
+                   b"PLACE = 0x00000001400abd00\n", b"at 0x14_00ab_d00\n", b"at 00000001`400abd00\n",
                    b"# found by decompiling the program in Ghidra, with a debugger and a minidump\n",
                    b"# the RTTI and vtables, read with a hex editor\n",
                    "# trouvé en décompilant le jeu\n".encode("utf-8"), b"# the game's program holds it\n"]
