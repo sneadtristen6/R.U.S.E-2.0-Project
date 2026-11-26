@@ -163,6 +163,31 @@ class TheLauncher(Around):
         self.assertEqual([n["evidence"]["stop"]["code"] for n in self.notes()], ["0x52474c4b"])
         self.assertIsNone(api.closing_check())   # the game has closed: nothing to ask
 
+    def test_a_real_play_records_the_started_game_so_the_launcher_asks_while_it_runs(self):
+        """Review finding 2: the question before closing rests on Play keeping the game it started (play.py: the
+        Starter's game). A stand-in game that keeps running: through a real Play the Launcher's closing_check gives its
+        question, in the player's language; once the game closes, it gives None."""
+        from ruse_launcher.api import words
+        running = Process(None)
+        api = self.launcher(lambda exe: running)
+        api.set_pref("lang", "fr")
+        api.guard_accept_terms()
+        api.add_mod(str(self.cheat))
+        set_id = api.new_set("Cheats", ["dev"])["set"]
+        with mock.patch("rusemod.play.build_and_write", self.build), \
+                mock.patch("rusemod.instance.needs_build", lambda *a: True):
+            self.assertEqual(self.wait(api, api.play(set_id)["job"])["state"], "done")
+        try:
+            check = api.closing_check()
+            self.assertEqual(check, {"title": words("fr")["close_game_running_title"],
+                                     "text": words("fr")["close_game_running_text"]})
+        finally:
+            running.code = 0   # the game closes (and the match watch's thread ends)
+        self.assertIsNone(api.closing_check())
+        end = time.time() + 30
+        while api.guard_stop()["watching"] and time.time() < end:
+            time.sleep(0.05)
+
     def test_control_an_ordinary_close_files_nothing_and_says_nothing(self):
         api = self.launcher(lambda exe: Process(0))
         self.assertEqual(self.played(api, 0), {"watching": False, "notice": None})

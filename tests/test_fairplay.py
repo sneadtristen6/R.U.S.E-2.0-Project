@@ -513,6 +513,8 @@ class Copy(unittest.TestCase):
         rec = self.record()
         self.assertEqual(rec["code"], encode_join_code(24687178, self.fp, [("tanks", "1.2.0")]))
         self.assertEqual((rec["why"], rec["lock"], rec["stop"]), (None, None, None))
+        view = fairplay.copy_view(self.copy, self.game, full=True)
+        self.assertEqual((view["code"], view["problems"], view["fingerprint"]), (rec["code"], [], rec["fingerprint"]))
 
     def test_a_cheat_copy_s_record_says_its_lock_closes_the_game(self):
         """How the copy's lock stops it: it closes the game with RUSE Guard's close number (the Launcher files a stop
@@ -526,8 +528,6 @@ class Copy(unittest.TestCase):
         self.assertFalse(guard.closes_with_stop(self.record(cheat, None)))
         self.assertFalse(guard.closes_with_stop({"lock": "473dc7fef1d1a", "offline": ["x"]}))  # 0.9.8.22's record
         self.assertFalse(guard.closes_with_stop(None))
-        view = fairplay.copy_view(self.copy, self.game, full=True)
-        self.assertEqual((view["code"], view["problems"], view["fingerprint"]), (rec["code"], [], rec["fingerprint"]))
 
     def test_a_cheat_copy_has_its_code_too(self):
         """A copy built with cheats or test tools plays with players who have the same build (GitHub issue 24), so
