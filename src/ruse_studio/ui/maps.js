@@ -9470,6 +9470,35 @@ function renderDelete() {
   $("map-delete-yes").title = w.tip_delete_map;
   $("map-delete-no").textContent = w.cancel;
   $("map-delete-no").title = w.tip_cancel;
+  // Rename map: only the name the menus show (StudioApi.rename_map); the folder and the pack name stay
+  const renaming = mine && mv.renameAsk === mv.current;
+  $("map-rename").classList.toggle("hidden", !mine || renaming);
+  $("map-rename-form").classList.toggle("hidden", !renaming);
+  $("map-rename").textContent = w.rename_map;
+  $("map-rename").title = w.tip_rename_map;
+  $("map-rename-name").title = w.rename_map_name;
+  $("map-rename-name").placeholder = w.rename_map_name;
+  $("map-rename-yes").textContent = w.rename_map;
+  $("map-rename-yes").title = w.tip_rename_map;
+  $("map-rename-no").textContent = w.cancel;
+  $("map-rename-no").title = w.tip_cancel;
+}
+
+async function renameMap() {
+  const w = mv.words, pack = mv.current;
+  $("map-rename-yes").disabled = true;
+  $("map-rename-err").textContent = "";
+  try {
+    const res = await mv.api.rename_map(pack, $("map-rename-name").value);
+    mv.maps = res.maps;
+    mv.renameAsk = null;
+    $("map-rename-yes").disabled = false;
+    window.dispatchEvent(new CustomEvent("map-renamed", { detail: { text: fill(w.map_renamed, { name: mapName(pack) }) } }));
+    await show(pack);
+  } catch (err) {
+    $("map-rename-yes").disabled = false;
+    $("map-rename-err").textContent = (err && err.message) || String(err);
+  }
 }
 
 // --- Menu pictures: the map's two pictures in the game's menus (map.toml picture, wide_picture, start_dots;
@@ -10872,6 +10901,21 @@ function wire() {
   $("map-delete").addEventListener("click", () => { mv.deleteAsk = mv.current; renderDelete(); $("map-delete-yes").focus(); });
   $("map-delete-no").addEventListener("click", () => { mv.deleteAsk = null; renderDelete(); });
   $("map-delete-yes").addEventListener("click", deleteMap);
+  $("map-rename").addEventListener("click", () => {
+    mv.renameAsk = mv.current;
+    $("map-rename-name").value = mapName(mv.current);
+    $("map-rename-err").textContent = "";
+    renderDelete();
+    $("map-rename-name").focus();
+    $("map-rename-name").select();
+  });
+  $("map-rename-no").addEventListener("click", () => { mv.renameAsk = null; renderDelete(); });
+  $("map-rename-yes").addEventListener("click", renameMap);
+  $("map-rename-name").addEventListener("keydown", (e) => {
+    e.stopPropagation();  // typing a name never moves the map
+    if (e.key === "Enter") renameMap();
+    else if (e.key === "Escape") { mv.renameAsk = null; renderDelete(); }
+  });
   $("dup-form").addEventListener("submit", duplicate);
   $("dup-name").addEventListener("input", () => { dup.typed = true; dupNameChanged(); });
   $("dup-entry").addEventListener("change", dupSuggestName);

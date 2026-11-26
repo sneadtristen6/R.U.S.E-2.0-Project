@@ -2373,6 +2373,37 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                 raise
         return {"pack": new, "maps": self.maps()["maps"]}
 
+    def rename_map(self, pack: str, name: str) -> dict:
+        """A new map (one made with Duplicate map) called `name` in the menus from now on, in the current map project.
+        The owner's 12 A (2026-11-26): Rename changes the menu name only; the folder and the pack name stay (other
+        players' sets and join codes see them), so only map.toml's name changes, to `name` in every language. The same
+        checks as Duplicate map's: a name, its length, and not a name the game's map list has. The game's own maps
+        can't be renamed. Returns {"pack": the map's own name (unchanged), "maps": maps()}."""
+        from rusemod import newmap
+        name = " ".join(str(name or "").split())
+        if not name:
+            raise EntryError("Give the new map a name.")
+        if len(name) > newmap.NAME_LONGEST:
+            raise StudioError(f"The name is {len(name)} characters; the menus take {newmap.NAME_LONGEST}.")
+        copy = self._new_maps().get(str(pack or "").lower())
+        if copy is None:
+            # not a game rule: the Studio renames only what it made; the game's own maps are never touched
+            raise StudioError(f"{pack} isn't a new map made in these map changes, so it can't be renamed here: the "
+                              "game's own maps stay.")
+        folder_name, spec = copy
+        battles = [e["name"] for e in self.duplicate_options(spec.copy_of)["entries"] if e["kind"] == "battles"]
+        source_entry = spec.entry if spec.entry is not None else (battles[0] if len(battles) == 1 else None)
+        if source_entry is not None and not newmap.name_fits(source_entry, name, folder_name, self._map_list_names()):
+            raise StudioError(f"The game already has a map called {name!r}. Give the new map another name.")
+        players = self._read_players(folder_name)
+        header = (f"A new map: a copy of {spec.copy_of} called {name!r} in the menus (MOD_FORMAT §8).\n"
+                  "Made in the RUSE Studio, which rewrites this file.")
+        with self._saving:
+            _save_checked(self._map_dir() / "maps" / folder_name / "map.toml",
+                          newmap.map_toml(replace(spec, names={"us": name}), players.count if players else None, header),
+                          lambda d: newmap.parse(d, "map.toml", folder_name))
+        return {"pack": folder_name, "maps": self.maps()["maps"]}
+
     # --- a map's own pictures in the game's menus (map.toml picture, wide_picture, start_dots; rusemod.menupicture,
     # MOD_FORMAT §8): any map's, a shipped one's too, so a themed mod can picture every map its own way. The owner,
     # 2026-10-05: "Having the option for a custom PNG or model and then also being able to make your own": a PNG

@@ -6235,6 +6235,8 @@ window.addEventListener("map-duplicated", async (e) => {
 });
 // Delete map (maps.js) sent a new map to the Recycle Bin: the status line says so
 window.addEventListener("map-deleted", (e) => say(e.detail.text, "ok"));
+// Rename map (maps.js) changed a new map's name in the menus: the status line says so
+window.addEventListener("map-renamed", (e) => say(e.detail.text, "ok"));
 
 // --- "Choose your language" (rusemod.uilang.LanguageCalls): opens by itself until the player has picked a language
 // there (the Studio used to start on the code names, and a French player stayed on them, not knowing it speaks

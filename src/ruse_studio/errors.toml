@@ -422,6 +422,19 @@ jpn = "{0} はこのマップ変更で作った新しいマップではないた
 sc = "{0} 不是在这些地图更改中新建的地图，因此不能在此删除：游戏自带的地图会保留。"
 fa = "{0} نقشهٔ جدیدی نیست که در این تغییرات نقشه ساخته شده باشد، پس اینجا نمی‌توان آن را حذف کرد: نقشه‌های خودِ بازی می‌مانند."
 
+[e395008508e]
+us = "{0} isn't a new map made in these map changes, so it can't be renamed here: the game's own maps stay."
+fr = "{0} n'est pas une nouvelle carte faite dans ces changements de carte : elle ne peut pas être renommée ici. Les cartes du jeu restent."
+ger = "{0} ist keine neue Karte aus diesen Kartenänderungen, also kann sie hier nicht umbenannt werden: die Karten des Spiels bleiben."
+ita = "{0} non è una nuova mappa creata in queste modifiche, quindi non può essere rinominata qui: le mappe del gioco restano."
+spa = "{0} no es un mapa nuevo hecho en estos cambios de mapa, así que no se puede renombrar aquí: los mapas del juego se quedan."
+pol = "{0} nie jest nową mapą z tych zmian map, więc nie można jej tu przemianować: mapy gry zostają."
+ru = "{0} — не новая карта из этих изменений карт, поэтому переименовать её здесь нельзя: карты игры остаются."
+cz = "{0} není nová mapa z těchto změn map, takže ji tu nelze přejmenovat: mapy hry zůstávají."
+jpn = "{0} はこのマップ変更で作った新しいマップではないため、ここでは名前を変えられません。ゲーム本来のマップは残ります。"
+sc = "{0} 不是在这些地图更改中新建的地图，因此不能在此重命名：游戏自带的地图会保留。"
+fa = "{0} نقشهٔ جدیدی نیست که در این تغییرات نقشه ساخته شده باشد، پس اینجا نمی‌توان نام آن را تغییر داد: نقشه‌های خودِ بازی می‌مانند."
+
 [ed22c59be82]
 us = "No detail level called {0}"
 fr = "Aucun niveau de détail nommé {0}"

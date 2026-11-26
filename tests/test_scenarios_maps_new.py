@@ -237,6 +237,47 @@ class Names(MapGame):
         self.assertEqual(self.listed(), [BLITZ, "BlitzAtDusk"])   # nothing made
         self.assertBuilds()
 
+    def a_copy_called_blitz(self) -> str:
+        """The F2 map as an older Studio could leave it: a new map whose folder (its pack name) and menu name are both
+        "Blitz", written straight into the map project (the page refuses that name now). Its map list entry can't
+        be told from the game's own "(2) Blitz", so every Test in game stops on it."""
+        pack = self.api.duplicate_map(BLITZ, "Blitz at Dusk")["pack"]
+        self.map_folder(pack).rename(self.map_dir() / "maps" / "Blitz")
+        f = self.map_folder("Blitz") / "map.toml"
+        f.write_text(f.read_text(encoding="utf-8").replace('name = "Blitz at Dusk"', 'name = "Blitz"'), encoding="utf-8")
+        return "Blitz"
+
+    def test_rename_a_new_map_changes_only_its_menu_name(self):
+        """The owner's 12 A (2026-11-26): Rename changes the menu name only; the folder and the pack name stay. A copy
+        called like the map it copies stops every Test in game; renamed, it builds, and its menus say the new name in
+        every language."""
+        pack = self.a_copy_called_blitz()
+        self.assertEqual(self.build()["state"], "failed")
+        before = self.toml(pack)
+        res = self.api.rename_map(pack, "Blitz Dusk")
+        self.assertEqual(res["pack"], pack)   # (the folder and the pack name stay)
+        self.assertEqual(self.listed(), [BLITZ, pack])
+        self.assertEqual(self.toml(pack), before | {"name": "Blitz Dusk"})
+        self.assertEqual([m["pack"] for m in res["maps"]], [BLITZ, pack])
+        self.assertBuilds()
+        for lang in LANGS:
+            self.assertEqual(self.copy_texts(lang).text(name_to_key("M_D_31")), "Blitz Dusk", lang)
+
+    def test_rename_refuses_what_the_game_or_the_folder_would(self):
+        """The control of rename: a name the map list has, a game map, an empty or a too long name are refused in
+        words with nothing changed; a name with capitals and spaces goes through and builds."""
+        pack = self.a_copy_called_blitz()
+        self.api.rename_map(pack, "Blitz Dusk")
+        before = (self.map_folder(pack) / "map.toml").read_text(encoding="utf-8")
+        self.assertIn("already has a map called", page_said(self.api, "rename_map", pack, "Blitz"))
+        self.assertIn("isn't a new map", page_said(self.api, "rename_map", BLITZ, "Blitz Two"))
+        self.assertIn("Give the new map a name", page_said(self.api, "rename_map", pack, "   "))
+        self.assertIn("characters", page_said(self.api, "rename_map", pack, "x" * 200))
+        self.assertEqual((self.map_folder(pack) / "map.toml").read_text(encoding="utf-8"), before)
+        self.assertEqual(page_said(self.api, "rename_map", pack, "  BLITZ   AT  DUSK  "), "")
+        self.assertEqual(self.toml(pack)["name"], "BLITZ AT DUSK")
+        self.assertBuilds()
+
     def test_f2_the_game_s_other_map_names_are_refused_too_and_no_folder_is_made(self):
         """A name the game's map list has, as the copy would be listed ("(2) Blitz": the made-up game's list holds
         "(2) Blitz" and "01. Leipzig"), is refused before anything is made, even as the first map (no map project
