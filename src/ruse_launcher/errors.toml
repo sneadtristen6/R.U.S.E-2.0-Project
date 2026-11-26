@@ -1055,3 +1055,16 @@ jpn = "{0} は途中で切れています：一部しかダウンロードまた
 sc = "{0} 不完整：只下载或复制了一部分。请重新获取该文件。"
 fa = "{0} ناقص است: فقط بخشی از آن دانلود یا کپی شده است. فایل را دوباره بگیرید."
 
+[e3b36a39ddb]
+us = "{0} holds more than one mod ({1}): add each mod's own file."
+fr = "{0} contient plusieurs mods ({1}) : ajoutez le fichier propre à chaque mod."
+ger = "{0} enthält mehr als einen Mod ({1}): Fügen Sie die eigene Datei jedes Mods hinzu."
+ita = "{0} contiene più di una mod ({1}): aggiungi il file di ogni mod."
+spa = "{0} contiene más de un mod ({1}): añade el archivo de cada mod por separado."
+pol = "{0} zawiera więcej niż jeden mod ({1}): dodaj osobny plik każdego moda."
+ru = "{0} содержит больше одного мода ({1}): добавьте файл каждого мода отдельно."
+cz = "{0} obsahuje více než jeden mod ({1}): přidejte soubor každého modu zvlášť."
+jpn = "{0} には複数の Mod が入っています（{1}）：Mod ごとのファイルを追加してください。"
+sc = "{0} 包含多个模组（{1}）：请分别添加每个模组自己的文件。"
+fa = "{0} بیش از یک ماد دارد ({1}): پروندهٔ هر ماد را جداگانه اضافه کنید."
+

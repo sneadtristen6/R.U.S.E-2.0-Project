@@ -1227,6 +1227,19 @@ def cut_short(path) -> bool:
         return False
 
 
+def _mods_named(z, roots: list) -> str:
+    """The mods a zip holds at `roots` (each folder holding a mod.toml), by the name in their mod.toml, or by their
+    folder's name when it can't be read, joined for a sentence."""
+    out = []
+    for r in roots:
+        try:
+            name = tomllib.loads(z.read(r + MANIFEST).decode("utf-8")).get("mod", {}).get("name")
+        except (tomllib.TOMLDecodeError, UnicodeDecodeError, KeyError, AttributeError, *DAMAGED):
+            name = None
+        out.append(name if isinstance(name, str) and name.strip() else (r.strip("/") or "(top)"))
+    return ", ".join(out)
+
+
 def check(path, read: bool = True) -> dict:
     """Look inside a package: its manifest's info plus `files` (the paths inside) and `root` (the folder in the zip,
     "" when mod.toml is at the top). Refuses anything that isn't one mod folder, holds a script or program, would
@@ -1248,6 +1261,10 @@ def check(path, read: bool = True) -> dict:
         if not roots:
             raise PackageError(f"{path.name} isn't a mod file: there's no {MANIFEST} in it (at the top, or inside one "
                                f"folder).")
+        apart = [r for r in roots if not any(o != r and r.startswith(o) for o in roots)]   # (not inside another's)
+        if len(apart) > 1:
+            raise PackageError(f"{path.name} holds more than one mod ({_mods_named(z, apart)}): add each mod's own "
+                               f"file.")
         root = roots[0]
         files, members = [], {}
         for e, n in zip(entries, names):

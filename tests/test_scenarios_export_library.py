@@ -213,23 +213,34 @@ class Unusual(Library):
         self.assertIn("mod.toml", str(caught.exception))
 
 
-    @unittest.expectedFailure
     def test_FE17_a_zip_of_two_mods(self):
-        """FE-17: a .zip holding two mod folders (a player zipping his whole Mods folder to share it) adds the first
-        and says nothing of the second: package.check takes the shortest of the folders holding a mod.toml. Wanted:
-        refused in words naming what it holds, or each added."""
+        """FE-17: a .zip holding two mod folders (a player zipping his whole Mods folder to share it) added the first
+        and said nothing of the second: package.check took the shortest of the folders holding a mod.toml. Now refused
+        in words naming what it holds (the owner's pick 51e, accepted 2026-11-14)."""
         two = Path(self.tmp.name) / "two-mods.zip"
         with zipfile.ZipFile(two, "w") as z:
             for mod_id in ("aaa-first", "bbb-second"):
                 z.writestr(f"{mod_id}/mod.toml", f'[mod]\nid = "{mod_id}"\nversion = "1.0.0"\n')
                 z.writestr(f"{mod_id}/src/x.rndf", PATCH)
         friend = self.api(home=Path(self.tmp.name) / "friend")
-        try:
+        with self.assertRaises(LauncherError) as caught:
             friend.add_mod(str(two))
-        except LauncherError as exc:
-            self.assertIn("bbb-second", str(exc))
-            return
-        self.assertEqual(sorted(self.shown(friend)), ["aaa-first", "bbb-second"])
+        self.assertIn("aaa-first", str(caught.exception))
+        self.assertIn("bbb-second", str(caught.exception))
+        self.assertEqual(self.shown(friend), {})                          # (nothing added)
+
+    def test_a_zip_of_one_mod_with_other_things_in_it_is_still_one_mod(self):
+        """Control of FE-17: a zip of one folder holding a map's own mod.toml two folders down, and the __MACOSX
+        folder a Mac's zip adds, adds as the one mod."""
+        one = Path(self.tmp.name) / "one-mod.zip"
+        with zipfile.ZipFile(one, "w") as z:
+            z.writestr("only-one/mod.toml", '[mod]\nid = "only-one"\nversion = "1.0.0"\n')
+            z.writestr("only-one/src/x.rndf", PATCH)
+            z.writestr("only-one/maps/x/mod.toml", "# not a mod's own\n")
+            z.writestr("__MACOSX/only-one/._mod.toml", "junk")
+        friend = self.api(home=Path(self.tmp.name) / "friend")
+        friend.add_mod(str(one))
+        self.assertEqual(sorted(self.shown(friend)), ["only-one"])
 
 
 if __name__ == "__main__":
