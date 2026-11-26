@@ -428,6 +428,8 @@ function plainHow(p) {
   if (pl.kind === "unit_file") return /(^|\/)studio\.rndf$/.test(pl.file || "") ? w.pp_how_studio_file : w.pp_how_unit_file;
   if (pl.kind === "text_file") return w.pp_how_unit_file;
   if (pl.kind === "manifest") return w.pp_how_manifest;
+  // a build-menu groups or animations file (modcheck.LIST_FILES): what the build goes without, said before Set aside is clicked
+  if (pl.kind === "list_file") return w["pp_how_" + String(pl.file || "").split("/").pop().replace(/\.toml$/, "")] || w.pp_how_unit_file;
   return p.unit || p.rename_to ? "" : w.pp_how_other;
 }
 
@@ -443,7 +445,8 @@ function fixButton(p, f) {
     : f.fix === "remove_key" ? fillText(w.pp_fix_remove_key, { key: f.key })
     : f.fix === "remove_item" ? fillText(w.pp_fix_remove_item, { item })
     : w.check_set_aside;
-  const tip = { fill: w.tip_pp_fill, remove_key: w.tip_pp_remove_key, remove_item: w.tip_pp_remove_item }[f.fix] || w.tip_check_set_aside;
+  const tip = { fill: w.tip_pp_fill, remove_key: w.tip_pp_remove_key, remove_item: w.tip_pp_remove_item }[f.fix]
+    || (pl.kind === "list_file" ? w.tip_check_set_aside_list : w.tip_check_set_aside);
   const button = el("button", { type: "button", className: f.fix === "set_aside" ? "small ghost" : "small", textContent: label, title: tip || "" });
   button.addEventListener("click", async () => {
     button.disabled = true;

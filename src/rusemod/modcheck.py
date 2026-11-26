@@ -7,9 +7,11 @@ is added. Each problem says what's wrong in plain words, and names the fix the w
 """
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 from .build import MAP_FILES, BuildError, load_mod, read_map_file
+from .plainproblems import LIST_FILES
 from .rndf import RndfError
 from .terrain import map_list, pack_for
 
@@ -30,9 +32,22 @@ def check_mod_folder(folder: Path, game: Path | None = None) -> list[dict]:
     try:  # the rest: mod.toml, the unit edits, the names (the build stops at the first mistake)
         load_mod(folder)
     except (BuildError, RndfError, OSError) as exc:
-        if not any(p["file"] and p["file"] in str(exc) for p in problems):
+        named = list_file_in(folder, str(exc))
+        if named:   # a file of the mod's lists (build-menu groups, animations): its own problem, Set aside offered
+            problems.append({"file": named, "problem": str(exc), "set_aside": True})
+        elif not any(p["file"] and p["file"] in str(exc) for p in problems):
             problems.append({"file": None, "problem": str(exc), "set_aside": False})
     return problems
+
+
+
+def list_file_in(folder: Path, text: str) -> str | None:
+    """The LIST_FILES file that `text` (a build error's words) is about and that is there in `folder`; None otherwise."""
+    said = text.replace("\\", "/")
+    for rel in LIST_FILES:
+        if re.search(rf"(?:^|[\s/]){re.escape(rel)}:", said) and (Path(folder) / rel).is_file():
+            return rel
+    return None
 
 
 def folder_problems(folder: Path, game: Path | None = None) -> list[dict]:
