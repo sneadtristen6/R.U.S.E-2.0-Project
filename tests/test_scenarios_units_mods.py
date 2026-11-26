@@ -68,7 +68,6 @@ class NewMods(Player):
                 self.assertEqual(listed[str(folder)], name)
 
     # U-2: the header's mod menu names a mod by its folder, so a name with no Latin letter shows as my-mod, my-mod-2...
-    @unittest.expectedFailure
     def test_the_mod_menu_shows_something_of_the_name_typed(self):
         shown = {}
         for lang in NOT_LATIN:

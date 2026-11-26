@@ -316,7 +316,8 @@ class ModsAndMaps(WithMod):
         mod = self.home / "mods" / "tank-test"
         maps = self.api.new_mod("D-Day Big", kind="map")
         made = self.home / "maps" / "d-day-big"
-        self.assertEqual(maps, {"mods": [{"path": str(made), "name": "d-day-big"}], "kind": "map", "current": str(made)})
+        self.assertEqual(maps, {"mods": [{"path": str(made), "name": "D-Day Big", "folder": "d-day-big"}], "kind": "map",
+                                "current": str(made)})
         self.assertTrue((made / "maps").is_dir())
         self.assertEqual(self.api.mods()["current"], str(mod))  # the mod stays the Units tab's
         self.assertEqual(self.api._map_dir(), made)
@@ -361,7 +362,7 @@ class Editing(WithMod):
             self.api.edit(M4, "SeuilMort", 15)  # no mod to save it in yet
         mods = self.api.new_mod("Tank Test")
         folder = self.home / "mods" / "tank-test"
-        self.assertEqual(mods, {"mods": [{"path": str(folder), "name": "tank-test"}], "kind": "mod",
+        self.assertEqual(mods, {"mods": [{"path": str(folder), "name": "Tank Test", "folder": "tank-test"}], "kind": "mod",
                                 "current": str(folder)})
         self.assertIn('name        = "Tank Test"', (folder / "mod.toml").read_text(encoding="utf-8"))
 

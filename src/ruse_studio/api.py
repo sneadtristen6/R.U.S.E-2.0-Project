@@ -6057,8 +6057,20 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         current = self._mod_dir(kind)
         if current is not None:
             found.setdefault(str(current), current.name)
-        return {"mods": [{"path": p, "name": n} for p, n in found.items()], "kind": kind,
-                "current": str(current) if current else None}
+        # (the name the mod was given, as the Launcher shows it, not the folder's letters: a Russian or Japanese name
+        # had made my-mod, my-mod-2; two mods of one name tell their folders apart)
+        shown = {}
+        for p, folder_name in found.items():
+            try:
+                shown[p] = package.info_of(p).get("name") or folder_name
+            except (package.PackageError, KeyError, OSError):
+                shown[p] = folder_name
+        counts = {}
+        for n in shown.values():
+            counts[n] = counts.get(n, 0) + 1
+        rows = [{"path": p, "name": f"{shown[p]} ({Path(p).name})" if counts[shown[p]] > 1 else shown[p],
+                 "folder": Path(p).name} for p in found]
+        return {"mods": rows, "kind": kind, "current": str(current) if current else None}
 
     def new_mod(self, name: str, kind: str = "mod") -> dict:
         """Make a new, empty mod (or map: `kind` "map") in the Studio's mods (or maps) folder and start editing it."""

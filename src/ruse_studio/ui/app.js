@@ -255,7 +255,7 @@ function renderMods() {
     const current = kind === "mod" ? state.mod : state.map, list = kind === "mod" ? state.mods : state.maps || [];
     const options = [];
     if (!current) options.push(el("option", { value: "", textContent: kind === "mod" ? w.no_mod : w.no_map, disabled: true, selected: true }));
-    for (const m of list) options.push(el("option", { value: m.path, textContent: m.name, title: m.path,
+    for (const m of list) options.push(el("option", { value: m.path, textContent: m.name, title: m.folder ? m.folder + " - " + m.path : m.path,
       selected: m.path === current }));
     options.push(el("option", { value: NEW, textContent: kind === "mod" ? w.new_mod : w.new_map }),
       el("option", { value: OPEN, textContent: w.open_folder, title: w.tip_open_folder }),
