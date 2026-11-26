@@ -12,6 +12,7 @@ from pathlib import Path
 
 from ruse_studio.api import StudioError
 from ruse_studio.oneblender import ONE, OneBlenderCalls
+from ruse_studio.squadblender import SquadBlenderCalls
 
 SRC = Path(__file__).resolve().parents[1] / "src" / "ruse_studio"
 
@@ -27,9 +28,18 @@ class Stand(OneBlenderCalls):
         self.door = (False, None)   # the squad's own Blender: (something to bring back, its opening's session)
         self.model_sent = True      # the model's own Blender: something sent, or Blender open on it
         self.running = False        # the last Blender still open after its bring-back
+        self.adding = False         # the squad's own Blender was opened by Add a soldier
 
     def _mod_dir(self):
         return self.root / "mod"
+
+    def _squad_work(self, address):
+        return self.root / "mod/blender" / address.rsplit("/", 1)[-1]
+
+    _set_aside = staticmethod(SquadBlenderCalls._set_aside)   # (the real one: it moves the real folder)
+
+    def _squad_adding(self, address):
+        return bool(self.adding)   # (the squad's Blender was opened by Add a soldier)
 
     def _squad_door(self, address):
         return self.door
@@ -229,11 +239,67 @@ class OtherOpeners(unittest.TestCase):
         got = s.blender_back(self.SQUAD)
         self.assertEqual((s.calls, got["door"]), ([("squad_blender_back", False, False)], "squad"))
 
-    def test_a_blender_opened_before_the_update_comes_back(self):
+    HORSE = E + "Descriptor_Unit_Generic_Horse"
+
+    def sending(self, s, address):
+        """A sending of the old Studio's Blender waiting in the squad's Blender folder, never brought back."""
+        work = s._squad_work(address)
+        (work / "sent").mkdir(parents=True)
+        (work / "sent" / "sent.json").write_text('{"session": "the old Studio\'s session"}', encoding="utf-8")
+        (work / "sent" / "a.glb").write_bytes(b"what Blender sent")
+        return work
+
+    def test_a_blender_opened_the_older_way_on_bones_of_its_own_is_refused_in_words_and_its_sending_set_aside(self):
+        """Pick 25 (the owner's 5 A): the older way back takes every animation as Blender sends it; refused, with
+        Open in Blender named, and the sending kept aside (nothing lost)."""
         s = Stand(self.root, squad=True, own_bones=True)   # (the Generic Horse: the old Studio opened its squad Blender)
         s.door = (True, "the old Studio's session")
-        s.blender_back(E + "Descriptor_Unit_Generic_Horse")
+        work = self.sending(s, self.HORSE)
+        with self.assertRaisesRegex(StudioError, r"Open in Blender.*Bring my changes back") as got:
+            s.blender_back(self.HORSE)
+        self.assertEqual(s.calls, [])
+        self.assertIn("sent-not-brought-", str(got.exception))
+        self.assertFalse((work / "sent").exists())
+        kept = [p for p in work.iterdir() if p.name.startswith("sent-not-brought-")]
+        self.assertEqual((kept[0] / "a.glb").read_bytes(), b"what Blender sent")
+
+    def test_the_older_way_refused_with_nothing_sent_yet_says_so_without_a_folder(self):
+        s = Stand(self.root, squad=True, own_bones=True)
+        s.door = (True, "the old Studio's session")   # (its Blender still open, nothing sent)
+        with self.assertRaisesRegex(StudioError, "Use Open in Blender on this squad") as got:
+            s.blender_back(self.HORSE)
+        self.assertNotIn("sent-not-brought", str(got.exception))
+        self.assertEqual(s.calls, [])
+
+    def test_add_a_soldiers_own_blender_stays_on_bones_of_its_own(self):
+        s = Stand(self.root, squad=True, own_bones=True)
+        s.adding = True
+        s.door = (True, "Add a soldier's session")
+        s.blender_back(self.HORSE)
         self.assertEqual(s.calls, [("squad_blender_back", False, False)])
+
+    def test_a_squad_on_the_game_soldiers_bones_from_the_older_way_still_comes_back(self):
+        s = Stand(self.root, squad=True)
+        s.door = (True, "the old Studio's session")
+        s.blender_back(self.SQUAD)
+        self.assertEqual(s.calls, [("squad_blender_back", False, False)])
+
+    def test_its_refusals_in_eleven_languages(self):
+        import re
+        text = tomllib.loads((SRC / "errors.toml").read_text(encoding="utf-8"))
+        src = (SRC / "oneblender.py").read_text(encoding="utf-8")
+        from rusemod.wordedtext import key_of, LANGS
+        for us in ("This squad was opened in Blender the older way, and the Studio no longer takes that way back for a "
+                   "squad with bones of its own. What that Blender sent is kept in {0}. Use Open in Blender on this "
+                   "squad, change it there, then Bring my changes back.",
+                   "This squad was opened in Blender the older way, and the Studio no longer takes that way back for a "
+                   "squad with bones of its own. Use Open in Blender on this squad, change it there, then Bring my "
+                   "changes back."):
+            entry = text[key_of(us)]
+            self.assertEqual(entry["us"], us)
+            for lang in LANGS:
+                self.assertTrue(entry.get(lang), lang)
+                self.assertEqual(sorted(re.findall(r"\{\d\}", entry[lang])), sorted(re.findall(r"\{\d\}", us)), lang)
 
     def test_add_a_soldier_after_the_one_button_comes_back_without_its_ticks(self):
         s = Stand(self.root, squad=True)
@@ -254,6 +320,7 @@ class OtherOpeners(unittest.TestCase):
     def test_add_a_soldier_beside_the_one_buttons_model_blender_comes_back_first(self):
         s = Stand(self.root, squad=True, own_bones=True)
         s.blender_open(E + "Descriptor_Unit_Generic_Horse", {"model": True, "kind": "", "bones": False})
+        s.adding = True
         s.door = (True, "Add a soldier's session")   # (the model's Blender closed, its sending not brought back yet)
         s.blender_back(E + "Descriptor_Unit_Generic_Horse")
         s.door = (False, "Add a soldier's session")   # (he joined; then the model's own sending)
