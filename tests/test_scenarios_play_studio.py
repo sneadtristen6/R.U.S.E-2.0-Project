@@ -255,7 +255,7 @@ class TheChecksFixes(PlayScenario):
         self.assertNotIn("SuperCrossRoads4", said["us"])
         self.assertIn(str(source), said["us"])
 
-    @unittest.expectedFailure    # finding P-4: the check passes mods the build stops on (SQ-7's class)
+    # finding P-4 (SQ-7's class); the owner's 11 A, 2026-11-26: the quick checks only, before the build starts
     def test_the_check_says_what_test_in_game_will_stop_on(self):
         """The check before Test in game (check_mod: "Every file of the current mod read as the build reads it") finds
         nothing in a mod the build then stops on: a patch of an object the game hasn't got, and what a unit deleted
@@ -269,7 +269,32 @@ class TheChecksFixes(PlayScenario):
         j = self.in_game()
         print("\nP-4 check:", checked, "| Test in game:", j["state"], j.get("errors"))
         self.assertEqual(j["state"], "failed")
-        self.assertEqual(len(checked), len(j["errors"] or []))
+        # every mistake the build stopped on is in the check's list (the build stops at its first, the check lists
+        # both), and the left-over copy is one of them, with its fix
+        self.assertTrue(j["errors"])
+        for error in j["errors"]:
+            self.assertIn(error, checked)
+        self.assertEqual(len(checked), 2, checked)
+        left = [p for p in self.page.check_mod()["problems"] if "Descriptor_Unit_Gone" in p["problem"]]
+        self.assertEqual([f["fix"] for f in left[0]["fixes"]], ["unit_leftovers"])
+        # the fix takes the file out, and the check is clean of it
+        self.page.fix_problem({"fix": "unit_leftovers", "unit": "Descriptor_Unit_Gone", "file": left[0]["file"]})
+        self.assertFalse((models / "Descriptor_Unit_Gone.copy.toml").exists())
+        self.assertEqual([p for p in self.problems() if "Descriptor_Unit_Gone" in p], [])
+
+    def test_the_quick_check_leaves_good_work_alone(self):
+        """The control of P-4: a clean mod's check is still empty; a patch of an object the mod makes itself, one of
+        a game unit, and a copy of a model for a unit the mod makes are all fine (no false stop before the build)."""
+        folder = self.a_mod()
+        self.assertEqual(self.problems(), [])
+        (folder / "src" / "own.rndf").write_text(
+            f"Descriptor_Unit_Mine is clone {M4} ( SeuilMort = 1 )\n"
+            f"patch $/GFX/Everything/Descriptor_Unit_Mine ( SeuilMort = 2 )\npatch {M4} ( SeuilMort = 3 )\n",
+            encoding="utf-8")
+        models = folder / "files" / "models"
+        models.mkdir(parents=True, exist_ok=True)
+        (models / "Descriptor_Unit_Mine.copy.toml").write_text('of = ["x"]\n', encoding="utf-8")
+        self.assertEqual(self.problems(), [])
 
 
 CSV = "key,us,fr\nDescriptor_Unit_M4_Sherman,Sherman,Char moyen é\n"

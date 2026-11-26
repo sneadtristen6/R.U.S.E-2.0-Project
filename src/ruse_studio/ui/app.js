@@ -442,8 +442,10 @@ function fixButton(p, f) {
   const label = f.fix === "fill" ? (w["pp_fix_fill_" + f.key] || fillText(w.pp_fix_fill, { key: problemKey(f.key) }))
     : f.fix === "remove_key" ? fillText(w.pp_fix_remove_key, { key: f.key })
     : f.fix === "remove_item" ? fillText(w.pp_fix_remove_item, { item })
+    : f.fix === "unit_leftovers" ? w.test_fix_unit_leftovers  // what a deleted unit left (the same words as Test in game's)
     : w.check_set_aside;
-  const tip = { fill: w.tip_pp_fill, remove_key: w.tip_pp_remove_key, remove_item: w.tip_pp_remove_item }[f.fix] || w.tip_check_set_aside;
+  const tip = { fill: w.tip_pp_fill, remove_key: w.tip_pp_remove_key, remove_item: w.tip_pp_remove_item,
+    unit_leftovers: w.tip_test_fix_unit_leftovers }[f.fix] || w.tip_check_set_aside;
   const button = el("button", { type: "button", className: f.fix === "set_aside" ? "small ghost" : "small", textContent: label, title: tip || "" });
   button.addEventListener("click", async () => {
     button.disabled = true;

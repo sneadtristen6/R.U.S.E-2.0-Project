@@ -61,6 +61,7 @@ from rusemod.uilang import LanguageCalls
 from rusemod.build import find_pack
 from rusemod.edat import Edat
 from rusemod.menupicture import PictureError
+from rusemod import modcheck
 from rusemod.modcheck import check_mod_folder
 from rusemod.newmap import NewMapError
 from rusemod.players import PlayersError
@@ -5807,15 +5808,41 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         folder = self._mod_dir()
         found = []
         from rusemod.plainproblems import explain
-        for where, checked in (("mod", folder), ("map", self._mod_dir("map"))):
-            if checked is None or (where == "map" and folder is not None and checked.resolve() == folder.resolve()):
-                continue  # (a mod that holds its maps: checked once, as the mod)
-            problems = check_mod_folder(checked, self._game()) + (self._research_problems() if where == "mod" else [])
-            for p in (explain(p) for p in problems):
-                pack = p["plain"].get("map")
-                if pack:  # the map's name as the menus say it, in each language, for the plain words
-                    p["plain"]["map_titles"] = self._map_titles(pack, checked)
-                found.append(p | {"where": where})
+        folders = [(where, checked) for where, checked in (("mod", folder), ("map", self._mod_dir("map")))
+                   if checked is not None and not (where == "map" and folder is not None
+                                                   and checked.resolve() == folder.resolve())]
+        # the build's quick checks (the owner's 11 A, 2026-11-26: seconds, never a full dry build): against the game's
+        # index, which Test in game has anyway; without one the build says them as before
+        game_index = None
+        try:
+            game_index = self._open()
+        except (OSError, sqlite3.Error):
+            pass
+        try:
+            made = set()
+            for _where, checked in folders:  # (what the mod makes may be what the map's folder copies, or the reverse)
+                made |= modcheck.made_by(checked)
+                try:
+                    made |= set(ModEdits(checked).new_units)
+                except EditsFileError:
+                    pass   # (the file check says what is wrong with it)
+            for where, checked in folders:
+                problems = check_mod_folder(checked, self._game()) + (self._research_problems() if where == "mod" else [])
+                if game_index is not None:
+                    lang = self.prefs().get("lang") or schema.BASE
+                    for q in modcheck.build_problems(checked, game_index.has, made):
+                        q["problem"] = buildtext.worded(q["problem"], lang)
+                        problems.append(q)
+                for p in (explain(p) for p in problems):
+                    pack = p["plain"].get("map")
+                    if pack:  # the map's name as the menus say it, in each language, for the plain words
+                        p["plain"]["map_titles"] = self._map_titles(pack, checked)
+                    if p.get("leftover"):  # what a deleted unit left: the same fix Test in game's mistake offers
+                        p["fixes"] = [{"fix": "unit_leftovers", "unit": p["leftover"], "file": p["file"]}]
+                    found.append(p | {"where": where})
+        finally:
+            if game_index is not None:
+                game_index.close()
         return {"mod": str(folder) if folder is not None else None, "problems": found}
 
     def _map_titles(self, pack: str, folder: Path) -> dict:
@@ -5887,6 +5914,15 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         if kind == "set_aside":
             return self.set_aside(fix.get("file"), fix.get("where", "mod"))
         folder = self._checked_dir(fix.get("where", "mod"))
+        if kind == "unit_leftovers":   # what a unit deleted from the mod left behind (the same fix as Test in game's)
+            unit = str(fix.get("unit", ""))
+            with self._saving:
+                left = self._take_leftovers(ModEdits(folder), f"$/GFX/Everything/{unit}")
+            if not left:
+                # not a game rule: nothing of that unit is left in the mod, or it's a unit the game or the mod has
+                raise StudioError(f"Nothing that {unit} left behind is in the mod any more, or it is a unit the mod or "
+                                  f"the game has.")
+            return self.check_mod() | {"message": None}
         path = folder / str(fix.get("file") or "")
         if path.name not in MAP_FILES or path.parent.parent != folder / "maps" or not path.is_file():
             raise StudioError(f"{fix.get('file')} isn't one of this mod's map files")
