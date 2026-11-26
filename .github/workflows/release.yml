@@ -65,6 +65,12 @@ jobs:
         env:
           PYTHONPATH: src
         run: python -m rusemod.releasesig --check-keys
+      # the same for the known-crash list's key (rusemod.knowncrashes, the legal fixes' Part 3): an app without the
+      # owner's key, or with a published test key, could never trust a list again; no release is built without it
+      - name: The owner's known-crash list key is in the apps
+        env:
+          PYTHONPATH: src
+        run: python -m rusemod.knowncrashes --check-key
       # The Studio carries the game's own Python 2.5.1 (installers/build_app.py python251), as apps.yml gets it:
       # python.org's installer, used only when it's the very file python.org gave out (its SHA-256 below; python.org
       # lists its MD5, a1d1a9c07bc4c78bd8fa05dd3efec87f, and its size, 10,970,624 bytes), unpacked, never installed.
