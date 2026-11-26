@@ -279,7 +279,13 @@ def lock_lines(words: dict | None) -> tuple[str, ...] | None:
     if not words:
         return None
     lines = tuple(str(words.get(name) or english) for name, english in LOCK_LINES.items())
+    # a line in a script the game can't draw stays English: Persian's (his game test 2026-11-26, step 4: every letter a
+    # box; his 23: "else English in the game")
+    lines = tuple(english if NOT_DRAWN.search(line) else line for line, english in zip(lines, LOCK_LINES.values()))
     return None if lines == tuple(LOCK_LINES.values()) else lines
+
+
+NOT_DRAWN = re.compile("[؀-ۿݐ-ݿﭐ-﷿ﹰ-﻿]")   # the Arabic script blocks (Persian's)
 
 
 def lock_script(code: str = NO_BUILD_CODE, lines: tuple | None = None) -> bytes:

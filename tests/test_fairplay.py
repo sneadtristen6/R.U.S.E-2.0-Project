@@ -340,8 +340,9 @@ class SameBuild(SwitchedOn):
 
     def test_the_lock_speaks_the_players_language(self):
         """The lock's lines come from the app's own words in the player's language (the owner's 23, 2026-11-25:
-        "Yes, I agree with 23 in every language"), in both apps and all eleven languages, Persian too; the build
-        fills them in as one value, nothing else in the lock changes; English needs nothing filled in."""
+        "Yes, I agree with 23 in every language"), in both apps and the game's ten languages (Persian: English, since
+        his game test of 2026-11-26); the build fills them in as one value, nothing else in the lock changes; English
+        needs nothing filled in."""
         from rusemod import schema
         from ruse_launcher.api import words as launcher_words
         from ruse_studio.api import words as studio_words
@@ -350,6 +351,9 @@ class SameBuild(SwitchedOn):
             self.assertIsNone(fairplay.lock_lines(None))
             for lang in schema.APP_LANGS:
                 if lang == "us":
+                    continue
+                if lang not in schema.LANGS:   # Persian: the game draws its letters as boxes (his game test, 2026-11-26)
+                    self.assertIsNone(fairplay.lock_lines(app_words(lang)), lang)   # so the lock's own English
                     continue
                 lines = fairplay.lock_lines(app_words(lang))
                 self.assertEqual(len(lines), 4, lang)
@@ -401,7 +405,10 @@ class SameBuild(SwitchedOn):
         from ruse_launcher.api import words as launcher_words
         a = fairplay.build_code("24687178", self.FP, self.MODS)
         b = fairplay.build_code("24687178", self.FP, self.MODS + [("money", "0.3.0")])
-        french, persian = fairplay.lock_lines(launcher_words("fr")), fairplay.lock_lines(launcher_words("fa"))
+        # (the Persian lines straight from the words: since his game test the app gives a Persian player the lock's
+        # English, but the lock script must still carry any lines whole under the game's Python)
+        french = fairplay.lock_lines(launcher_words("fr"))
+        persian = tuple(launcher_words("fa")[k] for k in fairplay.LOCK_LINES)
         with tempfile.TemporaryDirectory() as tmp:
             out = Path(tmp)
             for name, data in (("lock_a", fairplay.lock_script(a)), ("lock_a2", fairplay.lock_script(a)),

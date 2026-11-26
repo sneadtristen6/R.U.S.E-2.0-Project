@@ -86,6 +86,15 @@ FAIRPLAY = fairplay   # (the build stand-in's own argument is named as the build
 
 
 class TheLocksLines(Around):
+    def test_persian_lock_lines_are_english_in_the_game(self):
+        """His game test (2026-11-26, step 4, his screenshot 20261126143926_1.jpg): the game draws every Persian letter
+        as a box, so a Persian player's lock says English in the game (his 23: "else English in the game"); the other
+        languages keep their own, and the app's own Persian words are untouched."""
+        from ruse_launcher.api import words
+        self.assertIsNone(fairplay.lock_lines(words("fa")))                 # every line Persian: the lock's own English
+        self.assertEqual(fairplay.lock_lines(words("fr")), tuple(words("fr")[k] for k in fairplay.LOCK_LINES))
+        self.assertNotEqual(words("fa")["guard_lock_check"], fairplay.LOCK_LINES["guard_lock_check"])
+
     def test_a_cheat_copy_s_lock_gets_the_player_s_lines_from_the_app_s_words(self):
         from ruse_launcher.api import words
         starter = Starter(open_url=lambda u: None, start_game=lambda exe: None, steam_running=lambda: True)
