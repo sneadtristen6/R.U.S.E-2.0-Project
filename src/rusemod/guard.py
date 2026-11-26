@@ -13,9 +13,13 @@ does for it. Like the rest of fair play it is SWITCHED OFF (rusemod.fairplay.ON)
   match's replay, the copy's fingerprint and file list, the signed manifests and the process scan's findings (§3.5),
   signs the bundle with this install's own key and sends it to the RUSE Guard server, or keeps it in the outbox
   until a server is set.
-- **The process scan** (§3.5, disclosed in the terms, the player can say no) looks only while a multiplayer match is
-  live, only at running programs' names, against the server's list of known cheat tools. It reports names, never
-  anything else, and it never decides anything: the server only uses it to raise a review that a real detector opened.
+- **The process scan** (§3.5, disclosed in the terms; part of RUSE Guard, which the apps require) looks only while a
+  multiplayer or co-op match is on, only at running programs' names, against RUSE Guard's list of known cheat tools,
+  which comes inside the app as a plain file anyone can read and changes only with an app update (CHEAT_TOOLS, the
+  owner's 14 A of 2026-11-25: nothing is downloaded for it). The Launcher knows a match is on from the in-game
+  record's lines on the game's own error output, which it reads while the game runs (GameLines; the owner's 31 A:
+  "Repair it for 31"). It reports names, never anything else, and it never decides anything: the server only uses it
+  to raise a review that a real detector opened.
 Nothing here judges or bans: the server opens reviews for people to look at.
 """
 from __future__ import annotations
@@ -44,7 +48,9 @@ DEV_KEY = "guard/devkey.txt"                          # in the platform folder: 
 CLIENT_KEY = "guard/client.key"                       # this install's own signing key (made on first use)
 OUTBOX = "guard/outbox"                               # bundles waiting for a server
 REFUSED = "guard/refused"                             # bundles the server rejected for good (out of the send queue)
-SIGNATURES = "guard/signatures.json"                  # the server's list of known cheat tools (last fetched)
+CHEAT_TOOLS = Path(__file__).with_name("guard_cheat_tools.toml")  # the list of known cheat tools, inside the app
+SIGNATURES = "guard/signatures.json"                  # where apps up to 0.4.8.22 kept the list they downloaded; this one
+#                                                       neither downloads it nor reads or writes that file any more
 SERVER = "https://ruse-guard.sneadtristen6.workers.dev"  # the project's server: the app window sets it as the default
 #                                                       (GuardCalls.use_guard_server), so tests keep their bundles
 MANIFEST = "ruseguard.manifest"                       # a signed mod manifest, in the mod's folder
@@ -57,6 +63,11 @@ TERMS_VERSION = 4                                     # the agreement's version;
 #                                                       rusemod.bugwatch.AGREEMENT_V4)
 BUNDLE_LIMIT = 20_000_000                             # the most a bundle may weigh (the replay is most of it)
 SCAN_EVERY = 30                                       # seconds between process scans in a live multiplayer match
+# The in-game record's lines on the game's own error output (gamescripts/guard_hash.py25): "live multi 1 coop 0" ten
+# seconds of game time into a multiplayer or co-op match and every 30 after, "end" when the match's world closes
+MATCH_LINE = re.compile(rb"RUSEGUARD-MATCH (live multi ([01]) coop ([01])|end)\b")
+LIVE_FOR = 120                                        # seconds one "live" line keeps the match on (4 missed: over)
+LINE_MOST = 4096                                      # the most of one line of the game's error output read at once
 
 
 class GuardError(Exception):
@@ -383,26 +394,24 @@ def send(server: str, body: dict, timeout: float = 30) -> dict:
         raise GuardError(f"the RUSE Guard server answered {e.code}") from e  # 5xx (incl. 503 full): try again later
 
 
-def signatures(home, server: str = "", timeout: float = 15) -> list:
-    """The server's list of known cheat tools, fetched when a server is set (kept for when it isn't reachable)."""
-    cache = Path(home, SIGNATURES)
-    if server:
-        try:
-            req = urllib.request.Request(server.rstrip("/") + "/api/signatures",
-                                         headers={"User-Agent": "RUSE-Guard-client"})
-            with net.urlopen(req, timeout) as r:  # noqa: S310
-                found = json.loads(r.read(1_000_000))
-            if isinstance(found, list):
-                cache.parent.mkdir(parents=True, exist_ok=True)
-                cache.write_text(json.dumps(found), encoding="utf-8")
-                return found
-        except (OSError, ValueError):
-            pass
+def cheat_tools(path: Path | None = None) -> list:
+    """RUSE Guard's list of known cheat tools: [{"name": "x.exe", "what": "..."}], read from the plain file that comes
+    inside the app (CHEAT_TOOLS), so anyone can read exactly what the program check looks for, and only an app update
+    changes it. Nothing is downloaded for it (the owner's 14 A, 2026-11-25; until Launcher 0.4.8.22 it came from the
+    server at every Play). A list that can't be read raises GuardError: the program check doesn't run quietly without
+    it."""
     try:
-        found = json.loads(cache.read_text(encoding="utf-8"))
-        return found if isinstance(found, list) else []
-    except (OSError, ValueError):
-        return []
+        data = tomllib.loads(Path(path or CHEAT_TOOLS).read_text(encoding="utf-8"))
+    except (OSError, ValueError) as e:
+        raise GuardError(f"RUSE Guard's list of known cheat tools can't be read ({e}); reinstall the app.") from e
+    tools = []
+    for entry in data.get("tool", []):
+        name = str(entry.get("name", "")).strip().lower() if isinstance(entry, dict) else ""
+        if name:
+            tools.append({"name": name, "what": str(entry.get("what", ""))})
+    if not tools:
+        raise GuardError("RUSE Guard's list of known cheat tools is empty; reinstall the app.")
+    return tools
 
 
 def set_aside(home, path: Path) -> None:
@@ -567,10 +576,94 @@ def collect_stops(home, since, *, username: str, server: str = "", now: int | No
     return said
 
 
+# --- whether a match is on: the in-game record's lines on the game's own error output (the owner's 31 A) ---
+class GameLines(threading.Thread):
+    """Reads the game's own error output while the game runs: the Launcher starts the game with it on a pipe
+    (rusemod.play.start_game_watched). In every multiplayer or co-op match, and in no other, the in-game record
+    (gamescripts/guard_hash.py25) puts lines there: "live" with whether it's multiplayer or co-op, ten seconds of game
+    time in and every 30 after, and "end" when the match's world closes. Only those lines are kept, as one entry per
+    match (`matches`); every other line is dropped as soon as it's read, never kept, written or sent (the game's
+    output can also carry Steam's own lines, with the player's Steam account number in one: 10-30). When reading
+    stops, the pipe is closed, so the game's next line fails at once instead of waiting for a reader."""
+
+    def __init__(self, stream, clock=time.monotonic, wall=time.time):
+        super().__init__(daemon=True, name="ruse-guard-lines")
+        self.stream, self.clock, self.wall = stream, clock, wall
+        self.matches: list[dict] = []   # {"started", "multi", "coop", "seen", "ended", "findings"} in order
+        self._lock = threading.Lock()
+
+    def run(self) -> None:
+        try:
+            while True:
+                raw = self.stream.readline(LINE_MOST)
+                if not raw:
+                    break
+                self.take(raw)
+        except (OSError, ValueError):
+            pass
+        finally:
+            try:
+                self.stream.close()
+            except OSError:
+                pass
+
+    def take(self, raw: bytes) -> None:
+        """One line of the game's error output: a match's "live" or "end" line is kept; any other line, dropped."""
+        m = MATCH_LINE.search(raw)
+        if m is None:
+            return
+        with self._lock:
+            last = self.matches[-1] if self.matches else None
+            if m.group(1) == b"end":
+                if last is not None and last["ended"] is None:
+                    last["ended"] = int(self.wall())
+                return
+            multi, coop = m.group(2) == b"1", m.group(3) == b"1"
+            if not (multi or coop):
+                return  # the record says a line only in a multiplayer or co-op match
+            if last is None or last["ended"] is not None or self.clock() - last["seen"] > LIVE_FOR:
+                last = {"started": int(self.wall()), "multi": multi, "coop": coop, "ended": None, "findings": []}
+                self.matches.append(last)
+            last["seen"] = self.clock()
+
+    def live(self) -> dict | None:
+        """The match that is on now, or None: its last "live" line came less than LIVE_FOR seconds ago, and no "end"
+        since."""
+        with self._lock:
+            last = self.matches[-1] if self.matches else None
+            if last is None or last["ended"] is not None or self.clock() - last["seen"] > LIVE_FOR:
+                return None
+            return last
+
+
+def report_checks(home, matches, *, username: str, server: str = "", now: int | None = None,
+                  say=print) -> list[str]:
+    """After the game closed: each multiplayer or co-op match in which the program check found a listed cheat tool
+    running becomes a small signed bundle, filed under the player's chosen `username` (never their Steam ID): when it
+    started and ended, multiplayer or co-op, and those tools' names and what the list says they are
+    (evidence.process_findings); delivered or kept. Nothing else goes in: no replay, no record of the game, no files,
+    no other program's name. A match where nothing listed was running sends nothing. One line per bundle."""
+    now = int(time.time()) if now is None else now
+    dev, said = dev_key(home), []
+    for m in matches:
+        if not m.get("findings"):
+            continue
+        log = MatchLog(started=int(m["started"]), multiplayer=bool(m["multi"]), coop=bool(m["coop"]), local="")
+        if m.get("ended") is not None:
+            log.ended = -1.0  # it ended in the game ("end" seen); its game time isn't known here
+        body = bundle(home, log, username=username, record={}, replay=None, manifests=[], dev=dev,
+                      findings=list(m["findings"]), ended=int(m.get("ended") or now))
+        said.append(f"RUSE Guard: the program check of match {body['bundle_id']}: " + deliver(home, body, server))
+    for line in said:
+        say(line)
+    return said
+
+
 class MatchWatch(threading.Thread):
-    """Runs beside the game the Launcher started: while a multiplayer match is live and the player allowed it, the
-    process scan every SCAN_EVERY seconds; when the game closes, `collect` the match record, then `collect_stops` any
-    crash the offline lock caused."""
+    """Runs beside the game the Launcher started: while a multiplayer or co-op match is on (the in-game record's
+    lines, GameLines; or a match record file, should a game ever write one) and the player accepted RUSE Guard, the
+    process scan every SCAN_EVERY seconds; when the game closes, `collect` the match record, `report_checks` what the
+    scan found, then `collect_stops` any crash the offline lock caused."""
 
     def __init__(self, process, home, game, copy, *, username: str, consent: dict, manifests: list, say=print,
                  sleep=time.sleep, local: str | None = None):
@@ -584,17 +677,32 @@ class MatchWatch(threading.Thread):
     def run(self) -> None:
         # the program check is part of RUSE Guard (not an opt-in): it runs whenever the player has accepted the terms
         accepted = self.consent.get("terms", 0) >= TERMS_VERSION
-        sigs = signatures(self.home, self.consent.get("server", "")) if accepted else []
+        tools = []
+        if accepted:
+            try:
+                tools = cheat_tools()
+            except GuardError as e:
+                self.say(f"RUSE Guard: {e}")  # said, never a check that quietly doesn't run
+        lines = getattr(self.process, "guard_lines", None)  # the game's own lines (rusemod.play.start_game_watched)
         while self.process.poll() is None:
-            if sigs and live_multiplayer(self.copy):
-                for f in scan(sigs):
-                    if f not in self.findings:
-                        self.findings.append(f)
+            match = lines.live() if lines is not None else None
+            if tools and (match is not None or live_multiplayer(self.copy)):
+                found = match["findings"] if match is not None else self.findings
+                try:
+                    for f in scan(tools):
+                        if f not in found:
+                            found.append(f)
+                except (OSError, ValueError, subprocess.SubprocessError):
+                    pass  # the task list couldn't be read this time: the next scan tries again
             self.sleep(SCAN_EVERY)
-        if self.consent.get("terms", 0) >= TERMS_VERSION:
+        if accepted:
             server = self.consent.get("server", "")
             collect(self.home, self.game, self.copy, username=self.username, scan_findings=self.findings,
                     manifests=self.manifests, server=server, say=self.say)
+            if lines is not None:
+                if isinstance(lines, threading.Thread) and lines.is_alive():
+                    lines.join(2)  # the game's last lines (a match's "end") may still be on their way
+                report_checks(self.home, lines.matches, username=self.username, server=server, say=self.say)
             # the offline lock stops a cheat copy by crashing it: read that crash's marked lines and send them too
             collect_stops(self.home, self.started, username=self.username, server=server, say=self.say,
                           local=self.local)

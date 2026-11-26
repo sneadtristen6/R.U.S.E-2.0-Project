@@ -151,6 +151,18 @@ def start_game(exe: Path):
     return subprocess.Popen([str(exe)], cwd=str(exe.parent))
 
 
+def start_game_watched(exe: Path):
+    """The Launcher's start of the game: as start_game, with the game's own error output on a pipe that RUSE Guard
+    reads for as long as the game runs, to know when a multiplayer or co-op match is on (rusemod.guard.GameLines: it
+    keeps only the in-game record's match lines and drops every other line as it's read). The Studio's Test in game
+    uses start_game: RUSE Guard's match watch is the Launcher's only."""
+    from .guard import GameLines
+    process = subprocess.Popen([str(exe)], cwd=str(exe.parent), stderr=subprocess.PIPE)
+    process.guard_lines = GameLines(process.stderr)
+    process.guard_lines.start()
+    return process
+
+
 def steam_running() -> bool:
     if sys.platform != "win32":
         return True

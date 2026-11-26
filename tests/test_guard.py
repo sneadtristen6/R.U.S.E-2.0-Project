@@ -1,15 +1,22 @@
 """RUSE Guard, the Launcher's side (rusemod.guard): signed tokens in DomesticNukes' format, dev keys, signed mod
-manifests, the in-game record, the process scan, and a match's evidence bundle kept or sent."""
+manifests, the in-game record, the process scan, its list inside the app and the game's lines that say a match is on,
+and a match's evidence bundle kept or sent.
+
+Checked our_tools.json: none of its tools tests the Launcher's own code; these tests read no program: where they name
+the game's program file, it is a made-up path handed to a stand-in for starting a program."""
 import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
+import io
 import json
 import os
 import shutil
+import sys
 import tempfile
 import threading
 import time
 import unittest
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
+from unittest import mock
 
 from rusemod import ed25519, guard
 
@@ -353,9 +360,9 @@ class Bundle(unittest.TestCase):
     def _watch_scan(self, consent):
         # run a MatchWatch with the program check's module functions stubbed, and return (findings, whether it looked)
         looked = []
-        orig = (guard.signatures, guard.live_multiplayer, guard.scan)
+        orig = (guard.cheat_tools, guard.live_multiplayer, guard.scan)
         self.addCleanup(lambda: setattr_many(guard, orig))
-        guard.signatures = lambda home, server="", *a, **k: (looked.append(1), [{"name": "x.exe", "what": "tool"}])[1]
+        guard.cheat_tools = lambda *a, **k: (looked.append(1), [{"name": "x.exe", "what": "tool"}])[1]
         guard.live_multiplayer = lambda copy: True
         guard.scan = lambda sigs, programs=None: list(sigs)
 
@@ -383,7 +390,252 @@ class Bundle(unittest.TestCase):
 
 
 def setattr_many(mod, values):
-    mod.signatures, mod.live_multiplayer, mod.scan = values
+    mod.cheat_tools, mod.live_multiplayer, mod.scan = values
+
+
+LIVE = b"gc: collectable <RUSEGUARD-MATCH live multi 1 coop 0 instance at 00000000029A3B20>\r\n"   # as the game says them
+COOP = b"gc: collectable <RUSEGUARD-MATCH live multi 0 coop 1 instance at 00000000029A3B20>\r\n"
+END = b"gc: collectable <RUSEGUARD-MATCH end instance at 00000000029A3C40>\r\n"
+STEAM = b"Caching Steam ID:  76561198012345678 [API loaded no]\n"   # a line Steam's own library writes there
+
+
+class ProgramCheck(unittest.TestCase):
+    """The program check, repaired (the owner, 2026-11-25: "Repair it for 31", and for its list, question 14:
+    "Fourteen's fine, go with your pick."): its list comes inside the app and nothing is downloaded for it; it looks
+    only while the game's own lines say a multiplayer or co-op match is on; what it found goes out after the game,
+    that and nothing more."""
+
+    def setUp(self):
+        self.dir = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, self.dir, True)
+        self.home, self.game, self.copy = self.dir / "home", self.dir / "Steam/steamapps/common/RUSE", self.dir / "copy"
+        for p in (self.home, self.game, self.copy):
+            p.mkdir(parents=True)
+
+    def test_nothing_is_downloaded_for_the_list(self):
+        """Until Launcher 0.4.8.22 the watch of every game it started fetched the list from the server set."""
+        asked = []
+
+        def no_network(*args, **kwargs):
+            asked.append(args)
+            raise OSError("no network in this test")
+
+        class Closed:
+            def poll(self):
+                return 0
+        with mock.patch.object(guard.net, "urlopen", no_network):
+            # the watch of a game the Launcher started, with the project's server set: the list isn't fetched
+            guard.MatchWatch(Closed(), self.home, self.game, self.copy, username="Nick#4821",
+                             consent={"terms": guard.TERMS_VERSION, "server": "http://127.0.0.1:9"}, manifests=[],
+                             say=lambda s: None, sleep=lambda s: None, local=str(self.dir / "none")).run()
+        self.assertEqual(asked, [])
+        self.assertFalse((self.home / guard.SIGNATURES).exists())
+
+    def test_the_list_comes_inside_the_app(self):
+        tools = guard.cheat_tools()
+        self.assertEqual(guard.CHEAT_TOOLS.parent, Path(guard.__file__).parent)  # a plain file inside the app
+        names = [t["name"] for t in tools]
+        self.assertEqual(len(tools), 10)                                         # today's list, 2026-11-25
+        self.assertEqual(len(set(names)), 10)
+        for t in tools:
+            self.assertTrue(t["name"] == t["name"].lower() and t["name"].endswith(".exe") and t["what"], t)
+        self.assertIn({"name": "squalr.exe", "what": "Squalr, a memory editor"}, tools)
+
+    def test_a_list_that_cant_be_read_is_said_not_skipped(self):
+        broken = self.dir / "list.toml"
+        for text in ("[[tool]\nname = ", "# nothing listed\n"):
+            broken.write_text(text, encoding="utf-8")
+            with self.assertRaises(guard.GuardError):
+                guard.cheat_tools(broken)
+        said = []
+
+        class Closed:
+            def poll(self):
+                return 0
+        with mock.patch.object(guard, "CHEAT_TOOLS", self.dir / "missing.toml"):
+            guard.MatchWatch(Closed(), self.home, self.game, self.copy, username="Nick#4821",
+                             consent={"terms": guard.TERMS_VERSION, "server": ""}, manifests=[], say=said.append,
+                             sleep=lambda s: None, local=str(self.dir / "none")).run()
+        self.assertTrue(any("list of known cheat tools" in s for s in said), said)
+
+    def test_only_the_match_lines_are_kept(self):
+        clock = [1000.0]
+        lines = guard.GameLines(io.BytesIO(b""), clock=lambda: clock[0], wall=lambda: 1791000000 + clock[0])
+        for raw in (STEAM, b"gc: collectable <TSomeGameClass instance at 0000000012345678>\n",
+                    b"RUSEGUARD-MATCH live multi 0 coop 0\n", b"RUSEGUARD-MATCH started\n", b"\n"):
+            lines.take(raw)
+        self.assertEqual(lines.matches, [])          # nothing kept from any other line, the Steam one least of all
+        self.assertIsNone(lines.live())
+        lines.take(LIVE)
+        on = lines.live()
+        self.assertEqual((on["multi"], on["coop"], on["ended"], on["started"], on["findings"]),
+                         (True, False, None, 1791001000, []))
+        clock[0] += guard.LIVE_FOR - 1
+        self.assertIs(lines.live(), on)              # the next line is due every 30 seconds of game time
+        clock[0] += 2
+        self.assertIsNone(lines.live())              # none for LIVE_FOR seconds: not on any more
+        lines.take(LIVE)
+        self.assertIsNot(lines.live(), on)           # a new one (a new match, or after a long pause)
+        lines.take(STEAM)
+        lines.take(END)
+        self.assertIsNone(lines.live())
+        lines.take(END)                              # a second end changes nothing
+        lines.take(COOP)
+        self.assertEqual((lines.live()["multi"], lines.live()["coop"]), (False, True))
+        self.assertEqual([(m["multi"], m["coop"], m["ended"] is not None) for m in lines.matches],
+                         [(True, False, False), (True, False, True), (False, True, False)])
+        self.assertNotIn("76561198012345678", json.dumps(lines.matches))
+
+    def _watch(self, script, consent=None, programs=("explorer.exe", "steam.exe", "Squalr.exe", "notepad.exe")):
+        """A MatchWatch beside a stand-in game: at its i-th poll the game says script[i] (a line, or None), then it
+        closes. Returns (how many times the programs were listed, what the watch said)."""
+        scans, said = [], []
+        lines = guard.GameLines(io.BytesIO(b""))
+
+        class Game:
+            guard_lines = lines
+
+            def __init__(self):
+                self.n = 0
+
+            def poll(self):
+                if self.n < len(script):
+                    if script[self.n]:
+                        lines.take(script[self.n])
+                    self.n += 1
+                    return None
+                return 0
+
+        def listed():  # as running_programs gives them: Windows' task list, in lowercase
+            scans.append(1)
+            return sorted({p.lower() for p in programs})
+        with mock.patch.object(guard, "running_programs", listed):
+            guard.MatchWatch(Game(), self.home, self.game, self.copy, username="Nick#4821",
+                             consent=consent or {"terms": guard.TERMS_VERSION, "server": ""}, manifests=[],
+                             say=said.append, sleep=lambda s: None, local=str(self.dir / "none")).run()
+        return len(scans), said
+
+    def kept(self) -> list:
+        return [json.loads(p.read_text(encoding="utf-8")) for p in sorted((self.home / guard.OUTBOX).glob("*.json"))]
+
+    def test_the_watch_scans_while_the_games_lines_say_a_match_is_on(self):
+        """The failure the owner's 31 repairs (findings F-147): the watch waited for a match record file the game
+        can't write, so the check never ran in a match, even with its list at hand. The old list the release
+        downloaded is in its place here, so only the match's start is missing from it; the watch now follows the
+        game's own lines (a stand-in for the Launcher's reader, GameLines, fed by hand)."""
+        (self.home / "guard").mkdir()
+        (self.home / guard.SIGNATURES).write_text(json.dumps([{"name": "squalr.exe", "what": "a memory editor"}]),
+                                                  encoding="utf-8")
+        match = {"started": 1791000000, "multi": True, "coop": False, "ended": None, "findings": []}
+        scans = []
+
+        class Lines:
+            matches, on = [match], None
+
+            def live(self):
+                return self.on
+
+        class Game:
+            guard_lines = Lines()
+
+            def __init__(self):
+                self.states = [None, match, match, None]   # the menu, the match twice, the menu again
+
+            def poll(self):
+                if self.states:
+                    self.guard_lines.on = self.states.pop(0)
+                    return None
+                return 0
+
+        def listed():
+            scans.append(1)
+            return ["explorer.exe", "squalr.exe"]
+        with mock.patch.object(guard, "running_programs", listed):
+            guard.MatchWatch(Game(), self.home, self.game, self.copy, username="Nick#4821",
+                             consent={"terms": guard.TERMS_VERSION, "server": ""}, manifests=[], say=lambda s: None,
+                             sleep=lambda s: None, local=str(self.dir / "none")).run()
+        self.assertEqual(len(scans), 2)
+        self.assertEqual([f["name"] for f in match["findings"]], ["squalr.exe"])
+
+    def test_it_looks_only_while_a_match_is_on_and_reports_only_what_it_found(self):
+        #            the menu, the match starts, still on, it ends, the menu again
+        scans, said = self._watch([None, LIVE, STEAM, END, None])
+        self.assertEqual(scans, 2)                   # in the match only
+        bodies = self.kept()
+        self.assertEqual(len(bodies), 1)
+        body = bodies[0]
+        self.assertTrue(guard.check_bundle(body))
+        self.assertEqual(body["evidence"]["process_findings"], [{"name": "squalr.exe", "what": "Squalr, a memory editor"}])
+        self.assertEqual((body["match"]["mode"], body["match"]["is_multiplayer"], body["evidence"]["player"],
+                          body["match"]["players"], body["evidence"]["ended_in_game"]),
+                         ("multiplayer", True, "Nick#4821", ["Nick#4821"], True))
+        # that and nothing more: no replay, no record of the game, no files, no other program's name, no Steam ID
+        self.assertEqual((body["replay"], body["evidence"]["state_series"], body["evidence"]["files"],
+                          body["evidence"]["hotkeys"], body["evidence"]["mods"], body["evidence"]["stop"]),
+                         ("", [], {}, [], [], {}))
+        whole = json.dumps(body)
+        for other in ("explorer.exe", "steam.exe", "notepad.exe", "76561198012345678"):
+            self.assertNotIn(other, whole)
+        self.assertTrue(any("the program check of match" in s for s in said), said)
+
+    def test_a_co_op_match_is_one_too(self):
+        scans, _said = self._watch([COOP, None])
+        self.assertEqual(scans, 2)
+        self.assertEqual([(b["match"]["mode"], b["evidence"]["ended_in_game"]) for b in self.kept()], [("coop", False)])
+
+    def test_outside_a_match_it_never_looks(self):
+        # the menu, a skirmish against the computer or the campaign, a replay: the record says nothing for them
+        scans, said = self._watch([None, STEAM, b"gc: collectable <TCamp instance at 0>\n", None])
+        self.assertEqual((scans, self.kept()), (0, []))
+        # a match with nothing listed running: it looked, and sends nothing
+        scans, said = self._watch([LIVE, None, END], programs=("explorer.exe", "steam.exe"))
+        self.assertEqual((scans, self.kept()), (2, []))
+
+    def test_nothing_before_the_terms_are_accepted(self):
+        scans, said = self._watch([LIVE, None, END], consent={"terms": 0, "server": ""})
+        self.assertEqual((scans, self.kept(), said), (0, [], []))
+
+    def test_the_launcher_starts_the_game_with_its_error_output_read(self):
+        """The Launcher starts the game with its error output on a pipe that is read (start_game_watched); the
+        Studio's Test in game as before, without it. Until Launcher 0.4.8.22 the game's output wasn't read at all.
+        Checked our_tools.json: no tool there covers this; the game's program file named here is a made-up path
+        handed to a stand-in for starting a program, never read."""
+        import inspect
+        from rusemod import play
+        from ruse_launcher.api import LauncherApi
+        launcher_start = inspect.signature(LauncherApi.__init__).parameters["start_game"].default
+        self.assertIs(play.Starter().start_game, play.start_game)
+
+        made = []
+
+        class Popen:
+            def __init__(self, args, **kwargs):
+                made.append((args, kwargs))
+                self.stderr = io.BytesIO(STEAM + LIVE + END)
+        with mock.patch.object(play.subprocess, "Popen", Popen):
+            process = launcher_start(self.dir / "RUSE.exe")
+        self.assertEqual(made, [([str(self.dir / "RUSE.exe")], {"cwd": str(self.dir), "stderr": play.subprocess.PIPE})])
+        process.guard_lines.join(10)
+        self.assertEqual([(m["multi"], m["ended"] is not None) for m in process.guard_lines.matches], [(True, True)])
+        self.assertTrue(process.stderr.closed)       # read to its end, then closed
+
+    @unittest.skipUnless(sys.platform == "win32", "a Windows command file stands in for the game")
+    def test_a_real_programs_error_output_is_read_while_it_runs(self):
+        exe = self.dir / "copy" / "RUSE.cmd"
+        exe.write_text("@echo off\r\n"
+                       "echo Caching Steam ID: 76561198012345678 1>&2\r\n"
+                       "echo gc: collectable RUSEGUARD-MATCH live multi 1 coop 0 instance at 0 1>&2\r\n"
+                       "ping -n 2 127.0.0.1 >nul\r\n"
+                       "echo gc: collectable RUSEGUARD-MATCH end instance at 0 1>&2\r\n", encoding="ascii")
+        from rusemod import play
+        process = play.start_game_watched(exe)
+        self.assertEqual(process.wait(60), 0)
+        process.guard_lines.join(10)
+        self.assertFalse(process.guard_lines.is_alive())
+        self.assertEqual([(m["multi"], m["coop"], m["ended"] is not None) for m in process.guard_lines.matches],
+                         [(True, False, True)])
+        self.assertNotIn("76561198012345678", json.dumps(process.guard_lines.matches))
+        self.assertTrue(process.stderr.closed)
 
 
 class Server(unittest.TestCase):

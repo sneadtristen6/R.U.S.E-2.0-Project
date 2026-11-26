@@ -2,8 +2,12 @@
 # the same source is game_hooks/world_hash.py25 there). Python 2.5, compiled by tools/compile_gamescript.py25 into
 # guard_hash.bin; the build adds it after the code of every map's match script (rusemod.fairplay).
 #
-# MULTIPLAYER AND CO-OP ONLY (his rule): in any other match it does nothing at all. In a multiplayer match it appends
-# to ruse_guard_match.txt in the game's folder, for the Launcher to collect after the game closes:
+# MULTIPLAYER AND CO-OP ONLY (his rule): in any other match, and in a replay, it does nothing at all. In a
+# multiplayer or co-op match it tells the Launcher that the match is on, for RUSE Guard's program check, with lines
+# on the game's own error output (the Launcher that started the game reads them: rusemod.guard.GameLines):
+#   RUSEGUARD-MATCH live multi <0|1> coop <0|1>   ten seconds of game time in, then every _guard_live_every ticks
+#   RUSEGUARD-MATCH end                          when the match's world closes (after a "live" line only)
+# and it appends to ruse_guard_match.txt in the game's folder, for the Launcher to collect after the game closes:
 #   start <unix time> multi <0|1> coop <0|1> local <side>
 #   hotkey <action> <module>.<function>      every script hotkey registered (§3.4: a cheat tool adds its own)
 #   state <game time> <hash>                 every _guard_every seconds of game time (§3.2)
@@ -12,12 +16,18 @@
 # games give the same series and a changed game shows where it first differs. Unit health isn't in it: no script
 # name for it was found. It only reads the match.
 #
-# Found 2026-10-30: the game's Python has no file object, so open() fails and no line is written yet; the record
-# needs another way out of the game. Its sys.stdout and sys.stderr are the game's TWrapperEugDebug, whose write()
-# throws the text away.
+# Found 2026-10-30: the game's Python has no file object, so open() fails and no line is written to the file yet;
+# the file's part of the record needs another way out of the game. Its sys.stdout and sys.stderr are the game's
+# TWrapperEugDebug, whose write() throws the text away.
+# The "live" and "end" lines take another way out (2026-11-25; never tried in the game yet): Python's own error
+# lines (PySys_WriteStderr) go to the program's error output when sys.stderr can't be written to, and the gc module's
+# debug print is one of those lines, naming the class of each object it frees. So `say` names a class after the
+# line and frees one object of it, with sys.stderr None and gc's debug flags on for that moment only, then puts
+# both back as they were. The game's own scripts use gc too (game/world.py collects at every world's end).
 
 _guard_every = 10.0
 _guard_file = 'ruse_guard_match.txt'
+_guard_live_every = 3   # ticks between two "live" lines: 30 seconds of game time (rusemod.guard.LIVE_FOR waits 120)
 
 
 def _guard_hash():
@@ -27,8 +37,52 @@ def _guard_hash():
         return
     rules._guard_hash_on = True
     old_start = rules.before_start_game
-    state = {'out': None, 'world': None, 'ticket': None}
+    state = {'out': None, 'world': None, 'ticket': None, 'line': None, 'said': False}
     held = []
+
+    class Line:
+        # an old-style class: the gc module's debug print names the class of an instance it frees, so this one
+        # carries the words of the line `say` puts out
+        pass
+
+    def say(words):
+        # one line, "RUSEGUARD-MATCH <words>", on the game's own error output; nothing else changes, whatever fails
+        # (every step is caught, so the three put-backs at the end always run)
+        try:
+            import sys
+            import gc
+            missing = []
+            old_err = getattr(sys, 'stderr', missing)  # missing: Python writes there already
+            old_debug = gc.get_debug()
+            was_on = gc.isenabled()
+        except Exception:
+            return
+        try:
+            gc.disable()  # no collection of its own may take the object before the one below
+            Line.__name__ = 'RUSEGUARD-MATCH ' + words
+            if old_err is not missing:
+                sys.stderr = None  # can't be written to: the line goes to the program's error output instead
+            gc.set_debug(gc.DEBUG_COLLECTABLE | gc.DEBUG_INSTANCES)
+            one = Line()
+            one.me = one  # a cycle: only the gc module frees it, and says so
+            one = None
+            gc.collect(0)
+        except Exception:
+            pass
+        try:
+            gc.set_debug(old_debug)
+        except Exception:
+            pass
+        try:
+            if old_err is not missing:
+                sys.stderr = old_err
+        except Exception:
+            pass
+        try:
+            if was_on:
+                gc.enable()
+        except Exception:
+            pass
 
     def online():
         try:
@@ -36,6 +90,20 @@ def _guard_hash():
             return bool(_network.IsPartieMulti()), bool(_network.IsChallengeCoop())
         except Exception:
             return False, False
+
+    def replay(world):
+        # a replay is no match: the game's own scripts tell one by its world (IsReplay(), is_replay)
+        try:
+            if world.IsReplay():
+                return True
+        except Exception:
+            pass
+        try:
+            if getattr(world, 'is_replay', False):
+                return True
+        except Exception:
+            pass
+        return False
 
     def write(line):
         out = state['out']
@@ -101,6 +169,7 @@ def _guard_hash():
         def __init__(self, world):
             self.world = world
             self.ticket = None
+            self.beats = 0
 
         def run(self):
             world = self.world
@@ -109,7 +178,21 @@ def _guard_hash():
             # an error leaving a timer stops the whole game: the game's own sys.excepthook crashes it (code 0x29a,
             # the 2026-10-30 probe), so nothing may leave here
             try:
-                write('state %.1f %s' % (game_time(world), digest(world)))
+                if replay(world):  # a replay that shows itself only now: nothing more is said for it
+                    stop(world)
+                    return
+            except Exception:
+                return
+            try:
+                if state['out'] is not None:  # the file's part: only with a file to write to
+                    write('state %.1f %s' % (game_time(world), digest(world)))
+            except Exception:
+                pass
+            try:
+                if self.beats % _guard_live_every == 0:
+                    say(state['line'])
+                    state['said'] = True
+                self.beats += 1
             except Exception:
                 pass
             try:
@@ -118,12 +201,17 @@ def _guard_hash():
             except Exception:
                 pass
 
-    def stop():
-        world = state['world']
-        if world is not None:
-            write('end %.1f' % game_time(world))
+    def stop(world=None):
+        # the match's end; called with its world at that world's close, without one when the next match starts
+        current = state['world']
+        if current is None or (world is not None and world is not current):
+            return
+        write('end %.1f' % game_time(current))
+        if state['said']:
+            say('end')
         out = state['out']
         state['out'], state['world'] = None, None
+        state['said'] = False
         for tick in held:
             tick.world = None
         del held[:]
@@ -138,16 +226,24 @@ def _guard_hash():
         if not (multi or coop):
             return
         stop()
+        if replay(world):
+            return
         import time
         try:
             state['out'] = open(_guard_file, 'a')
         except Exception:
-            return
+            state['out'] = None  # the game's Python has no open() (2026-10-30): no file, the lines go all the same
         state['world'] = world
-        local = getattr(getattr(world, 'camp_du_joueur', None), 'teamnum', '?')
-        write('start %d multi %d coop %d local %s' % (int(time.time()), int(multi), int(coop), local))
-        hotkeys()
-        world.register_function_to_call_at_kill(stop)
+        state['line'] = 'live multi %d coop %d' % (int(multi), int(coop))
+        state['said'] = False
+        if state['out'] is not None:
+            local = getattr(getattr(world, 'camp_du_joueur', None), 'teamnum', '?')
+            write('start %d multi %d coop %d local %s' % (int(time.time()), int(multi), int(coop), local))
+            hotkeys()
+
+        def at_kill():
+            stop(world)
+        world.register_function_to_call_at_kill(at_kill)
         tick = Tick(world)
         held.append(tick)
         tick.ticket = world.unit_time.callback_qui_prend_pas_en_compte_la_duree_de_vie_du_ticket(_guard_every,

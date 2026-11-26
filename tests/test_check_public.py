@@ -146,6 +146,29 @@ class Guard(unittest.TestCase):
             self.assertEqual(len(check({"src/rusemod/bugwatch.py": line})), 1, line)     # as anywhere else
         self.assertEqual(len(check({"private/" + table_file: table})), 1)
 
+    def test_the_cheat_list_may_name_its_tool_and_nothing_more(self):
+        """Question 14 (the owner, 2026-11-25: "Fourteen's fine, go with your pick."; the question whole in
+        check_public's CHEAT_LIST note): RUSE Guard's list of known cheat tools comes inside the app in one file,
+        which may name the one tool the check refuses by name; that name is refused in every other file, and every
+        other word the check refuses is refused in the list as anywhere. The real list passes."""
+        import check_public
+        listed = "src/rusemod/guard_cheat_tools.toml"
+        real = (Path(__file__).resolve().parents[1] / listed).read_bytes()
+        self.assertIn(b"Cheat Engine", real)                        # (it does name it)
+        self.assertEqual(check({listed: real}), [])                 # (the check of Launcher 0.4.8.22 refused it)
+        self.assertEqual(check_public.CHEAT_LIST, listed)           # one file, not a list of files
+        for elsewhere in ("src/rusemod/guard.py", "src/rusemod/guard_cheat_tools2.toml", "README.md",
+                          "src/ruse_launcher/words.toml", "docs/wiki/Home.md"):
+            self.assertEqual(len(check({elsewhere: real})), 1, elsewhere)   # the very same text: refused there
+        named = b'name = "cheat engine.exe"\nwhat = "Cheat Engine, a memory editor"\n'
+        self.assertEqual(check({listed: named}), [])
+        self.assertEqual(len(check({"src/rusemod/guard.py": named})), 1)
+        for line in (b"# found with a debugger and a hex editor\n", b"# FUN_1400abc00 holds the names\n",
+                     b"# we decompiled the game for it\n", b"# CHEAT ENGINE, written another way\n",
+                     b"# the program reads the list\n"):
+            self.assertEqual(len(check({listed: line})), 1, line)                     # refused in the list
+        self.assertEqual(len(check({"private/" + listed: real})), 1)
+
     def test_the_crash_tables_details_stand_in_no_other_file(self):
         """Item 25: the details of the game's program the crash table holds (its places, the functions its chains are
         checked against and the unit descriptions' tables, as numbers, and the program's own parts it names) are in
