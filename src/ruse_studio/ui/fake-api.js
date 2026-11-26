@@ -3546,6 +3546,8 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
       bugwatch_next_send: async () => ({ today: { v: 1, id: "Zx3k9QpL2mVb7TnR4wYh8CdF5sGj1AeU", user: fakeBugwatch.name,
         studio: { calls: {}, screens: {} } } }),
       bugwatch_seen: async () => ({ ok: true }),
+      bugwatch_page_error: async () => ({ ok: true }),   // (the page's own script errors: app.js tellPageError)
+      bugwatch_crash: async () => ({ watching: false, notice: null }),   // (after a test: app.js watchCrash)
       backup_status: async () => backupStatus(),
       backup_requested: async () => ({ make: mode === "firstbackup" && !backups.some((b) => b.matches) }),  // the installer asked
       backup_make: async (replace) => {

@@ -1,0 +1,2912 @@
+# The failure codes Bug Watch sends (rusemod/codes.py says what a code is and how it travels). One entry for
+# each code, never two for one number, never a number given again: a code whose place is gone stays, marked `gone`.
+# `place`: the module and the function it is given in (a module of rusemod by its own name; launcher. and studio. for
+#   the apps'), never a line. `old`: the key Bug Watch got for that failure before (a "<call>:<module>:<line>" place
+#   moved with every release). `check`: for a BLD code, the build check (rusemod.checkkeys key) it stands for; the
+#   build failure is still counted by that key too, and its words are in checkkeys.toml. `calls`: window calls whose
+#   failures no other code says get this one. `what`: what the failure is, in our words (never sent). `since`: the
+#   release it came in, Studio/Launcher.
+# Codes given in the code (as a string: coded(error, "SET-08"), failure("LIST-01")) are written here by hand; a new
+# build check gets its BLD code from rusemod.codes.write(). tests/test_codes.py fails when the two differ.
+
+[PLAY-01]
+place = "launcher.api.play"
+old = "play:play_busy"
+what = "Play while another Play is still starting the game"
+since = "0.9.8.23/0.4.8.23"
+
+[PLAY-02]
+place = "launcher.api.play"
+old = "play:play_restoring"
+what = "Play while the game's files are being restored"
+since = "0.9.8.23/0.4.8.23"
+
+[PLAY-03]
+place = "launcher.api.play"
+old = "play:play_no_set"
+what = "Play with a mod set that isn't there"
+since = "0.9.8.23/0.4.8.23"
+
+[PLAY-04]
+place = "launcher.api.play"
+old = "play:play_set_mistake"
+what = "Play with a mod set whose file has a mistake (why: its SET code, 21 to 25)"
+since = "0.9.8.23/0.4.8.23"
+
+[PLAY-05]
+place = "launcher.api.play"
+old = "play:play_untrusted"
+what = "Play with mods that run scripts in the game, not ticked as trusted (n: how many)"
+since = "0.9.8.23/0.4.8.23"
+
+[PLAY-06]
+place = "launcher.api.play"
+old = "play:<module>:<line> (a place)"
+calls = ["play"]
+what = "Play stopped on an error before its job started, one no other code says (its kind and place: the keys beside it)"
+since = "0.9.8.23/0.4.8.23"
+
+[PLAY-07]
+place = "launcher.api._play"
+old = "play:launcher.play.game-not-found"
+what = "Play: the game's folder isn't found"
+since = "0.9.8.23/0.4.8.23"
+
+[PLAY-08]
+place = "play._modded"
+old = "play_update_required"
+what = "a required update of the app isn't installed yet"
+since = "0.9.8.23/0.4.8.23"
+
+[PLAY-09]
+place = "play._modded"
+old = "play_copy_not_confirmed"
+what = "the game folder isn't confirmed as an owned copy (why: its first OWN reason; n: how many reasons)"
+since = "0.9.8.23/0.4.8.23"
+
+[PLAY-10]
+place = "instance.refuse_if_running"
+old = "instance.refuse_if_running"
+what = "the game still runs from the modded copy"
+since = "0.9.8.23/0.4.8.23"
+
+[PLAY-11]
+place = "play._modded"
+old = "play.other-app-building"
+what = "the other app is building the modded copy"
+since = "0.9.8.23/0.4.8.23"
+
+[PLAY-12]
+place = "play._modded"
+old = "<job>:rusemod.play:<line> (a place: the lock's mkdir or claim)"
+what = "the copies' folder or the build's lock file can't be made (win)"
+since = "0.9.8.23/0.4.8.23"
+
+[PLAY-13]
+place = "backup.reading"
+old = "backup.reading"
+what = "a restore of the game's files is running, so no copy is built (a Play, a Test in game, a map check)"
+since = "0.9.8.23/0.4.8.23"
+
+[PLAY-20]
+place = "play._modded"
+old = "play.mods-have-mistakes"
+what = "the build listed mistakes in the mods (n: how many; why: the first one's code; each one's code beside it)"
+since = "0.9.8.23/0.4.8.23"
+
+[PLAY-23]
+place = "play._modded"
+old = "play.copy-has-no-exe"
+what = "the modded copy has no game program"
+since = "0.9.8.23/0.4.8.23"
+
+[PLAY-24]
+place = "play._modded"
+old = "play.steam-didnt-start"
+what = "Steam didn't start within a minute"
+since = "0.9.8.23/0.4.8.23"
+
+[PLAY-25]
+place = "play._modded"
+old = "<job>:rusemod.play:<line> (a place: start_game)"
+what = "the game's program wouldn't start (win)"
+since = "0.9.8.23/0.4.8.23"
+
+[PLAY-26]
+place = "play.modded"
+old = "<job>:<module>:<line> (a place)"
+what = "a Play or a Test in game stopped on an error no other code says (its kind and place: the keys beside it)"
+since = "0.9.8.23/0.4.8.23"
+
+[PLAY-27]
+place = "play._modded"
+old = "<job>:<module>:<line> (a place)"
+what = "the game started, and Bug Watch's or RUSE Guard's watch of it couldn't start"
+since = "0.9.8.23/0.4.8.23"
+
+[PLAY-28]
+place = "play._modded"
+old = "<job>:<module>:<line> (a place: built_from or mod_stamps)"
+what = "the game's or the mods' files couldn't be read before the build (win)"
+since = "0.9.8.23/0.4.8.23"
+
+[SET-02]
+place = "launcher.api.new_set"
+old = "new_set:set_no_name"
+what = "New mod set: a blank name reached the Launcher (the page stops one itself)"
+since = "0.9.8.23/0.4.8.23"
+
+[SET-05]
+place = "launcher.api._check_mods"
+old = "<call>:set_no_mods (with SET-06)"
+what = "the set's mods aren't a list, or one entry is blank"
+since = "0.9.8.23/0.4.8.23"
+
+[SET-06]
+place = "launcher.api._check_mods"
+old = "<call>:set_no_mods (with SET-05)"
+what = "no mod ticked for the set"
+since = "0.9.8.23/0.4.8.23"
+
+[SET-07]
+place = "launcher.api._check_mods"
+old = "<call>:set_mod_twice"
+what = "a mod twice in the set"
+since = "0.9.8.23/0.4.8.23"
+
+[SET-08]
+place = "launcher.api._check_mods"
+old = "<call>:set_mod_missing (with SET-09)"
+what = "a mod of the set isn't in the library"
+since = "0.9.8.23/0.4.8.23"
+
+[SET-09]
+place = "launcher.api._check_mods"
+old = "<call>:set_mod_missing (with SET-08)"
+what = "a mod folder of the set isn't there any more (a hand-written set)"
+since = "0.9.8.23/0.4.8.23"
+
+[SET-10]
+place = "launcher.api._set"
+old = "<call>:set_gone"
+what = "the mod set's file is gone (deleted or renamed outside the Launcher)"
+since = "0.9.8.23/0.4.8.23"
+
+[SET-11]
+place = "launcher.api.save_set"
+old = "save_set:set_vanilla"
+what = "Save or Rename of Vanilla"
+since = "0.9.8.23/0.4.8.23"
+
+[SET-12]
+place = "launcher.api.duplicate_set"
+old = "duplicate_set:ruse_launcher.api:<line> (a place)"
+what = "Duplicate of Vanilla"
+since = "0.9.8.23/0.4.8.23"
+
+[SET-13]
+place = "launcher.api.delete_set"
+old = "delete_set:ruse_launcher.api:<line> (a place)"
+what = "Delete of Vanilla"
+since = "0.9.8.23/0.4.8.23"
+
+[SET-14]
+place = "launcher.api._write_set"
+old = "<call>:ruse_launcher.api:<line> (a place: the folder's mkdir or the file's write)"
+what = "the set's file couldn't be written (win)"
+since = "0.9.8.23/0.4.8.23"
+
+[SET-15]
+place = "launcher.api._saved_lists"
+old = "<call>:<module>:<line> (a place)"
+what = "the set WAS saved, then the lists couldn't be read again: the call fails, and the player sees an error"
+since = "0.9.8.23/0.4.8.23"
+
+[SET-16]
+place = "launcher.api.delete_set"
+old = "delete_set:ruse_launcher.api:<line> (a place)"
+what = "the set's file couldn't be deleted (win)"
+since = "0.9.8.23/0.4.8.23"
+
+[SET-17]
+place = "launcher.api.move_below"
+old = "move_below:ruse_launcher.api:<line> (a place)"
+what = "the mod to move isn't in the set any more"
+since = "0.9.8.23/0.4.8.23"
+
+[SET-18]
+place = "launcher.api.share_set"
+old = "share_set:ruse_launcher.api:<line> (a place)"
+what = "Share of Vanilla, or of a set with no mods"
+since = "0.9.8.23/0.4.8.23"
+
+[SET-20]
+place = "launcher.api.import_set"
+old = "import_set:ruse_launcher.api:<line> (a place)"
+what = "Import: none of the load order's mods are in the library (n: how many it named that weren't)"
+since = "0.9.8.23/0.4.8.23"
+
+[SET-21]
+place = "launcher.api._read_sets"
+old = "(nothing: sent as why of PLAY-04)"
+what = "a set file's name isn't lowercase letters, digits and '-', or is vanilla"
+since = "0.9.8.23/0.4.8.23"
+
+[SET-22]
+place = "launcher.api._read_sets"
+old = "(nothing: sent as why of PLAY-04)"
+what = "a set file lists no mods"
+since = "0.9.8.23/0.4.8.23"
+
+[SET-23]
+place = "launcher.api._read_sets"
+old = "(nothing: sent as why of PLAY-04)"
+what = "a set file needs a mod that isn't in the library"
+since = "0.9.8.23/0.4.8.23"
+
+[SET-24]
+place = "launcher.api._read_sets"
+old = "(nothing: sent as why of PLAY-04)"
+what = "a set file needs a mod folder that isn't there any more"
+since = "0.9.8.23/0.4.8.23"
+
+[SET-25]
+place = "launcher.api._read_sets"
+old = "(nothing: sent as why of PLAY-04)"
+what = "a set file can't be read, or isn't valid TOML"
+since = "0.9.8.23/0.4.8.23"
+
+[SET-26]
+place = "launcher.api.check_mods"
+old = "<call>:<module>:<line> (a place)"
+calls = ["check_mods", "set_check"]
+what = "the check of a set's mods (clashes, best order, game files both change) stopped on an error"
+since = "0.9.8.23/0.4.8.23"
+
+[LIST-01]
+place = "mod_index._list_failed"
+old = "(nothing: the browse call goes well)"
+what = "the mod list couldn't be had, and there's no copy from before (http)"
+since = "0.9.8.23/0.4.8.23"
+
+[LIST-02]
+place = "mod_index._list_failed"
+old = "(nothing: the browse call goes well)"
+what = "no mod list published: the address answered 404, and there's no copy from before"
+since = "0.9.8.23/0.4.8.23"
+
+[LIST-03]
+place = "mod_index._list_failed"
+old = "(nothing: the browse call goes well)"
+what = "no fresh mod list: the copy from before is shown (http)"
+since = "0.9.8.23/0.4.8.23"
+
+[LIST-04]
+place = "mod_index._list_failed"
+old = "(nothing: the browse call goes well)"
+what = "the mod list came but can't be read: not valid TOML or UTF-8, a newer format, or too big"
+since = "0.9.8.23/0.4.8.23"
+
+[LIST-05]
+place = "mod_index.fetch"
+old = "(nothing)"
+what = "entries of the fresh mod list skipped as bad (n: how many)"
+since = "0.9.8.23/0.4.8.23"
+
+[UPD-01]
+place = "update.latest"
+old = "(nothing: the update check goes well)"
+what = "GitHub couldn't be reached to look for updates, neither its API nor its release feed (http: the API's answer; win: the Windows error number, the API's else the feed's)"
+since = "0.9.8.23/0.4.8.23"
+
+[UPD-02]
+place = "update._offer"
+old = "(nothing: the update check goes well)"
+what = "a newer signed release has no installer yet"
+since = "0.9.8.23/0.4.8.23"
+
+[UPD-03]
+place = "update.latest"
+old = "(nothing: the update check goes well)"
+what = "a newer release's installer address isn't on GitHub (since the signed updates the address is made from GitHub's own, so it can't happen)"
+since = "0.9.8.23/0.4.8.23"
+gone = "0.9.8.23/0.4.8.23"
+
+[UPD-05]
+place = "update._offer"
+old = "(nothing: the update check goes well)"
+what = "a newer signed release's installer, as GitHub lists it, isn't the one we signed (its size or SHA-256 differs)"
+since = "0.9.8.23/0.4.8.23"
+
+[SIGN-01]
+place = "ownedpass.start"
+old = "owned_sign_in_start:rusemod.ownedpass:<line> (a place)"
+what = "the sign-in server's address isn't set up"
+since = "0.9.8.23/0.4.8.23"
+
+[SIGN-02]
+place = "ownedpass.start"
+old = "owned_sign_in_start:rusemod.ownedpass:<line> (a place)"
+what = "the sign-in server couldn't be reached (win)"
+since = "0.9.8.23/0.4.8.23"
+
+[SIGN-03]
+place = "ownedpass.start"
+old = "owned_sign_in_start:rusemod.ownedpass:<line> (a place)"
+what = "the sign-in server answered but started no sign-in: off, busy, or a refusal (http)"
+since = "0.9.8.23/0.4.8.23"
+
+[SIGN-04]
+place = "ownedpass.owned_sign_in_start"
+old = "owned_sign_in_start:<module>:<line> (a place)"
+what = "the browser couldn't be opened for the sign-in"
+since = "0.9.8.23/0.4.8.23"
+
+[SIGN-05]
+place = "ownedpass.poll"
+old = "(nothing: an answer)"
+what = "the sign-in ended: Steam says the account doesn't own R.U.S.E."
+since = "0.9.8.23/0.4.8.23"
+
+[SIGN-06]
+place = "ownedpass.poll"
+old = "(nothing: an answer)"
+what = "the sign-in ended: the Steam profile is private"
+since = "0.9.8.23/0.4.8.23"
+
+[SIGN-07]
+place = "ownedpass.poll"
+old = "(nothing: an answer)"
+what = "the sign-in ran out of time"
+since = "0.9.8.23/0.4.8.23"
+
+[SIGN-08]
+place = "ownedpass.poll"
+old = "(nothing: an answer)"
+what = "the sign-in server says Steam had an error"
+since = "0.9.8.23/0.4.8.23"
+
+[SIGN-09]
+place = "ownedpass.poll"
+old = "(nothing: read as steam-error)"
+what = "the sign-in server couldn't be reached while the sign-in was waited for (win)"
+since = "0.9.8.23/0.4.8.23"
+
+[SIGN-10]
+place = "ownedpass.poll"
+old = "(nothing: read as steam-error)"
+what = "the sign-in server answered with no status (http)"
+since = "0.9.8.23/0.4.8.23"
+
+[SIGN-12]
+place = "ownedpass.owned_sign_in_poll"
+old = "(nothing: an answer)"
+what = "the pass the server gave doesn't check out, so it isn't kept (why: its PASS code)"
+since = "0.9.8.23/0.4.8.23"
+
+[SIGN-13]
+place = "ownedpass.owned_sign_in_poll"
+old = "owned_sign_in_poll:<module>:<line> (a place)"
+what = "the pass couldn't be kept (win)"
+since = "0.9.8.23/0.4.8.23"
+
+[SIGN-14]
+place = "ownedpass.owned_pass_status"
+old = "(nothing)"
+what = "the kept pass doesn't check out, other than by its age (why: its PASS code)"
+since = "0.9.8.23/0.4.8.23"
+
+[SIGN-15]
+place = "ownedpass.owned_sign_out"
+old = "owned_sign_out:<module>:<line> (a place)"
+what = "the sign-out couldn't be kept (win)"
+since = "0.9.8.23/0.4.8.23"
+
+[SIGN-16]
+place = "owned.owned_unlock"
+old = "(nothing: an answer)"
+what = "an unlock code that doesn't fit this PC and game folder"
+since = "0.9.8.23/0.4.8.23"
+
+[PASS-01]
+place = "ownedpass._pass_code"
+old = "(nothing)"
+what = "why a pass doesn't check out: it isn't a pass at all (malformed)"
+since = "0.9.8.23/0.4.8.23"
+
+[PASS-02]
+place = "ownedpass._pass_code"
+old = "(nothing)"
+what = "why a pass doesn't check out: its payload isn't the text the server signs (non-canonical)"
+since = "0.9.8.23/0.4.8.23"
+
+[PASS-03]
+place = "ownedpass._pass_code"
+old = "(nothing)"
+what = "why a pass doesn't check out: not an Ed25519 pass"
+since = "0.9.8.23/0.4.8.23"
+
+[PASS-04]
+place = "ownedpass._pass_code"
+old = "(nothing)"
+what = "why a pass doesn't check out: its signature isn't the project key's"
+since = "0.9.8.23/0.4.8.23"
+
+[PASS-05]
+place = "ownedpass._pass_code"
+old = "(nothing)"
+what = "why a pass doesn't check out: not an owned-copy pass of this app"
+since = "0.9.8.23/0.4.8.23"
+
+[PASS-06]
+place = "ownedpass._pass_code"
+old = "(nothing)"
+what = "why a pass doesn't check out: it has expired"
+since = "0.9.8.23/0.4.8.23"
+
+[OWN-01]
+place = "owned._owned_refusal"
+old = "(nothing)"
+what = "why a game folder isn't confirmed as an owned copy: Steam has no record of it"
+since = "0.9.8.23/0.4.8.23"
+
+[OWN-02]
+place = "owned._owned_refusal"
+old = "(nothing)"
+what = "why a game folder isn't confirmed as an owned copy: its Steam file isn't signed by Valve"
+since = "0.9.8.23/0.4.8.23"
+
+[OWN-03]
+place = "owned._owned_refusal"
+old = "(nothing)"
+what = "why a game folder isn't confirmed as an owned copy: files that stand in for Steam's are in it"
+since = "0.9.8.23/0.4.8.23"
+
+[CRASH-01]
+place = "bugwatch._watch"
+old = "game:closed-under-1-min"
+what = "the game closed within a minute and left no crash report (exit)"
+since = "0.9.8.23/0.4.8.23"
+
+[CRASH-04]
+place = "bugwatch.read_dump"
+old = "(nothing)"
+what = "a crash report file that isn't one (exit)"
+since = "0.9.8.23/0.4.8.23"
+
+[CRASH-05]
+place = "bugwatch._watch"
+old = "(nothing)"
+what = "the game ended after a minute or more with an exit number other than 0, and left no crash report (exit)"
+since = "0.9.8.23/0.4.8.23"
+
+[CRASH-12]
+place = "bugwatch.read_dump"
+old = "(nothing)"
+what = "a crash report with no exception record (exit)"
+since = "0.9.8.23/0.4.8.23"
+
+[CRASH-13]
+place = "bugwatch.read_dump"
+old = "(nothing)"
+what = "a crash report cut short (exit)"
+since = "0.9.8.23/0.4.8.23"
+
+[CRASH-14]
+place = "bugwatch.read_dump"
+old = "(nothing)"
+what = "a crash report that couldn't be read: gone, or held by another program (win, exit)"
+since = "0.9.8.23/0.4.8.23"
+
+[TST-01]
+place = "studio.api.test_in_game"
+old = "test_in_game:studio.test.already-building"
+what = "Test in game while a test is being built"
+since = "0.9.8.23/0.4.8.23"
+
+[TST-02]
+place = "studio.api.test_in_game"
+old = "test_in_game:studio.test.restoring"
+what = "Test in game while the game's files are being restored"
+since = "0.9.8.23/0.4.8.23"
+
+[TST-03]
+place = "studio.api.test_in_game.work"
+old = "test_in_game:studio.test.game-not-found"
+what = "Test in game: the game's folder isn't found"
+since = "0.9.8.23/0.4.8.23"
+
+[TST-04]
+place = "studio.api.test_fix"
+old = "test_fix:ruse_studio.api:<line> (a place)"
+what = "a fix of a failed test for a file that isn't part of the last test's mods"
+since = "0.9.8.23/0.4.8.23"
+
+[TST-05]
+place = "studio.api.test_fix"
+old = "test_fix:ruse_studio.api:<line> (a place)"
+what = "a fix of a kind the Studio doesn't know"
+since = "0.9.8.23/0.4.8.23"
+
+[TST-06]
+place = "studio.api.test_in_game"
+old = "test_in_game:<module>:<line> (a place)"
+calls = ["test_in_game"]
+what = "Test in game stopped on an error before its job started, one no other code says"
+since = "0.9.8.23/0.4.8.23"
+
+[PAGE-01]
+place = "bugwatch.page_error"
+old = "(nothing)"
+what = "the Studio page's own script failed (messages: page_error:<screen>:<the error's short name>)"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-001]
+place = "build.load_mod"
+old = "build.load_mod-4"
+what = "a mod's mod.toml isn't valid TOML"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-002]
+place = "build.load_mod"
+old = "build.load_mod-7"
+what = "a mod's text file (text/*.csv) can't be read"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-003]
+place = "build.load_mod"
+old = "build.load_mod-4"
+what = "a mod's menus.toml (missions' places in the menus) has a mistake"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-004]
+place = "build.load_mod"
+old = "build.load_mod-7"
+what = "a mod's menu_groups.toml has a mistake"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-005]
+place = "build.load_mod"
+old = "build.load_mod-4"
+what = "a mod's depots.toml has a mistake"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-006]
+place = "build.load_mod"
+old = "build.load_mod-4"
+what = "a mod's own copies of unit models (files/models/<unit>.copy.toml) have a mistake"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-007]
+place = "build.load_mod"
+old = "build.load_mod-4"
+what = "a mod's squads (files/models/<unit>.squad.toml) have a mistake"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-008]
+place = "build.load_mod"
+old = "build.load_mod-4"
+what = "a mod's own map assets or building looks have a mistake"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-009]
+place = "build.load_mod"
+old = "build.load_mod-4"
+what = "a mod's sounds or animations have a mistake"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-010]
+place = "build.load_mod"
+old = "build.load_mod-4"
+what = "a mod's own missions (maps/<map>/mission.toml) have a mistake"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-011]
+place = "build.load_mod"
+old = "build.load_mod-4"
+what = "a mod's whole game files (files/game) have a mistake"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-012]
+place = "build.read_map_file"
+old = "build.read_map_file-2"
+what = "a mod's map file isn't valid TOML or UTF-8"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-013]
+place = "build.read_map_file"
+old = "build.read_map_file-4"
+what = "a mod's map file's rows have a mistake its reader names"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-014]
+place = "build._reliefs"
+old = "build._reliefs-2"
+check = "build._reliefs-2"
+what = "a relief stroke's heightmap picture can't be read"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-015]
+place = "build._area_clips"
+old = "build._area_clips-3"
+check = "build._area_clips-3"
+what = "a relief's area picture can't be read"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-016]
+place = "build._area_clips"
+old = "build._area_clips-4"
+check = "build._area_clips-4"
+what = "a paint stroke within a relief's area can't be clipped to it"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-017]
+place = "resolve.pick_versions"
+old = "cause:resolve.pick_versions"
+what = "a mod a version choice needs isn't available"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-018]
+place = "resolve.pick_versions"
+old = "cause:resolve.pick_versions"
+what = "no version of a mod fits every range asking for it"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-019]
+place = "resolve.pick_versions"
+old = "cause:resolve.pick_versions"
+what = "the version choice doesn't settle"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-020]
+place = "resolve.load_order"
+old = "play:build.build_and_write-4 cause:resolve.load_order"
+what = "load order: two folders of the set have one id"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-021]
+place = "resolve.load_order"
+old = "play:build.build_and_write-4 cause:resolve.load_order"
+what = "load order: a mod needs a mod that isn't in the set"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-022]
+place = "resolve.load_order"
+old = "play:build.build_and_write-4 cause:resolve.load_order"
+what = "load order: a mod needs another version of a mod in the set"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-023]
+place = "resolve.load_order"
+old = "play:build.build_and_write-4 cause:resolve.load_order"
+what = "load order: two mods of the set can't be used together (conflicts)"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-024]
+place = "resolve.load_order"
+old = "play:build.build_and_write-4 cause:resolve.load_order"
+what = "load order: the mods' order rules make a loop"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-025]
+place = "patch.__setitem__"
+old = "cause:patch.__setitem__"
+what = "a map entry's part other than k (its key) or v (its value)"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-026]
+place = "patch.pop"
+old = "cause:patch.pop"
+what = "a map entry's key or value deleted"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-027]
+place = "patch._parse_path"
+old = "cause:patch._parse_path"
+what = "a bad property path"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-028]
+place = "patch.apply"
+old = "patch.apply"
+check = "patch.apply"
+what = "patch every <class>: none exists in this game build"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-029]
+place = "patch.apply"
+old = "cause:patch.apply"
+what = "an operation the engine doesn't know"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-030]
+place = "patch._missing"
+old = "cause:patch._missing"
+what = "an operation on an object an earlier operation deleted"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-031]
+place = "patch._missing"
+old = "cause:patch._missing"
+what = "an operation on an object that doesn't exist in this game build"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-032]
+place = "patch._create"
+old = "cause:patch._create"
+what = "a new object with the name of one that exists"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-033]
+place = "patch._create"
+old = "cause:patch._create"
+what = "a clone of something that isn't an object"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-034]
+place = "patch._delete_object"
+old = "cause:patch._delete_object"
+what = "a part of an object deleted (parts can't be)"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-035]
+place = "patch._file_op"
+old = "cause:patch._file_op"
+what = "a file added that exists already"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-036]
+place = "patch._file_op"
+old = "patch._file_op"
+check = "patch._file_op"
+what = "a file replaced that isn't a game file"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-037]
+place = "patch._prop_op"
+old = "cause:patch._prop_op"
+what = "a list operation on a value that isn't a list"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-038]
+place = "patch._prop_op"
+old = "cause:patch._prop_op"
+what = "a change of a value that isn't set"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-039]
+place = "patch._locate"
+old = "cause:patch._locate"
+what = "a property path's list has no item of that number"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-040]
+place = "patch._locate"
+old = "cause:patch._locate"
+what = "a property path names a property the object hasn't"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-041]
+place = "patch._locate"
+old = "cause:patch._locate"
+what = "a property path goes into a part other objects use too, saying neither own nor shared"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-042]
+place = "patch._locate"
+old = "cause:patch._locate"
+what = "a property path goes on through something that isn't an object"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-043]
+place = "patch._locate"
+old = "cause:patch._locate"
+what = "an empty property path"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-044]
+place = "patch._item"
+old = "cause:patch._item"
+what = "a map entry selector finds no entry"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-045]
+place = "patch._item"
+old = "cause:patch._item"
+what = "an item selector on a value that isn't a list"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-046]
+place = "patch._select"
+old = "cause:patch._select (with BLD-047)"
+what = "a list has no item of that number"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-047]
+place = "patch._select"
+old = "cause:patch._select (with BLD-046)"
+check = "patch._select"
+what = "a filter matches no item, or more than one, where it must match exactly one"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-048]
+place = "patch._objects_of"
+old = "cause:patch._objects_of"
+what = "a filter not written [Property=value]"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-049]
+place = "patch._target"
+old = "patch._target"
+check = "patch._target"
+what = "an operation's target doesn't exist in this game build"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-050]
+place = "patch._target"
+old = "patch._target-2"
+check = "patch._target-2"
+what = "an operation's target filter matches more than one object"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-051]
+place = "patch._part_at"
+old = "cause:patch._part_at"
+what = "a reference to a part an object hasn't"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-052]
+place = "patch._part_at"
+old = "cause:patch._part_at"
+what = "a reference to a part through something that isn't an object"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-053]
+place = "patch._ref_to"
+old = "cause:patch._ref_to"
+what = "a reference to something that isn't an object"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-054]
+place = "patch._share"
+old = "patch._share"
+check = "patch._share"
+what = "a reference to a part a mod made"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-055]
+place = "patch._list_op"
+old = "cause:patch._list_op"
+what = "a list operation on a value that isn't a list, or isn't set"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-056]
+place = "patch._list_op"
+old = "cause:patch._list_op"
+what = "a list has no position of that number"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-057]
+place = "patch._list_op"
+old = "cause:patch._list_op"
+what = "an insert next to an item the list hasn't"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-058]
+place = "patch._no_deleted_refs"
+old = "cause:patch._no_deleted_refs"
+what = "a reference to an object an earlier operation deleted"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-059]
+place = "patch._round"
+old = "mistake:patch._finish"
+what = "a number doesn't fit in the game's kind of number"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-060]
+place = "patch._math.one"
+old = "cause:patch._math.one"
+what = "math on a value that isn't a number"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-061]
+place = "patch._finish_obj"
+old = "mistake:patch._finish"
+what = "an object still refers to one that isn't there (deleted, or never made)"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-062]
+place = "engine.applier._apply"
+check = "engine.applier._apply"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-063]
+place = "engine.applier._apply"
+check = "engine.applier._apply-2"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-064]
+place = "engine.applier._apply"
+check = "engine.applier._apply-3"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-065]
+place = "engine.applier._apply"
+check = "engine.applier._apply-4"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-066]
+place = "engine.applier._apply"
+check = "engine.applier._apply-5"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-067]
+place = "engine.applier._apply"
+check = "engine.applier._apply-6"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-068]
+place = "engine.applier._apply"
+check = "engine.applier._apply-7"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-069]
+place = "engine.applier._apply"
+check = "engine.applier._apply-8"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-070]
+place = "engine.applier._apply"
+check = "engine.applier._apply-9"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-071]
+place = "engine.applier._apply"
+check = "engine.applier._apply-10"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-072]
+place = "engine.applier._apply"
+check = "engine.applier._apply-11"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-073]
+place = "engine.applier._apply"
+check = "engine.applier._apply-12"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-074]
+place = "engine.applier._apply"
+check = "engine.applier._apply-13"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-075]
+place = "engine.applier._apply"
+check = "engine.applier._apply-14"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-076]
+place = "engine.applier._apply"
+check = "engine.applier._apply-15"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-077]
+place = "engine.applier._apply"
+check = "engine.applier._apply-16"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-078]
+place = "engine.applier._apply"
+check = "engine.applier._apply-17"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-079]
+place = "engine.applier._apply"
+check = "engine.applier._apply-18"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-080]
+place = "engine.applier._apply"
+check = "engine.applier._apply-19"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-081]
+place = "engine.applier._apply"
+check = "engine.applier._apply-20"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-082]
+place = "engine.applier._apply"
+check = "engine.applier._apply-21"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-083]
+place = "engine.applier._apply"
+check = "engine.applier._apply-22"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-084]
+place = "engine.applier._apply"
+check = "engine.applier._apply-23"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-085]
+place = "engine.applier._apply"
+check = "engine.applier._apply-24"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-086]
+place = "anim.mod_clips"
+check = "anim.mod_clips"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-087]
+place = "anim.made"
+check = "anim.made"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-088]
+place = "anim.changes"
+check = "anim.changes"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-089]
+place = "anim._own_file"
+check = "anim._own_file"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-090]
+place = "anim.mod_unit_clips"
+check = "anim.mod_unit_clips"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-091]
+place = "anim.mod_unit_clips"
+check = "anim.mod_unit_clips-2"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-092]
+place = "anim.mod_unit_clips"
+check = "anim.mod_unit_clips-3"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-093]
+place = "anim._model_tables"
+check = "anim._model_tables"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-094]
+place = "anim._model_tables"
+check = "anim._model_tables-2"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-095]
+place = "anim.mod_copies"
+check = "anim.mod_copies"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-096]
+place = "anim.mod_copies"
+check = "anim.mod_copies-2"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-097]
+place = "anim.mod_copies"
+check = "anim.mod_copies-3"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-098]
+place = "anim.mod_copies"
+check = "anim.mod_copies-4"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-099]
+place = "anim.mod_copies"
+check = "anim.mod_copies-5"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-100]
+place = "anim.own_clip_files"
+check = "anim.own_clip_files"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-101]
+place = "anim.own_clip_files"
+check = "anim.own_clip_files-2"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-102]
+place = "animglb.own_glb"
+check = "animglb.own_glb"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-103]
+place = "animglb.own_glb"
+check = "animglb.own_glb-2"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-104]
+place = "backup.read_manifest"
+check = "backup.read_manifest"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-105]
+place = "backup._busy"
+check = "backup._busy"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-106]
+place = "backup.reading"
+check = "backup.reading"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-107]
+place = "backup._copy_steady"
+check = "backup._copy_steady"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-108]
+place = "backup._existing"
+check = "backup._existing"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-109]
+place = "backup.make"
+check = "backup.make"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-110]
+place = "backup._put_back"
+check = "backup._put_back"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-111]
+place = "backup.restore"
+check = "backup.restore"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-112]
+place = "backup.restore"
+check = "backup.restore-2"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-113]
+place = "backup.restore"
+check = "backup.restore-3"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-114]
+place = "backup.restore"
+check = "backup.restore-4"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-115]
+place = "backup._the_game"
+check = "backup._the_game"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-116]
+place = "backup._backup_for"
+check = "backup._backup_for"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-117]
+place = "backup._backup_start"
+check = "backup._backup_start"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-118]
+place = "bigmap.grow_clone"
+check = "bigmap.grow_clone"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-119]
+place = "bonefit.halves_of"
+check = "bonefit.halves_of"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-120]
+place = "bridges.apply_spans"
+check = "ground-reach"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-121]
+place = "brush.parse_strokes"
+check = "brush.parse_strokes"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-122]
+place = "brush.parse_strokes"
+check = "brush.parse_strokes-2"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-123]
+place = "brush.parse_strokes"
+check = "brush.parse_strokes-3"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-124]
+place = "brush.parse_strokes"
+check = "brush.parse_strokes-4"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-125]
+place = "brush.parse_strokes"
+check = "brush.parse_strokes-5"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-126]
+place = "brush.parse_strokes"
+check = "brush.parse_strokes-6"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-127]
+place = "brush.parse_strokes"
+check = "brush.parse_strokes-7"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-128]
+place = "brush.parse_strokes"
+check = "brush.parse_strokes-8"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-129]
+place = "brush.parse_strokes"
+check = "brush.parse_strokes-9"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-130]
+place = "brush.parse_strokes"
+check = "brush.parse_strokes-10"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-131]
+place = "brush.parse_strokes"
+check = "brush.parse_strokes-11"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-132]
+place = "build.load_mod"
+check = "build.load_mod"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-133]
+place = "build.load_mod"
+check = "build.load_mod-2"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-134]
+place = "build.load_mod"
+check = "build.load_mod-3"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-135]
+place = "build.load_mod"
+check = "build.load_mod-4"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-136]
+place = "build.load_mod"
+check = "build.load_mod-5"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-137]
+place = "build.load_mod"
+check = "build.load_mod-6"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-138]
+place = "build.load_mod"
+check = "build.load_mod-7"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-139]
+place = "build.read_map_file"
+check = "build.read_map_file"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-140]
+place = "build.read_map_file"
+check = "build.read_map_file-2"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-141]
+place = "build.read_map_file"
+check = "build.read_map_file-3"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-142]
+place = "build.read_map_file"
+check = "build.read_map_file-4"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-143]
+place = "build.read_map_file"
+check = "build.read_map_file-5"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-144]
+place = "build._reliefs"
+check = "build._reliefs"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-145]
+place = "build._area_clips"
+check = "build._area_clips"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-146]
+place = "build._area_clips"
+check = "build._area_clips-2"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-147]
+place = "build._ground_pictures"
+check = "build._ground_pictures"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-148]
+place = "build._given_answers"
+check = "build._given_answers"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-149]
+place = "build.new_maps"
+check = "build.new_maps"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-150]
+place = "build.unit_models"
+check = "nation-models"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-151]
+place = "build.spawn_models"
+check = "spawn-models"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-152]
+place = "build.rmod_far_upgrades"
+check = "build.rmod_far_upgrades"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-153]
+place = "build.rmod_far_upgrades"
+check = "build.rmod_far_upgrades-2"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-154]
+place = "build.unit_cards"
+check = "build.unit_cards"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-155]
+place = "build.unit_cards"
+check = "build.unit_cards-2"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-156]
+place = "build.unit_own_models"
+check = "build.unit_own_models-2"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-157]
+place = "build.unit_own_models"
+check = "build.unit_own_models-3"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-158]
+place = "build.unit_own_models"
+check = "build.unit_own_models"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-159]
+place = "build.squad_soldiers"
+check = "build.squad_soldiers"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-160]
+place = "build.squad_soldiers"
+check = "build.squad_soldiers-2"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-161]
+place = "build.squad_soldiers"
+check = "squad-fewest-two"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-162]
+place = "build.squad_soldiers"
+check = "build.squad_soldiers-4"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-163]
+place = "build.squad_soldiers"
+check = "build.squad_soldiers-5"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-164]
+place = "build.squad_soldiers"
+check = "build.squad_soldiers-6"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-165]
+place = "build.squad_soldiers"
+check = "build.squad_soldiers-7"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-166]
+place = "build.squad_soldiers"
+check = "build.squad_soldiers-8"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-167]
+place = "build.squad_soldiers"
+check = "build.squad_soldiers-9"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-168]
+place = "build._soldier_figure"
+check = "build._soldier_figure"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-169]
+place = "build._game_figure"
+check = "build._game_figure"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-170]
+place = "build.building_looks"
+check = "build.building_looks"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-171]
+place = "build.building_looks"
+check = "build.building_looks-2"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-172]
+place = "build.unit_own_copies"
+check = "build.unit_own_copies"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-173]
+place = "build.unit_own_copies"
+check = "build.unit_own_copies-2"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-174]
+place = "build.unit_own_copies"
+check = "build.unit_own_copies-3"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-175]
+place = "build.unit_own_copies"
+check = "build.unit_own_copies-4"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-176]
+place = "build.unit_own_clips"
+check = "build.unit_own_clips"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-177]
+place = "build.unit_own_clips"
+check = "build.unit_own_clips-2"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-178]
+place = "build.unit_own_clips"
+check = "build.unit_own_clips-3"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-179]
+place = "build.unit_own_rides"
+check = "build.unit_own_rides"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-180]
+place = "build.unit_own_rides"
+check = "build.unit_own_rides-2"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-181]
+place = "build.unit_own_rides"
+check = "build.unit_own_rides-3"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-182]
+place = "build.unit_own_halves"
+check = "build.unit_own_halves"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-183]
+place = "build._own_model_part"
+check = "build._own_model_part"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-184]
+place = "build._own_model_part"
+check = "build._own_model_part-2"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-185]
+place = "build._own_model_part"
+check = "build._own_model_part-3"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-186]
+place = "build.unit_classes"
+check = "build.unit_classes"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-187]
+place = "build.unit_classes"
+check = "delete-unit-class"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-188]
+place = "build.unit_classes"
+check = "build.unit_classes-2"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-189]
+place = "build.unit_classes"
+check = "build.unit_classes-3"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-190]
+place = "build._own_kinds_made"
+check = "own-units-menu"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-191]
+place = "build.build_pack"
+check = "build.build_pack"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-192]
+place = "build.build_pack"
+check = "build.build_pack-2"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-193]
+place = "build.build_pack"
+check = "build.build_pack-3"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-194]
+place = "build.build_pack"
+check = "build.build_pack-4"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-195]
+place = "build.build_pack"
+check = "build.build_pack-5"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-196]
+place = "build.build_pack"
+check = "build.build_pack-6"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-197]
+place = "build.build_pack"
+check = "build.build_pack-7"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-198]
+place = "build.build_pack"
+check = "build.build_pack-8"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-199]
+place = "build.build_pack"
+check = "build.build_pack-9"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-200]
+place = "build.menu_lines"
+check = "build.menu_lines"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-201]
+place = "build.own_buildings"
+check = "build.own_buildings"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-202]
+place = "build.own_buildings"
+check = "build.own_buildings-2"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-203]
+place = "build.own_buildings"
+check = "build.own_buildings-3"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-204]
+place = "build._shipped_menu_pictures"
+check = "build._shipped_menu_pictures"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-205]
+place = "build._shipped_menu_pictures"
+check = "build._shipped_menu_pictures-2"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-206]
+place = "build._make_mission"
+check = "build._make_mission"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-207]
+place = "build._make_mission"
+check = "build._make_mission-2"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-208]
+place = "build._make_mission"
+check = "build._make_mission-3"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-209]
+place = "build._make_mission"
+check = "build._make_mission-4"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-210]
+place = "build._menu_orders"
+check = "build._menu_orders"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-211]
+place = "build._menu_orders"
+check = "build._menu_orders-2"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-212]
+place = "build.build_and_write"
+check = "build.rmod-clash"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-213]
+place = "build.build_and_write"
+check = "build.build_and_write-2"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-214]
+place = "build.build_and_write"
+check = "build.build_and_write-3"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-215]
+place = "build.build_and_write"
+check = "build.build_and_write-4"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-216]
+place = "build.build_and_write"
+check = "build.build_and_write-5"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-217]
+place = "build.build_and_write"
+check = "build.build_and_write-6"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-218]
+place = "build.build_and_write"
+check = "build.build_and_write-7"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-219]
+place = "build.build_and_write"
+check = "build.build_and_write-8"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-220]
+place = "build.build_and_write"
+check = "build.build_and_write-9"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-221]
+place = "build.build_and_write"
+check = "build.build_and_write-10"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-222]
+place = "build.build_and_write"
+check = "build.build_and_write-11"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-223]
+place = "build.make_ground"
+check = "build.build_and_write.make_ground"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-224]
+place = "build.make_ground"
+check = "build.build_and_write.make_ground-2"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-225]
+place = "build.build_and_write"
+check = "build.build_and_write-12"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-226]
+place = "build.build_and_write"
+check = "build.build_and_write-13"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-227]
+place = "build.build_and_write"
+check = "build.build_and_write-14"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-228]
+place = "build.build_and_write"
+check = "build.build_and_write-15"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-229]
+place = "build.build_and_write"
+check = "build.build_and_write-16"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-230]
+place = "build.build_and_write"
+check = "build.build_and_write-17"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-231]
+place = "build.build_and_write"
+check = "build.build_and_write-18"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-232]
+place = "build.build_and_write"
+check = "build.build_and_write-19"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-233]
+place = "build.build_and_write"
+check = "build.build_and_write-20"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-234]
+place = "build.build_and_write"
+check = "build.build_and_write-21"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-235]
+place = "build.build_and_write"
+check = "build.build_and_write-22"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-236]
+place = "build.build_and_write"
+check = "build.build_and_write-23"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-237]
+place = "build.build_and_write"
+check = "build.build_and_write-24"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-238]
+place = "build.build_and_write"
+check = "build.build_and_write-25"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-239]
+place = "build.build_and_write"
+check = "build.build_and_write-26"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-240]
+place = "build.build_and_write"
+check = "build.build_and_write-27"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-241]
+place = "build.build_and_write"
+check = "build.build_and_write-28"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-242]
+place = "build.build_and_write"
+check = "build.build_and_write-29"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-243]
+place = "build.build_and_write"
+check = "build.build_and_write-30"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-244]
+place = "build.build_and_write"
+check = "build.build_and_write-31"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-245]
+place = "build.build_and_write"
+check = "build.build_and_write-32"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-246]
+place = "build.build_and_write"
+check = "build.build_and_write-33"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-247]
+place = "build.build_and_write"
+check = "build.build_and_write-34"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-248]
+place = "build.build_and_write"
+check = "building-symbol"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-249]
+place = "build.build_and_write"
+check = "build.build_and_write-35"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-250]
+place = "build.build_and_write"
+check = "build.build_and_write-36"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-251]
+place = "build.build_and_write"
+check = "build.build_and_write-37"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-252]
+place = "build.build_and_write"
+check = "build.build_and_write-38"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-253]
+place = "build.build_and_write"
+check = "build.build_and_write-39"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-254]
+place = "build.build_and_write"
+check = "build.build_and_write-40"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-255]
+place = "build.build_and_write"
+check = "build.build_and_write-41"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-256]
+place = "build.build_and_write"
+check = "build.build_and_write-42"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-257]
+place = "build.build_and_write"
+check = "build.build_and_write-43"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-258]
+place = "build.build_and_write"
+check = "build.build_and_write-44"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-259]
+place = "build.build_and_write"
+check = "build.build_and_write-45"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-260]
+place = "build.build_and_write"
+check = "build.build_and_write-46"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-261]
+place = "build._wide_packs"
+check = "build._wide_packs"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-262]
+place = "buildinglook.piece_kind"
+check = "buildinglook.piece_kind"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-263]
+place = "buildinglook._layout"
+check = "buildinglook._layout"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-264]
+place = "buildinglook.clone_symbol"
+check = "buildinglook.clone_symbol"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-265]
+place = "doctor.fix"
+check = "doctor.fix"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-266]
+place = "fairplay.lock_script"
+check = "fairplay.lock_script"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-267]
+place = "filechecks.walk"
+check = "filechecks.check_video.walk"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-268]
+place = "filechecks.check_video"
+check = "video-vp9-vorbis"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-269]
+place = "filechecks.check_flash"
+check = "filechecks.check_flash"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-270]
+place = "filechecks.check_shader_code"
+check = "shader-model-3"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-271]
+place = "filechecks.shader_programs"
+check = "filechecks.shader_programs"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-272]
+place = "filechecks.shader_programs"
+check = "filechecks.shader_programs-2"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-273]
+place = "filechecks.check_shaders"
+check = "filechecks.check_shaders"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-274]
+place = "gamefiles.delta_base"
+check = "gamefiles.delta_base"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-275]
+place = "gamefiles.apply_delta"
+check = "gamefiles.apply_delta"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-276]
+place = "gamefiles.apply_delta"
+check = "gamefiles.apply_delta-2"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-277]
+place = "gamefiles.apply_delta"
+check = "gamefiles.apply_delta-3"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-278]
+place = "gamefiles.taken"
+check = "gamefiles.taken"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-279]
+place = "gamefiles.taken"
+check = "gamefiles.taken-2"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-280]
+place = "gamefiles.check_kind"
+check = "gamefiles.check_kind"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-281]
+place = "gamefiles.check_kind"
+check = "gamefiles.check_kind-2"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-282]
+place = "gamefiles.check_kind"
+check = "gamefiles.check_kind-3"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-283]
+place = "gamefiles.read_mod"
+check = "gamefiles.read_mod"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-284]
+place = "gamefiles.read_mod"
+check = "gamefiles.read_mod-2"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-285]
+place = "gamefiles.read_mod"
+check = "gamefiles.read_mod-3"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-286]
+place = "gamefiles.changes"
+check = "gamefiles.changes"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-287]
+place = "gamefiles.changes"
+check = "gamefiles.changes-2"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-288]
+place = "gamefiles.changes"
+check = "gamefiles.changes-3"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-289]
+place = "gamefiles.changes"
+check = "gamefiles.changes-4"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-290]
+place = "gamefiles.changes"
+check = "gamefiles.changes-5"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-291]
+place = "gamepatch.parse"
+check = "gamepatch.parse"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-292]
+place = "gamepatch.parse"
+check = "gamepatch.parse-2"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-293]
+place = "gamepatch.parse"
+check = "gamepatch.parse-3"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-294]
+place = "gamepatch.apply"
+check = "gamepatch.apply"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-295]
+place = "gamepatch.apply"
+check = "gamepatch.apply-2"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-296]
+place = "gamepatch._edit"
+check = "gamepatch._edit"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-297]
+place = "gamepatch._edit"
+check = "gamepatch._edit-2"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-298]
+place = "gamepatch.apply_all"
+check = "gamepatch.apply_all"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-299]
+place = "gamepatch.fetch"
+check = "gamepatch.fetch"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-300]
+place = "gamepatch.fetch"
+check = "gamepatch.fetch-2"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-301]
+place = "gamepatch.fetch"
+check = "gamepatch.fetch-3"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-302]
+place = "gltf.model_glb"
+check = "gltf.model_glb"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-303]
+place = "gltf.model_glb"
+check = "gltf.model_glb-2"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-304]
+place = "groundtex.check_ref"
+check = "groundtex.check_ref"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-305]
+place = "groundtex.swatch_pixels"
+check = "groundtex.swatch_pixels"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-306]
+place = "groundtex.palette_swatch"
+check = "groundtex.palette_swatch"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-307]
+place = "groundtex.swatch"
+check = "groundtex.swatch"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-308]
+place = "groundtex.swatch"
+check = "groundtex.swatch-2"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-309]
+place = "groundtex.swatch"
+check = "groundtex.swatch-3"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-310]
+place = "groundtex.swatch"
+check = "groundtex.swatch-4"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-311]
+place = "guard.send"
+check = "guard.send"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-312]
+place = "instance.refuse_if_running"
+check = "instance.refuse_if_running"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-313]
+place = "instance._set_aside"
+check = "instance._set_aside"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-314]
+place = "instance.build_instance"
+check = "instance.build_instance"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-315]
+place = "instance.build_instance"
+check = "instance.build_instance-2"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-316]
+place = "instance.build_instance"
+check = "instance.build_instance-3"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-317]
+place = "instance.build_instance"
+check = "instance.build_instance-4"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-318]
+place = "kdt.__init__"
+check = "kdt.__init__"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-319]
+place = "kdt._parse"
+check = "kdt._parse"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-320]
+place = "kdt._table"
+check = "kdt._table"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-321]
+place = "loc.plan"
+check = "loc.plan"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-322]
+place = "loc.plan"
+check = "loc.plan-2"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-323]
+place = "loc.plan"
+check = "loc.plan-3"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-324]
+place = "loc.apply"
+check = "loc.apply"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-325]
+place = "lock.decode_join_code"
+check = "lock.decode_join_code"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-326]
+place = "mapscripts.compile_text"
+check = "mapscripts.compile_text"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-327]
+place = "mapscripts.build_changes"
+check = "mapscripts.build_changes"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-328]
+place = "mapscripts.build_changes"
+check = "mapscripts.build_changes-2"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-329]
+place = "mapscripts.build_changes"
+check = "mapscripts.build_changes-3"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-330]
+place = "mapscripts.build_changes"
+check = "mapscripts.build_changes-4"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-331]
+place = "mapscripts.build_changes"
+check = "mapscripts.build_changes-5"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-332]
+place = "menugroups.read"
+check = "menugroups.read"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-333]
+place = "menuorder.parse"
+check = "menuorder.parse"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-334]
+place = "menuorder.parse"
+check = "menuorder.parse-2"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-335]
+place = "menuorder.parse"
+check = "menuorder.parse-3"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-336]
+place = "menupicture.start_dots_of"
+check = "menupicture.start_dots_of"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-337]
+place = "mission._words"
+check = "mission._words"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-338]
+place = "mission.problems"
+check = "mission.problems"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-339]
+place = "mission.problems"
+check = "mission-human-sides"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-340]
+place = "mission.point"
+check = "mission.problems.point"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-341]
+place = "mission.zone"
+check = "mission.problems.zone"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-342]
+place = "mission.group"
+check = "mission.problems.group"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-343]
+place = "mission.side"
+check = "mission.problems.side"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-344]
+place = "mission.problems"
+check = "mission.problems-2"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-345]
+place = "mission.problems"
+check = "mission.problems-3"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-346]
+place = "mission.problems"
+check = "mission.problems-4"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-347]
+place = "mission.problems"
+check = "mission.problems-5"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-348]
+place = "mission.problems"
+check = "mission.problems-6"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-349]
+place = "mission.problems"
+check = "mission.problems-7"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-350]
+place = "mission.problems"
+check = "mission-unit-class"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-351]
+place = "mission.problems"
+check = "mission.problems-8"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-352]
+place = "mission.problems"
+check = "mission-ai-side"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-353]
+place = "missionbuild.entry_folder"
+check = "missionbuild.entry_folder"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-354]
+place = "missionbuild.entry_folder"
+check = "missionbuild.entry_folder-2"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-355]
+place = "modelin._own_animations"
+check = "modelin._own_animations"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-356]
+place = "modelin._blender_animations"
+check = "modelin._blender_animations"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-357]
+place = "modelin.own_animations_into"
+check = "modelin.own_animations_into"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-358]
+place = "modelin.own_animations_into"
+check = "modelin.own_animations_into-2"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-359]
+place = "modelin.own_animations_into"
+check = "modelin.own_animations_into-3"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-360]
+place = "nav.read"
+check = "nav.read"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-361]
+place = "nav._cap_links"
+check = "circle-links"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-362]
+place = "newmap.check_name"
+check = "newmap-names"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-363]
+place = "newmap.make"
+check = "newmap.make"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-364]
+place = "newmap.make"
+check = "newmap.make-2"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-365]
+place = "newmap.make"
+check = "newmap.make-3"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-366]
+place = "newmap.make"
+check = "newmap.make-4"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-367]
+place = "newmap.make"
+check = "newmap.make-5"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-368]
+place = "newmap.make"
+check = "newmap.make-6"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-369]
+place = "newmap.make"
+check = "newmap.make-7"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-370]
+place = "packfiles.pack_path"
+check = "packfiles.pack_path"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-371]
+place = "patch.run"
+check = "patch.run"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-372]
+place = "patch.apply"
+check = "patch.apply-2"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-373]
+place = "patch._create"
+check = "patch._create"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-374]
+place = "patch._finish"
+check = "patch._finish"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-375]
+place = "patch._ruses_per_sector"
+check = "ruses-per-sector"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-376]
+place = "patch._unit_rules"
+check = "weapon-salvo"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-377]
+place = "patch._truck_flags"
+check = "truck-flags"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-378]
+place = "play.keep_instances_dir"
+check = "play.keep_instances_dir"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-379]
+place = "play._modded"
+check = "play.project-refusal"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-380]
+place = "play._modded"
+check = "play.other-app-building"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-381]
+place = "play._modded"
+check = "play.mods-have-mistakes"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-382]
+place = "play._modded"
+check = "play.copy-has-no-exe"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-383]
+place = "play._modded"
+check = "play.steam-didnt-start"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-384]
+place = "players.parse_map"
+check = "players.parse_map"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-385]
+place = "players.parse_map"
+check = "players-most"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-386]
+place = "players.apply_players"
+check = "players.apply_players"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-387]
+place = "players.apply_players"
+check = "players.apply_players-2"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-388]
+place = "players.apply_players"
+check = "seats-per-team"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-389]
+place = "presets.read_facts"
+check = "presets.read_facts"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-390]
+place = "presets.read"
+check = "presets.read_facts.read"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-391]
+place = "presets.copy_scenario"
+check = "presets.copy_scenario"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-392]
+place = "presets.copy_scenario"
+check = "presets.copy_scenario-2"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-393]
+place = "pyscript.dump"
+check = "pyscript.dump"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-394]
+place = "pyscript.check_appended"
+check = "script-no-exec"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-395]
+place = "pyscript.append_module"
+check = "pyscript.append_module"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-396]
+place = "pyscript.append_module"
+check = "pyscript.append_module-2"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-397]
+place = "pyscript.append_module"
+check = "pyscript.append_module-3"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-398]
+place = "pyscript.append_module"
+check = "pyscript.append_module-4"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-399]
+place = "pyscript.append_module"
+check = "pyscript.append_module-5"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-400]
+place = "rig.rig_of"
+check = "rig.rig_of"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-401]
+place = "rig.rig_of"
+check = "rig.rig_of-2"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-402]
+place = "rig.rig_of"
+check = "rig.rig_of-3"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-403]
+place = "rig.rig_of"
+check = "rig.rig_of-4"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-404]
+place = "rmod.check"
+check = "rmod.check"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-405]
+place = "rmod.check"
+check = "rmod.check-2"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-406]
+place = "rmod.apply"
+check = "rmod.apply"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-407]
+place = "rmod.apply"
+check = "rmod.apply-2"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-408]
+place = "rmod.apply"
+check = "rmod.apply-3"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-409]
+place = "roadnet.read"
+check = "roadnet.read"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-410]
+place = "roadnet.apply_roads"
+check = "road-network-one-piece"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-411]
+place = "scenario._check_text"
+check = "scenario._check_text"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-412]
+place = "scenario._check_text"
+check = "scenario._check_text-2"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-413]
+place = "scenario.parse_places"
+check = "scenario.parse_places"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-414]
+place = "scenario.apply_moves"
+check = "skirmish-neutral-spawns"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-415]
+place = "scenery.__init__"
+check = "scenery-md5"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-416]
+place = "scenery._grown"
+check = "scenery._grown"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-417]
+place = "scenery._grids_hold"
+check = "scenery-grid"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-418]
+place = "sceneryasset.write_asset"
+check = "sceneryasset.write_asset"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-419]
+place = "sceneryasset.rules"
+check = "sceneryasset.rules"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-420]
+place = "sceneryasset.checked_credit"
+check = "sceneryasset.checked_credit"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-421]
+place = "sectors.apply_sectors"
+check = "sectors.apply_sectors"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-422]
+place = "solved.unpack"
+check = "solved.unpack"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-423]
+place = "sound.header"
+check = "sound.header"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-424]
+place = "sound.decode"
+check = "sound.decode"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-425]
+place = "sound.decode"
+check = "sound.decode-2"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-426]
+place = "sound.encode"
+check = "sound.encode"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-427]
+place = "sound.ambience_changes"
+check = "sound.ambience_changes"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-428]
+place = "sound.ambience_changes"
+check = "sound.ambience_changes-2"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-429]
+place = "sound.ambience_changes"
+check = "sound.ambience_changes-3"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-430]
+place = "sound.new_song_changes"
+check = "sound.new_song_changes"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-431]
+place = "sound.changes"
+check = "sound.changes"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-432]
+place = "sound.mod_volumes"
+check = "sound.mod_volumes"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-433]
+place = "sound.volume_changes"
+check = "sound.volume_changes"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-434]
+place = "tms.decode_parents"
+check = "tms.decode_parents"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-435]
+place = "tms.decode"
+check = "tms.decode"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-436]
+place = "tmst.__init__"
+check = "tmst.__init__"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-437]
+place = "unitcheck.problems"
+check = "unit-nation-range"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-438]
+place = "unitcheck.problems"
+check = "unit-id-zero"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-439]
+place = "unitcheck.problems"
+check = "unit-five-dates"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-440]
+place = "unitcheck.problems"
+check = "unit-card-shown"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-441]
+place = "unitflags.problems"
+check = "flag-59"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-442]
+place = "unitlook.make_standin"
+check = "unitlook.make_standin"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-443]
+place = "unitlook._plain_picture"
+check = "unitlook._plain_picture"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-444]
+place = "unitlook._plain_picture"
+check = "unitlook._plain_picture-2"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-445]
+place = "unitlook.make_picture"
+check = "unitlook.make_picture"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-446]
+place = "unitlook.make_picture"
+check = "unitlook.make_picture-2"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-447]
+place = "unitlook.own_cards"
+check = "unitlook.own_cards"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-448]
+place = "unitlook.own_cards"
+check = "unitlook.own_cards-2"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-449]
+place = "unitlook.own_cards"
+check = "unitlook.own_cards-3"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-450]
+place = "unitlook.changes"
+check = "unitlook.changes"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-451]
+place = "unitmodel._import_own_bones"
+check = "unitmodel._import_own_bones"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-452]
+place = "unitmodel.own_record"
+check = "unitmodel.own_record"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-453]
+place = "unitmodel._top_of"
+check = "unitmodel._top_of"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-454]
+place = "unitmodel.find_source"
+check = "unitmodel.find_source"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-455]
+place = "unitmodel.new_texture"
+check = "unitmodel.new_texture"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-456]
+place = "unitmodel.own_bone_material"
+check = "unitmodel._with_model.own_bone_material"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-457]
+place = "unitmodel._with_model"
+check = "unitmodel._with_model"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-458]
+place = "unitmodel._with_model"
+check = "unitmodel._with_model-2"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-459]
+place = "yourfiles._move"
+check = "yourfiles._move"
+since = "0.9.8.23/0.4.8.23"
+
+[BLD-460]
+place = "build._mod_text"
+check = "build._mod_text"
+since = "0.9.8.23/0.4.8.23"

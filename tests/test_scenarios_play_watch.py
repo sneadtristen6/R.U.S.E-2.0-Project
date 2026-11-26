@@ -328,12 +328,13 @@ class TheCrashCodeWithoutBugWatch(CrashingGame):
 
 
 class TheCrashNoticeAfterTestInGame(CrashingGame):
-    def test_the_studio_keeps_it_and_its_page_never_asks(self):
-        """Today's state, for the owner's open question left by the crash piece's join ("whether the Studio's Test in
-        game says the same"): Bug Watch on under version 5 (the Studio fetches our list too), Test in game starts the
-        game, it stops at a crash we know: the Studio's back end has the notice (its bugwatch_crash hands it over) but
-        its page never asks for it (no bugwatch_crash in the Studio's app.js), so a Studio player is told nothing; the
-        notice goes when the next game starts."""
+    def test_the_studio_keeps_it_and_its_page_asks_for_it(self):
+        """The owner's open question left by the crash piece's join ("whether the Studio's Test in game says the
+        same"), answered 2026-11-26 (B9 A: "after the game crashes in a Studio Test in game, the Studio shows the same
+        crash notice the Launcher shows after Play"): Bug Watch on under version 5 (the Studio fetches our list too),
+        Test in game starts the game, it stops at a crash we know: the Studio's back end has the notice (its
+        bugwatch_crash hands it over) and its page asks for it after a test that started the game, and when it opens
+        (tests/test_codes.py runs that part of the page in Node); the notice goes when the next game starts."""
         import threading
         from rusemod import bugwatch, net
         from rusemod.home import save_settings
@@ -371,8 +372,10 @@ class TheCrashNoticeAfterTestInGame(CrashingGame):
                         t.join(10)
         self.assertEqual(seen["notice"], {"why": "made", "unit": "Panzer IV (fr)", "added": False, "list": True})
         self.assertEqual(len(lists.asked), 1)
-        studio_ui = Path(__file__).resolve().parents[1] / "src" / "ruse_studio" / "ui" / "app.js"
-        self.assertNotIn("bugwatch_crash", studio_ui.read_text(encoding="utf-8"))
+        studio_ui = (Path(__file__).resolve().parents[1] / "src" / "ruse_studio" / "ui" / "app.js").read_text(
+            encoding="utf-8")
+        self.assertIn("seen = await api().bugwatch_crash();", studio_ui)
+        self.assertIn("if (ok) watchCrash();", studio_ui)
 
 
 class ARequiredUpdate(Watched):

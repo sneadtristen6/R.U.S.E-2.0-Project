@@ -25,6 +25,7 @@ from pathlib import Path
 
 from . import loc, pyscript, unitcheck, unitpacks
 from .brush import BrushError, parse_strokes
+from .codes import coded
 from .edat import Edat
 from .lock import fingerprint, fingerprint_text, looks_only_change
 from .model import ModelError, collector_paused, game_path, load, save
@@ -110,7 +111,7 @@ def load_mod(path, as_id: str | None = None) -> tuple[ModInfo, list]:
         try:
             manifest = tomllib.loads(_mod_text(manifest_file, "mod.toml"))
         except tomllib.TOMLDecodeError as exc:
-            raise BuildError(f"{manifest_file}: {exc}") from None
+            raise coded(BuildError(f"{manifest_file}: {exc}"), "BLD-001") from None
         m = manifest.get("mod", {})
         mod_id = m.get("id", "")
         if not _ID.match(mod_id):
@@ -144,7 +145,7 @@ def load_mod(path, as_id: str | None = None) -> tuple[ModInfo, list]:
                 info.texts += loc.read_csv(_mod_text(f, f.relative_to(path).as_posix()),
                                            f.stem.rsplit(".", 1)[-1].lower(), mod_id, f.relative_to(path).as_posix())
             except loc.TextError as exc:
-                raise BuildError(str(exc)) from None
+                raise coded(BuildError(str(exc)), "BLD-002") from None
         info.terrain = read_terrain(path)
         _reliefs(info, path)
         info.scenery = read_scenery(path)
@@ -168,17 +169,17 @@ def load_mod(path, as_id: str | None = None) -> tuple[ModInfo, list]:
         try:
             info.menu_order = menu_order_of(path)  # menus.toml: missions' places in the menus
         except MenuOrderError as exc:
-            raise BuildError(f"{mod_id}: {exc}") from None
+            raise coded(BuildError(f"{mod_id}: {exc}"), "BLD-003") from None
         from .menugroups import MenuGroupsError, read as menu_groups_of
         try:
             info.menu_groups = menu_groups_of(path)  # menu_groups.toml: each unit's group in its build list
         except MenuGroupsError as exc:
-            raise BuildError(str(exc)) from None  # (its words name the file)
+            raise coded(BuildError(str(exc)), "BLD-004") from None  # (its words name the file)
         from .scenario import ScenarioError, read_depots
         try:
             info.depots = read_depots(path)  # depots.toml: every depot's trucks, on every map or the ones named
         except ScenarioError as exc:
-            raise BuildError(f"{mod_id}: {exc}") from None
+            raise coded(BuildError(f"{mod_id}: {exc}"), "BLD-005") from None
         from .holding import skip_of
         from .unitlook import mod_cards, mod_textures
         from .unitmodel import UnitModelError, mod_copies, mod_models
@@ -190,12 +191,12 @@ def load_mod(path, as_id: str | None = None) -> tuple[ModInfo, list]:
         try:
             info.model_copies = mod_copies(path, skip)
         except UnitModelError as exc:
-            raise BuildError(f"{mod_id}: {exc}") from None
+            raise coded(BuildError(f"{mod_id}: {exc}"), "BLD-006") from None
         from .squads import SquadError, mod_game_looks, mod_squads
         try:
             info.squads = mod_squads(path, skip)  # files/models/<unit>.squad.toml: a squad's own number of soldiers
         except SquadError as exc:
-            raise BuildError(f"{mod_id}: {exc}") from None
+            raise coded(BuildError(f"{mod_id}: {exc}"), "BLD-007") from None
         info.squad_game = mod_game_looks(path, skip)  # files/models/<unit>@<i>.json alone: soldier i, the game's look
         from .sceneryasset import AssetError, mod_assets
         try:
@@ -203,7 +204,7 @@ def load_mod(path, as_id: str | None = None) -> tuple[ModInfo, list]:
             from .buildinglook import mod_looks
             info.looks = mod_looks(path, skip)   # files/buildings/<name>/building.toml: its new buildings' own looks
         except AssetError as exc:
-            raise BuildError(f"{mod_id}: {exc}") from None
+            raise coded(BuildError(f"{mod_id}: {exc}"), "BLD-008") from None
         from .sound import SoundError, mod_ambience, mod_new_songs, mod_sounds, mod_volumes, new_songs_rndf
         info.sounds = mod_sounds(path)
         try:
@@ -217,7 +218,7 @@ def load_mod(path, as_id: str | None = None) -> tuple[ModInfo, list]:
                 raise SoundError(str(exc)) from None
             info.ambience = mod_ambience(path, mod_id)  # maps/<map>/background_<n>.wav and sound.toml
         except SoundError as exc:
-            raise BuildError(f"{mod_id}: {exc}") from None
+            raise coded(BuildError(f"{mod_id}: {exc}"), "BLD-009") from None
         info.new_songs = mod_new_songs(path, mod_id)  # files/music/list<N>/<name>.wav: and the data they need
         if info.new_songs:
             ops += parse(new_songs_rndf(info.new_songs), file="files/music", mod=mod_id)
@@ -229,12 +230,12 @@ def load_mod(path, as_id: str | None = None) -> tuple[ModInfo, list]:
         try:
             info.missions = missions_of(path)  # maps/<map>/mission.toml: a new Operation's or chapter's own mission
         except MissionError as exc:
-            raise BuildError(f"{mod_id}: {exc}") from None
+            raise coded(BuildError(f"{mod_id}: {exc}"), "BLD-010") from None
         from .gamefiles import GameFileError, read_mod as game_files_of
         try:
             info.game_files = game_files_of(path, info.id)
         except GameFileError as exc:
-            raise BuildError(f"{path.name}: {exc}") from None
+            raise coded(BuildError(f"{path.name}: {exc}"), "BLD-011") from None
     info.when_mods = {mid for op in ops for mid, _rng, _neg in op.when}
     return info, ops
 
@@ -342,14 +343,14 @@ def read_map_file(folder: Path, f: Path) -> list:
     try:
         data = tomllib.loads(f.read_text(encoding="utf-8"))
     except (tomllib.TOMLDecodeError, UnicodeDecodeError) as exc:
-        raise BuildError(f"{rel}: {exc}") from None
+        raise coded(BuildError(f"{rel}: {exc}"), "BLD-012") from None
     extra = sorted(set(data) - set(keys))
     if extra:
         raise BuildError(f"{rel}: unknown key {extra[0]!r} ({holds})")
     try:
         rows = parse_rows(data, rel)
     except mistake as exc:
-        raise BuildError(str(exc)) from None
+        raise coded(BuildError(str(exc)), "BLD-013") from None
     for r in rows:  # a map's own menu pictures: the PNGs beside its map.toml, read with the mod
         for key in ("picture", "wide_picture"):
             name = getattr(r, key, None)
@@ -563,7 +564,8 @@ def _reliefs(info, path: Path) -> None:
                 try:
                     s = replace(s, grid=read_grid(heights.read_bytes()))
                 except ReliefError as exc:
-                    raise BuildError(f"{info.id}: {TERRAIN.as_posix()}/{s.relief}.png: {exc}") from None
+                    raise coded(BuildError(f"{info.id}: {TERRAIN.as_posix()}/{s.relief}.png: {exc}"),
+                                "BLD-014") from None
                 if picture.is_file():
                     info.relief_pictures.setdefault(pack, []).append((s, picture))
             out.append(s)
@@ -597,12 +599,13 @@ def _area_clips(info, path: Path) -> None:
                     try:
                         read[pack, name] = (reliefs[name], read_areas(file.read_bytes()))
                     except ReliefError as exc:
-                        raise BuildError(f"{info.id}: {TERRAIN.as_posix()}/{file.name}: {exc}") from None
+                        raise coded(BuildError(f"{info.id}: {TERRAIN.as_posix()}/{file.name}: {exc}"),
+                                    "BLD-015") from None
                 relief, areas = read[pack, name]
                 try:
                     s = replace(s, clip=area_clip(relief, areas, int(area), s.box()))
                 except ReliefError as exc:
-                    raise BuildError(f"{info.id}: maps/{pack}/terrain.toml: {exc}") from None
+                    raise coded(BuildError(f"{info.id}: maps/{pack}/terrain.toml: {exc}"), "BLD-016") from None
             out.append(s)
         info.paint[pack] = out
 
@@ -4585,8 +4588,8 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                     rmod_far_upgrades(arc, build_id, cache, result, rmod_units)  # upgrades; the unit models)
                 if result.model_changed and text_arc is None:  # (FORCE_LOAD off, the old way: copies go there, also
                     text_path, text_arc = zz_path, open_pack(zz_path)  # an .rmod mod's units' beside mods of ours)
-        except ResolveError as exc:
-            raise BuildError(f"load order: {exc}") from None
+        except ResolveError as exc:  # (Bug Watch: the load order's own refusal, by its code: rusemod.resolve)
+            raise coded(BuildError(f"load order: {exc}"), getattr(exc, "bw_code", "")) from None
         result.findings[:0] = known
         if run:
             first = [m.id for m in rmods]

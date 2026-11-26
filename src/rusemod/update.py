@@ -46,6 +46,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from . import net, releasesig
+from .codes import coded
 from .home import save_settings, settings
 from .mod_index import plain
 from .releasesig import REQUIRED, TAG_VERSION, version_tuple  # noqa: F401  (REQUIRED: the notes' line, kept here)
@@ -264,9 +265,15 @@ def latest(app: str, current: str, fetch=_get_json, fetch_text=_get_text, *, fet
     except (OSError, ValueError) as exc:  # refused (the hourly limit) or unreachable: the release feed instead
         try:
             releases = feed_releases(fetch_text(FEED))
-        except (OSError, ValueError):
+        except (OSError, ValueError) as feed_exc:
+            from . import bugwatch
             why = plain(exc)   # (never Python's or Windows' own words)
-            raise UpdateError(f"GitHub couldn't be reached to look for updates ({why}).", why=why) from None
+            # (Bug Watch: its code, with GitHub's answer number when it gave one and the Windows error number of a
+            # connection that couldn't be made, the API's, else the release feed's: rusemod.codes)
+            win = bugwatch.os_number(exc)
+            raise coded(UpdateError(f"GitHub couldn't be reached to look for updates ({why}).", why=why), "UPD-01",
+                        http=exc.code if isinstance(exc, urllib.error.HTTPError) else None,
+                        win=bugwatch.os_number(feed_exc) if win is None else win) from None
     tag_re = re.compile(rf"^{app}-v({TAG_VERSION})$")
     newer = []
     for rel in releases if isinstance(releases, list) else []:
@@ -301,12 +308,20 @@ def _offer(app: str, version: str, rel: dict, assets: dict, payload: dict, curre
     asset = assets.get(name)
     if asset is None:
         found.refused = _refused(f"{APPS[app]} {version} is out, but its installer ({name}) isn't in the release yet.")
+        _count_refusal("UPD-02")   # (Bug Watch: a signed release with no installer yet, by its code)
     elif not rel.get("feed"):   # the API lists each file's size, and GitHub's digest of it (the feed lists neither)
         digest = str(asset.get("digest") or "")
         if asset.get("size") != payload["size"] or (digest and digest.lower() != "sha256:" + payload["sha256"]):
             found.refused = _refused(f"{APPS[app]} {version}'s installer on GitHub isn't the one we signed (its size "
                                      f"or SHA-256 differs), so it isn't installed.")
+            _count_refusal("UPD-05")   # (Bug Watch: the installer GitHub lists isn't the signed one)
     return found
+
+
+def _count_refusal(code: str) -> None:
+    """Bug Watch counts a signed release's refusal by its code (rusemod.codes; the check itself went well)."""
+    from . import bugwatch
+    bugwatch.failure(code)
 
 
 def _refused(text: str) -> str:
@@ -588,6 +603,8 @@ class UpdateCalls:
                          fetch_sig=self._update_fetch_sig)
         except UpdateError as exc:
             if not exc.final:
+                from . import bugwatch
+                bugwatch.failed(exc)  # (the call itself goes well: Bug Watch counts the check that failed by its code)
                 kept = self._update_kept()
                 return {"available": False, "error": words(exc, said_in), "current": current,
                         **({"required": True, "offline": True, "version": kept} if kept else {})}

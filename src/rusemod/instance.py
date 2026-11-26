@@ -119,10 +119,11 @@ def refuse_if_running(dst: str) -> None:
     """Raise GameRunning when R.U.S.E. still runs from the copy `dst`: it can't be rebuilt under a running game."""
     running = game_running(dst)
     if running:
+        from .codes import coded
         names = ", ".join(f"{os.path.basename(exe)} (process {pid})" for pid, exe in running)
         # not a game rule: something else is busy (the game, the other app, a restore)
-        raise GameRunning(f"R.U.S.E. is still running from the modded copy at {dst}: {names}. Close the game, then try "
-                          f"again.", running)
+        raise coded(GameRunning(f"R.U.S.E. is still running from the modded copy at {dst}: {names}. Close the game, "
+                                f"then try again.", running), "PLAY-10")
 
 
 def _norm(rel: str) -> str:

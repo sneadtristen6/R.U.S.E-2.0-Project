@@ -35,6 +35,7 @@ import urllib.request
 from pathlib import Path
 
 from . import net
+from .codes import coded
 from .home import save_settings, settings
 from .owned import verify
 from .steam import APP_ID as _STEAM_APP_ID
@@ -149,17 +150,22 @@ def start(server: str = SERVER, timeout: float = TIMEOUT) -> dict:
     code that isn't the server's shape is refused. Raises OwnedPassError with a plain message when the server is off,
     busy, or unreachable."""
     if not str(server).startswith(("http://", "https://")):
-        raise OwnedPassError("The sign-in server address isn't set up.")
+        raise coded(OwnedPassError("The sign-in server address isn't set up."), "SIGN-01")
     try:
         status, body = _call(server.rstrip("/") + "/v1/steam/start", data=b"", timeout=timeout)
-    except (urllib.error.URLError, OSError, ValueError):
-        raise OwnedPassError("We couldn't reach the sign-in server. Check your connection and try again.") from None
+    except (urllib.error.URLError, OSError, ValueError) as exc:
+        from . import bugwatch
+        # (Bug Watch: its code, with the Windows error number of why the server couldn't be reached when there is one)
+        raise coded(OwnedPassError("We couldn't reach the sign-in server. Check your connection and try again."),
+                    "SIGN-02", win=bugwatch.os_number(exc)) from None
     if status == 200 and isinstance(body.get("code"), str) and _CODE.match(body["code"]):
         return {"code": body["code"], "poll_every": _pos(body.get("poll_every"), 3),
                 "expires_in": _pos(body.get("expires_in"), 600)}
-    if status == 200:   # an answer with no code we can use: nothing to open
-        raise OwnedPassError("The sign-in server didn't answer. Try again in a few minutes.")
-    raise OwnedPassError(str(body.get("reason") or "The sign-in server didn't answer. Try again in a few minutes."))
+    # an answer with no code we can use (nothing to open), or a refusal with its reason. (Bug Watch: the server
+    # answered but started no sign-in, with its answer number; never its reason's words)
+    reason = "" if status == 200 else str(body.get("reason") or "")
+    raise coded(OwnedPassError(reason or "The sign-in server didn't answer. Try again in a few minutes."), "SIGN-03",
+                http=status)
 
 
 def steam_login_url(server: str, code: str) -> str:
@@ -192,13 +198,22 @@ def steam_login_url(server: str, code: str) -> str:
 def poll(server: str, code: str, timeout: float = TIMEOUT) -> dict:
     """Ask the server whether the sign-in is done. Its JSON: {"status": "pending"|"owned"|"not-owned"|"private"|
     "steam-error"|"expired", "pass"?, "message"?}. A call that can't be made reads as steam-error, so the screen keeps
-    polling or stops cleanly rather than throwing."""
+    polling or stops cleanly rather than throwing. Bug Watch counts an answer that ends the sign-in without a pass, and
+    a call that couldn't be made, by its code (rusemod.codes): they are answers, not errors."""
+    from . import bugwatch
     try:
-        _status, body = _call(server.rstrip("/") + "/v1/steam/poll?code=" + urllib.parse.quote(str(code or ""), safe=""),
-                              timeout=timeout)
-    except (urllib.error.URLError, OSError, ValueError):
+        status, body = _call(server.rstrip("/") + "/v1/steam/poll?code=" + urllib.parse.quote(str(code or ""), safe=""),
+                             timeout=timeout)
+    except (urllib.error.URLError, OSError, ValueError) as exc:
+        bugwatch.failure("SIGN-09", exc)
         return {"status": "steam-error"}
-    return body if body.get("status") else {"status": "steam-error"}
+    if not body.get("status"):
+        bugwatch.failure("SIGN-10", http=status)
+        return {"status": "steam-error"}
+    said = {"not-owned": "SIGN-05", "private": "SIGN-06", "expired": "SIGN-07", "steam-error": "SIGN-08"}
+    if body["status"] in said:
+        bugwatch.failure(said[body["status"]])
+    return body
 
 
 def fetch_public(server: str = SERVER, timeout: float = TIMEOUT) -> bytes | None:
@@ -273,8 +288,13 @@ class OwnedPassCalls:
 
     def owned_pass_status(self) -> dict:
         """Whether the player is signed in through Steam and owns R.U.S.E., until when, with the screen's words and
-        whether layer 2 is switched on at all."""
-        return pass_status(self._home) | {"on": ON, "words": words(self._signin_lang()), "app_id": APP_ID}
+        whether layer 2 is switched on at all. A kept pass that doesn't check out (not one only expired) is counted by
+        Bug Watch, with why (rusemod.codes)."""
+        status = pass_status(self._home)
+        if status["reason"] not in ("ok", "none", "expired"):
+            from . import bugwatch
+            bugwatch.failure("SIGN-14", why=_pass_code(status["reason"]))
+        return status | {"on": ON, "words": words(self._signin_lang()), "app_id": APP_ID}
 
     def owned_pass_ok(self) -> bool:
         """The gate the project's online features check: True when layer 2 is off (held), or the player holds a valid
@@ -293,24 +313,45 @@ class OwnedPassCalls:
             address = steam_login_url(server, info["code"])
         except ValueError:   # (start refused both already: kept, so nothing is ever opened from a bad one)
             raise OwnedPassError("The sign-in server address isn't set up.") from None
-        self._community_open(address)
+        try:
+            self._community_open(address)
+        except Exception as exc:  # (Bug Watch: the browser couldn't be opened, by its code; it goes on as it was)
+            coded(exc, "SIGN-04")
+            raise
         return {"on": True, **info, "login_url": address}
 
     def owned_sign_in_poll(self, code: str) -> dict:
         """Ask the server whether the sign-in is done. On "owned", check the pass here and keep it, then return the
-        fresh status; a pass that doesn't check out is refused ("bad-pass") and not kept."""
+        fresh status; a pass that doesn't check out is refused ("bad-pass") and not kept (Bug Watch: by its code, with
+        why, rusemod.codes)."""
         if not ON:
             return {"status": "off"}
         result = poll(self._owned_server(), str(code or ""))
         if result.get("status") == "owned" and result.get("pass"):
             payload, why = read_pass(result["pass"])
             if payload is None:
+                from . import bugwatch
+                bugwatch.failure("SIGN-12", why=_pass_code(why))
                 return {"status": "bad-pass", "reason": why} | self.owned_pass_status()
-            store_pass(self._home, result["pass"])
+            try:
+                store_pass(self._home, result["pass"])
+            except OSError as exc:  # (Bug Watch: its code and Windows error number; it goes on as it was)
+                coded(exc, "SIGN-13")
+                raise
             return {"status": "owned"} | self.owned_pass_status()
         return result
 
     def owned_sign_out(self) -> dict:
         """Forget the kept pass (the player signs in again next time it's needed)."""
-        clear_pass(self._home)
+        try:
+            clear_pass(self._home)
+        except OSError as exc:  # (Bug Watch: its code and Windows error number; it goes on as it was)
+            coded(exc, "SIGN-15")
+            raise
         return self.owned_pass_status()
+
+
+def _pass_code(reason: str) -> str | None:
+    """Why a pass doesn't check out (read_pass's reason), as the code Bug Watch sends it by (rusemod.codes)."""
+    return {"malformed pass": "PASS-01", "non-canonical payload": "PASS-02", "not an Ed25519 pass": "PASS-03",
+            "bad signature": "PASS-04", "not an owned-copy pass": "PASS-05", "expired": "PASS-06"}.get(reason)

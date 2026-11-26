@@ -10,9 +10,11 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field
 
+from .codes import coded
+
 
 class ResolveError(Exception):
-    pass
+    """A load order or a version choice that can't be made, each with its own code (rusemod.codes: Bug Watch)."""
 
 
 @dataclass
@@ -117,12 +119,13 @@ def pick_versions(requested: dict[str, str], catalog: dict[str, list[ModInfo]]) 
         for mid, asks in wants.items():
             if mid not in catalog:
                 who = ", ".join(w for w, _ in asks)
-                raise ResolveError(f"mod {mid!r} is needed by {who} but isn't available")
+                raise coded(ResolveError(f"mod {mid!r} is needed by {who} but isn't available"), "BLD-017")
             ok = [m for m in catalog[mid] if all(matches(m.version, rng) for _, rng in asks)]
             if not ok:
                 detail = "; ".join(f"{w} wants {rng}" for w, rng in asks)
                 have = ", ".join(m.version for m in catalog[mid])
-                raise ResolveError(f"no version of {mid!r} fits everyone ({detail}; available: {have})")
+                raise coded(ResolveError(f"no version of {mid!r} fits everyone ({detail}; available: {have})"),
+                            "BLD-018")
             new[mid] = max(ok, key=lambda m: parse_version(m.version))
         if {k: v.version for k, v in new.items()} == {k: v.version for k, v in chosen.items()}:
             return chosen
@@ -131,7 +134,7 @@ def pick_versions(requested: dict[str, str], catalog: dict[str, list[ModInfo]]) 
         for m in chosen.values():
             for dep, rng in m.depends.items():
                 wants.setdefault(dep, []).append((f"{m.id} {m.version}", rng))
-    raise ResolveError("version choice doesn't settle (dependencies keep changing each other)")
+    raise coded(ResolveError("version choice doesn't settle (dependencies keep changing each other)"), "BLD-019")
 
 
 # --- order ---
@@ -139,17 +142,18 @@ def load_order(mods: list[ModInfo]) -> list[ModInfo]:
     by_id = {m.id: m for m in mods}
     if len(by_id) < len(mods):  # (it counted them as one and broke on the second: "list index out of range")
         twice = sorted({m.id for m in mods if sum(1 for o in mods if o.id == m.id) > 1})
-        raise ResolveError(f"{', '.join(twice)} is in the set more than once (folders with the same id in their "
-                           f"mod.toml): give each its own id")
+        raise coded(ResolveError(f"{', '.join(twice)} is in the set more than once (folders with the same id in "
+                                 f"their mod.toml): give each its own id"), "BLD-020")
     for m in mods:
         for dep, rng in m.depends.items():
             if dep not in by_id:
-                raise ResolveError(f"{m.id} needs {dep}, which isn't in the mod set")
+                raise coded(ResolveError(f"{m.id} needs {dep}, which isn't in the mod set"), "BLD-021")
             if not matches(by_id[dep].version, rng):
-                raise ResolveError(f"{m.id} needs {dep} {rng}, but the set has {by_id[dep].version}")
+                raise coded(ResolveError(f"{m.id} needs {dep} {rng}, but the set has {by_id[dep].version}"), "BLD-022")
         for other, rng in m.conflicts.items():
             if other in by_id and matches(by_id[other].version, rng):
-                raise ResolveError(f"{m.id} can't be used together with {other} {by_id[other].version}")
+                raise coded(ResolveError(f"{m.id} can't be used together with {other} {by_id[other].version}"),
+                            "BLD-023")
     before: dict[str, set[str]] = {m.id: set() for m in mods}  # id -> ids that must load before it
     for m in mods:
         for dep in list(m.depends) + [d for d in m.optional if d in by_id] + [d for d in m.when_mods if d in by_id] \
@@ -164,7 +168,7 @@ def load_order(mods: list[ModInfo]) -> list[ModInfo]:
     while len(order) < len(mods):
         ready = sorted(mid for mid in before if mid not in placed and before[mid] <= placed)
         if not ready:
-            raise ResolveError("load order loop: " + " -> ".join(_find_loop(before, placed)))
+            raise coded(ResolveError("load order loop: " + " -> ".join(_find_loop(before, placed))), "BLD-024")
         order.append(by_id[ready[0]])
         placed.add(ready[0])
     return order

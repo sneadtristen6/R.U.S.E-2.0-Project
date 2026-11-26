@@ -426,8 +426,9 @@ def reading(folder: Path | None):
             fd = None
     try:
         if folder is not None and folder.is_dir() and _restore_running(folder):
+            from .codes import coded
             # not a game rule: something else is busy (the game, the other app, a restore)
-            raise BackupError("The game's files are being restored: wait for it to finish.")
+            raise coded(BackupError("The game's files are being restored: wait for it to finish."), "PLAY-13")
         yield
     finally:
         if fd is not None:

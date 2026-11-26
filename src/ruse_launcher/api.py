@@ -42,6 +42,7 @@ from rusemod import play as game_start, schema
 from rusemod.lock import CodeError
 from rusemod.backup import BackupCalls, BackupError
 from rusemod.bugwatch import BugWatchCalls
+from rusemod.codes import coded
 from rusemod.community import APP_NAMES, CommunityCalls
 from rusemod.guardcalls import GuardCalls
 from rusemod.termscalls import TermsCalls
@@ -66,6 +67,7 @@ from rusemod.library import MANIFEST, Library, LibraryError, read_info
 from . import __version__, errortext
 
 _SET_ID = re.compile(r"^[a-z0-9][a-z0-9-]*$")
+_LIBRARY_ENTRY = re.compile(r"[a-z0-9][a-z0-9-]*")  # a set's entry naming a library mod by id (else a folder): _resolve
 VANILLA = "vanilla"
 MOD_FILES = ("Mods (*.rusemod;*.rmod;*.zip;*.toml)", "All files (*.*)")  # the file dialog's filter: a mod file
 # (.rusemod, the Studio's export), a community .rmod, a .zip of a mod folder, or a mod's own mod.toml
@@ -724,11 +726,13 @@ class LauncherApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedC
         folder = Path(entry) if Path(entry).is_absolute() else sets_file.parent / entry
         if (folder / MANIFEST).is_file():
             return folder.resolve(), None
-        if re.fullmatch(r"[a-z0-9][a-z0-9-]*", entry):
+        if _LIBRARY_ENTRY.fullmatch(entry):
             return None, f"it needs {entry}, which isn't in the library (add it with “Add a mod file…”)"
         return None, f"it needs the mod folder {entry}, which isn't there any more"
 
     def _read_sets(self) -> list[dict]:
+        """Vanilla, then every mod set file, each with what's wrong with it (`error`) and, for Bug Watch, which of the
+        mistakes a set file can have it is (`error_code`: rusemod.codes, sent as why a Play was refused)."""
         sets = [{"id": VANILLA, "name": "Vanilla", "description": "The game with no mods.", "mods": [],
                  "folders": [], "mod_names": [], "error": None}]
         folder = self._sets_dir()
@@ -737,6 +741,7 @@ class LauncherApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedC
                      "mod_names": [], "error": None, "file": str(f)}
             if not _SET_ID.match(entry["id"]) or entry["id"] == VANILLA:
                 entry["error"] = f"the file name {f.name} must be lowercase letters, digits and '-' (not 'vanilla')"
+                entry["error_code"] = "SET-21"
                 sets.append(entry)
                 continue
             try:
@@ -745,15 +750,16 @@ class LauncherApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedC
                 entry["description"] = str(data.get("description", ""))
                 entry["mods"] = [str(m) for m in data.get("mods", [])]
                 if not entry["mods"]:
-                    entry["error"] = "it lists no mods"
+                    entry["error"], entry["error_code"] = "it lists no mods", "SET-22"
                 for m in entry["mods"]:
                     path, why = self._resolve(m, f)
                     entry["folders"].append(str(path) if path else None)
                     entry["mod_names"].append(self._mod_name(m, path))
                     if why and not entry["error"]:
                         entry["error"] = why
+                        entry["error_code"] = "SET-23" if _LIBRARY_ENTRY.fullmatch(m) else "SET-24"
             except (OSError, ValueError) as exc:
-                entry["error"] = f"{f.name}: {exc}"
+                entry["error"], entry["error_code"] = f"{f.name}: {exc}", "SET-25"
             sets.append(entry)
         return sets
 
@@ -771,35 +777,52 @@ class LauncherApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedC
     def mod_sets(self) -> list[dict]:
         """Vanilla first, then every mod set, by file name: its mods (library ids, or folders for hand-written
         sets) in load order, their names, and what's wrong with it, if anything."""
-        return [{k: v for k, v in s.items() if k not in ("file", "folders")} | {"editable": s["id"] != VANILLA}
-                for s in self._read_sets()]
+        return [{k: v for k, v in s.items() if k not in ("file", "folders", "error_code")}
+                | {"editable": s["id"] != VANILLA} for s in self._read_sets()]
 
     def _set(self, set_id: str) -> dict:
         chosen = next((s for s in self._read_sets() if s["id"] == set_id), None)
         if chosen is None:
-            raise LauncherError(f"There's no mod set called {set_id!r} any more. Pick another one.", key="set_gone")
+            raise coded(LauncherError(f"There's no mod set called {set_id!r} any more. Pick another one.",
+                                      key="set_gone"), "SET-10")
         return chosen
 
     def _check_mods(self, mods) -> list[str]:
+        """The mods of a set being saved, checked; each refusal with its own code for Bug Watch (rusemod.codes: FL-97,
+        where two pairs of them had one key each)."""
         if not isinstance(mods, list) or not all(isinstance(m, str) and m.strip() for m in mods):
-            raise LauncherError("Tick at least one mod for this mod set.", key="set_no_mods")
+            raise coded(LauncherError("Tick at least one mod for this mod set.", key="set_no_mods"), "SET-05")
         mods = [m.strip() for m in mods]
         if not mods:
-            raise LauncherError("Tick at least one mod for this mod set.", key="set_no_mods")
+            raise coded(LauncherError("Tick at least one mod for this mod set.", key="set_no_mods"), "SET-06")
         if len(set(mods)) != len(mods):
-            raise LauncherError("A mod can only be in a mod set once.", key="set_mod_twice")
+            raise coded(LauncherError("A mod can only be in a mod set once.", key="set_mod_twice"), "SET-07")
         for m in mods:
             path, why = self._resolve(m, self._sets_dir() / "x.toml")
-            if path is None:
-                raise LauncherError(f"This mod set can't be saved: {why}.", key="set_mod_missing")
+            if path is None:  # a library mod that isn't there, or a mod folder that's gone (a hand-written set)
+                raise coded(LauncherError(f"This mod set can't be saved: {why}.", key="set_mod_missing"),
+                            "SET-08" if _LIBRARY_ENTRY.fullmatch(m) else "SET-09")
         return mods
 
     def _write_set(self, set_id: str, name: str, description: str, mods: list[str]) -> None:
-        self._sets_dir().mkdir(parents=True, exist_ok=True)
-        text = (f"name = {json.dumps(name, ensure_ascii=False)}\n"
-                f"description = {json.dumps(description, ensure_ascii=False)}\n"
-                f"mods = [{', '.join(json.dumps(m, ensure_ascii=False) for m in mods)}]\n")
-        (self._sets_dir() / f"{set_id}.toml").write_text(text, encoding="utf-8")
+        try:
+            self._sets_dir().mkdir(parents=True, exist_ok=True)
+            text = (f"name = {json.dumps(name, ensure_ascii=False)}\n"
+                    f"description = {json.dumps(description, ensure_ascii=False)}\n"
+                    f"mods = [{', '.join(json.dumps(m, ensure_ascii=False) for m in mods)}]\n")
+            (self._sets_dir() / f"{set_id}.toml").write_text(text, encoding="utf-8")
+        except OSError as exc:  # (Bug Watch: its code and its Windows error number; the error itself goes on as it was)
+            coded(exc, "SET-14")
+            raise
+
+    def _saved_lists(self, set_id: str) -> dict:
+        """The fresh lists after a set was saved, the new set selected. When they can't be read now, the call still
+        fails as it did, though the set IS saved: Bug Watch tells this one apart from a refusal (FL-97's path 12)."""
+        try:
+            return self._lists(set=set_id)
+        except Exception as exc:
+            coded(exc, "SET-15")
+            raise
 
     def _new_id(self, name: str) -> str:
         slug = re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-") or "mod-set"
@@ -815,12 +838,12 @@ class LauncherApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedC
         """A mod set made on screen: its name and the library mods ticked for it, in order. Returns the fresh lists
         and the new set's id, so the screen can select it."""
         name = (name or "").strip()
-        if not name:
-            raise LauncherError("Give the mod set a name.", key="set_no_name")
+        if not name:  # (the page stops a blank name itself: one here passed it)
+            raise coded(LauncherError("Give the mod set a name.", key="set_no_name"), "SET-02")
         mods = self._check_mods(mods)
         set_id = self._new_id(name)
         self._write_set(set_id, name, (description or "").strip(), mods)
-        return self._lists(set=set_id)
+        return self._saved_lists(set_id)
 
     def save_set(self, set_id: str, name: str, mods: list[str] | None = None, description: str | None = None) -> dict:
         """Change a mod set: its name (a rename), its mods and their order, or both. The id (and so its modded
@@ -828,12 +851,12 @@ class LauncherApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedC
         chosen = self._set(set_id)
         if set_id == VANILLA:
             # not a game rule: the Launcher's own Vanilla set
-            raise LauncherError("Vanilla is the game with no mods; it can't be changed. Make a new mod set.",
-                                key="set_vanilla")
+            raise coded(LauncherError("Vanilla is the game with no mods; it can't be changed. Make a new mod set.",
+                                      key="set_vanilla"), "SET-11")
         name = (name or "").strip() or chosen["name"]
         mods = self._check_mods(mods) if mods is not None else chosen["mods"]
         self._write_set(set_id, name, chosen["description"] if description is None else description.strip(), mods)
-        return self._lists(set=set_id)
+        return self._saved_lists(set_id)
 
     def rename_set(self, set_id: str, name: str) -> dict:
         """A mod set's new name (the set page's Rename), its mods as they are. A call of its own, not save_set, so
@@ -846,7 +869,7 @@ class LauncherApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedC
         chosen = self._set(set_id)
         name = (name or "").strip() or f"{chosen['name']} 2"
         if set_id == VANILLA:
-            raise LauncherError("Vanilla has no mods to copy. Make a new mod set instead.")
+            raise coded(LauncherError("Vanilla has no mods to copy. Make a new mod set instead."), "SET-12")
         new_id = self._new_id(name)
         self._write_set(new_id, name, chosen["description"], chosen["mods"])
         return self._lists(set=new_id)
@@ -855,8 +878,12 @@ class LauncherApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedC
         chosen = self._set(set_id)
         if set_id == VANILLA:
             # not a game rule: the Launcher's own Vanilla set
-            raise LauncherError("Vanilla can't be deleted: it's the game itself.")
-        Path(chosen["file"]).unlink()
+            raise coded(LauncherError("Vanilla can't be deleted: it's the game itself."), "SET-13")
+        try:
+            Path(chosen["file"]).unlink()
+        except OSError as exc:  # (Bug Watch: its code and its Windows error number; the error goes on as it was)
+            coded(exc, "SET-16")
+            raise
         return self._lists(set=VANILLA)
 
     # --- do the set's mods work together? (rusemod.rmod.clashes; shown before Play, and while a set is edited) ---
@@ -917,7 +944,7 @@ class LauncherApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedC
         mods = list(chosen["mods"])
         if move not in mods or below not in mods:
             # not a game rule: the Launcher's own mod sets
-            raise LauncherError("That mod isn't in this mod set any more.")
+            raise coded(LauncherError("That mod isn't in this mod set any more."), "SET-17")
         mods.remove(move)
         mods.insert(mods.index(below) + 1, move)
         return self.save_set(set_id, chosen["name"], mods)
@@ -933,7 +960,7 @@ class LauncherApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedC
         both import it."""
         chosen = self._set(set_id)
         if set_id == VANILLA or not chosen["mods"]:
-            raise LauncherError("Vanilla has no mods, so there's no load order to share.")
+            raise coded(LauncherError("Vanilla has no mods, so there's no load order to share."), "SET-18")
         mods = []
         for entry, folder in zip(chosen["mods"], chosen["folders"]):
             try:
@@ -970,8 +997,9 @@ class LauncherApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedC
         lists (the new set selected) and what the check found."""
         check = self.import_check(text)
         if not check["found"]:
-            raise LauncherError("None of these mods are in your library yet. Add them first (Add a mod file… or Supported "
-                                "mods), then import the load order again.")
+            raise coded(LauncherError("None of these mods are in your library yet. Add them first (Add a mod file… "
+                                      "or Supported mods), then import the load order again."), "SET-20",
+                        n=len(check["missing"]) + len(check["other_version"]))
         name = (name or check["set_name"] or "Shared load order").strip()[:60]
         return self.new_set(name, [f["id"] for f in check["found"]]) | {"import": check}
 
@@ -982,32 +1010,34 @@ class LauncherApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedC
         busy = self._starting()
         job = Job()
         self._jobs[job.id] = job
-        refused = None  # Bug Watch: a Play refused before its job starts, by which refusal (rusemod.bugwatch.refused)
+        # Bug Watch: a Play refused before its job starts, by which refusal, its code and its numbers
+        # (rusemod.bugwatch.refused)
+        refused, code, detail = None, "", {}
         if busy:  # one at a time: two would race for the same copy
             job.fail("R.U.S.E. is already being started: wait for it to finish.")
-            refused = "play_busy"
+            refused, code = "play_busy", "PLAY-01"
         elif self._restoring():  # a copy built now would take half-restored files
             job.fail("The game's files are being restored: wait for it to finish.")
-            refused = "play_restoring"
+            refused, code = "play_restoring", "PLAY-02"
         elif chosen is None:
             job.fail(f"There's no mod set called {set_id!r}.")
-            refused = "play_no_set"
+            refused, code = "play_no_set", "PLAY-03"
         elif chosen.get("error"):
             job.fail(f"The mod set {chosen['name']} has a mistake: {chosen['error']}.")
-            refused = "play_set_mistake"
+            refused, code, detail = "play_set_mistake", "PLAY-04", {"why": chosen.get("error_code")}
         elif fairplay.ON and self._untrusted(chosen) and not self.check_mods(chosen["mods"])["hard"]:  # (clashes first)
             # not a game rule: the player's own tick (fair play)
             names = ", ".join(self._untrusted(chosen))
             job.fail(f"{names} run scripts inside the game. Scripts can do anything the game can, so tick “I trust "
                      f"this author” for each in the library first, only if you do.")
-            refused = "play_untrusted"
+            refused, code, detail = "play_untrusted", "PLAY-05", {"n": len(self._untrusted(chosen))}
         else:
             self._play_job = job.id
             work = self._reading_game(self._backup_game(), lambda say: self._play(chosen, say))  # a restore waits
             job.start(work, "R.U.S.E. is starting.", plain=(BuildError, RndfError, OSError))
         if refused:
             from rusemod import bugwatch
-            bugwatch.refused("play", refused)
+            bugwatch.refused("play", refused, code, **detail)
         return {"job": job.id}
 
     def _starting(self) -> bool:
@@ -1055,7 +1085,7 @@ class LauncherApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedC
         game, _found = self._game()
         if game is None:
             # not a game rule: the game or one of its files isn't found
-            raise BuildError("We couldn't find R.U.S.E. Choose its folder first.")
+            raise coded(BuildError("We couldn't find R.U.S.E. Choose its folder first."), "PLAY-07")
         instance = shared_copy(game, self._instances, self._home)  # one modded copy on the PC, both apps', where
         # Settings says (rusemod.play.instances_dir)
         extra = {"guard": {"home": self._home, "consent": self.guard_status()}} if fairplay.ON else {}  # RUSE Guard
