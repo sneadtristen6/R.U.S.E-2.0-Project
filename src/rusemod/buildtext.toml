@@ -4942,6 +4942,20 @@ cz = "  její zástupce {0}: sdílí obrázek s jinými texturami v balících: 
 jpn = "  その代替 {0}: {1} 個のパックでほかのテクスチャーと画像を共有しているため、そこではゲームのままにします（遠くではそのテクスチャーはゲームの見た目のまま）"
 sc = "  它的替身 {0}：在 {1} 个包中与其他纹理共用图片，所以那里保持游戏原样（远处这个纹理保留游戏的外观）"
 fa = "  جایگزین آن {0}: تصویرش را با بافت‌های دیگر در {1} بسته شریک است، پس آنجا همان‌طور که بازی دارد می‌ماند (از دور، آن بافت ظاهر بازی را نگه می‌دارد)"
+
+[ed7d3fa4963]
+us = "{0} was saved by a newer RUSE Studio (format {1}; this Launcher knows {2}): update the Launcher to play it as it was made."
+fr = "{0} a été enregistré par un RUSE Studio plus récent (format {1} ; ce Launcher connaît {2}) : mettez le Launcher à jour pour le jouer tel qu'il a été conçu."
+ger = "{0} wurde von einem neueren RUSE Studio gespeichert (Format {1}; dieser Launcher kennt {2}): Aktualisiere den Launcher, um den Mod so zu spielen, wie er gemacht wurde."
+ita = "{0} è stato salvato da un RUSE Studio più recente (formato {1}; questo Launcher conosce {2}): aggiorna il Launcher per giocarlo come è stato creato."
+spa = "{0} se guardó con un RUSE Studio más nuevo (formato {1}; este Launcher conoce {2}): actualiza el Launcher para jugarlo como se hizo."
+pol = "{0} został zapisany przez nowsze RUSE Studio (format {1}; ten Launcher zna {2}): zaktualizuj Launcher, aby grać w niego tak, jak go zrobiono."
+ru = "{0} сохранён более новой RUSE Studio (формат {1}; этот Launcher знает {2}): обновите Launcher, чтобы играть в мод так, как он был сделан."
+cz = "{0} byl uložen novějším RUSE Studiem (formát {1}; tento Launcher zná {2}): aktualizujte Launcher, abyste mod hráli tak, jak byl vytvořen."
+jpn = "{0} は新しい RUSE Studio で保存されています（形式 {1}、この Launcher は {2} まで対応）：作られたとおりに遊ぶには Launcher を更新してください。"
+sc = "{0} 由较新的 RUSE Studio 保存（格式 {1}；此 Launcher 支持到 {2}）：请更新 Launcher，才能按原样游玩。"
+fa = "{0} با RUSE Studio جدیدتری ذخیره شده است (قالب {1}؛ این لانچر {2} را می‌شناسد): برای بازی کردن آن همان‌طور که ساخته شده، لانچر را به‌روز کنید."
+
 [e97026241d0]
 us = "These files at the top of your mod are not in the exported file; it takes mod.toml, your README, credits, licence and notice files, a docs folder and the mod's own folders: {0}."
 fr = "Ces fichiers à la racine de votre mod ne sont pas dans le fichier exporté ; il prend mod.toml, vos fichiers README, crédits, licence et avis, un dossier docs et les dossiers propres au mod : {0}."

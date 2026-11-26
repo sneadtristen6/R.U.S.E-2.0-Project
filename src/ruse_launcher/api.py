@@ -430,7 +430,19 @@ class LauncherApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedC
             info, replaced = self._library.add(path)
         except LibraryError as exc:
             raise LauncherError(str(exc)) from None
-        return self._lists(mod=info, replaced=replaced, problems=self._mod_problems(info))
+        return self._lists(mod=info, replaced=replaced, problems=self._newer_word(info) + self._mod_problems(info))
+
+    @staticmethod
+    def _newer_word(info: dict) -> list:
+        """A mod a newer Studio saved is added all the same, with a word to update (the owner's pick 34, accepted
+        2026-11-14: "Add the mod with a warning to update, rather than refusing it"): the page says it in the player's
+        language from "newer" (its format, and the one this Launcher knows)."""
+        newer = info.get("newer_format")
+        if not newer:
+            return []
+        return [{"file": None, "set_aside": False, "newer": {"format": newer["format"], "known": newer["current"]},
+                 "problem": f"Saved by a newer RUSE Studio (format {newer['format']}; this Launcher knows "
+                            f"{newer['current']}): update the Launcher to play it as it was made."}]
 
     def _mod_problems(self, info: dict) -> list:
         """The mod check (rusemod.modcheck) on a mod just added: what Play would stop at, or map files the build
@@ -634,6 +646,10 @@ class LauncherApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedC
         if fairplay.ON and folder is not None and entry.get("tags"):
             fairplay.save_tags(folder, entry["tags"])  # a cheat stays one in the library: its copies are offline
         say(f"{info['name']} {info['version']} is in the library" + (" (it replaced the older copy)." if replaced else "."))
+        newer = info.get("newer_format")
+        if newer:    # (the owner's pick 34: added, with a word to update the Launcher)
+            say(f"{info['name']} was saved by a newer RUSE Studio (format {newer['format']}; this Launcher knows "
+                f"{newer['current']}): update the Launcher to play it as it was made.")
 
     def _install_job(self, work, done: str) -> dict:
         """One install at a time: two would add to the library at once."""

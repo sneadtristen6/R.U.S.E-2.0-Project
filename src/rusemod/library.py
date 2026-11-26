@@ -15,7 +15,7 @@ import uuid
 import zipfile
 from pathlib import Path
 
-from rusemod import rmod
+from rusemod import modformat, rmod
 from rusemod.build import BuildError, load_mod
 from rusemod.package import PackageError, edit_problem, info_of
 from rusemod.package import cut_short as package_cut_short
@@ -106,6 +106,8 @@ class Library:
             replaced = target.exists()
             if source.resolve() == target.resolve():  # added from its own place in the library: nothing to move
                 return read_info(target), True
+            if modformat.state(incoming)["state"] == "newer":   # (saved by a newer Studio: added, with a word)
+                info["newer_format"] = {k: v for k, v in modformat.state(incoming).items() if k in ("format", "current")}
             old = self.folder / f".old-{info['id']}"
             if old.exists():
                 shutil.rmtree(old)

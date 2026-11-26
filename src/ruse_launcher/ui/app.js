@@ -1474,9 +1474,13 @@ function added(res) {
   useLists(res);
   if (!res.mod) return;
   const done = res.replaced ? fill(w.mod_updated, { name: res.mod.name, v: res.mod.version }) : fill(w.mod_added, { name: res.mod.name });
-  const problems = res.problems || [];  // the mod check: said now rather than when Play stops
-  if (problems.length) setMessage(`${done} ${fill(w.mod_check_warn, { n: problems.length })} ${problems.map((p) => p.problem).join(" · ")}`, "bad");
-  else setMessage(done, "good");
+  const all = res.problems || [];
+  // a mod a newer Studio saved is added, with a word to update the Launcher (said in the player's language here)
+  const newer = all.find((p) => p.newer);
+  const problems = all.filter((p) => !p.newer);  // the mod check: said now rather than when Play stops
+  const update = newer ? ` ${fill(w.mod_newer_format, { f: newer.newer.format, m: newer.newer.known })}` : "";
+  if (problems.length) setMessage(`${done}${update} ${fill(w.mod_check_warn, { n: problems.length })} ${problems.map((p) => p.problem).join(" · ")}`, "bad");
+  else setMessage(done + update, newer ? "bad" : "good");
 }
 
 async function addModFile() {

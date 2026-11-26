@@ -1915,6 +1915,20 @@ jpn = "モッドの検査で「プレイ」を止める問題が {n} 件見つ�
 sc = "模组检查发现 {n} 个会让“开始游戏”停止的问题；作者可以修复："
 fa = "بررسی ماد {n} مشکل پیدا کرد که «بازی» به‌خاطرشان متوقف می‌شود؛ سازندهٔ ماد می‌تواند درستشان کند:"
 
+# a mod a newer Studio saved (the owner's pick 34): added all the same, with this word after the "added" line
+[mod_newer_format]
+us = "Saved by a newer RUSE Studio (format {f}; this Launcher knows {m}): update the Launcher to play it as it was made."
+fr = "Enregistré par un RUSE Studio plus récent (format {f} ; ce Launcher connaît {m}) : mettez le Launcher à jour pour le jouer tel qu'il a été conçu."
+ger = "Von einem neueren RUSE Studio gespeichert (Format {f}; dieser Launcher kennt {m}): Aktualisiere den Launcher, um ihn so zu spielen, wie er gemacht wurde."
+ita = "Salvata da un RUSE Studio più recente (formato {f}; questo Launcher conosce {m}): aggiorna il Launcher per giocarla come è stata creata."
+spa = "Guardado por un RUSE Studio más nuevo (formato {f}; este Launcher conoce {m}): actualiza el Launcher para jugarlo como se hizo."
+pol = "Zapisany przez nowsze RUSE Studio (format {f}; ten Launcher zna {m}): zaktualizuj Launcher, aby grać w niego tak, jak go zrobiono."
+ru = "Сохранён более новой RUSE Studio (формат {f}; этот Launcher знает {m}): обновите Launcher, чтобы играть в мод так, как он был сделан."
+cz = "Uloženo novějším RUSE Studiem (formát {f}; tento Launcher zná {m}): aktualizujte Launcher, abyste mod hráli tak, jak byl vytvořen."
+jpn = "新しい RUSE Studio で保存されています（形式 {f}、この Launcher は {m} まで対応）：作られたとおりに遊ぶには Launcher を更新してください。"
+sc = "由较新的 RUSE Studio 保存（格式 {f}；此 Launcher 支持到 {m}）：请更新 Launcher，才能按原样游玩。"
+fa = "با RUSE Studio جدیدتری ذخیره شده است (قالب {f}؛ این لانچر {m} را می‌شناسد): برای بازی کردن آن همان‌طور که ساخته شده، لانچر را به‌روز کنید."
+
 # --- the troubleshooter (rusemod.doctor): what can stop a test or Play, checked in one go. A finding's sentence is
 # its "say" word, filled with its data; a fix's button is doc_fix_<fix> ---
 [doc_button]

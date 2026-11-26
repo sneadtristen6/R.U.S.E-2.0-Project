@@ -15,7 +15,7 @@ import zipfile
 from pathlib import Path
 
 from test_launcher import Base as LauncherBase, wait_for
-from rusemod import fairplay, package
+from rusemod import fairplay, modformat, package
 from ruse_launcher.api import LauncherError
 from ruse_studio.api import StudioApi
 
@@ -180,20 +180,22 @@ class Unusual(Library):
         self.assertNotIn("cut short", str(caught.exception))
 
     def test_FE11_a_mod_a_newer_studio_saved_in_a_newer_format(self):
-        """FE-11: a mod in a newer mod format ([made_with] format above rusemod.modformat.FORMAT) is added and played
+        """FE-11: a mod in a newer mod format ([made_with] format above rusemod.modformat.FORMAT) was added and played
         with no word: the Studio refuses to open such a mod ("saved by a newer RUSE Studio"), but the Launcher builds
-        it with code that doesn't know its format, the very thing modformat warns of."""
+        it with code that doesn't know its format, the very thing modformat warns of. Now added with a word to update
+        (the owner's pick 34, accepted 2026-11-14: "Add the mod with a warning to update, rather than refusing it")."""
         self.made("Tank Test")
         out = self.exported("1.0.0")
         newer = Path(self.tmp.name) / "newer"
         package.unpack(out, newer)
         package.update_manifest(newer, made_with={"format": 9})
-        try:
-            got = self.api(home=Path(self.tmp.name) / "friend").add_mod(str(newer))
-        except LauncherError as exc:
-            self.assertIn("newer", str(exc))
-            return
+        friend = self.api(home=Path(self.tmp.name) / "friend")
+        got = friend.add_mod(str(newer))
+        self.assertEqual(got["mod"]["id"], "tank-test")                    # (added, not refused)
         self.assertTrue(any("newer" in str(p) for p in got["problems"]), got["problems"])
+        self.assertEqual([p["newer"] for p in got["problems"] if p.get("newer")],
+                         [{"format": 9, "known": modformat.FORMAT}])
+        self.assertIn("tank-test", self.shown(friend))
 
     @unittest.skipUnless(sys.platform == "win32", "Windows keeps a folder with an open file in it in its place")
     @unittest.expectedFailure
