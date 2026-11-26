@@ -414,3 +414,30 @@ def unit_number(known: Known | None, build, base: int, words, read, after_call) 
         if number:
             found.add(number)
     return found.pop() if len(found) == 1 else None
+
+
+def key_ready(key=None) -> str | None:
+    """None when a release build may go out with this list key (KEY when None, read when called): 32 bytes, a point on
+    the curve; else why not. While KEY is None the apps take a list on HTTPS alone, which a release build must not do
+    (the owner, 2026-11-25: "Okay, yes for 15 sign.")."""
+    public = KEY if key is None else key
+    if public is None:
+        return "the list key is not in the apps yet (KEY is None: a list would be taken on HTTPS alone)"
+    if not isinstance(public, bytes) or len(public) != 32 or ed25519._decompress(public) is None:
+        return "KEY is not an Ed25519 public key"
+    return None
+
+
+def main(argv: list[str]) -> int:
+    """The release build's check that the list key is in the apps: run this module with --check-key."""
+    if argv != ["--check-key"]:
+        print("usage: python -m rusemod.knowncrashes --check-key")
+        return 2
+    why = key_ready()
+    print(f"known-crashes key: {why}" if why else "known-crashes key: ready")
+    return 1 if why else 0
+
+
+if __name__ == "__main__":
+    import sys
+    sys.exit(main(sys.argv[1:]))

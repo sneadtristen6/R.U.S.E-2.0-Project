@@ -579,5 +579,27 @@ class TheCrashCode(unittest.TestCase):
         self.assertEqual(crashcode.make(a), crashcode.make(b))
 
 
+class TheReleaseBuildNeedsTheListKey(unittest.TestCase):
+    """The release build stops while the apps carry no key for the list (the owner, 2026-11-25: "yes for 15 sign")."""
+
+    def test_no_key_fails_the_check(self):
+        with mock.patch.object(knowncrashes, "KEY", None):
+            self.assertIn("KEY is None", knowncrashes.key_ready())
+            self.assertEqual(knowncrashes.main(["--check-key"]), 1)
+
+    def test_a_real_key_passes_and_a_wrong_one_fails(self):
+        with mock.patch.object(knowncrashes, "KEY", TEST_PUBLIC):
+            self.assertIsNone(knowncrashes.key_ready())
+            self.assertEqual(knowncrashes.main(["--check-key"]), 0)
+        with mock.patch.object(knowncrashes, "KEY", b"\x01" * 5):
+            self.assertIsNotNone(knowncrashes.key_ready())
+        self.assertEqual(knowncrashes.main([]), 2)
+
+    def test_the_crash_code_text_names_no_private_tool(self):
+        text = Path(crashcode.__file__).read_text(encoding="utf-8")
+        for word in ("crash_fn", "private map", "dump_survey", "crash_site"):
+            self.assertNotIn(word, text)
+
+
 if __name__ == "__main__":
     unittest.main()

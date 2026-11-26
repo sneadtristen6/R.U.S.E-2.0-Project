@@ -22,10 +22,8 @@ This file holds no number of the game: what it packs comes from the crash report
 
 Sixty bits, written as twelve Crockford letters and digits in three groups: 8K2M-4TQ7-X0PA.
 
-Checked our_tools.json: crash_site.py and the Bug Watch rounds' crash report tools (dump_survey.py, all_dump_rows.py,
-try_reader.py, crash_families.py) read whole crash reports on this PC for our own research, and crash_fn.py names the
-function round a place from our private map of the program; none makes a short code a player can tell us. This file
-reads no program and no crash report itself: it packs the few fields rusemod.bugwatch.read_dump read.
+Checked our_tools.json: none of its tools makes a short code for a player to tell us; this file reads no program and no
+crash report itself, it packs the few fields rusemod.bugwatch.read_dump read.
 """
 from __future__ import annotations
 
