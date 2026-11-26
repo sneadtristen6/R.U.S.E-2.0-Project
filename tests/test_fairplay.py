@@ -376,6 +376,20 @@ class SameBuild(SwitchedOn):
                                            dev=True).locked)
 
     @unittest.skipUnless(python25(), "no Python 2.5.1 on this PC (set RUSE_PYTHON251 to its folder)")
+    def test_no_call_into_the_record_or_the_watcher_lets_an_error_out(self):
+        """tests/crash_check_gamescripts.py25 under the game's Python: every place the game calls into the watcher and
+        the match record (every modded copy has them) is fed game objects, gc and sys.stderr that fail; an error
+        leaving such a call stops every player's game in the match (findings ledger F-147). The cheat lock's own
+        count is shown and left as it is."""
+        import subprocess
+        run = subprocess.run([str(python25()), str(Path(__file__).with_name("crash_check_gamescripts.py25"))],
+                             capture_output=True, text=True, timeout=300)
+        self.assertEqual(run.returncode, 0, run.stdout + run.stderr)
+        self.assertIn("watcher and record (every modded copy): 0 of ", run.stdout)
+        self.assertIn("the live and end lines", run.stdout)     # the line route's cases are among them
+        self.assertIn("the replay check", run.stdout)
+
+    @unittest.skipUnless(python25(), "no Python 2.5.1 on this PC (set RUSE_PYTHON251 to its folder)")
     def test_matches_played_under_the_games_python(self):
         """tests/gamescripts_sim.py25: whole matches between stand-in PCs, run by the game's own Python version with
         the scripts exactly as a build puts them in a copy. Every match goes as expected: same build = plays on;

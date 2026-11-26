@@ -1,0 +1,48 @@
+# RUSE Guard's list of known cheat tools: what its program check looks for (rusemod.guard.cheat_tools).
+#
+# While a multiplayer or co-op match is on, the Launcher compares the names of the programs running on your PC with
+# the names below, and reports only a name that is on this list. It reads nothing else about any program.
+# This list comes inside the app, so anyone can read exactly what is looked for. It changes only with an app update;
+# nothing is downloaded for it. (Started from RUSE Guard's server list as it stood on 2026-11-25, 10 entries.)
+#
+# Each entry: name = the program's file name as Windows lists it (compared without capitals), what = what it is.
+
+[[tool]]
+name = "cheatengine-x86_64.exe"
+what = "Cheat Engine, a memory editor"
+
+[[tool]]
+name = "cheatengine-x86_64-sse4-avx2.exe"
+what = "Cheat Engine, a memory editor"
+
+[[tool]]
+name = "cheatengine-i386.exe"
+what = "Cheat Engine, a memory editor"
+
+[[tool]]
+name = "cheat engine.exe"
+what = "Cheat Engine, a memory editor"
+
+[[tool]]
+name = "artmoney.exe"
+what = "ArtMoney, a memory editor"
+
+[[tool]]
+name = "squalr.exe"
+what = "Squalr, a memory editor"
+
+[[tool]]
+name = "wemod.exe"
+what = "WeMod, a trainer app"
+
+[[tool]]
+name = "extreme injector v3.exe"
+what = "a DLL injector"
+
+[[tool]]
+name = "xenos64.exe"
+what = "Xenos, a DLL injector"
+
+[[tool]]
+name = "xenos.exe"
+what = "Xenos, a DLL injector"

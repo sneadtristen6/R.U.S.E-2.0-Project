@@ -152,6 +152,29 @@ class Guard(unittest.TestCase):
                      "docs/known-crashes.md"):
             self.assertEqual(check({path: harmless}), [], path)
 
+    def test_the_cheat_list_may_name_its_tool_and_nothing_more(self):
+        """Question 14 (the owner, 2026-11-25: "Fourteen's fine, go with your pick."; the question whole in
+        check_public's CHEAT_LIST note): RUSE Guard's list of known cheat tools comes inside the app in one file,
+        which may name the one tool the check refuses by name; that name is refused in every other file, and every
+        other word the check refuses is refused in the list as anywhere. The real list passes."""
+        import check_public
+        listed = "src/rusemod/guard_cheat_tools.toml"
+        real = (Path(__file__).resolve().parents[1] / listed).read_bytes()
+        self.assertIn(b"Cheat Engine", real)                        # (it does name it)
+        self.assertEqual(check({listed: real}), [])                 # (the check of Launcher 0.4.8.22 refused it)
+        self.assertEqual(check_public.CHEAT_LIST, listed)           # one file, not a list of files
+        for elsewhere in ("src/rusemod/guard.py", "src/rusemod/guard_cheat_tools2.toml", "README.md",
+                          "src/ruse_launcher/words.toml", "docs/wiki/Home.md"):
+            self.assertEqual(len(check({elsewhere: real})), 1, elsewhere)   # the very same text: refused there
+        named = b'name = "cheat engine.exe"\nwhat = "Cheat Engine, a memory editor"\n'
+        self.assertEqual(check({listed: named}), [])
+        self.assertEqual(len(check({"src/rusemod/guard.py": named})), 1)
+        for line in (b"# found with a debugger and a hex editor\n", b"# FUN_1400abc00 holds the names\n",
+                     b"# we decompiled the game for it\n", b"# CHEAT ENGINE, written another way\n",
+                     b"# the program reads the list\n"):
+            self.assertEqual(len(check({listed: line})), 1, line)                     # refused in the list
+        self.assertEqual(len(check({"private/" + listed: real})), 1)
+
     def test_the_released_table_is_refused_at_its_old_path(self):
         """The table as 0.9.8.22 released it (6b265ec1), read from this repository's history when it has that commit
         (a shallow copy hasn't: skipped): refused at its old path, by its name and by its words."""

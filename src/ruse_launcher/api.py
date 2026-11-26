@@ -139,7 +139,7 @@ class LauncherApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedC
     PREFS_APP = "launcher"  # rusemod.home: the language, kept in settings.json
 
     def __init__(self, game_dir=None, home=None, instances=None, open_url=game_start.open_url,
-                 start_game=game_start.start_game, steam_running=game_start.steam_running, find=find_game,
+                 start_game=game_start.start_game_watched, steam_running=game_start.steam_running, find=find_game,
                  wait=time.sleep, pick_folder=None, pick_file=None, ui_language=pc_language, index_url=None,
                  backups=None, work=None):
         self._game_dir = Path(game_dir) if game_dir else None

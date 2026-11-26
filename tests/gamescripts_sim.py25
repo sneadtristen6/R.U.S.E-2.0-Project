@@ -33,9 +33,12 @@
 #   World.InstancieEndGameScreen does: ranked, else multiplayer, else Battles; a co-op challenge's is the solo kind.
 # - _sysutils.TerminateSelf, the game's own quit, as the game registers it: positional arguments only, a number and
 #   an optional true/false. Called, it closes that PC's game with the number as its exit code.
+import gc
 import marshal
 import os
+import re
 import sys
+import time
 import types
 
 FOLDER = sys.argv[1]
@@ -357,6 +360,7 @@ class World(object):
         self.timers = []
         self.surrenders = []
         self.kills = []
+        self.replay = False      # a replay of a match, not a match (world.IsReplay() in the game's own scripts)
         world = self
 
         class UnitTime(object):
@@ -381,6 +385,9 @@ class World(object):
 
     def register_function_to_call_at_kill(self, call):
         self.kills.append(call)
+
+    def IsReplay(self):
+        return self.replay
 
     def GetGameTime(self):
         return self.sim.tick * TICK
@@ -410,11 +417,11 @@ class Sim(object):
             pc.make_modules(self)
 
     def match(self, sides, local, seconds=12.0, delay=3, multi=True, coop=False, during=None, ranked=False,
-              same_world=False, end_kind=None):
+              same_world=False, end_kind=None, replay=False):
         """Play one match. sides: [(number, 'human' | 'computer')]; local: {pc name: its side's number, or None for
         an observer}; during: {tick: call(sim)} for what happens meanwhile; ranked: a ranked match (its own end
         screen); same_world: the game hands this match the world of the one before; end_kind: the end screen's class,
-        for a case that sets it itself. Returns the orders sent."""
+        for a case that sets it itself; replay: watched as a replay. Returns the orders sent."""
         self.multi, self.coop, self.ranked = multi, coop, ranked
         self.end_kind = end_kind
         self.tick = 0
@@ -424,6 +431,7 @@ class Sim(object):
                 pc.world.timers = []
             else:
                 pc.world = World(self, pc, sides, local[pc.name])
+            pc.world.replay = replay
             pc.said = []
             pc.end_screens = 0
             if not pc.loaded:
@@ -467,6 +475,14 @@ class Sim(object):
                 kind(pc.world).show()
             pc.call(end)
         return self.net.sent
+
+    def close_worlds(self):
+        """The players leave the match: each PC's world closes and calls what was registered for its close, the
+        last first, as the game's world.kill does."""
+        for pc in self.pcs:
+            kills, pc.world.kills = pc.world.kills, []
+            for call in reversed(kills):
+                pc.call(call)
 
     def give(self, pc, action):
         """An order arrives on a PC: the game looks its receiving function up by name and calls it."""
@@ -852,6 +868,152 @@ if have('joined_a') and have('joined_a2') and have('joined_b'):
                [LEAVE_TICK])
         expect(name, 'the plain game stopped', plain.stopped, None)
         untouched(name, plain)
+
+
+# --- the record's lines on the game's own error output: what tells the Launcher a match is on (rusemod.guard) ---
+LINE = re.compile(r'gc: collectable <RUSEGUARD-MATCH ([^<>]*?) at (\d+) instance at')
+STAMPS = []   # the game's clock times in the lines game_errors last read
+
+
+class Drop(object):
+    """The game's sys.stderr (TWrapperEugDebug): its write throws the text away."""
+
+    def write(self, text):
+        pass
+
+
+def game_errors(run):
+    """The RUSE Guard lines `run` puts on the program's own error output (the C runtime's stderr: where the game's
+    Python writes its own lines when sys.stderr can't be written to), with the game's sys.stderr standing in as it is
+    in the game. Returns (the lines, whether sys.stderr, gc's debug flags and gc's on/off were all put back)."""
+    path = os.path.join(FOLDER, 'errors.txt')
+    stand_in, flags, on = Drop(), gc.get_debug(), gc.isenabled()
+    old, sys.stderr = sys.stderr, stand_in
+    sys.__stderr__.flush()
+    saved = os.dup(2)
+    out = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC)
+    try:
+        os.dup2(out, 2)
+        try:
+            run()
+        finally:
+            sys.__stderr__.flush()
+            os.dup2(saved, 2)
+            back = (sys.stderr is stand_in, gc.get_debug() == flags, gc.isenabled() == on)
+            sys.stderr = old
+    finally:
+        os.close(out)
+        os.close(saved)
+    text = open(path, 'rb').read()
+    os.remove(path)
+    found = LINE.findall(text)
+    STAMPS[:] = [int(stamp) for _words, stamp in found]
+    return [words for words, _stamp in found], back
+
+
+LIVE_1_0, LIVE_0_1 = 'live multi 1 coop 0', 'live multi 0 coop 1'
+
+
+@scenario('an honest copy in a multiplayer match: the record says the match is on, every 30 s, then that it ended')
+def _(name):
+    pc = PC('honest', HONEST)
+    sim = Sim([pc])
+
+    def play():
+        sim.match([(0, 'human'), (1, 'human')], {'honest': 0}, seconds=75.0)
+        sim.close_worlds()
+    lines, back = game_errors(play)
+    # ten seconds in, then each third ten-second tick (40 s, 70 s), then the match's close
+    expect(name, 'the lines', lines, [LIVE_1_0, LIVE_1_0, LIVE_1_0, 'end'])
+    # each line carries the clock time of the moment it is said (the Launcher drops a late one)
+    now = int(time.time())
+    expect(name, 'every line carries the time now', [abs(s - now) <= 5 for s in STAMPS], [True] * 4)
+    expect(name, 'sys.stderr, gc\'s debug flags and gc\'s on/off put back', back, (True, True, True))
+    expect(name, 'stopped', pc.stopped, None)
+
+
+@scenario('a co-op match: the record says so; a second match in the same session gets its own lines')
+def _(name):
+    pc = PC('honest', HONEST)
+    sim = Sim([pc])
+
+    def play():
+        sim.match([(0, 'human'), (1, 'human'), (2, 'computer')], {'honest': 0}, seconds=15.0, multi=False,
+                  coop=True)
+        sim.close_worlds()
+        sim.match([(0, 'human'), (1, 'computer')], {'honest': 0}, seconds=15.0)
+        sim.close_worlds()
+    lines, back = game_errors(play)
+    expect(name, 'the lines', lines, [LIVE_0_1, 'end', LIVE_1_0, 'end'])
+    expect(name, 'put back', back, (True, True, True))
+
+
+@scenario('a skirmish against the computer, a replay, the game as bought: the record says nothing at all')
+def _(name):
+    honest, plain = PC('honest', HONEST), PC('plain', PLAIN)
+
+    def play():
+        sim = Sim([honest])
+        sim.match([(0, 'human'), (1, 'computer')], {'honest': 0}, seconds=45.0, multi=False, coop=False)
+        sim.close_worlds()
+        sim.match([(0, 'human'), (1, 'human')], {'honest': 0}, seconds=45.0, replay=True)
+        sim.close_worlds()
+        sim = Sim([plain])
+        sim.match([(0, 'human'), (1, 'human')], {'plain': 0}, seconds=45.0)
+        sim.close_worlds()
+    lines, back = game_errors(play)
+    expect(name, 'the lines', lines, [])
+    expect(name, 'put back', back, (True, True, True))
+    expect(name, 'stopped', (honest.stopped, plain.stopped), (None, None))
+
+
+@scenario('a multiplayer match whose world never closes, then a skirmish, a replay, a second match: each match ends')
+def _(name):
+    # the world-close call (world.kill) is not known to run on every way out of a match (not known): the next match's
+    # start, whatever kind it is, ends the one before, so the Launcher is told the match is over
+    pc = PC('honest', HONEST)
+    sim = Sim([pc])
+
+    def play():
+        sim.match([(0, 'human'), (1, 'human')], {'honest': 0}, seconds=15.0)               # no close_worlds
+        sim.match([(0, 'human'), (1, 'computer')], {'honest': 0}, seconds=45.0, multi=False, coop=False)
+        sim.match([(0, 'human'), (1, 'human')], {'honest': 0}, seconds=15.0)
+        sim.match([(0, 'human'), (1, 'human')], {'honest': 0}, seconds=45.0, replay=True)  # ends the one before
+        sim.match([(0, 'human'), (1, 'computer')], {'honest': 0}, seconds=45.0, multi=False, coop=False)
+    lines, back = game_errors(play)
+    expect(name, 'the lines', lines, [LIVE_1_0, 'end', LIVE_1_0, 'end'])
+    expect(name, 'put back', back, (True, True, True))
+    # the skirmish and the replay after the matches say nothing at all, so no line is left that says "on"
+    expect(name, 'the last line says the match is over', lines[-1], 'end')
+
+
+@scenario('a match that turns out to be a replay after it started: its end is said and nothing more')
+def _(name):
+    pc = PC('honest', HONEST)
+    sim = Sim([pc])
+
+    def turns(sim):
+        pc.world.replay = True
+
+    def play():
+        sim.match([(0, 'human'), (1, 'human')], {'honest': 0}, seconds=45.0, during={150: turns})
+        sim.close_worlds()
+    lines, back = game_errors(play)
+    expect(name, 'the lines', lines, [LIVE_1_0, 'end'])
+    expect(name, 'put back', back, (True, True, True))
+
+
+@scenario('a cheat copy that leaves its match: the record\'s lines go on until the game stops it')
+def _(name):
+    cheat, other = PC('cheat', CHEAT_A), PC('plain', PLAIN)
+    sim = Sim([cheat, other])
+
+    def play():
+        sim.match([(0, 'human'), (1, 'human')], {'cheat': 0, 'plain': 1}, seconds=15.0)
+    lines, back = game_errors(play)
+    expect(name, 'the lines before the end screen stopped it', lines, [LIVE_1_0])
+    expect(name, 'the cheat copy was stopped on its end screen', (cheat.stopped or '')[:28],
+           'RuntimeError: RUSEGUARD-LOCK')
 
 
 # --- game objects that fail on every use: what may never let an error out, even in a cheat copy ---

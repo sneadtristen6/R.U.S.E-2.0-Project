@@ -1,0 +1,372 @@
+# Python 2.5.1, the game's own Python: RUSE Guard's game scripts may never let an error out to the game, because the
+# released game crashes on any script error that reaches it (its own sys.excepthook raises code 0x29a; found
+# 2026-10-30 with the probe copy mp-probe2, findings ledger F-147). This loads each compiled script (.bin) against
+# stand-in game modules, calls every place the game calls into it, and feeds those calls game objects that fail on
+# every use. It counts the calls that let an error out.
+#
+# The watcher and the match record go into every modded copy, so an honest player's battle runs them: none of their
+# calls may let an error out. The cheat lock goes only into copies built with cheats, where a crash is the owner's
+# pick (2026-10-30), so its count is shown and left as it is.
+#
+#     D:/RUSE-2.0/tools/python251/python.exe tests/crash_check_gamescripts.py25      (exit 1 if a watcher or record
+#                                                                                    call lets an error out)
+#
+# 2026-11-25: the cases for the record's line route (gc, sys.stderr, the replay check) were added. tests/test_fairplay.py
+# runs this file, so a later edit that lets an error out of the record fails the tests.
+import marshal
+import os
+import sys
+import types
+
+SCRIPTS = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), '..', 'src', 'rusemod', 'gamescripts')
+
+
+class Boom(Exception):
+    pass
+
+
+class Bomb(object):
+    """A game object that fails on every use."""
+
+    def __getattr__(self, name):
+        raise Boom('the game object failed on .%s' % name)
+
+    def __call__(self, *args):
+        raise Boom('the game object failed when called')
+
+    def __iter__(self):
+        raise Boom('the game object failed when listed')
+
+
+class Stub(object):
+    pass
+
+
+class FailingList(object):
+    def __iter__(self):
+        raise Boom('the camp list failed')
+
+
+class Piggy(object):
+    def __init__(self):
+        self.niveau_reel = 100
+        self.listeners = []
+
+    def ConnectPiggyBankChangedInterface(self, listener):
+        self.listeners.append(listener)
+
+    def DisconnectPiggyBankChangedInterface(self, listener):
+        pass
+
+
+class File(object):
+    def __init__(self, fail=False):
+        self.fail = fail
+
+    def write(self, text):
+        if self.fail:
+            raise Boom('the file failed on write')
+
+    def flush(self):
+        pass
+
+    def close(self):
+        if self.fail:
+            raise Boom('the file failed on close')
+
+
+def module(name, **names):
+    m = types.ModuleType(name)
+    m.__dict__.update(names)
+    sys.modules[name] = m
+    return m
+
+
+def stand_ins(broken=False):
+    """Fresh stand-ins for the game modules the scripts import; broken: the game's rules module can't be imported."""
+    class GameRulesMulti(object):
+        def before_start_game(self):
+            pass
+
+    for name in [n for n in sys.modules if n.split('.')[0] in ('front', 'base', '_network', '_piggybank')]:
+        del sys.modules[name]
+    helpers = module('base.actions.helpers', Recv_SpawnUnit=lambda team, descriptor, position: 'the game\'s own',
+                     Send_Surrender=lambda camp: None)
+    module('base', actions=module('base.actions', helpers=helpers))
+    keys = module('front.key_management', key_manager=Stub())
+    keys.key_manager.list_of_shortcuts = []
+    module('front', game_rules=module('front.game_rules', GameRulesMulti=GameRulesMulti), key_management=keys)
+    module('_network', IsPartieMulti=lambda: True, IsChallengeCoop=lambda: False)
+    module('_piggybank', TPackSignaux_PiggyBank_Listener=type('TPackSignaux_PiggyBank_Listener', (object,), {}))
+    if broken:
+        sys.modules['front'] = None
+        sys.modules['front.game_rules'] = None
+        sys.modules['_piggybank'] = None
+    return GameRulesMulti
+
+
+def load(name, broken=False, fail_file=False):
+    rules = stand_ins(broken)
+    data = open(os.path.join(SCRIPTS, name + '.bin'), 'rb').read()
+    scope = {'__name__': 'rusemod_' + name, '__builtins__': __builtins__,
+             'open': lambda path, mode='r': File(fail_file)}  # the game has no open(): a stand-in, no disk writes
+    exec marshal.loads(data[16:]) in scope
+    return rules
+
+
+def world(**changes):
+    w = Stub()
+    w.timers, w.kills, w.said = [], [], []
+
+    class UnitTime(object):
+        def callback_qui_prend_pas_en_compte_la_duree_de_vie_du_ticket(self, delay, call):
+            w.timers.append(call)
+            return 'ticket'
+
+    w.unit_time = UnitTime()
+    w.register_function_to_call_at_kill = w.kills.append
+    w.display_debug_message = lambda text, seconds: w.said.append(text)
+    w.GetGameTime = lambda: 12.0
+    w.camp_du_joueur = Stub()
+    w.camp_du_joueur.teamnum = 1
+    camp = Stub()
+    camp.teamnum, camp.piggybank = 2, Piggy()
+    camp.GetUnitList = lambda: []
+    w.camp_list = [camp]
+    w.__dict__.update(changes)
+    return w
+
+
+def start(rules, w):
+    match = rules()
+    match.world = w
+    match.before_start_game()
+    return match
+
+
+# Each check: (script, the place the game calls, how it fails, the call). A call that raises lets an error out.
+def at_load(name):
+    return lambda: load(name, broken=True)
+
+
+def start_hook(name):
+    return lambda: start(load(name), Bomb())
+
+
+def money_listener():
+    w = world()
+    start(load('fairplay_watch'), w)
+    piggy = w.camp_list[0].piggybank
+    if not piggy.listeners:
+        raise NotReached('the watcher never started listening to the money')
+    w.camp_list[0].piggybank = Bomb()
+    piggy.listeners[0].On_Signal_PiggyBank_Changed_Interface(5)
+
+
+class NotReached(Exception):
+    """The script never hooked in, so the check proved nothing: counted as a failure, not as quiet."""
+
+
+def spawn_message():
+    w = world(display_debug_message=Bomb())
+    start(load('fairplay_watch'), w)
+    spawn = sys.modules['base.actions.helpers'].Recv_SpawnUnit
+    if spawn.__name__ != 'Recv_SpawnUnit':
+        raise NotReached('the watcher never put in its spawn handler')
+    if spawn(Bomb(), 'descriptor', 'position') != 'the game\'s own':
+        raise Boom('the game\'s own spawn result was not passed back')
+
+
+def end_of_match(name):
+    def run():
+        w = world()
+        start(load(name, fail_file=True), w)
+        if not w.kills:
+            raise NotReached('no end-of-match call was registered')
+        w.camp_list[0].piggybank = Bomb()
+        w.GetGameTime = Bomb()
+        for kill in w.kills:
+            kill()
+    return run
+
+
+def record_tick():
+    w = world(camp_list=FailingList())
+    start(load('guard_hash', fail_file=True), w)
+    if len(w.timers) != 1:
+        raise NotReached('the record never set its tick')
+    w.timers[0]()          # the units can't be listed and the file can't be written
+    if len(w.timers) != 2:
+        raise Boom('a failed tick stopped the record: no next tick was set')
+    w.unit_time = Bomb()
+    w.timers[1]()          # and the next tick can't be set either
+
+
+def lock_timer():
+    w = world()
+    start(load('fairplay_lock'), w)
+    if not w.timers:
+        raise NotReached('the lock never set its surrender timer')
+    sys.modules['base.actions.helpers'].Send_Surrender = Bomb()
+    w.timers[0]()
+
+
+CHECKS = [
+    ('fairplay_watch', 'loading the script', 'the game\'s modules missing', at_load('fairplay_watch')),
+    ('fairplay_watch', 'the match start', 'the match\'s world fails on every use', start_hook('fairplay_watch')),
+    ('fairplay_watch', 'a side\'s money changes', 'the money fails to read', money_listener),
+    ('fairplay_watch', 'a spawn order arrives', 'the side and the on-screen message fail', spawn_message),
+    ('fairplay_watch', 'the match ends', 'the money and the clock fail', end_of_match('fairplay_watch')),
+    ('guard_hash', 'loading the script', 'the game\'s modules missing', at_load('guard_hash')),
+    ('guard_hash', 'the match start', 'the match\'s world fails on every use', start_hook('guard_hash')),
+    ('guard_hash', 'the 10-second tick', 'the units, the file and the next tick fail', record_tick),
+    ('guard_hash', 'the match ends', 'the clock and the file fail', end_of_match('guard_hash')),
+    ('fairplay_lock', 'loading the script', 'the game\'s modules missing', at_load('fairplay_lock')),
+    ('fairplay_lock', 'the match start', 'the match\'s world fails on every use', start_hook('fairplay_lock')),
+    ('fairplay_lock', 'the surrender timer', 'the surrender fails', lock_timer),
+]
+
+import gc
+real_gc = gc
+
+
+class Drop(object):
+    def write(self, text):
+        pass
+
+
+def with_gc(stand_in, run):
+    """Run with `import gc` giving stand_in (None: gc can't be imported), the game's sys.stderr standing in."""
+    old_err, sys.stderr = sys.stderr, Drop()
+    keep = sys.modules.get('gc')
+    sys.modules['gc'] = stand_in
+    flags, on = real_gc.get_debug(), real_gc.isenabled()
+    try:
+        run()
+    finally:
+        if keep is not None:
+            sys.modules['gc'] = keep
+        back = isinstance(sys.stderr, Drop) and real_gc.get_debug() == flags and real_gc.isenabled() == on
+        sys.stderr = old_err
+    if not back:
+        raise Boom('sys.stderr or gc\'s state was not put back')
+
+
+def tick_then_close(w):
+    if len(w.timers) != 1:
+        raise NotReached('the record never set its tick')
+    w.timers[0]()                 # the first tick: its "live" line
+    for kill in w.kills:          # the world closes: its "end" line
+        kill()
+
+
+class FailingGc(types.ModuleType):
+    DEBUG_COLLECTABLE, DEBUG_INSTANCES = 2, 8
+
+    def __getattr__(self, name):
+        raise Boom('gc failed on .%s' % name)
+
+
+class HalfGc(types.ModuleType):
+    """gc that reads but fails as soon as it's asked to collect or set its flags."""
+    DEBUG_COLLECTABLE, DEBUG_INSTANCES = 2, 8
+
+    def get_debug(self):
+        return real_gc.get_debug()
+
+    def isenabled(self):
+        return real_gc.isenabled()
+
+    def disable(self):
+        real_gc.disable()
+
+    def enable(self):
+        real_gc.enable()
+
+    def set_debug(self, flags):
+        raise Boom('set_debug failed')
+
+    def collect(self, generation=2):
+        raise Boom('collect failed')
+
+
+def line_no_gc():
+    w = world()
+    start(load('guard_hash', fail_file=True), w)
+    with_gc(None, lambda: tick_then_close(w))
+
+
+def line_failing_gc():
+    w = world()
+    start(load('guard_hash', fail_file=True), w)
+    with_gc(FailingGc('gc'), lambda: tick_then_close(w))
+
+
+def line_half_gc():
+    w = world()
+    start(load('guard_hash', fail_file=True), w)
+    with_gc(HalfGc('gc'), lambda: tick_then_close(w))
+
+
+def replay_check_fails():
+    w = world(IsReplay=Bomb())     # asking the world fails (no is_replay either): taken as no replay, quietly
+    start(load('guard_hash', fail_file=True), w)
+    with_gc(real_gc, lambda: tick_then_close(w))
+
+
+class ReplayWorld(object):
+    """A world whose replay flag itself fails to read."""
+
+    def __getattr__(self, name):
+        if name == 'is_replay':
+            raise Boom('the replay flag failed')
+        raise AttributeError(name)
+
+
+def replay_flag_fails():
+    w = world()
+    real = w.__class__
+    w.__class__ = type('W', (real, ReplayWorld), {})
+    start(load('guard_hash', fail_file=True), w)
+    with_gc(real_gc, lambda: tick_then_close(w))
+
+
+def stderr_missing():
+    w = world()
+    start(load('guard_hash', fail_file=True), w)
+
+    def run():
+        del sys.stderr
+        try:
+            tick_then_close(w)
+        finally:
+            if hasattr(sys, 'stderr'):
+                raise Boom('the record left a sys.stderr where there was none')
+            sys.stderr = Drop()
+    with_gc(real_gc, run)
+
+
+CHECKS += [
+    ('guard_hash', 'the live and end lines', 'gc can\'t be imported', line_no_gc),
+    ('guard_hash', 'the live and end lines', 'gc fails on every use', line_failing_gc),
+    ('guard_hash', 'the live and end lines', 'gc fails to collect', line_half_gc),
+    ('guard_hash', 'the replay check', 'the world fails when asked', replay_check_fails),
+    ('guard_hash', 'the replay check', 'the replay flag fails to read', replay_flag_fails),
+    ('guard_hash', 'the live and end lines', 'no sys.stderr at all', stderr_missing),
+]
+escaped = {}
+for script, place, how, call in CHECKS:
+    try:
+        call()
+        result = 'quiet'
+    except Exception, e:
+        result = 'LETS AN ERROR OUT: %s: %s' % (e.__class__.__name__, e)
+        escaped[script] = escaped.get(script, 0) + 1
+    print '%-15s %-24s %-44s %s' % (script, place, how, result)
+honest = [c for c in CHECKS if c[0] != 'fairplay_lock']
+print
+print 'watcher and record (every modded copy): %d of %d calls let an error out' % (
+    escaped.get('fairplay_watch', 0) + escaped.get('guard_hash', 0), len(honest))
+print 'cheat lock (cheat-built copies only, left as it is): %d of %d calls let an error out' % (
+    escaped.get('fairplay_lock', 0), len(CHECKS) - len(honest))
+sys.exit(1 if escaped.get('fairplay_watch') or escaped.get('guard_hash') else 0)

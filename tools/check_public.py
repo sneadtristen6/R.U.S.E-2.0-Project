@@ -9,6 +9,8 @@ tracked file is something that belongs only there:
   file alike;
 - the list of the game crashes we know, which is the private repo's: its old file (`crashplaces.py`) and the file the
   apps keep it in (`known-crashes*.json`), refused by name in any folder (CRASH_LIST_NAMES).
+- the names of the tools that lead to it; one file alone may name one, on the owner's word: RUSE Guard's list of
+  known cheat tools (CHEAT_LIST), checked for everything else as any file is.
 
     py -3 tools/check_public.py            # the files git tracks here
     py -3 tools/check_public.py FILE ...   # just these (a pre-commit check)
@@ -106,10 +108,20 @@ WORDING_SPOTS = {
 # hold: a copy of the list put back here by mistake is caught by its name as well as by its words.
 CRASH_LIST_NAMES = re.compile(r"^(?:crashplaces\.py|known-crashes[^/]*\.json)$", re.I)
 
+# THE ONE EXCEPTION FOR RUSE GUARD'S LIST OF KNOWN CHEAT TOOLS (question 14 of the legal fixes). Asked "RUSE Guard's
+# list of cheat programs: move it inside the app, where players can read it, with one place where the words "Cheat
+# Engine" may stand past the check that keeps words like these off our public pages?", the owner answered on
+# 2026-11-25: "Fourteen's fine, go with your pick." (the pick: inside the app, readable). So the list, in this one file
+# only, may name that tool as Windows lists it (CHEAT_LIST_WORDS); every other word the check refuses is refused there
+# as in any other file, and the tool's name is refused everywhere else.
+CHEAT_LIST = "src/rusemod/guard_cheat_tools.toml"
+CHEAT_LIST_WORDS = ("Cheat Engine", "cheat engine")
+
 
 def _without_spots(path: str, text: str) -> str:
-    """The text with the words its file may hold (WORDING_SPOTS) blanked out, the lines kept where they are."""
-    for word in WORDING_SPOTS.get(path, ()):
+    """The text with the words its file may hold (WORDING_SPOTS; the cheat list's CHEAT_LIST_WORDS) blanked out, the
+    lines kept where they are."""
+    for word in WORDING_SPOTS.get(path, ()) + (CHEAT_LIST_WORDS if path == CHEAT_LIST else ()):
         text = text.replace(word, " " * len(word))
     return text
 TEXT_LIMIT = 4_000_000
