@@ -8692,10 +8692,8 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                     main_file = self._own_model_file(address)
                     main_key = skeleton_key(main_file) if main_file is not None and main_file.is_file() else None
                     if main_key is None or skeleton_key(target) != main_key:
-                        report.setdefault("notes", []).append(
-                            "This model is on bones of its own, and the riflemen's model isn't on the same bones, so these "
-                            "soldiers play what the copied unit's played, made on the game soldier's bones: that can stop "
-                            "the game. Import a model on the same bones for the riflemen too.")
+                        # (the page's own line, in English as the report's other notes: words.toml model_kind_bones_other)
+                        report.setdefault("notes", []).append(words(schema.BASE)["model_kind_bones_other"])
             else:
                 more = self._record_more(address, report, Path(file), clips, before, refit=refit, carried=carried,
                                          lost=lost)

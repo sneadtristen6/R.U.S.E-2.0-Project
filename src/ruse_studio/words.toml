@@ -36463,17 +36463,17 @@ sc = "{who}的模型也已移除：它在你的模型的骨骼上，播放的是
 fa = "مدلِ {who} هم برداشته شد: روی استخوان‌های مدل شما بود و انیمیشن‌های آن را اجرا می‌کرد."
 
 [model_kind_bones_other]
-us = "His model is on bones of its own that aren't your riflemen's model's, so he plays what he played in the unit it copies, made on the game soldier's bones: that can stop the game. Make his model on the same bones as the riflemen's."
-fr = "Son modèle a ses propres os, qui ne sont pas ceux du modèle de vos fusiliers : il joue donc ce qu'il jouait dans l'unité copiée, fait sur les os du soldat du jeu, ce qui peut arrêter le jeu. Faites son modèle sur les mêmes os que celui des fusiliers."
-ger = "Sein Modell hat eigene Knochen, die nicht die des Modells deiner Schützen sind: Er spielt also, was er in der kopierten Einheit spielte, gemacht auf den Knochen des Spielsoldaten, und das kann das Spiel anhalten. Baue sein Modell auf denselben Knochen wie das der Schützen."
-ita = "Il suo modello ha ossa proprie che non sono quelle del modello dei tuoi fucilieri: esegue quindi ciò che eseguiva nell'unità copiata, fatto sulle ossa del soldato del gioco, e questo può fermare il gioco. Fai il suo modello sulle stesse ossa di quello dei fucilieri."
-spa = "Su modelo tiene huesos propios que no son los del modelo de tus fusileros: hace entonces lo que hacía en la unidad copiada, hecho sobre los huesos del soldado del juego, y eso puede detener el juego. Haz su modelo sobre los mismos huesos que el de los fusileros."
-pol = "Jego model ma własne kości, inne niż model twoich strzelców, więc odgrywa to, co w kopiowanej jednostce, zrobione na kościach żołnierza z gry: to może zatrzymać grę. Zrób jego model na tych samych kościach co model strzelców."
-ru = "У его модели свои кости, не такие, как у модели ваших стрелков, поэтому он играет то же, что в копируемом юните, сделанное на костях игрового солдата: это может остановить игру. Сделайте его модель на тех же костях, что и модель стрелков."
-cz = "Jeho model má vlastní kosti, jiné než model tvých střelců, takže hraje to, co v kopírované jednotce, udělané na kostech vojáka ze hry: to může hru zastavit. Udělej jeho model na stejných kostech jako model střelců."
-jpn = "この兵士のモデルは小銃兵のモデルとは違う独自の骨を持っているため、コピー元のユニットのとき（ゲームの兵士の骨で作られた）アニメーションを使います。これはゲームを止めることがあります。小銃兵のモデルと同じ骨で作ってください。"
-sc = "他的模型有自己的骨骼，但与你的步枪兵模型的骨骼不同，所以他播放的是所复制单位里在游戏士兵骨骼上做的动画：这可能让游戏停止。请把他的模型做在与步枪兵模型相同的骨骼上。"
-fa = "مدل او استخوان‌های خودش را دارد که با استخوان‌های مدل تفنگدارانتان یکی نیست، پس همان چیزی را اجرا می‌کند که در یگانِ کپی‌شده اجرا می‌کرد و روی استخوان‌های سرباز بازی ساخته شده: این می‌تواند بازی را متوقف کند. مدلش را روی همان استخوان‌های مدل تفنگداران بسازید."
+us = "His bones aren't the riflemen's, so he plays the copied unit's animations, which don't fit them. That can stop the game: build his model on the riflemen's bones."
+fr = "Ses os ne sont pas ceux des fusiliers : il joue donc les animations de l'unité copiée, qui ne leur vont pas. Cela peut arrêter le jeu : faites son modèle sur les os des fusiliers."
+ger = "Seine Knochen sind nicht die der Schützen, daher spielt er die Animationen der kopierten Einheit, die nicht dazu passen. Das kann das Spiel anhalten: Baue sein Modell auf den Knochen der Schützen."
+ita = "Le sue ossa non sono quelle dei fucilieri, quindi esegue le animazioni dell'unità copiata, che non gli si adattano. Questo può fermare il gioco: fai il suo modello sulle ossa dei fucilieri."
+spa = "Sus huesos no son los de los fusileros, así que usa las animaciones de la unidad copiada, que no encajan con ellos. Eso puede detener el juego: haz su modelo sobre los huesos de los fusileros."
+pol = "Jego kości nie są kośćmi strzelców, więc odgrywa animacje kopiowanej jednostki, które do nich nie pasują. To może zatrzymać grę: zrób jego model na kościach strzelców."
+ru = "Его кости не такие, как у стрелков, поэтому он играет анимации копируемого юнита, которые им не подходят. Это может остановить игру: сделайте его модель на костях стрелков."
+cz = "Jeho kosti nejsou kosti střelců, takže hraje animace kopírované jednotky, které se k nim nehodí. To může hru zastavit: udělej jeho model na kostech střelců."
+jpn = "この兵士の骨は小銃兵の骨と違うため、合わないコピー元ユニットのアニメーションを再生します。ゲームが止まることがあります。小銃兵と同じ骨でモデルを作ってください。"
+sc = "他的骨骼与步枪兵的骨骼不同，所以他播放的是所复制单位的动画，而这些动画与他的骨骼不匹配。这可能让游戏停止：请把他的模型做在步枪兵的骨骼上。"
+fa = "استخوان‌های او با استخوان‌های تفنگداران یکی نیست، پس انیمیشن‌های یگانِ کپی‌شده را اجرا می‌کند که به آن‌ها نمی‌خورد. این می‌تواند بازی را متوقف کند: مدلش را روی استخوان‌های تفنگداران بسازید."
 
 [tip_model_import_kinds]
 us = "Pick the .glb you made in Blender on the game soldier's bones, or a model with bones of its own (a horse and rider). This squad's riflemen then have it; its heavy-weapon soldier keeps his look until you give him his own under Its soldiers. A Custom uniform is taken out, and its paint stays in your mod. Test in game shows it."

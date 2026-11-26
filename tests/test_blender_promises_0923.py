@@ -171,6 +171,18 @@ class Item16ImportLink(WikiPages):
         self.assertIn('helpLine(w.squad_more_bones, "import", "squad-note")', js("squad.js"))
 
 
+class Item17OtherBonesWarning(InElevenLanguages):
+    ITEM = "17"
+
+    def test_52g_the_other_bones_warning_is_shorter_and_the_note_uses_it(self):
+        self.words_in_eleven_languages(["model_kind_bones_other"])
+        us = WORDS["model_kind_bones_other"]["us"]
+        self.assertLess(len(us), 180)    # (it was 233 characters)
+        api = (ROOT / "src" / "ruse_studio" / "api.py").read_text(encoding="utf-8")
+        self.assertIn('words(schema.BASE)["model_kind_bones_other"]', api)
+        self.assertNotIn("This model is on bones of its own, and the riflemen's model isn't on the same bones", api)
+
+
 AUTOMATIC = {"us": "Automatic", "fr": "Automatique", "ger": "Automatisch", "ita": "Automatica", "spa": "Automática",
              "pol": "Automatycznie", "ru": "Автоматически", "cz": "Automaticky", "jpn": "自動", "sc": "自动",
              "fa": "خودکار"}
