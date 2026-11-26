@@ -284,6 +284,15 @@ class Item25OpenInBlenderOnTheModelRow(InElevenLanguages):
         self.assertIn("...(head ? [] : [big])", box)    # (drawn alone, the box keeps its own button)
 
 
+class Item26RepaintHeading(InElevenLanguages):
+    ITEM = "26"
+
+    def test_52p_a_game_unit_s_box_is_headed_repaint_in_blender(self):
+        box = function_text(js("app.js"), "oneBlenderBox")
+        self.assertIn("heading.textContent = paintOnly ? w.unit_look : w.model_blender;", box)
+        self.assertEqual(WORDS["unit_look"]["us"], "Repaint in Blender")
+
+
         #                                         code says the same words, for every refusal)
 
 

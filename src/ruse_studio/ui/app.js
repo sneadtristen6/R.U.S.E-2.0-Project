@@ -2968,8 +2968,8 @@ function differsSaid(r) {
 // blender_back). Without Blender on the PC, the way to get it or to show where it is
 function oneBlenderBox(address, info, draw, changed, head = null) {
   const w = state.words;
-  const box = el("div", { className: "model-own repaint one-blender" },
-    el("h3", { textContent: w.model_blender, title: w.tip_one_open }));
+  const heading = el("h3", { textContent: w.model_blender, title: w.tip_one_open });
+  const box = el("div", { className: "model-own repaint one-blender" }, heading);
   if (!info.blender) {   // (Blender not found: get it, or show the Studio where it is)
     const get = el("button", { type: "button", textContent: w.look_get_blender, title: w.tip_look_get_blender });
     get.addEventListener("click", () => api().get_blender().catch(problem));
@@ -2996,8 +2996,10 @@ function oneBlenderBox(address, info, draw, changed, head = null) {
     big.addEventListener("click", open ? bringBack : openBlender);
     // (the ticks when there's more than one thing to choose; kept as they were when the box is drawn again)
     ticks = !open && parts && parts.can && parts.parts.length > 1 ? oneBlenderTicks(parts, ticks ? ticks.ticks() : null) : null;
-    const how = parts && !parts.can ? parts.why_not || "" : ((parts && (parts.door || parts.route)) === "paint"
-      ? w.one_how_paint : w.one_how_unit);
+    const paintOnly = Boolean(parts) && (parts.door || parts.route) === "paint";
+    const how = parts && !parts.can ? parts.why_not || "" : (paintOnly ? w.one_how_paint : w.one_how_unit);
+    // a game unit has its paint alone to bring back: the box says Repaint in Blender, not Change it in Blender (52p)
+    heading.textContent = paintOnly ? w.unit_look : w.model_blender;
     // the big button is the Model row's own (`head`), or this box's when it is drawn alone
     if (head) head.replaceChildren(big);
     const acts = [...(head ? [] : [big]), ...(ticks ? [ticks.toggle] : [])];
