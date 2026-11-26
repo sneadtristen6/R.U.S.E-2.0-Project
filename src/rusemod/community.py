@@ -47,7 +47,21 @@ WIKI_TOPICS = {
 BUG_CATEGORY = "bug-reports"      # the category's slug: .github/DISCUSSION_TEMPLATE/bug-reports.yml is its form
 APP_NAMES = {"studio": "RUSE Studio", "launcher": "RUSE Launcher"}  # as the form's "Which app?" lists them
 MESSAGE_MOST = 1500               # characters of a message that go into the link (a long URL gets refused)
-_USERS = re.compile(r"(?i)\b[a-z]:[\\/]+users[\\/]+[^\\/\s]+")  # C:\Users\<name>, any drive, either slash
+# C:\Users\<name>, any drive, either slash, any number of them (Python prints a path's \ as \\), or from the drive's
+# root (\Users\<name>, with \ only: a web address's /users/ is no folder); and a home folder as Wine shows Linux's
+# (Z:\home\<name>: the game on a Steam Deck or under Proton). A name can hold spaces and ' (Nick Smith, O'Brien): it
+# goes up to its next slash, else up to a closing quote, else it is one word; never past a character Windows keeps
+# out of a user name (" / \ [ ] : ; | = , + * ? < >) or the line's end (2026-11-24)
+_USERS = re.compile(r"(?i)(?:\b[a-z]:[\\/]+(?:users|home)|(?<![^\s\"'(\[=,;])\\+users)[\\/]+"
+                    r"(?:[^\"/\\\[\]:;|=,+*?<>\r\n]+(?=[\\/])|[^\"'/\\\[\]:;|=,+*?<>\r\n]+(?=[\"'])"
+                    r"|[^\s\"'/\\\[\]:;|=,+*?<>]+)")
+
+
+def _written_anyhow(folder: str):
+    """`folder` (as Windows names it) as a pattern that finds it in any case, written with either slash and any number
+    of them: as Windows writes it, as Python prints it (each \\ doubled) or with /. None for a drive alone."""
+    parts = re.split(r"[\\/]+", folder.rstrip("\\/"))
+    return re.compile(r"[\\/]+".join(re.escape(p) for p in parts), re.IGNORECASE) if len(parts) > 1 else None
 
 
 def _documents():
@@ -61,17 +75,18 @@ def _documents():
 def private_paths_out(text: str) -> str:
     """`text` with the player's own folders written the way Windows names them for anyone: %LOCALAPPDATA%,
     %APPDATA%, %USERPROFILE%, then any other C:\\Users\\<name> left. A Documents folder moved out of the player's own
-    (where the Studio keeps mods: rusemod.yourfiles) is written as Documents: its path can carry a name too."""
+    (where the Studio keeps mods: rusemod.yourfiles) is written as Documents: its path can carry a name too. Each is
+    found however it is written: either slash, and Python's doubled \\ (the game's error text prints a path so)."""
     out = str(text or "")
     docs, own = _documents(), os.environ.get("USERPROFILE") or str(Path.home())
     if docs and not str(docs).lower().startswith(own.lower().rstrip("\\/") + "\\"):
-        for form in {str(docs), str(docs).replace("\\", "/")}:
-            out = re.sub(re.escape(form), "Documents", out, flags=re.IGNORECASE)
+        found = _written_anyhow(str(docs))
+        out = found.sub("Documents", out) if found else out
     for var in ("LOCALAPPDATA", "APPDATA", "USERPROFILE"):
         value = os.environ.get(var) or (str(Path.home()) if var == "USERPROFILE" else "")
-        if value:
-            for form in {value, value.replace("\\", "/")}:
-                out = re.sub(re.escape(form), f"%{var}%", out, flags=re.IGNORECASE)
+        found = _written_anyhow(value) if value else None
+        if found:
+            out = found.sub(f"%{var}%", out)
     return _USERS.sub("%USERPROFILE%", out)
 
 

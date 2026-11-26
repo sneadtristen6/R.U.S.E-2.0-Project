@@ -289,9 +289,12 @@ class Crashes(BugWatchTest):
         self.assertIn("a.py", text)
         self.assertTrue(is_clean(text))
 
-    def dump(self, code=0x29A, address=0x7FF612341234, base=0x7FF612340000, extra=b""):
-        """A small crash report file: the header, an ExceptionStream, a ModuleListStream with one module, and `extra`."""
+    def dump(self, code=0x29A, address=0x7FF612341234, base=0x7FF612340000, extra=b"", program=None):
+        """A small crash report file: the header, an ExceptionStream, a ModuleListStream with one module, and `extra`.
+        The module is the game's program; with `program` (a path), that program's instead: another program's report."""
         name = "C:\\Games\\R.U.S.E\\RUSE.exe".encode("utf-16-le")
+        if program is not None:
+            name = program.encode("utf-16-le")
         header = b"MDMP" + struct.pack("<IIIIIQ", 0xA793, 2, 32, 0, 0, 0)
         exc_at = 32 + 24
         exception = struct.pack("<II", 1, 0) + struct.pack("<IIQQII", code, 0, 0, address, 0, 0) + b"\0" * 120
@@ -1206,6 +1209,603 @@ class Hooks(BugWatchTest):
         self.assertNotIn("bugwatch_status", bugwatch._current.days.get(bugwatch._today(), {}).get("calls", {}))
 
 
+class WhatTheAgreementSays(BugWatchTest):
+    """What the agreement says of Bug Watch and RUSE Guard, made true (2026-11-24): Settings' "Save username" saves the
+    name only; an untick deletes what the PC kept and nothing comes back, in either app; the agreement shown again
+    shows Bug Watch as it is; the game's error text goes out through RUSE Guard's own cleaning; only the game's own
+    crash reports are read. Each test fails on the release before (0.9.8.22) and passes since. The pages' own app.js
+    and agreement.js run in Node as they are, their calls stood in (Save username's then made on Bug Watch itself);
+    those two are skipped when no Node is found."""
+
+    SRC = Path(__file__).resolve().parents[1] / "src"
+    OTHER = "C:\\Program Files\\Paint\\paint.exe"   # another program, whose crash report can lie beside the game's
+
+    SAVE_IN_NODE = r"""
+const fs = require("fs"), vm = require("vm");
+const [appFile, casesFile] = process.argv.slice(-2);
+const anything = new Proxy(function () {}, { get: (t, k) => (k === Symbol.toPrimitive ? () => "" : anything),
+  apply: () => anything, set: () => true });
+class Observer { observe() {} unobserve() {} disconnect() {} }
+class Input { get value() { return ""; } set value(v) {} }
+const src = fs.readFileSync(appFile, "utf8");
+const bound = /\$\("bugwatch-save"\)\.addEventListener\("click", ([^\r\n]+?)\);\r?\n/.exec(src);
+(async () => {
+  const out = [];
+  for (const c of JSON.parse(fs.readFileSync(casesFile, "utf8"))) {
+    const els = {}, calls = [];
+    const element = (id) => els[id] || (els[id] = new Proxy({ id, value: "", checked: false, textContent: "",
+      className: "", placeholder: "", classList: { add() {}, remove() {}, toggle() {}, contains: () => false },
+      addEventListener() {} }, { get: (t, k) => (k in t ? t[k] : anything) }));
+    const document = new Proxy({ getElementById: element, activeElement: null },
+      { get: (t, k) => (k in t ? t[k] : anything) });
+    const api = new Proxy({}, { get: (t, name) => async (...args) => {
+      calls.push([name, ...args]);
+      return name === "bugwatch_status" ? c.before : {};
+    } });
+    const window = { addEventListener() {} };
+    const ctx = vm.createContext({ console, document, localStorage: anything, location: { search: "" },
+      navigator: anything, window, URLSearchParams,
+      setTimeout: () => 0, clearTimeout: () => {}, setInterval: () => 0, clearInterval: () => {},
+      ResizeObserver: Observer, MutationObserver: Observer, IntersectionObserver: Observer, HTMLInputElement: Input,
+      HTMLElement: Input, requestAnimationFrame: () => 0, matchMedia: () => anything,
+      getComputedStyle: () => anything });
+    vm.runInContext(src, ctx, { filename: "app.js" });
+    window.pywebview = { api };   // (after the page is read: it starts itself when the window's API is there)
+    Object.assign(ctx, { WORDS: c.words, BUGWATCH: c.before });
+    vm.runInContext("state.words = WORDS; state.bugwatch = BUGWATCH; state.settings = true;", ctx);
+    element("bugwatch-name").value = c.typed;
+    await vm.runInContext(`(${bound[1]})`, ctx)({ target: element("bugwatch-save") });
+    out.push({ handler: bound[1], calls, note: element("bugwatch-note").textContent });
+  }
+  process.stdout.write(JSON.stringify(out));
+})().catch((e) => { process.stderr.write(String((e && e.stack) || e)); process.exit(1); });
+"""
+
+    AGREEMENT_IN_NODE = r"""
+const fs = require("fs"), vm = require("vm");
+const [file, casesFile] = process.argv.slice(-2);
+const settle = () => new Promise((ok) => setImmediate(ok));
+function element(id) {
+  const on = {}, classes = new Set();
+  return { id, value: "", checked: false, textContent: "", className: "", placeholder: "", disabled: false,
+    childNodes: [], innerHTML: "", style: {},
+    classList: { add: (k) => classes.add(k), remove: (k) => classes.delete(k), contains: (k) => classes.has(k),
+      toggle: (k, f) => ((f === undefined ? !classes.has(k) : f) ? classes.add(k) : classes.delete(k)) },
+    addEventListener: (t, fn) => { (on[t] = on[t] || []).push(fn); },
+    removeEventListener: (t, fn) => { on[t] = (on[t] || []).filter((g) => g !== fn); },
+    fire: (t) => { for (const fn of (on[t] || []).slice()) fn({ key: "", preventDefault() {} }); },
+    listening: (t) => (on[t] || []).length, focus() {}, append() {}, appendChild() {} };
+}
+(async () => {
+  const out = [];
+  for (const c of JSON.parse(fs.readFileSync(casesFile, "utf8"))) {
+    const els = {}, calls = [], answers = c.status.slice(), waiting = [];
+    const document = { getElementById: (id) => els[id] || (els[id] = element(id)), createElement: () => element(""),
+      head: element("head"), body: element("body") };
+    const window = element("window");
+    // c.late: the window's calls come back only when a step says, as a real window's can (late, in any order): each
+    // bugwatch_status after the one the screen opens with, and guard_accept_terms
+    const api = new Proxy({}, { get: (t, name) => async (...args) => {
+      calls.push([name, ...args]);
+      if (name === "guard_status") return c.guard;
+      if (name === "bugwatch_status") {
+        const answer = answers.length > 1 ? answers.shift() : answers[0];
+        if (!c.late || calls.filter((x) => x[0] === name).length === 1) return answer;
+        return new Promise((ok) => waiting.push({ name, ok: () => ok(answer) }));
+      }
+      if (name === "guard_accept_terms" && c.late)
+        return new Promise((ok, no) => waiting.push({ name, ok: () => ok({}), no: () => no(new Error("refused")) }));
+      return {};
+    } });
+    vm.runInContext(fs.readFileSync(file, "utf8"), vm.createContext({ window, document, console }),
+                    { filename: "agreement.js" });
+    const opened = window.Agreement.open({ api, words: c.words, fairOn: true });
+    await settle();
+    const $ = document.getElementById, box = $("agree-bugwatch");
+    const seen = { at_open: box.checked, row_hidden: $("agree-bugwatch-row").classList.contains("agree-hidden"),
+      label: $("agree-bugwatch-label").textContent, note: $("agree-bugwatch-note").textContent,
+      listening: window.listening("focus"), clicks: [] };
+    let labelAtAccept = null;
+    const click = () => { seen.clicks.push(box.checked); labelAtAccept = $("agree-bugwatch-label").textContent;
+      $("agree-accept").fire("click"); };
+    const answer = (name, how) => {   // the oldest call of that name still out comes back (or the newest)
+      const names = waiting.map((x) => x.name);
+      const i = how === "newest" ? names.lastIndexOf(name) : names.indexOf(name);
+      if (i >= 0) { const x = waiting.splice(i, 1)[0]; (how === "fails" ? x.no : x.ok)(); }
+    };
+    for (const step of c.steps) {
+      if (step === "tick" || step === "untick") box.checked = step === "tick";
+      else if (step === "click") click();                              // the player clicks Accept
+      else if (step === "status") answer("bugwatch_status");
+      else if (step === "newest status") answer("bugwatch_status", "newest");
+      else if (step === "accept") answer("guard_accept_terms");
+      else if (step === "accept fails") answer("guard_accept_terms", "fails");
+      else window.fire(step);   // "focus": this window comes back
+      await settle();
+    }
+    if (!seen.clicks.length) {
+      seen.at_accept = box.checked;
+      click();
+      await settle();
+    }
+    while (waiting.length) { waiting.shift().ok(); await settle(); }   // whatever is still out comes back
+    seen.at_end = box.checked;
+    seen.label_at_accept = labelAtAccept;
+    if (c.name !== undefined) {   // the username screen (no username yet)
+      $("username-name").value = c.name;
+      $("username-save").fire("click");
+      await settle();
+    }
+    let timer;
+    const finished = await Promise.race([opened.then(() => true),
+      new Promise((ok) => { timer = setTimeout(ok, 3000, false); })]);
+    clearTimeout(timer);
+    out.push({ ...seen, calls, finished });
+  }
+  process.stdout.write(JSON.stringify(out));
+})().catch((e) => { process.stderr.write(String((e && e.stack) || e)); process.exit(1); });
+"""
+
+    @staticmethod
+    def node() -> str | None:
+        import shutil
+        found = os.environ.get("RUSE_NODE") or shutil.which("node") or next(
+            (str(p) for p in sorted(Path("D:/RUSE-2.0/tools").glob("node-v*/node.exe"))[::-1]), None)
+        return found if found and Path(found).is_file() else None
+
+    def run_node(self, script: str, file: Path, cases: list) -> list:
+        import subprocess
+        node = self.node()
+        if node is None:
+            self.skipTest("no Node")
+        (self.home / "cases.json").write_text(json.dumps(cases), encoding="utf-8")
+        ran = subprocess.run([node, "-e", script, "--", str(file), str(self.home / "cases.json")],
+                             capture_output=True, text=True, encoding="utf-8", timeout=120)
+        self.assertEqual(ran.returncode, 0, ran.stderr[-2000:])
+        return json.loads(ran.stdout)
+
+    def words(self, app: str, *starts: str) -> dict:
+        import tomllib
+        words = tomllib.loads((self.SRC / app / "words.toml").read_text(encoding="utf-8"))
+        return {k: v["us"] for k, v in words.items() if k.startswith(starts)}
+
+    def test_1_save_username_saves_the_name_only(self):
+        """Settings' "Save username" in both apps, their own app.js and its handler as it is bound there: the name
+        only, by set_username as the first start saves a name without Bug Watch, its calls then made on Bug Watch
+        itself. Bug Watch is never switched by it: off stays off, on stays on under the new name; the same name keeps
+        its #number; with no name at all nothing is saved. (Until 0.9.8.22 it called bugwatch_on: Bug Watch went on.)"""
+
+        class Api(bugwatch.BugWatchCalls):
+            UPDATE_APP, UPDATE_VERSION = "launcher", "0.4.8.22"
+
+        for app in ("ruse_launcher", "ruse_studio"):
+            words = self.words(app, "bugwatch_", "username_")
+            cases, made = [], []
+            for on, typed in ((False, "Ann"), (False, "Bob"), (True, "Bob"), (True, "Ann"), (False, "")):
+                home = self.home / app / f"{'on' if on else 'off'}-{typed or 'none'}"
+                home.mkdir(parents=True)
+                if typed:
+                    (bugwatch.turn_on if on else bugwatch.set_username)(home, "Ann")
+                page = Api()
+                page._home = str(home)
+                before = page.bugwatch_status()
+                cases.append({"words": words, "before": before, "typed": typed})
+                made.append((home, before, typed))
+            got = self.run_node(self.SAVE_IN_NODE, self.SRC / app / "ui" / "app.js", cases)
+            for (home, before, typed), said in zip(made, got):
+                page = Api()
+                page._home = str(home)
+                with mock.patch("atexit.register"), mock.patch.object(bugwatch, "_hook_errors"):
+                    for name, *args in said["calls"]:
+                        getattr(page, name)(*args)                  # the page's calls, made on Bug Watch itself
+                after = page.bugwatch_status()
+                called = [c[0] for c in said["calls"]]
+                with self.subTest(app=app, on=before["on"], typed=typed, handler=said["handler"]):
+                    self.assertNotIn("bugwatch_on", called)
+                    self.assertNotIn("bugwatch_off", called)
+                    self.assertEqual(after["on"], before["on"])                    # off stays off, on stays on
+                    if not typed:
+                        self.assertEqual((called, said["note"]), ([], words["username_need"]))
+                        continue
+                    keep = before["name"] if typed == "Ann" else typed
+                    self.assertIn(["set_username", keep], said["calls"])
+                    self.assertEqual(after["code"], before["code"])                # the same install
+                    if typed == "Ann":
+                        self.assertEqual(after["name"], before["name"])            # its #number kept
+                    else:
+                        self.assertRegex(after["name"], r"^Bob#\d{4}$")
+                    self.assertNotEqual(said["note"], words["bugwatch_now_on"])
+
+    def test_2_an_untick_deletes_what_was_kept_and_nothing_comes_back(self):
+        """The agreement: "Untick it any time in Settings: nothing more is counted or sent, and what was kept is
+        deleted." Both apps run on one PC: the Studio (this app, its Watch the module's own) and the Launcher (the
+        other app, its own Watch, which an untick in the Studio can't reach), each with counts made and saved. Unticked
+        in the Studio: nothing either counted before is written back (each app's save at its end: start's atexit),
+        shown or queued to be sent, not even after the player ticks it again while the other app still runs; what is
+        counted after the new tick still goes (the control); and what an older version wrote back after an untick is
+        deleted at the next start while Bug Watch is off. (Until 0.9.8.22 each app's save at its end wrote its counts
+        back, and they went out after a later tick.)"""
+        bugwatch.turn_on(self.home, "Nick")
+        name = homes.settings(self.home)["player"]["name"]
+        values = homes.settings(self.home)
+        values["guard"] = {"terms": 4}   # RUSE Guard accepted, as by every player: the ID and the username stay
+        homes.save_settings(self.home, values)
+        folder = self.home / bugwatch.FOLDER
+
+        def kept():
+            return sorted(p.relative_to(folder).as_posix() for p in folder.rglob("*.json")) if folder.is_dir() else []
+
+        class Api(bugwatch.BugWatchCalls):
+            _home = str(self.home)
+
+        def both_run():
+            """The Studio (this app) and the Launcher (the other app), each with counts made and saved."""
+            studio, launcher = self.watch(), bugwatch.Watch(self.home, "launcher", "0.4.8.22", opener=Server())
+            bugwatch._current = studio
+            for w in (studio, launcher):
+                for _ in range(3):
+                    w.call("list_sets", 0.1)
+                w.save()
+            self.assertEqual(kept(), ["days-launcher.json", "days-studio.json"])
+            return studio, launcher
+        # unticked in the Studio's Settings; then each app ends (its save at its end), Bug Watch still off
+        studio, launcher = both_run()
+        Api().bugwatch_off()
+        self.assertEqual((kept(), studio.days), ([], {}))        # deleted; the Studio's counts in memory gone at once
+        studio.save()
+        launcher.save()
+        self.assertEqual(kept(), [])                             # nothing written back, by either
+        # unticked, then ticked again while the Launcher runs on, never told: then it ends
+        Api().bugwatch_on(name)
+        studio, launcher = both_run()
+        Api().bugwatch_off()
+        Api().bugwatch_on(name)
+        launcher.save()
+        self.assertEqual(kept(), [])                             # its counts from before the untick: never written
+        # the same, and the Launcher's Settings show what would be sent
+        studio, launcher = both_run()
+        Api().bugwatch_off()
+        Api().bugwatch_on(name)
+        bugwatch._current = launcher
+        self.assertNotIn("calls", Api().bugwatch_next_send()["today"])   # none counted before the untick
+        launcher.call("play", 0.1)                               # counted after the new tick (the control)
+        launcher.save()
+        studio.save()
+        today = bugwatch._today()
+        tomorrow = (datetime.now(timezone.utc) + timedelta(days=1)).strftime("%Y-%m-%d")
+        with mock.patch.object(bugwatch, "_today", return_value=tomorrow):
+            for app in ("studio", "launcher"):                   # the next day's starts: finished days queued
+                bugwatch.Watch(self.home, app, "0.9.8.22", opener=Server()).roll()
+        self.assertEqual(kept(), [f"outbox/day-launcher-{today}.json"])
+        queued = json.loads((folder / "outbox" / f"day-launcher-{today}.json").read_text(encoding="utf-8"))
+        self.assertEqual(list(queued["calls"]), ["play"])        # never list_sets, counted before the untick
+        Api().bugwatch_off()
+        folder.mkdir(parents=True, exist_ok=True)                # an older version's save at an app's end wrote it back
+        (folder / "days-launcher.json").write_text(json.dumps({today: bugwatch._blank_day("0.4.8.22")}),
+                                                   encoding="utf-8")
+        with mock.patch("atexit.register"), mock.patch.object(bugwatch, "_hook_errors"):
+            bugwatch.start(self.home, "launcher", "0.4.8.23")    # the next start, Bug Watch off
+        self.assertEqual(kept(), [])
+
+    def test_2_at_its_edges_an_untick_meanwhile_and_a_half_written_settings_file(self):
+        """The same promise at its edges. An untick in the other app that lands while this app's save writes its file
+        (after the save's look at the setting, before its write ends) deletes the file again. And a settings file the
+        other app is writing that very moment (half written) is no untick (the control): nothing is counted then, and
+        nothing kept is dropped: the counts are all there once it can be read again."""
+        bugwatch.turn_on(self.home, "Nick")
+        w = self.watch()
+        w.call("list_sets", 0.1)
+        on = homes.settings(self.home)
+        off = {**on, "bugwatch": {**on["bugwatch"], "on": False, "untick_mark": "0" * 16}}
+        looks = iter([on, off])                                  # the save's look before it writes, and after
+        with mock.patch.object(bugwatch, "_settings_now", lambda home, tries=3: next(looks), create=True):
+            w.save()
+        self.assertFalse(w.file.exists())
+        self.assertEqual(w.days, {})
+        w = self.watch()
+        for _ in range(2):
+            w.call("list_sets", 0.1)
+        settings = self.home / "settings.json"
+        whole = settings.read_text(encoding="utf-8")
+        settings.write_text(whole[:len(whole) // 2], encoding="utf-8")   # being written by the other app
+        w.call("list_sets", 0.1)                                 # not counted then
+        w.save()
+        settings.write_text(whole, encoding="utf-8")
+        w.call("list_sets", 0.1)
+        self.assertEqual(w.days[bugwatch._today()]["calls"]["list_sets"]["n"], 3)
+
+    def test_2_an_untick_in_the_other_app_still_on_0_9_8_22(self):
+        """The Studio and the Launcher update one at a time, so the other app can still be 0.9.8.22 while this one
+        runs. Its untick deletes the kept files, as every untick does, but leaves no new untick mark. This app's Watch,
+        its days file there before (written by it, or read at its start) and gone now, takes that for the untick it is:
+        what it counted before is never written back, not even after the player ticked it again there while this app
+        counted nothing. What it counts after the tick is kept, and the other app's own file going with that app's own
+        roll is no untick here (the controls). (8fd4340b, the first of these changes, wrote those counts back. The
+        limits that stay until both apps are updated: Watch._now_on.)"""
+        bugwatch.turn_on(self.home, "Nick")
+        values = homes.settings(self.home)
+        values["guard"] = {"terms": 4}   # RUSE Guard accepted, as by every player: the ID and the username stay
+        homes.save_settings(self.home, values)
+        folder, today = self.home / bugwatch.FOLDER, bugwatch._today()
+
+        def untick_and_tick_in_0_9_8_22():   # its turn_off, turn_on (6b265ec1): "on" alone; the untick deletes the files
+            for on in (False, True):
+                values = homes.settings(self.home)
+                values["bugwatch"] = {**(values.get("bugwatch") or {}), "on": on}
+                homes.save_settings(self.home, values)
+                for p in sorted(folder.rglob("*.json"), reverse=True) if not on else []:
+                    p.unlink()
+
+        def counted(w):
+            return {day: sorted(c["calls"]) for day, c in json.loads(w.file.read_text(encoding="utf-8")).items()}
+        launcher = bugwatch.Watch(self.home, "launcher", "0.4.8.23", opener=Server())
+        for _ in range(3):
+            launcher.call("list_sets", 0.1)
+        launcher.save()                                          # its file written
+        untick_and_tick_in_0_9_8_22()                            # in the other app, this one idle meanwhile
+        launcher.save()                                          # this app's save at its end
+        self.assertFalse(launcher.file.exists())                 # nothing counted before the untick written back
+        launcher.call("play", 0.1)                               # counted after the tick (the control)
+        launcher.save()
+        self.assertEqual(counted(launcher), {today: ["play"]})
+        restarted = bugwatch.Watch(self.home, "launcher", "0.4.8.23", opener=Server())   # its file read at its start
+        untick_and_tick_in_0_9_8_22()
+        restarted.call("list_sets", 0.1)
+        restarted.save()
+        self.assertEqual(counted(restarted), {today: ["list_sets"]})   # never "play", counted before that untick
+        studio = self.watch()                                    # the Studio, this version too, its counts saved
+        studio.call("list_sets", 0.1)
+        studio.save()
+        yesterday = (datetime.now(timezone.utc) - timedelta(days=1)).strftime("%Y-%m-%d")
+        restarted.file.write_text(json.dumps({yesterday: bugwatch._blank_day("0.4.8.23")}), encoding="utf-8")
+        bugwatch.Watch(self.home, "launcher", "0.4.8.23", opener=Server()).roll()   # a finished day out: its file goes
+        self.assertEqual(sorted(p.name for p in folder.rglob("*.json")),
+                         [f"day-launcher-{yesterday}.json", "days-studio.json"])
+        studio.call("list_sets", 0.1)
+        studio.save()
+        self.assertEqual(json.loads(studio.file.read_text(encoding="utf-8"))[today]["calls"]["list_sets"]["n"], 2)
+
+    def test_3_the_agreement_shown_again_shows_bug_watch_as_it_is(self):
+        """The agreement shown again (a version accepted before, a new one out), the shared agreement.js as it is: its
+        Bug Watch box shows Bug Watch as it is, never ticked for a player who has it off, even when it was switched in
+        the other app while the screen was up (both apps can run at once: when this window comes back, the box
+        follows); a change the player made to the box here stays, and accepting changes Bug Watch only as the player
+        changed the box. A new player's very first start is as it was (the control): the box starts unticked and the
+        other app never moves it. (Until 0.9.8.22 the box kept what it showed when the screen opened.)"""
+        words = self.words("ruse_launcher", "agree_", "username_", "bugwatch_", "set_bugwatch_")
+        nick = {"available": True, "on": True, "name": "Nick#4821", "code": "abcdefgh"}
+        off, new = {**nick, "on": False}, {"available": True, "on": False, "name": "", "code": ""}
+        again, first = {"terms": 3, "terms_version": 4}, {"terms": 0, "terms_version": 4}
+        cases = [{"guard": again, "status": [nick, off], "steps": ["focus"]},         # unticked in the other app
+                 {"guard": again, "status": [off], "steps": []},                      # off: unticked from the start
+                 {"guard": again, "status": [nick], "steps": ["untick", "focus"]},    # unticked here: it stays so
+                 {"guard": again, "status": [off], "steps": ["tick", "focus"]},       # ticked here: it stays so
+                 {"guard": again, "status": [off, nick], "steps": ["focus"]},         # ticked in the other app
+                 {"guard": first, "status": [new, {**new, "on": True}], "steps": ["focus"], "name": "Ann"},
+                 {"guard": first, "status": [new], "steps": ["tick"], "name": "Ann"}]
+        for c in cases:
+            c["words"] = words
+        got = self.run_node(self.AGREEMENT_IN_NODE, self.SRC / "rusemod" / "sharedui" / "agreement.js", cases)
+        self.assertEqual([g["finished"] for g in got], [True] * len(cases))   # every screen went away, done
+        self.assertEqual([(g["at_open"], g["at_accept"]) for g in got],
+                         [(True, False), (False, False), (True, False), (False, True), (False, True),
+                          (False, False), (False, True)])
+        made = [[c for c in g["calls"] if c[0] in ("bugwatch_on", "bugwatch_off", "set_username")] for g in got]
+        self.assertEqual(made, [[], [], [["bugwatch_off"]], [["bugwatch_on", "Nick#4821"]], [],
+                                [["set_username", "Ann"]], [["bugwatch_on", "Ann"]]])
+        self.assertTrue(all(["guard_accept_terms"] in g["calls"] for g in got))
+        first_start = got[5]
+        self.assertEqual((first_start["row_hidden"], first_start["listening"], first_start["label"],
+                          first_start["note"]), (False, 0, words["bugwatch_on_label"], words["set_bugwatch_help"]))
+
+    def test_3_a_player_with_bug_watch_on_is_asked_to_keep_it(self):
+        """The agreement shown again (decision 38 C, 2026-11-25), the shared agreement.js as it is: a player who has
+        Bug Watch on is asked "Keep Bug Watch on?" (ticked; leaving it keeps it on and changes nothing; unticking it
+        turns Bug Watch off exactly as Settings' untick does, one bugwatch_off); everyone else (off, or never chose)
+        gets the Bug Watch box again, unticked, with "(Recommended)" (decision 10). If Bug Watch is switched off in the
+        other app meanwhile, the box is the plain one again. A new player's first start is as it was (the control:
+        unticked, the plain box). (Release 0.9.8.22 showed every player the plain box, even ticked.)"""
+        words = self.words("ruse_launcher", "agree_", "username_", "bugwatch_", "set_bugwatch_")
+        nick = {"available": True, "on": True, "name": "Nick#4821", "code": "abcdefgh"}
+        off = {**nick, "on": False}
+        never = {"available": True, "on": False, "name": "Nick#4821", "code": ""}
+        new = {"available": True, "on": False, "name": "", "code": ""}
+        again, first = {"terms": 3, "terms_version": 4}, {"terms": 0, "terms_version": 4}
+        cases = [{"guard": again, "status": [nick], "steps": []},                    # on: asked, yes
+                 {"guard": again, "status": [nick], "steps": ["untick"]},            # on: asked, no
+                 {"guard": again, "status": [off], "steps": []},                     # off: the plain box
+                 {"guard": again, "status": [never], "steps": []},                   # never chose: the plain box
+                 {"guard": again, "status": [nick, off], "steps": ["focus"]},        # switched off meanwhile
+                 {"guard": first, "status": [new], "steps": [], "name": "Ann"}]      # a new player
+        for c in cases:
+            c["words"] = words
+        got = self.run_node(self.AGREEMENT_IN_NODE, self.SRC / "rusemod" / "sharedui" / "agreement.js", cases)
+        self.assertEqual([g["finished"] for g in got], [True] * len(cases))
+        keep, plain = words["bugwatch_keep_label"], words["bugwatch_on_label"]
+        self.assertEqual(keep, "Keep Bug Watch on?")
+        self.assertIn("(Recommended)", plain)
+        self.assertEqual([g["label"] for g in got], [keep, keep, plain, plain, keep, plain])
+        self.assertEqual([g["label_at_accept"] for g in got], [keep, keep, plain, plain, plain, plain])
+        asked, help_ = words["bugwatch_keep_note"], words["set_bugwatch_help"]
+        self.assertEqual([g["note"] for g in got], [asked, asked, help_, help_, asked, help_])   # as opened
+        self.assertEqual([g["at_open"] for g in got], [True, True, False, False, True, False])
+        self.assertEqual([g["at_end"] for g in got], [True, False, False, False, False, False])
+        made = [[c for c in g["calls"] if c[0] in ("bugwatch_on", "bugwatch_off", "set_username")] for g in got]
+        self.assertEqual(made, [[], [["bugwatch_off"]], [], [], [], [["set_username", "Ann"]]])
+
+    def test_3_the_keep_question_is_in_every_language_in_both_apps(self):
+        """The two new keys (bugwatch_keep_label, bugwatch_keep_note) are in both apps' words in all 11 languages."""
+        import tomllib
+        for app in ("ruse_launcher", "ruse_studio"):
+            data = tomllib.loads((self.SRC / app / "words.toml").read_text(encoding="utf-8"))
+            for key in ("bugwatch_keep_label", "bugwatch_keep_note"):
+                self.assertEqual(sorted(data[key]), sorted(["us", "fr", "ger", "ita", "spa", "pol", "ru", "cz",
+                                                            "jpn", "sc", "fa"]), f"{app} {key}")
+                self.assertTrue(all(v.strip() for v in data[key].values()), f"{app} {key}")
+
+    def test_3_an_answer_that_comes_back_late_never_switches_bug_watch(self):
+        """The agreement shown again, the shared agreement.js as it is, with the window's calls coming back late and in
+        the orders a real window can give them: the click that brings this window back lands on Accept while Bug
+        Watch's state, asked as the window came back, is still out, and comes back before Accept's own answer.
+        Accepting never switches Bug Watch the player didn't switch here: not on again after an untick in the other
+        app, not off (deleting what was kept) after a tick there. An older answer never undoes a newer one, and after a
+        refused Accept the box follows Bug Watch again. The player's own change here still goes, with an answer out
+        (the controls). (8fd4340b, the first of these changes, switched Bug Watch in the first two; the release 0.9.8.22
+        made none, its box never following: its switches here are these.)"""
+        words = self.words("ruse_launcher", "agree_", "username_", "bugwatch_", "set_bugwatch_")
+        nick = {"available": True, "on": True, "name": "Nick#4821", "code": "abcdefgh"}
+        off = {**nick, "on": False}
+        again = {"terms": 3, "terms_version": 4}
+
+        def late(status, steps):
+            return {"guard": again, "status": status, "steps": steps, "late": True, "words": words}
+        cases = [late([nick, off], ["focus", "click", "status", "accept"]),   # unticked in the other app
+                 late([off, nick], ["focus", "click", "status", "accept"]),   # ticked in the other app
+                 late([nick, off], ["focus", "click", "accept", "status"]),   # Accept's answer first
+                 late([nick, off], ["focus", "status", "click", "accept"]),   # the box followed, then Accept
+                 late([nick, off, nick], ["focus", "focus", "newest status", "status", "click", "accept"]),
+                 late([nick, off], ["click", "accept fails", "focus", "status", "click", "accept"]),
+                 late([nick, nick], ["focus", "untick", "status", "click", "accept"]),   # unticked here (control)
+                 late([off, off], ["focus", "tick", "status", "click", "accept"])]       # ticked here (control)
+        got = self.run_node(self.AGREEMENT_IN_NODE, self.SRC / "rusemod" / "sharedui" / "agreement.js", cases)
+        self.assertEqual([g["finished"] for g in got], [True] * len(cases))   # every screen went away, done
+        made = [[c for c in g["calls"] if c[0] in ("bugwatch_on", "bugwatch_off")] for g in got]
+        self.assertEqual(made, [[], [], [], [], [], [], [["bugwatch_off"]], [["bugwatch_on", "Nick#4821"]]])
+        # the box as the player clicked Accept: following Bug Watch where it had come back by then (the 4th, the
+        # newer answer of the 5th, the 2nd Accept of the 6th); the player's own change (the 7th and 8th)
+        self.assertEqual([g["clicks"] for g in got],
+                         [[True], [False], [True], [False], [True], [True, False], [False], [True]])
+        self.assertEqual([len([c for c in g["calls"] if c[0] == "guard_accept_terms"]) for g in got],
+                         [1, 1, 1, 1, 1, 2, 1, 1])
+
+    def test_4_the_games_error_text_goes_out_through_ruse_guards_cleaning(self):
+        """The game's error text a game crash report sends (read_dump's traceback) goes through RUSE Guard's own
+        cleaning of its line, the very function (guard.no_ids): no Steam ID, long number or path, as the agreement says
+        ("Never sent: ... your Steam account, your files or paths"; RUSE Guard's line goes "with any Steam ID, long
+        number or path removed"). What our developers need stays (the control): the game's own script names, the lines,
+        the error. (Until 0.9.8.22 only paths were cut from it.)"""
+        from rusemod import guard
+        bugwatch.turn_on(self.home, "Nick")
+        text = (b'Traceback (most recent call last):\n  File "DataDir:\\x\\menu.py", line 40, in f\n'
+                b'  File "datadir:\\codeia\\python\\eugen\\game\\world.py", line 114, in on_timer_task\n'
+                b"KeyError: 'player 76561198012345678 at C:\\Games\\x.py, account 226593310'\x00")
+        p = self.home / "report.dmp"
+        p.write_bytes(Crashes.dump(self, extra=b"\0junk\0" + text))
+        found = bugwatch.read_dump(p)
+        for secret in ("76561198012345678", "226593310", "C:\\"):
+            self.assertNotIn(secret, found["traceback"])
+        self.assertEqual(found["traceback"], 'Traceback (most recent call last):\n'
+                                             '  File "DataDir:\\x\\menu.py", line 40, in f\n'
+                                             '  File "datadir:\\codeia\\python\\eugen\\game\\world.py", line 114, in '
+                                             'on_timer_task\n'
+                                             "KeyError: 'player <id> at x.py, account <n>'")
+        with mock.patch.object(guard, "no_ids", wraps=guard.no_ids) as cleaning:
+            bugwatch.read_dump(p)
+        cleaning.assert_called()                                 # RUSE Guard's own cleaning, not a copy of it
+        w = self.watch()
+        w.game_crash(found, [], 0, send=False)
+        (sent,) = [json.loads(f.read_text()) for f in w.outbox.glob("crash-*.json")]
+        self.assertEqual(sent["traceback"], found["traceback"])
+        self.assertTrue(is_clean(sent))
+
+    def test_4_a_path_with_spaces_doubled_backslashes_or_on_a_network_goes_too(self):
+        """The same error text with the paths a real one can hold, the player's Windows account "Nick Smith": Python
+        prints a path's \\ doubled, a folder can have a space in its name (the player's own, Program Files (x86),
+        another account's), and a file can be on a network. None of the path goes out but its file's name, and the
+        player's own folders as Windows names them for anyone; the game's own script names, the error and its file
+        names stay (the controls). (Until these fixes a space or a network path let the rest of it through, names and
+        all.)"""
+        bugwatch.turn_on(self.home, "Nick")
+        head = b'Traceback (most recent call last):\n  File "DataDir:\\x\\menu.py", line 40, in f\n'
+        cases = {b"IOError: [Errno 2] No such file or directory: 'C:\\\\Users\\\\Nick Smith\\\\Documents\\\\My Games"
+                 b"\\\\x.sav'": "IOError: [Errno 2] No such file or directory: '%USERPROFILE%\\\\Documents\\\\My Games"
+                                "\\\\x.sav'",
+                 b"IOError: no file C:\\Users\\Nick Smith\\Documents\\My Games\\x.sav here":
+                     "IOError: no file %USERPROFILE%\\Documents\\My Games\\x.sav here",
+                 b"IOError: no file C:/Users/Nick Smith/Documents/x.sav here":
+                     "IOError: no file %USERPROFILE%/Documents/x.sav here",
+                 b"IOError: no file C:\\Program Files (x86)\\Steam\\steamapps\\common\\R.U.S.E\\Nick\\x.sav here":
+                     "IOError: no file x.sav here",
+                 b"IOError: [Errno 2] No such file or directory: 'C:\\\\Program Files (x86)\\\\Steam\\\\R.U.S.E"
+                 b"\\\\Nick\\\\my save.sav'": "IOError: [Errno 2] No such file or directory: 'my save.sav'",
+                 b"IOError: no file \\\\nas\\Nick\\games\\x.sav here": "IOError: no file x.sav here",
+                 b"IOError: [Errno 2] No such file or directory: '\\\\\\\\nas\\\\Nick\\\\x.sav'":
+                     "IOError: [Errno 2] No such file or directory: 'x.sav'",
+                 b"IOError: no file E:\\Users\\Ann Lee\\x.sav and D:/Users/bob/y":
+                     "IOError: no file %USERPROFILE%\\x.sav and %USERPROFILE%/y",
+                 b"IOError: [Errno 13] Permission denied: 'C:\\\\Users\\\\Ann Lee'":
+                     "IOError: [Errno 13] Permission denied: '%USERPROFILE%'",
+                 b"IOError: no file \\Users\\Nick Smith\\x.sav here":           # from the drive's root
+                     "IOError: no file %USERPROFILE%\\x.sav here",
+                 b"IOError: no file Z:\\home\\nick\\games\\x.sav or Z:\\home\\nick":   # Linux's home, as Wine shows it
+                     "IOError: no file %USERPROFILE%\\games\\x.sav or %USERPROFILE%"}
+        account = {"USERPROFILE": "C:\\Users\\Nick Smith", "LOCALAPPDATA": "C:\\Users\\Nick Smith\\AppData\\Local",
+                   "APPDATA": "C:\\Users\\Nick Smith\\AppData\\Roaming"}
+        p = self.home / "report.dmp"
+        with mock.patch.dict(os.environ, account), mock.patch("rusemod.community._documents", return_value=None):
+            for line, said in cases.items():
+                p.write_bytes(Crashes.dump(self, extra=b"\0junk\0" + head + line + b"\x00"))
+                found = bugwatch.read_dump(p)
+                with self.subTest(line=line):
+                    self.assertEqual(found["traceback"], head.decode() + said)
+                    for private in ("Nick", "nick", "Smith", "Ann", "Lee", "bob", "nas", "Program Files", "Steam"):
+                        self.assertNotIn(private, found["traceback"])
+                    w = self.watch()
+                    w.game_crash(found, [], 0, send=False)
+                    self.assertTrue(all(is_clean(json.loads(f.read_text())) for f in w.outbox.glob("crash-*.json")))
+
+    def test_5_only_the_games_own_crash_reports_are_read(self):
+        """The agreement: "When the game writes its own crash report, the apps read that report on your PC". Another
+        program can leave its crash report in the same folder (the game's crash reporter is used by other programs
+        too), even one holding RUSE Guard's mark: neither Bug Watch (read_dump, its game watch) nor RUSE Guard
+        (collect_stops) reads it past its module list, which says whose it is; the game's own beside it is read and
+        reported as before (the control). (Until 0.9.8.22 both read every crash report written while the game ran,
+        and Bug Watch sent another program's as a game crash.)"""
+        from rusemod import guard
+        bugwatch.turn_on(self.home, "Nick")
+
+        def mark(team: int) -> bytes:   # RUSE Guard's line, filled in, as the lock writes it when it stops a copy
+            return (b"RUSEGUARD-LOCK a cheat copy was stopped: it surrendered and left the match. multi 1 coop 0 "
+                    b"local " + str(team).encode() + b" RUSEGUARD-END")
+        text = b'Traceback (most recent call last):\n  File "DataDir:\\x\\menu.py", line 40, in f\nKeyError: 1\x00'
+        local = self.home / "local"
+        game, other = local / "Temp" / "CrashRpt_game" / "report.dmp", local / "Temp" / "CrashRpt_other" / "report.dmp"
+        for path, program, team in ((game, None, 0), (other, self.OTHER, 7)):
+            path.parent.mkdir(parents=True)
+            path.write_bytes(Crashes.dump(self, program=program, extra=b"\0" + mark(team) + b"\0" + text))
+            os.utime(path, (1500, 1500))
+        real, read = Path.read_bytes, []
+
+        def reading(path):
+            read.append(Path(path).parent.name)
+            return real(path)
+        with mock.patch.object(Path, "read_bytes", reading):
+            self.assertIsNone(bugwatch.read_dump(other))
+            found = bugwatch.read_dump(game)
+            guard.collect_stops(self.home, since=1000, username="Nick#4821", server="", now=1791000200,
+                                local=str(local), say=lambda s: None)
+        self.assertNotIn("CrashRpt_other", read)                 # never read whole, by either app
+        self.assertEqual((found["code"], found["module"].lower(), found["offset"]), ("0x29a", bugwatch.GAME_PROGRAM,
+                                                                                    "0x1234"))
+        self.assertIn("KeyError: 1", found["traceback"])
+        stops = [json.loads(p.read_text(encoding="utf-8"))["evidence"]["stop"]["text"]
+                 for p in (self.home / guard.OUTBOX).glob("*.json")]
+        self.assertEqual(len(stops), 1)
+        self.assertIn("multi 1 coop 0 local 0", stops[0])      # the game's own (RUSE Guard's line, the control)
+
+        class Closed:
+            def poll(self):
+                return 0
+        w = self.watch()
+        times = iter([1000.0, 1600.0])
+        with mock.patch.object(w, "send_waiting"):
+            bugwatch.GameWatch(w, Closed(), [], 0, sleep=lambda _s: None, clock=lambda: next(times),
+                               local=str(local)).run()
+        crashes = [json.loads(f.read_text()) for f in w.outbox.glob("crash-*.json")]
+        self.assertEqual([(c["module"].lower(), c["offset"]) for c in crashes], [(bugwatch.GAME_PROGRAM, "0x1234")])
+        self.assertTrue(all(is_clean(c) for c in crashes))
+
+
 class TheCardInBothApps(unittest.TestCase):
     """The Bug Watch Settings card is in the Launcher AND the Studio, with the same words in all ten languages and the
     same controls and app.js wiring. Guards the Studio mirror against drifting from the Launcher (card added 2026-10-30)."""
@@ -1303,12 +1903,15 @@ class TheAgreementScreen(unittest.TestCase):
 
     def test_a_new_version_keeps_the_username_and_says_what_is_on(self):
         """Shown a new version, a player who has a username keeps it (asked again, a new #number would replace it);
-        the Bug Watch tick starts as Bug Watch is, and accepting with it changed turns Bug Watch on or off."""
+        the Bug Watch tick starts as Bug Watch is (and follows it while the screen is up: WhatTheAgreementSays), and
+        accepting with it changed turns Bug Watch on or off."""
         js = (self.SRC / "rusemod" / "sharedui" / "agreement.js").read_text(encoding="utf-8")
-        self.assertIn('$("agree-bugwatch").checked = Boolean(status.available && status.on);', js)
+        self.assertIn("let shown = Boolean(status.available && status.on);", js)
+        self.assertIn("box.checked = shown;", js)
+        self.assertIn("const bw = status.available && box.checked, was = shown;", js)
         kept = js[js.index("if (status.name) {"):js.index("await askUsername(api, words, bw);")]
-        self.assertIn("if (bw && !status.on) await api.bugwatch_on(status.name);", kept)
-        self.assertIn("else if (!bw && status.on) await api.bugwatch_off();", kept)
+        self.assertIn("if (bw && !was) await api.bugwatch_on(status.name);", kept)
+        self.assertIn("else if (!bw && was) await api.bugwatch_off();", kept)
         self.assertIn("name: String(got.name || \"\")", js)
 
     def test_the_web_layer_serves_it_and_both_apis_have_the_guard_calls(self):

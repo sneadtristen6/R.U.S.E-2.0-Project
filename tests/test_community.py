@@ -20,7 +20,13 @@ class PrivatePaths(unittest.TestCase):
         self.assertEqual(private_paths_out(mod), "%LOCALAPPDATA%/RUSE Mod Platform/mods/test/maps/Blitz/terrain.toml")
         self.assertEqual(private_paths_out("c:\\users\\KESTREL\\Desktop\\x.rusemod"), "%USERPROFILE%\\Desktop\\x.rusemod")
         self.assertEqual(private_paths_out("E:/Users/someone else/x and D:\\Users\\bob\\y"),
-                         "%USERPROFILE% else/x and %USERPROFILE%\\y")  # any other user folder too
+                         "%USERPROFILE%/x and %USERPROFILE%\\y")  # any other user folder too, a space in its name too
+        # as Python prints a path (each \ doubled): the player's own folders and any other user's (2026-11-24)
+        printed = "'C:\\\\Users\\\\kestrel\\\\AppData\\\\Local\\\\x.toml' 'C:\\\\Users\\\\Ann Lee'"
+        self.assertEqual(private_paths_out(printed), "'%LOCALAPPDATA%\\\\x.toml' '%USERPROFILE%'")
+        # from the drive's root, and Linux's home as Wine shows it; a web address's /users/ is no folder (the control)
+        self.assertEqual(private_paths_out("at \\Users\\Ann Lee\\x and Z:\\home\\ann\\y, https://x.org/users/ann"),
+                         "at %USERPROFILE%\\x and %USERPROFILE%\\y, https://x.org/users/ann")
         self.assertEqual(private_paths_out("D:\\RUSE-Instances\\studio-test"), "D:\\RUSE-Instances\\studio-test")
         self.assertEqual(private_paths_out(None), "")
 

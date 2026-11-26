@@ -4607,6 +4607,32 @@ jpn = "Bug Watch（おすすめ）"
 sc = "Bug Watch（推荐）"
 fa = "Bug Watch (توصیه‌شده)"
 
+[bugwatch_keep_label]
+us = "Keep Bug Watch on?"
+fr = "Garder Bug Watch activé ?"
+ger = "Bug Watch anlassen?"
+ita = "Lasciare Bug Watch attivo?"
+spa = "¿Dejar Bug Watch activado?"
+pol = "Zostawić Bug Watch włączony?"
+ru = "Оставить Bug Watch включённым?"
+cz = "Nechat Bug Watch zapnutý?"
+jpn = "Bug Watch をオンのままにしますか？"
+sc = "是否保持 Bug Watch 开启？"
+fa = "Bug Watch روشن بماند؟"
+
+[bugwatch_keep_note]
+us = "Bug Watch is on now. Leave the tick to keep it on, or untick it to turn it off: then nothing more is counted or sent, and what was saved is deleted. You can change it any time."
+fr = "Bug Watch est activé. Laissez la coche pour le garder, ou décochez pour le désactiver : plus rien n'est alors compté ni envoyé, et ce qui était enregistré est supprimé. Vous pouvez changer à tout moment."
+ger = "Bug Watch ist gerade an. Lass das Häkchen, damit es an bleibt, oder nimm es weg, um es auszuschalten: Dann wird nichts mehr gezählt oder gesendet, und das Gespeicherte wird gelöscht. Du kannst es jederzeit ändern."
+ita = "Bug Watch è attivo. Lascia la spunta per tenerlo attivo, oppure toglila per spegnerlo: da quel momento non si conta né si invia più nulla, e quanto salvato viene eliminato. Puoi cambiare quando vuoi."
+spa = "Bug Watch está activado. Deja la marca para mantenerlo activado, o quítala para desactivarlo: entonces no se cuenta ni se envía nada más, y lo guardado se borra. Puedes cambiarlo cuando quieras."
+pol = "Bug Watch jest teraz włączony. Zostaw ptaszek, żeby został włączony, albo odznacz go, żeby wyłączyć: wtedy nic więcej nie jest liczone ani wysyłane, a zapisane dane zostaną usunięte. Możesz to zmienić w każdej chwili."
+ru = "Bug Watch сейчас включён. Оставьте галочку, чтобы он остался включённым, или снимите её, чтобы выключить: тогда больше ничего не считается и не отправляется, а сохранённое удаляется. Это можно изменить в любой момент."
+cz = "Bug Watch je teď zapnutý. Nechte zaškrtnutí, aby zůstal zapnutý, nebo ho zrušte a vypněte ho: pak se nic dalšího nepočítá ani neposílá a uložené se smaže. Můžete to kdykoli změnit."
+jpn = "Bug Watch は今オンです。オンのままにするならチェックはそのままに、オフにするならチェックを外してください。オフにすると、それ以上数えたり送ったりせず、保存していた内容は削除されます。いつでも変更できます。"
+sc = "Bug Watch 目前是开启的。保留勾选就继续开启，取消勾选就会关闭：之后不再统计或发送任何内容，已保存的内容会被删除。你可以随时更改。"
+fa = "Bug Watch اکنون روشن است. تیک را نگه دارید تا روشن بماند، یا تیک را بردارید تا خاموش شود: بعد از آن دیگر چیزی شمرده یا فرستاده نمی‌شود و آنچه نگه داشته شده پاک می‌شود. هر وقت بخواهید می‌توانید آن را عوض کنید."
+
 [bugwatch_name_hint]
 us = "Your username"
 fr = "Votre nom d'utilisateur"

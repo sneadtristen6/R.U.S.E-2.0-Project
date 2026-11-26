@@ -7,6 +7,17 @@ Opt-in (the owner, 2026-10-22): nothing is counted, kept or sent unless the play
 "Nick#4821"}). `RUSE_NO_BUGWATCH=1` turns it off on a PC whatever the settings say. And `ON` below is the code's own
 switch, beside RUSE Guard's fairplay.ON: off until the owner says.
 
+WHAT THE AGREEMENT SAYS, KEPT (2026-11-24): the player's untick deletes what the PC kept and nothing comes back, in
+either app of this version, not even after a later tick (turn_off; Watch._now_on reads the setting at every count, save
+and send). Known limits while the other app is still 0.9.8.22 or older (the two update one at a time): that app writes
+its own counts back at its end, as 0.9.8.22 did, and its untick leaves no mark for the counts this app made since its
+last save (Watch._now_on); both end once both apps are this version. The game's error text goes out with the player's
+own folders named for anyone and any other full path cut to its file name, spaces, Python's doubled \\ and network
+paths too (no_paths), then through RUSE Guard's own cleaning: a SteamID64 and any number of 9 digits or more (no_ids;
+a Steam ID written another way, as STEAM_0:1:... or [U:1:...], is not looked for). Only the game's own crash reports
+are read (game_report). Settings' "Save username" saves the name only, never ticking Bug Watch (the pages call
+set_username, as the first start does).
+
 What is counted, per UTC day and app version: every call a window makes (webui._passed_on: its name, how many,
 how many failed, the error's kind, the time in five steps), every long job (webui.Job), screens, problems shown,
 troubleshooter checks that failed, updates, the mods in use (mod-list mods by id@version, any other as a count),
@@ -119,7 +130,13 @@ FUNC_RE = re.compile(r"[A-Za-z0-9_.<>$-]{1,80}")
 ID_CHARS = string.ascii_letters + string.digits + "_-"
 # what the server refuses as a path, anywhere in a send (worker.js PATH_PATTERNS)
 LOOKS_LIKE_PATH = re.compile(r"(?:^|[^A-Za-z0-9])[A-Za-z]:[\\/]|[\\/]Users[\\/]|/home/", re.IGNORECASE)
-ABSOLUTE = re.compile(r"(?<![A-Za-z0-9])[A-Za-z]:[\\/][^\s\"'<>|*?]*")
+# a full Windows path (no_paths): its drive, its folders, spaces and all (each one up to its next slash, any number of
+# them: Python prints a path's \ as \\), then its last part up to a space or a quote
+ABSOLUTE = re.compile(r"(?<![A-Za-z0-9])[A-Za-z]:[\\/]+(?:[^\\/\r\n\"'<>|*?:]+[\\/]+)*[^\s\\/\"'<>|*?:]*")
+# a network path (\\server\share\..., as Windows writes it, or Python's \\\\server\\share), where a path starts: a
+# server's name, then at least one more part, as above
+NETWORK = re.compile(r"(?<![^\s\"'(\[=,;])\\{2,}[A-Za-z0-9._$-]+[\\/]+(?:[^\\/\r\n\"'<>|*?:]+[\\/]+)*"
+                     r"[^\s\\/\"'<>|*?:]*")
 
 
 # --- the player's yes -------------------------------------------------------------------------------------------
@@ -131,10 +148,42 @@ def _settings(home) -> dict:
 def enabled(home) -> bool:
     """Whether Bug Watch counts and sends on this PC: the code's switch, no RUSE_NO_BUGWATCH, the player's tick and an
     install ID."""
-    if not ON or os.environ.get("RUSE_NO_BUGWATCH", "").strip() not in ("", "0"):
-        return False
-    values = _settings(home)
+    return not _switched_off() and _ticked_in(_settings(home))
+
+
+def _switched_off() -> bool:
+    """The code's own switch (ON) off, or RUSE_NO_BUGWATCH on this PC: off, whatever the settings say."""
+    return not ON or os.environ.get("RUSE_NO_BUGWATCH", "").strip() not in ("", "0")
+
+
+def _ticked_in(values: dict) -> bool:
+    """The player's own tick and an install ID, in settings.json's values as read (enabled, Watch._now_on)."""
     return bool((values.get("bugwatch") or {}).get("on")) and _good_id((values.get("player") or {}).get("id"))
+
+
+def _untick_mark(values: dict) -> str:
+    """The mark the player's last untick left in settings.json ("bugwatch": {"untick_mark"}, a new one at each untick:
+    turn_off; "" before any). Counts an app made under another mark were made before that untick, so they are never
+    kept or sent, in whichever app they were made (Watch._now_on)."""
+    mark = (values.get("bugwatch") or {}).get("untick_mark")
+    return mark if isinstance(mark, str) else ""
+
+
+def _settings_now(home, tries: int = 3) -> dict | None:
+    """settings.json as it is now ({} when there is none yet), or None when it is there but can't be read: the other
+    app may be writing it this very moment (rusemod.home.save_settings), and a file half written is no untick
+    (Watch._now_on, start)."""
+    p = Path(home) / "settings.json"
+    for attempt in range(tries):
+        try:
+            values = json.loads(p.read_text(encoding="utf-8"))
+            return values if isinstance(values, dict) else None
+        except FileNotFoundError:
+            return {}
+        except (OSError, ValueError):
+            if attempt + 1 < tries:
+                time.sleep(0.02)
+    return None
 
 
 def _good_id(value) -> bool:
@@ -185,20 +234,35 @@ def turn_on(home, username: str) -> dict:
 
 def turn_off(home) -> dict:
     """The player unticked it: nothing is counted or sent, the outbox and the kept counts go, and the ID goes too
-    unless RUSE Guard's program check still uses it (the plan, §3: "Turn both off and the ID is deleted")."""
+    unless RUSE Guard's program check still uses it (the plan, §3: "Turn both off and the ID is deleted").
+
+    What was kept is deleted and never comes back (the agreement: "Untick it any time in Settings: nothing more is
+    counted or sent, and what was kept is deleted"): this app's counts in memory go at once, and the new untick mark
+    (_untick_mark) tells every app's Watch of this version, the other app's too (both apps can run at once, and this
+    untick can't reach that app's memory), that what it counted before is never written or sent, even after the player
+    ticks it again. The other app still on 0.9.8.22 or older reads no mark: Watch._now_on's known limits."""
     from .home import save_settings
     values = _settings(home)
-    values["bugwatch"] = {**(values.get("bugwatch") or {}), "on": False}
+    values["bugwatch"] = {**(values.get("bugwatch") or {}), "on": False, "untick_mark": secrets.token_hex(8)}
     if not (values.get("guard") or {}).get("terms"):   # RUSE Guard (terms accepted) keeps the shared username for its records
         values.pop("player", None)
     save_settings(Path(home), values)
+    watch = _current
+    if watch is not None and watch.home == Path(home):
+        with watch.lock:
+            watch._now_on()   # (the new mark: this app's counts in memory go)
+    _delete_kept(home)
+    return {"on": False}
+
+
+def _delete_kept(home) -> None:
+    """Every count and send Bug Watch keeps on this PC deleted: the days' counts and the outbox (its folder's files)."""
     folder = Path(home) / FOLDER
     for p in sorted(folder.rglob("*.json"), reverse=True) if folder.is_dir() else []:
         try:
             p.unlink()
         except OSError:
             pass
-    return {"on": False}
 
 
 def status(home) -> dict:
@@ -356,11 +420,34 @@ def own_holds(folders) -> dict[str, int]:
 # --- making what's sent safe ------------------------------------------------------------------------------------
 def no_paths(text: str) -> str:
     """`text` with no path left in it: the player's own folders written as Windows names them for anyone
-    (community.private_paths_out), then any other full path cut down to its file name."""
+    (community.private_paths_out), then any other full path cut down to its file name: one on a drive (ABSOLUTE) or a
+    network path (NETWORK), its folders' spaces and Python's doubled \\ too (2026-11-24: until then a folder's space
+    or a network path let the rest of the path through)."""
     from .community import private_paths_out
     out = private_paths_out(str(text or ""))
-    out = ABSOLUTE.sub(lambda m: re.split(r"[\\/]", m.group(0).rstrip("\\/"))[-1] or "", out)
+    out = NETWORK.sub(_last_part, ABSOLUTE.sub(_last_part, out))
     return LOOKS_LIKE_PATH.sub(" ", out)
+
+
+def _last_part(found) -> str:
+    """What no_paths leaves of a full path it found: its last part, the file's name."""
+    return re.split(r"[\\/]", found.group(0).rstrip("\\/"))[-1] or ""
+
+
+GAME_DATA = re.compile(r"(datadir:)", re.IGNORECASE)   # the game's own name for its data, in its error text
+
+
+def no_ids(text: str) -> str:
+    """`text` through RUSE Guard's own cleaning (guard.no_ids, the one RUSE Guard's line goes through): a SteamID64,
+    any number of 9 digits or more, and a drive's path left, for the game's error text a crash report sends (read_dump,
+    after no_paths). A Steam ID written another way (STEAM_0:1:..., [U:1:...]) or a shorter number is not looked for.
+    The game's own name for its data, "DataDir:" as in 'File "DataDir:\\x\\menu.py", line 40', is no drive and is left
+    as it is: that cleaning would take its "r:\\" for one and cut out the game's own script names, which no_paths
+    keeps."""
+    from .guard import no_ids as cleaned
+    parts = GAME_DATA.split(str(text or ""))   # (the game's own "DataDir:" at every odd place)
+    return "".join(part if i % 2 else cleaned(part.encode("utf-8", "replace")).decode("utf-8", "replace")
+                   for i, part in enumerate(parts))
 
 
 def _name(value) -> str | None:
@@ -476,7 +563,8 @@ def _blank_day(version: str) -> dict:
 
 class Watch:
     """One app's Bug Watch while it runs: the counts of each UTC day, kept in `<home>/bugwatch/days-<app>.json` (so a
-    restart adds to them), and the outbox of what waits to be sent."""
+    restart adds to them), and the outbox of what waits to be sent. Whether Bug Watch is on is read at each count,
+    save and send (_now_on), never remembered: the player can untick it in the other app."""
 
     def __init__(self, home, app: str, version: str, opener=None, clock=time.time):
         self.home, self.app, self.version = Path(home), app, version
@@ -488,14 +576,45 @@ class Watch:
         self.clock = clock
         self.days: dict[str, dict] = {}
         self._dirty = 0
+        self._kept = False   # this Watch's days file there, as it last knew it: read at its start or written since
+        values = _settings_now(self.home)
+        # the untick mark these counts are made under (_now_on; None: not known, the settings can't be read now, and
+        # then nothing kept is taken in)
+        self.mark = _untick_mark(values) if values is not None else None
         try:
-            self.days = json.loads(self.file.read_text(encoding="utf-8"))
+            if values is not None:
+                self.days = json.loads(self.file.read_text(encoding="utf-8"))
+                self._kept = True
         except (OSError, ValueError):
             self.days = {}
 
+    def _now_on(self) -> bool | None:
+        """Whether Bug Watch is on now, settings.json read now (None: it can't be read this moment, the other app
+        writing it; then nothing is counted, written or dropped). Counts this app made before the player's last untick,
+        here or in the other app (a new untick mark), go first; with Bug Watch off, all of them: what an untick
+        deleted never comes back by a save or a send, not even after the player ticks it again. Under the lock.
+
+        An untick in the other app while that app is still 0.9.8.22 or older (the Studio and the Launcher update one at
+        a time) leaves no new mark, but deletes the kept files as every untick does: so this Watch's days file, there
+        before (read at its start or written since) and gone now, is that untick too, and the counts made before it
+        go, even when the player ticked it again there while this app counted nothing (2026-11-24). Known limits:
+        counts this app made since its last save, before such an untick, have no file to tell by; and that older app
+        still writes its own counts back at its end, as 0.9.8.22 did. Both end once both apps are this version."""
+        values = _settings_now(self.home)
+        if values is None:
+            return None
+        mark = _untick_mark(values)
+        gone = self._kept and not self.file.exists()   # (deleted by an untick: turn_off, in either app, any version)
+        if mark != self.mark or gone:
+            self.days, self.mark, self._dirty, self._kept = {}, mark, 0, False
+        if _switched_off() or not _ticked_in(values):
+            self.days, self._dirty = {}, 0
+            return False
+        return True
+
     # recording (each does nothing when the player hasn't said yes)
     def _day(self) -> dict | None:
-        if not enabled(self.home):
+        if self._now_on() is not True:
             return None
         day = _today()
         if day not in self.days:
@@ -665,13 +784,21 @@ class Watch:
             self.save()
 
     def save(self) -> None:
+        """The days' counts into the days file, only while Bug Watch is on, read at the save itself: the save at the
+        app's end (start's atexit), an update's quit and a move's never write back what an untick deleted, here or in
+        the other app; and an untick there while the file is written deletes it again."""
         with self.lock:
             self._dirty = 0
-            if not self.days:
+            if self._now_on() is not True or not self.days:
                 return
+            mark = self.mark
             try:
                 self.folder.mkdir(parents=True, exist_ok=True)
                 self.file.write_text(json.dumps(self.days), encoding="utf-8")
+                self._kept = True
+                if self._now_on() is False or self.mark != mark:
+                    self.file.unlink(missing_ok=True)
+                    self._kept = False
             except OSError:
                 pass
 
@@ -773,22 +900,34 @@ class Watch:
         oldest = (datetime.now(timezone.utc) - timedelta(days=KEEP_DAYS)).strftime("%Y-%m-%d")
         moved = 0
         with self.lock:
+            self._now_on()   # (counts made before the player's last untick go first: never sent)
             for day in sorted(self.days):
                 if day >= today:
                     continue
-                counts = self.days.pop(day)
-                if day >= oldest and enabled(self.home):
-                    self._write_out(f"day-{self.app}-{day}.json", self.payload(day, counts))
-                    moved += 1
+                counts = self.days.pop(day, None)
+                if counts is not None and day >= oldest and enabled(self.home):
+                    moved += self._write_out(f"day-{self.app}-{day}.json", self.payload(day, counts))
             if self.days:
                 self.save()
             else:
                 self.file.unlink(missing_ok=True)
+                self._kept = False   # (its own unlink: no untick)
         return moved
 
-    def _write_out(self, name: str, body: dict) -> None:
-        self.outbox.mkdir(parents=True, exist_ok=True)
-        (self.outbox / name).write_text(json.dumps(body), encoding="utf-8")
+    def _write_out(self, name: str, body: dict) -> bool:
+        """One send into the outbox, only while Bug Watch is on, read at the write as save reads it (one an untick
+        meets while it is written goes at once). Whether it went in."""
+        with self.lock:
+            if self._now_on() is not True:
+                return False
+            mark = self.mark
+            self.outbox.mkdir(parents=True, exist_ok=True)
+            path = self.outbox / name
+            path.write_text(json.dumps(body), encoding="utf-8")
+            if self._now_on() is False or self.mark != mark:
+                path.unlink(missing_ok=True)
+                return False
+            return True
 
     def send_waiting(self, force: bool = False) -> dict:
         """Send what waits in the outbox: the crashes at once, the days once a day (or `force`). A send that gets
@@ -1047,6 +1186,47 @@ def _kept_memory(data: bytes, streams: dict):
     return read
 
 
+GAME_PROGRAM = "ruse.exe"   # the game's program, by its file name: every modded copy runs one (rusemod.play)
+NAME_BYTES = 0x10000        # the most of a module's name read (a Windows path is at most 32,767 characters)
+
+
+def game_report(path) -> bool:
+    """Whether a crash report file is the game's own: its module list names the game's program (GAME_PROGRAM, as
+    read_dump finds the game in a report). The game's crash reporter is used by other programs too, and their reports
+    can lie in the same folder; the agreement says "When the game writes its own crash report, the apps read that
+    report on your PC". So of any file only its header, its list of parts and its module list's names are read to tell,
+    nothing else of it, and another program's crash report is never read (2026-11-24). Never raises.
+
+    Checked our_tools.json: none of its tools tells whose a crash report is from its module list alone, before
+    anything else of it is read."""
+    try:
+        with open(path, "rb") as f:
+            def read(at: int, size: int) -> bytes:
+                f.seek(at)
+                return f.read(size)
+            head = read(0, 32)
+            if head[:4] != b"MDMP":
+                return False
+            count, rva = struct.unpack_from("<II", head, 8)
+            for i in range(count):
+                entry = read(rva + 12 * i, 12)
+                if len(entry) < 12:
+                    return False
+                kind, _size, at = struct.unpack("<III", entry)
+                if kind != 4:  # ModuleListStream
+                    continue
+                (n,) = struct.unpack("<I", read(at, 4))
+                for j in range(n):
+                    (name_rva,) = struct.unpack_from("<I", read(at + 4 + 108 * j, 24), 20)
+                    (length,) = struct.unpack("<I", read(name_rva, 4))
+                    name = read(name_rva + 4, min(length, NAME_BYTES)).decode("utf-16-le", "replace")
+                    if re.split(r"[\\/]", name)[-1].lower() == GAME_PROGRAM:
+                        return True
+            return False
+    except (OSError, ValueError, struct.error):
+        return False
+
+
 def read_dump(path, exe=None, install=None, unit=False, known=None) -> dict | None:
     """From a crash report file, read on this PC only: {"code", "module", "offset"}; for a bad memory access
     (0xc0000005) "access", what the game tried to do and where ("read 0x20"); with the copy's RUSE.exe (`exe`) given,
@@ -1061,8 +1241,11 @@ def read_dump(path, exe=None, install=None, unit=False, known=None) -> dict | No
     chain and the rest of the looked-at stack holding what that place needs: a place that needs them gets none without
     `exe`), "reason": its plain reason's key; and with `unit` (asked only under version 4 of the agreement: GameWatch)
     and `exe`, "unit": the number of the unit the game was making, when the report kept it
-    (knowncrashes.unit_number). Neither goes out as it is (Watch.game_crash, unit_sent). None if it can't be read. The
-    dump never leaves the PC (the plan, §2)."""
+    (knowncrashes.unit_number). Neither goes out as it is (Watch.game_crash, unit_sent). None if it can't be read, and
+    for another program's crash report, which is never read (game_report). The dump never leaves the PC (the plan,
+    §2)."""
+    if not game_report(path):
+        return None
     try:
         data = Path(path).read_bytes()
     except OSError:
@@ -1159,8 +1342,8 @@ def read_dump(path, exe=None, install=None, unit=False, known=None) -> dict | No
         out["unit"] = number     # (sent only as unit_sent says, under version 4)
     if code == 0x29A:
         text = script_error_text(data)
-        if text:
-            out["traceback"] = no_paths(text)[:TRACEBACK_CHARS]
+        if text:   # paths cut down to their file names, then RUSE Guard's own cleaning (no_ids)
+            out["traceback"] = no_ids(no_paths(text))[:TRACEBACK_CHARS]
         ignored = IGNORED.search(data)
         if ignored is not None:
             out["ignored"] = min(MAX_COUNT, int(ignored.group(1)))
@@ -1581,8 +1764,13 @@ _calls = threading.local()  # the window call running on this thread (a job star
 
 def start(home, app: str, version: str) -> Watch:
     """At the app's start: its Watch, the finished days into the outbox, what waits sent in the background, and
-    the error hooks that count crashes. Safe to call when Bug Watch is off (nothing is counted then)."""
+    the error hooks that count crashes. Safe to call when Bug Watch is off (nothing is counted then). With the player's
+    own tick off, anything still in Bug Watch's folder goes first: until 2026-11-24 an app's save at its end wrote the
+    day's counts back after an untick, and they would have gone out after a later tick."""
     global _current
+    values = _settings_now(home)
+    if values is not None and not _ticked_in(values):
+        _delete_kept(home)
     _current = Watch(home, app, version)
     _hook_errors(_current)
     if enabled(home):
@@ -1674,6 +1862,7 @@ class BugWatchCalls:
         watch = self._bugwatch()
         day = _today()
         with watch.lock:
+            watch._now_on()   # (counts made before the player's last untick, here or in the other app: never shown)
             counts = json.loads(json.dumps(watch.days.get(day) or _blank_day(watch.version)))
         waiting = sorted(p.name for p in watch.outbox.glob("*.json")) if watch.outbox.is_dir() else []
         return {"today": watch.payload(day, counts), "waiting": waiting}
