@@ -3503,6 +3503,10 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
   // Bug Watch's words (words.toml set_bugwatch_*, bugwatch_*, tip_bugwatch_*), for the ?fake preview of the card
   Object.assign(words.us, { set_bugwatch_title: "Bug Watch", set_bugwatch_help: "Recommended: it helps us fix crashes and bugs faster. When it's on, the Studio and the Launcher count what you use and when something goes wrong, including the game's crashes and which mods were on, and send it to our developers once a day with the username you choose. No real names, no Steam account, no files. It's off unless you tick it, and you can untick it any time.", bugwatch_on_label: "Bug Watch (Recommended)", bugwatch_name_hint: "Your username", bugwatch_save: "Save username", bugwatch_code: "You're {name}. Your report code is {code}: put it in a bug report so we can find your crashes.", bugwatch_show: "Show what's sent", bugwatch_need_name: "Type a username first, then tick Bug Watch.", bugwatch_now_on: "Bug Watch is on. Thank you!", bugwatch_now_off: "Bug Watch is off: nothing more is counted or sent, and what was kept is deleted.", tip_bugwatch_on: "Send counts and crash reports to our developers once a day. Off unless you tick it.", tip_bugwatch_name: "The name our developers see with your counts and crashes. A # and four numbers are added so it's unique.", tip_bugwatch_save: "Keep this username (a new name gets new numbers).", tip_bugwatch_show: "See, word for word, what Bug Watch would send." });
   let fakeBugwatch = { available: true, on: false, name: "", code: "" };  // ?fake=bugoff hides the card, as bugwatch.ON = False does
+  // Settings' WebView2 card (rusemod.webview2): a PC without it, so the preview shows the card and an install
+  // (words.toml set_webview2_*, webview2_*, tip_webview2_install)
+  const fakeWebview2 = { offered: true, version: "", installing: false, tried: false, failed: false };
+  Object.assign(words.us, { set_webview2_title: "Microsoft WebView2", set_webview2_help: "This app's own window draws its screens with Microsoft WebView2, which is free. Without it, the app opens in your web browser instead.", webview2_installed: "Installed on this PC (version {version}).", webview2_missing: "Not on this PC. Its installer came with this app: it's Microsoft's, and needs the internet.", webview2_install: "Install WebView2", tip_webview2_install: "Opens Microsoft's WebView2 installer, which shows how far it is. It needs the internet.", webview2_installing: "Installing… Microsoft's installer shows how far it is.", webview2_done: "Installed. Close this app (Cancel in its small box) and start it again: it then opens in its own window.", webview2_not_done: "WebView2 didn't install. You can try again." });
   // ?fake=agree: the first-start agreement hasn't been accepted yet; ?fake=agree-again: version 3 was, by a player
   // with a username and Bug Watch on (rusemod.guard.TERMS_VERSION is 4)
   let fakeTerms = mode === "agree" ? 0 : mode === "agree-again" ? 3 : 4;
@@ -3517,6 +3521,12 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
       guard_status: async () => ({ terms: fakeTerms, terms_version: 4, scan: false, on: true }),
       guard_accept_terms: async () => { fakeTerms = 4; return { terms: 4 }; },
       bugwatch_status: async () => ({ ...fakeBugwatch }),
+      webview2_status: async () => ({ ...fakeWebview2 }),
+      webview2_install: async () => {  // Microsoft's installer "runs" for 2.5 s, then it's there
+        Object.assign(fakeWebview2, { installing: true, tried: false, failed: false });
+        setTimeout(() => Object.assign(fakeWebview2, { installing: false, tried: true, version: "143.0.3650.80" }), 2500);
+        return { ...fakeWebview2 };
+      },
       bugwatch_on: async (name) => {
         const num = String(1000 + Math.floor(Math.random() * 9000));
         fakeBugwatch = { ...fakeBugwatch, on: true, name: /#\d{4}$/.test(name) ? name : `${name}#${num}`, code: fakeBugwatch.code || "Zx3k9QpL" };

@@ -39,8 +39,11 @@ library and settings (`%LOCALAPPDATA%\RUSE Mod Platform`).
 
 - **Windows may warn "Windows protected your PC"** the first time: the installers aren't signed yet (signing costs
   money). Click "More info", then "Run anyway".
-- **WebView2:** the apps' screens need Microsoft Edge WebView2 Runtime. Windows 11 has it, and so do most Windows 10
-  PCs. If yours doesn't, the installer and the app both say so and offer Microsoft's download.
+- **WebView2:** the apps' own windows need Microsoft Edge WebView2 Runtime. Windows 11 has it, and so do most Windows
+  10 PCs. Where it's missing, it's offered, never forced: the installer shows a ticked "Install Microsoft WebView2"
+  box you can untick, the app asks when it starts without it, and its Settings have an "Install WebView2" button.
+  Each runs Microsoft's own small installer, which comes with the app and needs the internet. Under Linux or the Steam
+  Deck (Wine) none of it shows, and the app opens in your web browser.
 - What the installed apps print goes to `%LOCALAPPDATA%\RUSE Mod Platform\logs\` (for bug reports).
 
 ## How they're made
@@ -55,7 +58,9 @@ library and settings (`%LOCALAPPDATA%\RUSE Mod Platform`).
    script: only the interpreter and the few library files that needs, from python.org's `python-2.5.1.msi` unpacked
    (`msiexec /a python-2.5.1.msi /qn TARGETDIR=<folder>`; on your PC set `RUSE_PYTHON251` to that folder, or put
    the files in `src/ruse_mod_engine/python251`). The GitHub build fetches the installer and uses it only when its
-   SHA-256 is python.org's file's. Without it the Studio's build stops.
+   SHA-256 is python.org's file's. Without it the Studio's build stops. Both apps get Microsoft's WebView2 installer
+   in `webview2\` (`webview2_setup()`): fetched from Microsoft's link at each build (or the file `RUSE_WEBVIEW2_SETUP`
+   names), and the build stops unless Windows says it carries Microsoft Corporation's valid signature.
 3. The built program checks itself: `"RUSE Launcher.exe" --self-test report.txt` (its screens and data files, its
    back end, and the window library with its .NET and WebView2 parts), without opening a window.
 4. **Inno Setup** wraps the folder into the installer (`installer.iss`, one script for both apps).

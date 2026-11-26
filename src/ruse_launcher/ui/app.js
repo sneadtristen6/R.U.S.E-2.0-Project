@@ -196,8 +196,45 @@ const SETTINGS = [  // the language isn't here: it has its own button at the top
       : u.error ? u.error : fill(w.set_updates_latest, { version: u.version || "" }));
     text($("set-updates-check"), w.set_updates_check);
   } },
+  { id: "webview2", render() { renderWebview2(); } },  // loaded when Settings opens (loadWebview2)
   { id: "signin", render() { renderSignin(); } },  // Sign in through Steam (rusemod.ownedpass); loaded when Settings opens
 ];
+
+// --- Microsoft WebView2 (rusemod.webview2 through api.webview2_*): the launcher's own window draws with it; without it
+// the launcher opens in the web browser. Microsoft's installer comes with the app and runs only on the player's click
+// (the owner, 2026-11-24: "a box in the settings or something they can always get if they need"). The card stays
+// hidden where it isn't offered: Linux and the Steam Deck, or a run from the repo ---
+async function loadWebview2() {
+  try { state.webview2 = await api().webview2_status(); } catch { state.webview2 = { offered: false }; }  // an older back end
+  if (state.settings) renderWebview2();
+}
+
+function renderWebview2() {
+  const w = state.words, s = state.webview2 || {}, button = $("set-webview2-install");
+  $("set-webview2").classList.toggle("hidden", !s.offered);
+  if (!s.offered) return;
+  text($("set-webview2-help"), w.set_webview2_help);
+  text($("set-webview2-text"), s.version ? fill(w.webview2_installed, { version: s.version }) : w.webview2_missing);
+  text(button, w.webview2_install);
+  button.title = w.tip_webview2_install;
+  button.classList.toggle("hidden", !!s.version);  // installed: nothing to install
+  button.disabled = !!s.installing;
+  const said = s.installing ? w.webview2_installing : s.failed ? w.webview2_not_done
+    : s.tried && s.version ? w.webview2_done : "";
+  const note = $("set-webview2-note");
+  text(note, said);
+  note.className = "message" + (s.failed && !s.installing ? " bad" : s.tried && s.version ? " good" : "");
+}
+
+async function installWebview2() {
+  try { state.webview2 = await api().webview2_install(); } catch (err) { problem(err); return; }
+  renderWebview2();
+  const tick = async () => {  // until Microsoft's installer has closed
+    await loadWebview2();
+    if (state.webview2 && state.webview2.installing) setTimeout(tick, 1000);
+  };
+  setTimeout(tick, 1000);
+}
 
 // --- Sign in through Steam (rusemod.ownedpass, owned copies layer 2): the pass that confirms the player owns the game,
 // for online play, RUSE Guard and content downloads. The sign-in window itself is ownedsignin.js; Settings says where
@@ -1730,7 +1767,9 @@ async function start() {
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && langPick && !langPick.first) closeLangPick(); });
   $("settings-open").addEventListener("click", () => {
     state.settings = true; render(); loadWhere(); loadCopies(); loadTitle(); loadBackup(); loadBugwatch(); loadSignin();
+    loadWebview2();
   });
+  $("set-webview2-install").addEventListener("click", installWebview2);
   $("title-gold").addEventListener("change", changeTitle);
   $("set-signin-open").addEventListener("click", () => { if (window.OwnedSignIn) window.OwnedSignIn.open(); });
   window.addEventListener("ownedsignin", () => { if (state.settings) loadSignin(); });  // the sign-in window changed something

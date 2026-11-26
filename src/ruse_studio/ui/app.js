@@ -4630,7 +4630,7 @@ function showView(view) {
   if (view === "values") { renderValues(); return; }
   if (view === "decoy") { window.DecoyView.open(state.words, state.lang); return; }
   if (view === "files") { window.FilesView.open(state.words); return; }  // (reads the packs, not the game index)
-  if (view === "settings") { renderSettings(); loadBackup(); loadBugwatch(); return; }
+  if (view === "settings") { renderSettings(); loadBackup(); loadBugwatch(); loadWebview2(); return; }
   if (view !== "maps") return;
   const open = () => window.MapView.open(api(), state.words, state.lang).catch(problem);
   if (window.MapView) open();
@@ -6236,6 +6236,7 @@ const SETTINGS = [  // the language isn't here: it has its own button at the top
       : u.error ? u.error : fill(w.set_updates_latest, { version: state.version || "" });
     $("set-updates-check").textContent = w.set_updates_check;
   } },
+  { id: "webview2", render() { renderWebview2(); } },  // loaded each time Settings opens (loadWebview2)
   { id: "help", render() {
     const w = state.words;
     for (const [id, word] of [["help-wiki", "help_wiki"], ["help-discussions", "help_discussions"], ["help-report", "report_problem"]]) {
@@ -6246,6 +6247,41 @@ const SETTINGS = [  // the language isn't here: it has its own button at the top
     $("help-troubleshoot").title = w.doc_intro;
   } },
 ];
+
+// --- Microsoft WebView2 (rusemod.webview2 through api.webview2_*): the Studio's own window draws with it; without it
+// the Studio opens in the web browser. Microsoft's installer comes with the app and runs only on the modder's click
+// (the owner, 2026-11-24: "a box in the settings or something they can always get if they need"). The card stays
+// hidden where it isn't offered: Linux and the Steam Deck, or a run from the repo ---
+async function loadWebview2() {
+  try { state.webview2 = await api().webview2_status(); } catch { state.webview2 = { offered: false }; }  // an older back end
+  if (state.view === "settings") renderWebview2();
+}
+
+function renderWebview2() {
+  const w = state.words, s = state.webview2 || {}, button = $("set-webview2-install");
+  $("set-webview2").classList.toggle("hidden", !s.offered);
+  if (!s.offered) return;
+  $("set-webview2-text").textContent = s.version ? fill(w.webview2_installed, { version: s.version }) : w.webview2_missing;
+  button.textContent = w.webview2_install;
+  button.title = w.tip_webview2_install;
+  button.classList.toggle("hidden", !!s.version);  // installed: nothing to install
+  button.disabled = !!s.installing;
+  const said = s.installing ? w.webview2_installing : s.failed ? w.webview2_not_done
+    : s.tried && s.version ? w.webview2_done : "";
+  const note = $("set-webview2-note");
+  note.textContent = said;
+  note.className = "small" + (s.failed && !s.installing ? " bad" : s.tried && s.version ? " good" : "");
+}
+
+async function installWebview2() {
+  try { state.webview2 = await api().webview2_install(); } catch (err) { problem(err); return; }
+  renderWebview2();
+  const tick = async () => {  // until Microsoft's installer has closed
+    await loadWebview2();
+    if (state.webview2 && state.webview2.installing) setTimeout(tick, 1000);
+  };
+  setTimeout(tick, 1000);
+}
 
 // The game folder chosen by hand: Settings' "Choose folder…", and the troubleshooter's fix when R.U.S.E. wasn't found
 async function chooseGame() {
@@ -6644,6 +6680,7 @@ async function start() {
   $("doctor-close").addEventListener("click", () => $("doctor").close());
   // keys pressed in the troubleshooter stay in it: the unit list's and the map's own keys wait behind it
   window.addEventListener("keydown", (e) => { if ($("doctor").open) e.stopPropagation(); }, true);
+  $("set-webview2-install").addEventListener("click", installWebview2);
   $("set-updates-check").addEventListener("click", async () => {
     $("set-updates-text").textContent = state.words.set_updates_checking;
     try { state.update = await api().update_check(); } catch (err) { state.update = { error: (err && err.message) || String(err) }; }

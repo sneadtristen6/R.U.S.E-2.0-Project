@@ -227,6 +227,18 @@ What those carry inside them:
 Used to build the apps but not carried by them: the Nuitka compiler itself (only its runtime goes into the programs),
 ordered-set 4.1.0 (which Nuitka uses) and pip.
 
+## Microsoft's WebView2 installer, in both apps
+
+Each installed app carries Microsoft's WebView2 installer, unchanged: `webview2\MicrosoftEdgeWebview2Setup.exe`,
+Microsoft's "Evergreen Bootstrapper" (about 2 MB), which downloads WebView2 itself from Microsoft. It runs only when
+the player says yes. Each build fetches the one Microsoft's link gives that day (its version isn't pinned) and stops
+unless the file carries Microsoft Corporation's valid signature ([installers/build_app.py](installers/build_app.py),
+`webview2_setup`).
+
+| Part | Version | Licence | Copyright | Source |
+|---|---|---|---|---|
+| Microsoft WebView2 installer (Evergreen Bootstrapper) | The one fetched at the build | Microsoft's own terms, not open source. Microsoft's page on shipping WebView2 apps says to "package it with your WebView2 app"; which Microsoft document states its terms: not known | Microsoft Corporation | https://learn.microsoft.com/en-us/microsoft-edge/webview2/concepts/distribution |
+
 ## In the installers
 
 Inno Setup 6.7.1 makes the two installers. The setup program and the uninstaller it leaves beside the app
