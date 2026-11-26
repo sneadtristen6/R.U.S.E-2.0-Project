@@ -27,6 +27,7 @@
   const prefs = {};  // what the real app keeps in settings.json (rusemod.home.PrefsCalls)
   const words = {
     us: { update_out: "{app} {version} is out.", update_now: "Update", whats_new: "What's new", release_page: "Release page", layers_title: "See-through layers", tip_layer_alpha: "How much of this layer shows: 0 % hides it, 100 % is as usual.", legend_title: "Colours on the ground", legend_cover_own: "Cover the map has: units hide here", legend_cover_painted: "Cover you painted (Cover brush, Forest)", legend_cover_town: "Cover the Town tool painted around a town", legend_move_none: "No unit can go here (water, cliffs, Block)", legend_move_infantry: "No tanks: infantry go, and supply trucks drive through woods (woods, Block vehicles)", legend_move_vehicles: "Vehicles only: infantry can't go (Block infantry)", legend_erase: "Erased: taken away when the mod is built", changes_before: "In your version ({version})", changes_now: "In {version}", changes_none: "The release notes list no changes: open the release page for them.", update_progress: "Downloading the update… {pct}", update_installing: "Installing: {app} closes and opens again by itself.", update_repo: "(This copy runs from the repo: update it with git pull.)", update_failed: "The update didn't work: {why}",
+      update_not_ours: "{app} {version} is out, but we can't confirm it's ours, so it won't be installed. Don't install it by hand unless we say so on our Discord. Your app keeps working as before.", update_ignored: "({version} is out too, but we can't confirm it's ours, so it's skipped.)", update_gave_up: "It didn't download after {tries} tries, so the app stopped trying by itself. You can download it from its release page.", update_discord: "Our Discord", tip_update_discord: "Open the R.U.S.E. 2.0 Discord in your browser. We say there what to do about this update.", tip_release_page: "Open this update's page on GitHub in your browser. You can download its installer there.", update_required_not_ours: "{app} {version} is a required update, but the file on GitHub isn't the one we signed, so it wasn't installed. Don't install it by hand: look on our Discord for what to do. Until it's in, Play and Test in game stay off.", update_required_gave_up: "{app} {version} is a required update, and it didn't download after {tries} tries, so the app stopped trying by itself. Download it from its release page and run it, or press Try again. Until it's in, Play and Test in game stay off.",
       language: "Language", game_names: "Code names", search: "Search", all: "All", ground: "Ground",
       infantry: "Infantry", air: "Air", buildings: "Buildings", units: "{n} units", parts: "Parts", uses: "Uses",
       own_part: "its own", shared_part: "shared with other units", used_by: "Used by", copy_address: "Copy address",
@@ -5480,7 +5481,20 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
       // the start-up log: here, the page's moment kept in window.fakeStartMarks (ms since the page began loading)
       start_mark: async (what) => { (window.fakeStartMarks = window.fakeStartMarks || {})[what] = performance.now(); return {}; },
       // ?fake=required: a required update (its box, installing by itself); ?fake=requiredoffline: one seen before, offline
-      update_check: async () => mode === "requiredoffline"
+      // ?fake=unsigned: a newer release that can't be confirmed as ours (its bar opens our Discord); ?fake=ignored: one
+      // offered with a newer unsigned one skipped; ?fake=requirednotours and ?fake=requiredgaveup: a required update whose
+      // file isn't the one signed, and one that didn't download after 3 tries (rusemod.update)
+      update_check: async () => mode === "unsigned"
+        ? { available: false, unconfirmed: true, unconfirmed_version: "9.9.9", version: "0.8.1", current: "0.8.1" }
+        : mode === "requirednotours"
+        ? { available: false, refused: true, required: true, installed: true, version: "9.9.9", current: "0.8.1" }
+        : mode === "requiredgaveup"
+        ? { available: true, required: true, installed: true, gave_up: true, tries: 3, version: "9.9.9", current: "0.8.1",
+            changes: [], page: "https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases" }
+        : mode === "ignored"
+        ? { available: true, installed: true, version: "9.9.8", current: "0.8.1", unconfirmed_version: "9.9.9",
+            changes: [], page: "https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases" }
+        : mode === "requiredoffline"
         ? { available: false, required: true, offline: true, version: "9.9.9", current: "0.8.1",
             error: "GitHub couldn't be reached to look for updates (no connection)." }
         : mode === "update" || mode === "required"

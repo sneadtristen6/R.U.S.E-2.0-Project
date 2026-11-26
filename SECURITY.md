@@ -8,7 +8,7 @@ modded copy since Launcher 0.4.8.10 and Studio 0.9.8.10.
 
 Only the newest release of each app gets security fixes. Each app offers its updates when it starts, so staying up to
 date is one click, and an update that matters to everyone can be marked required: the apps then install it by
-themselves. Both apps are in alpha.
+themselves, but only an update that carries our signature. Both apps are in alpha.
 
 ## Report a security problem
 
@@ -32,7 +32,8 @@ release notes when the fix ships, unless you'd rather not be named.
 - this repository and its release workflow: a leaked key or token, or a way to change a release.
 
 For example: a mod file that runs code on your PC outside the game when the Launcher or the Studio opens it; an update
-or a mod that installs although it doesn't match what was published; a modded copy with a cheat in it that gets into
+that installs without our signature, or a mod that installs although it doesn't match what was published; a modded
+copy with a cheat in it that gets into
 a multiplayer match; one of the apps sending your data anywhere the agreement doesn't say.
 
 **Not ours to fix:** R.U.S.E. itself, its multiplayer service and Steam; please report those to their makers.
@@ -48,10 +49,16 @@ Someone cheating in a match isn't a security problem in our apps: tell us on the
   from our [game-patches release](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases/tag/game-patches) is
   applied to the modded copy's program only: the apps refuse a patch file that isn't exactly the one they know
   (its SHA-256), and check the patched program against the one the patch promises.
-- **Updates are checked.** An update comes only from this repository's GitHub Releases, over HTTPS. Before it runs, its
-  SHA-256 must match what GitHub reports for the file and what our release notes publish (at least one of the two must
-  be there, and they must agree). A file that doesn't match is deleted. The apps install for your Windows user and
-  need no admin rights.
+- **Updates are signed.** An update comes only from this repository's GitHub Releases, over HTTPS. GitHub builds each
+  release as a draft; before it is published, the maintainer checks on his own PC that GitHub's release workflow built
+  its files from the tagged commit (GitHub's build attestation), then signs them with the project's release key. That
+  key is never uploaded and is protected by a passphrase; its public halves are in `src/rusemod/release_keys.toml`.
+  The apps install an update (by the Update button or by themselves) only when its signature fits the app and the
+  version and the downloaded file is exactly the signed one; whether an update is required, and what it changes, are
+  read only from what was signed. Otherwise nothing installs, the app says so, and points to our Discord. A file
+  that doesn't match is deleted. This doesn't cover apps older than the first version with this check, a first
+  download from your browser, or something slipped into the release build's own inputs on GitHub before it was
+  signed. The apps install for your Windows user and need no admin rights.
 - **Mods from the list are checked.** A mod downloaded from the Supported mods list is installed only if its size and
   SHA-256 match the list's entry. Anything else is deleted and refused, so a changed or cut-off file never installs.
 - **What the apps connect to:** GitHub (updates, the mods list, mod downloads, the game patches and the era units'

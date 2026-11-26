@@ -1,0 +1,8 @@
+# The owner's release keys: the PUBLIC halves only (64 hex characters each), which every app carries to check that an
+# update is his (rusemod.releasesig). release-1 is the one he signs with at each release; release-2 is its backup, kept
+# on a USB stick. Both are filled in once he has made them with his own key tool, which prints these lines; a release
+# build stops while they are empty (python -m rusemod.releasesig --check-keys, .github/workflows/release.yml).
+# Never put a private half here.
+[keys]
+release-1 = ""
+release-2 = ""
