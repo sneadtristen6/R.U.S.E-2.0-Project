@@ -3142,6 +3142,8 @@ function notKeptSaid(lost) {
   if (lost.animations && lost.animations.length) said.push(fill(w.model_kept_not_anims, { names: lost.animations.join(", ") }));
   if (lost.picks && lost.picks.length) said.push(fill(w.model_kept_not_picks, { actions: lost.picks.map(action).join(", ") }));
   if (lost.record) said.push(w.model_kept_not_record);   // (its record couldn't be read: what else it held)
+  // (the file's own animations, left out of a model drawn on the unit's own bones: StudioApi.model_import)
+  if (lost.left_out && lost.left_out.length) said.push(fill(w.model_kept_not_left_out, { names: lost.left_out.join(", ") }));
   // (an era unit's model a newer download of its era replaced since it was made: fitted from the new one, said;
   // StudioApi._era_said)
   if (lost.file) said.push(fill(w.model_kept_not_file, { file: lost.file }));

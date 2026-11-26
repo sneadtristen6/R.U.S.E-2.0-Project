@@ -89,6 +89,19 @@ class Item9UniformWordsInEveryLanguage(InElevenLanguages):
             self.assertIn("lang", inspect.signature(getattr(StudioApi, call)).parameters, call)
 
 
+class Item8LeftOutAnimations(InElevenLanguages):
+    """51f: Import model says what it left out of a model's animations (the behaviour is
+    test_scenarios_models_import's M-2 tests): the page says the report's not_kept "left_out"."""
+    ITEM = "8"
+
+    def test_the_page_says_it(self):
+        text = function_text(js("app.js"), "notKeptSaid")
+        self.assertIn("lost.left_out", text)
+        self.assertIn("w.model_kept_not_left_out", text)
+        self.words_in_eleven_languages(["model_kept_not_left_out"], english_left_in=True)
+        self.assertIn("{names}", WORDS["model_kept_not_left_out"]["us"])
+
+
 class WikiPages(InElevenLanguages):
     def topic_opens_each_language_s_page(self, topic, us, fr):
         self.assertEqual(sorted(WIKI_TOPICS[topic]), sorted(LANGS))

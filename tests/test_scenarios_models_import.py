@@ -137,7 +137,6 @@ class BonesAndAnimations(ModelScenario):
         result, written, stopped = self.built()
         self.assertEqual((self.build_errors(result), stopped, list(written)), ([], [], [STEM]))
 
-    @unittest.expectedFailure
     def test_m2_what_it_left_out_is_said(self):
         """M-2: its three bones and its Run animation aren't in the mod (its model is a still model on the hull, its
         record names no bone and no animation), and neither the import's report (its notes are empty) nor the page
@@ -147,7 +146,6 @@ class BonesAndAnimations(ModelScenario):
         said = " ".join(got["model"].get("notes") or []) + " " + str(got["model"].get("not_kept") or "")
         self.assertIn("Run", said)
 
-    @unittest.expectedFailure
     def test_m2_a_still_model_s_own_animation_left_out_is_said(self):
         """M-2's kind, on a still model: a tank whose turret turns in an animation of its own (TurretTurn, a node
         animation: no bones) comes in with its hull, turret and gun found, the animation not in the mod and nothing

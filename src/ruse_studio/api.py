@@ -8660,11 +8660,19 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                         continue
                     raise StudioError(f"{Path(file).name}: {exc}") from None
             clips: dict = {}
+            on_the_unit_s_bones = report is not None   # (a still model drawn on the unit's own bones: no animation of its own)
             if report is None:   # a model on bones of its own (a horse, any creature), its animations with it (item 5)
                 report = self._own_bones_fit(address, Path(file), found, target, size, clips)
             if report is None:
                 raise StudioError(f"{Path(file).name}: {first_error}")
             report["file"] = Path(file).name
+            if on_the_unit_s_bones:
+                # the file's own animations (a creature's run, a turret's own turning) aren't in the mod: a model drawn
+                # on the unit's own bones plays the unit's; said, never dropped quietly (51f, the owner's 2026-11-26)
+                from .animblender import file_animations
+                left_out = [n or f"#{i}" for i, n in enumerate(file_animations(Path(file)), 1)]
+                if left_out:
+                    report.setdefault(NOT_KEPT, {"animations": [], "picks": []})["left_out"] = left_out
             from .modelfit import kept_choices
             if refit and str(before.get("from") or "") == str(file):
                 # (the same file fitted again: the parts that came back from Blender with the plain 144 still have it, so
