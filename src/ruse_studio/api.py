@@ -10723,6 +10723,10 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                 say(f"Left out of the exported file: {', '.join(left_out)}. These are files the Studio left half "
                     f"written when it was stopped while writing them (their names end in .part, .partial or .tmp); "
                     f"no build reads them.")
+            top = package.left_at_top(folder)
+            if top:     # (the owner's pick 33: his own README, credits and licence go along; any other file named)
+                say(f"These files at the top of your mod are not in the exported file; it takes mod.toml, your README, "
+                    f"credits, licence and notice files, a docs folder and the mod's own folders: {', '.join(top)}.")
             self._last_export = Path(path)
             if answers:
                 say(f"The file carries the worked-out answers for {len(answers)} map(s), locked: a player's build takes "

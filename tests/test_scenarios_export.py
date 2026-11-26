@@ -284,11 +284,11 @@ class Unusual(Studio):
                     self.assertEqual(info["description"], description)
         self.assertEqual(self.export("1.1.0")["state"], "done")          # (and the next export, with them kept)
 
-    @unittest.expectedFailure
     def test_FE7_his_own_files_at_the_top_go_along_or_are_named(self):
-        """FE-7: README.txt, CREDITS.md, LICENSE.md and NOTICE.txt at the mod's top, and a docs/ folder, are left out
-        of the exported file, and Export says nothing (only mod.toml, README.md, LICENSE, CHANGELOG.md and the other
-        TOP_FILES go): a CC-BY credit he wrote into CREDITS.md doesn't reach the players."""
+        """FE-7: README.txt, CREDITS.md, LICENSE.md and NOTICE.txt at the mod's top, and a docs/ folder, were left out
+        of the exported file, and Export said nothing (only mod.toml, README.md, LICENSE, CHANGELOG.md and the other
+        TOP_FILES go): a CC-BY credit he wrote into CREDITS.md didn't reach the players. Now they go along (the owner's
+        pick 33, accepted 2026-11-14: "Pack README, credits and licence")."""
         folder = self.make("Credits")
         mine = ["README.txt", "CREDITS.md", "LICENSE.md", "NOTICE.txt", "docs/guide.md"]
         for rel in mine:
@@ -300,6 +300,9 @@ class Unusual(Studio):
         for rel in mine:
             with self.subTest(file=rel):
                 self.assertTrue(rel in out or rel in told, f"{rel} neither in the file nor named")
+                self.assertIn(rel, out, f"{rel} should go along, as the pick says")
+                self.assertEqual(out[rel], (folder / rel).read_bytes())
+        self.assertEqual(package.check(view["result"]["path"], read=True)["id"], "credits")   # (it still reads as a mod)
 
     @unittest.expectedFailure
     def test_FE8_the_library_line_says_what_it_replaced(self):
@@ -337,6 +340,21 @@ class Unusual(Studio):
         self.assertIn("nothing was packed", str(caught.exception))
         self.assertFalse(out.exists() and any(out.iterdir()))
 
+    def test_FE7_a_file_that_is_none_of_his_words_is_named_and_a_script_in_docs_is_refused(self):
+        """Control of FE-7: notes.psd at the top is not packed, but Export names it; a docs/ folder with a script in it
+        is still refused (mods can't hold scripts or programs)."""
+        folder = self.make("Notes")
+        (folder / "notes.psd").write_bytes(b"8BPS")
+        (folder / "docs").mkdir()
+        (folder / "docs" / "guide.md").write_text("# Guide\n", encoding="utf-8")
+        view = self.export("1.0.0")
+        out = members(view["result"]["path"])
+        self.assertNotIn("notes.psd", out)
+        self.assertIn("docs/guide.md", out)
+        self.assertTrue(any("notes.psd" in ln for ln in view["lines"]), view["lines"])
+        (folder / "docs" / "run.exe").write_bytes(b"MZ")
+        again = self.export("1.0.1")
+        self.assertEqual(again["state"], "failed")
 
     @unittest.skipUnless(sys.platform == "win32", "Windows' file locks")
     def test_FE13_a_file_another_program_holds(self):

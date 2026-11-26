@@ -38,6 +38,8 @@ ruse2-core/
                            giving each changed on its units (the build doesn't read it; the flags are in src/)
   scripts/<map>/<part>/    the game's mission scripts it changes, as the Studio saves them (see §9)
   README.md, LICENSE, CHANGELOG.md
+  README*, CREDITS*, LICENSE*/LICENCE*, NOTICE*, COPYING*, AUTHORS*   the maker's own words, any text ending, go along
+  docs/                    the maker's own guide and credits (text and pictures): packed as they are
 ```
 
 A package is one file: the folder zipped, named `<id>-<version>.rusemod` (a plain zip inside, so it opens anywhere;

@@ -63,7 +63,9 @@ TOP_FILES = ("mod.toml", "menus.toml", "depots.toml", "flag-types.toml", MENU_GR
              "CHANGELOG.md", ERA_CREDITS, ERA_RECORD)  # loose files a package keeps (flag-types.toml: the Studio's
 # flag types, so a copy of the mod can still change them; menu_groups.toml: the group of a build list each unit stands
 # in, which the build reads)
-FOLDERS = ("src", "text", "files", "maps", "scripts")             # folders a package keeps (§2; scripts/: §9)
+FOLDERS = ("src", "text", "files", "maps", "scripts", "docs")     # folders a package keeps (§2; scripts/: §9; docs/: the
+#                                                                   modder's own guide and credits, the owner's pick 33)
+CREDIT_STEM = re.compile(r"(?:readme|credits?|licen[cs]e|notice|copying|authors)(?:$|[ ._-])", re.IGNORECASE)
 SKIP = {"__pycache__", ".git", "cache", "build", "dist"}
 _ID = re.compile(r"^[a-z0-9][a-z0-9-]*$")
 _VERSION = re.compile(r"^\d+(\.\d+){0,2}([-+][0-9A-Za-z.-]+)?$")
@@ -228,6 +230,7 @@ def files_of(folder, left_out: list | None = None) -> list[Path]:
     folder = Path(folder)
     skip = skip_of(folder)
     out = [folder / f for f in TOP_FILES if (folder / f).is_file() and (f != ERA_RECORD or _names_a_unit(folder / f))]
+    out += _credit_files(folder, {f.name.casefold() for f in out})
     try:
         named = tomllib.loads((folder / MANIFEST).read_text(encoding="utf-8")).get("rmod", {}).get("file")
     except (OSError, tomllib.TOMLDecodeError, UnicodeDecodeError, AttributeError):
@@ -248,6 +251,39 @@ def files_of(folder, left_out: list | None = None) -> list[Path]:
                         continue
                     out.append(Path(root) / n)
     return out
+
+
+def is_credit_file(name) -> bool:
+    """Whether a file at a mod's top is one of the modder's own words that go with it, whatever it is called (the owner's
+    pick 33, accepted 2026-11-14: "Pack README, credits and licence; credits matter, and some licences require
+    them"): README, CREDITS, LICENSE or LICENCE, NOTICE, COPYING or AUTHORS, each alone or followed by a space, a dot,
+    a - or a _ and more (README.txt, CREDITS.md, LICENSE-art.txt), a text (TEXT_FILES) or with no ending."""
+    suffix = PurePosixPath(str(name)).suffix.lower()
+    return bool(CREDIT_STEM.match(str(name))) and (suffix in TEXT_FILES or suffix == "")
+
+
+def _credit_files(folder: Path, have: set) -> list[Path]:
+    """The modder's own README, credits, licence and notice files at the mod's top that TOP_FILES doesn't name (`have`:
+    those already in, by name in small letters), and a docs/ folder's files."""
+    out = []
+    if folder.is_dir():
+        for f in sorted(folder.iterdir(), key=lambda p: p.name):
+            if f.is_file() and not f.name.startswith(".") and f.name.casefold() not in have and is_credit_file(f.name):
+                out.append(f)
+    return out
+
+
+def left_at_top(folder) -> list[str]:
+    """The files at a mod's top that a package doesn't take (not mod.toml and the other TOP_FILES, not a README, credits
+    or licence of his: is_credit_file, not a hidden file, nor one the Studio left half written), by name: Export says
+    which, so none goes missing without a word."""
+    folder = Path(folder)
+    taken = {f.name for f in files_of(folder)}
+    return [f.name for f in sorted(folder.iterdir(), key=lambda p: p.name)
+            if f.is_file() and not f.name.startswith(".") and f.name not in taken and not is_work_file(f.name)] \
+        if folder.is_dir() else []
+
+
 def too_big(folder) -> tuple[int, int] | None:
     """(the megabytes of files the mod at `folder` would pack, the most a Launcher takes: SIZE_LIMIT) when it is past
     that, so it is refused before anything is packed (check refuses such a file after it is written); else None."""
@@ -1183,7 +1219,7 @@ def pack(folder, out, *, build_id: str | None = None, data_revision: str | None 
                 if got is None:
                     z.write(f, name)
                     if home_in is not None and (f.suffix.lower() in TEXT_FILES or f.suffix.lower() == ".glb"
-                                                or f.name == "LICENSE") and home_named(f.read_bytes(), home):
+                                                or is_credit_file(f.name)) and home_named(f.read_bytes(), home):
                         home_in.append(name)
                     continue
                 data, kind = got
