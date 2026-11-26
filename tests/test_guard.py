@@ -377,7 +377,7 @@ class ProgramCheck(unittest.TestCase):
             # the watch of a game the Launcher started, with the project's server set: the list isn't fetched
             guard.MatchWatch(Closed(), self.home, self.game, self.copy, username="Nick#4821",
                              consent={"terms": guard.TERMS_VERSION, "server": "http://127.0.0.1:9"}, manifests=[],
-                             say=lambda s: None, sleep=lambda s: None, local=str(self.dir / "none")).run()
+                             say=lambda s: None, sleep=lambda s: None).run()
         self.assertEqual(asked, [])
         self.assertFalse((self.home / guard.SIGNATURES).exists())
 
@@ -405,7 +405,7 @@ class ProgramCheck(unittest.TestCase):
         with mock.patch.object(guard, "CHEAT_TOOLS", self.dir / "missing.toml"):
             guard.MatchWatch(Closed(), self.home, self.game, self.copy, username="Nick#4821",
                              consent={"terms": guard.TERMS_VERSION, "server": ""}, manifests=[], say=said.append,
-                             sleep=lambda s: None, local=str(self.dir / "none")).run()
+                             sleep=lambda s: None).run()
         self.assertTrue(any("list of known cheat tools" in s for s in said), said)
 
     def test_only_the_match_lines_are_kept(self):
@@ -485,7 +485,7 @@ class ProgramCheck(unittest.TestCase):
         with mock.patch.object(guard, "running_programs", listed):
             guard.MatchWatch(Game(), self.home, self.game, self.copy, username="Nick#4821",
                              consent={"terms": guard.TERMS_VERSION, "server": ""}, manifests=[], say=lambda s: None,
-                             sleep=lambda s: None, local=str(self.dir / "none")).run()
+                             sleep=lambda s: None).run()
         self.assertEqual(scans, [0.0, 119.0, 120.0])   # at 121 seconds the match is over: no scan
 
     def _watch(self, script, consent=None, programs=("explorer.exe", "steam.exe", "Squalr.exe", "notepad.exe")):
@@ -514,7 +514,7 @@ class ProgramCheck(unittest.TestCase):
         with mock.patch.object(guard, "running_programs", listed):
             guard.MatchWatch(Game(), self.home, self.game, self.copy, username="Nick#4821",
                              consent=consent or {"terms": guard.TERMS_VERSION, "server": ""}, manifests=[],
-                             say=said.append, sleep=lambda s: None, local=str(self.dir / "none")).run()
+                             say=said.append, sleep=lambda s: None).run()
         return len(scans), said
 
     def kept(self) -> list:
@@ -555,7 +555,7 @@ class ProgramCheck(unittest.TestCase):
         with mock.patch.object(guard, "running_programs", listed):
             guard.MatchWatch(Game(), self.home, self.game, self.copy, username="Nick#4821",
                              consent={"terms": guard.TERMS_VERSION, "server": ""}, manifests=[], say=lambda s: None,
-                             sleep=lambda s: None, local=str(self.dir / "none")).run()
+                             sleep=lambda s: None).run()
         self.assertEqual(len(scans), 2)
         self.assertEqual([f["name"] for f in match["findings"]], ["squalr.exe"])
 
@@ -811,7 +811,7 @@ class Stop(unittest.TestCase):
         from rusemod import fairplay
         self.cheat_record()
         slept, scans = [], []
-        with mock.patch.object(guard, "signatures", lambda home, server="", *a, **k: [{"name": "x.exe"}]), \
+        with mock.patch.object(guard, "cheat_tools", lambda *a, **k: [{"name": "x.exe"}]), \
                 mock.patch.object(guard, "live_multiplayer", lambda copy: True), \
                 mock.patch.object(guard, "scan", lambda sigs, programs=None: scans.append(len(slept)) or []):
             self.watch(Game(fairplay.LOCK_EXIT, polls=95), sleep=slept.append)
@@ -822,7 +822,7 @@ class Stop(unittest.TestCase):
     def test_a_failing_program_check_never_ends_the_watch(self):
         from rusemod import fairplay
         self.cheat_record()
-        with mock.patch.object(guard, "signatures", lambda home, server="", *a, **k: [{"name": "x.exe"}]), \
+        with mock.patch.object(guard, "cheat_tools", lambda *a, **k: [{"name": "x.exe"}]), \
                 mock.patch.object(guard, "live_multiplayer", mock.Mock(side_effect=OSError("tasklist is missing"))):
             self.watch(Game(fairplay.LOCK_EXIT, polls=3))
         self.assertEqual(len(self.kept()), 1)

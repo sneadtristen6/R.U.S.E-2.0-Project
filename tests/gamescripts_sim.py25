@@ -1012,8 +1012,10 @@ def _(name):
         sim.match([(0, 'human'), (1, 'human')], {'cheat': 0, 'plain': 1}, seconds=15.0)
     lines, back = game_errors(play)
     expect(name, 'the lines before the end screen stopped it', lines, [LIVE_1_0])
-    expect(name, 'the cheat copy was stopped on its end screen', (cheat.stopped or '')[:28],
-           'RuntimeError: RUSEGUARD-LOCK')
+    # (the join, 11-26: with legal/clean-stop the copy closes the game by its own quit on its end screen; the crash
+    # route this case was written against, 'RuntimeError: RUSEGUARD-LOCK', is gone)
+    expect(name, 'the cheat copy was stopped on its end screen', (cheat.stopped or '')[:22],
+           'closed by its own quit')
 
 
 # --- game objects that fail on every use: what may never let an error out, even in a cheat copy ---
