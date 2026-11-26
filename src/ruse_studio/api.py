@@ -6560,6 +6560,9 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             raise StudioError(f"{prop}: expected {len(p['numbers'])} numbers" if p["list"] else f"{prop}: one number")
         kind = types.get(prop + "[]" if p["list"] else prop, "")
         values = [_fits(v, kind, prop) for v in values]
+        if prop == "ProductionPrice" and any(v < 0 for v in values):
+            # not a game rule: a price below nothing means nothing (a research price is refused the same way)
+            raise StudioError(f"{prop}: {next(v for v in values if v < 0)} is below 0", prop=prop)
         with self._saving:
             edits = ModEdits(edits.folder)  # read again: another change may have been saved meanwhile
             before = edits.get(o["address"], prop, "shared") if how == "own" else None  # what "all of them" got
@@ -10105,6 +10108,10 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         if prices and _can_edit("ProductionPrice", prices):
             kind = types.get("ProductionPrice[]" if prices["list"] else "ProductionPrice", "")
             p = _whole(price, kind, "ProductionPrice") if kind in INT_RANGES else price
+            if p < 0:
+                # not a game rule: a price below nothing means nothing (a research price is refused the same way)
+                prop = "ProductionPrice"
+                raise StudioError(f"{prop}: {p} is below 0", prop=prop)
             values["ProductionPrice"] = [p] * len(prices["numbers"]) if prices["list"] else p
         if nation >= 0 or factory >= 0:
             if (nation, factory) not in menus:

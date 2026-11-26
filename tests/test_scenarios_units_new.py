@@ -171,12 +171,18 @@ class NewUnitOfEveryKind(Player):
         """The New unit form takes a whole number from 0 (its box: min 0, step 1; the browser stops a negative or a
         decimal one before it's sent); the Studio itself takes any number that fits the game's value, rounded."""
         folder = self.mod("Prices")
-        for price, built in ((0, 0), (40.5, 41), (40.4, 40), (-10, -10), (2147483647, 2147483647)):
+        for price, built in ((0, 0), (40.5, 41), (40.4, 40), (2147483647, 2147483647)):
             with self.subTest(price=price):
                 res = self.new(T1, f"Price {price}", price)
                 errors, ndf, _ = self.build(folder)
                 self.assertEqual(errors, [])
                 self.assertEqual(self.value(ndf, res["address"], "ProductionPrice").int_list(), [built] * 5)
+        for price in (-10, -1, -0.6):   # a price below 0 is refused in every language, as a research price is
+            with self.subTest(price=price):
+                said = self.refusal("new_unit", T1, f"Below {price}", price, -1, -1, False, None)
+                self.assertEqual(self.english_left(said), [])
+                self.assertTrue(said["us"].endswith("is below 0"), said["us"])
+        self.assertEqual(self.refusal("edit", M1, "ProductionPrice", [-1] * 5)["us"].endswith("is below 0"), True)
         for price in (2147483648, 1e10, 1e20):   # (the box takes these: Number("1e10"))
             with self.subTest(price=price):
                 said = self.refusal("new_unit", T1, f"Too much {price}", price, -1, -1, False, None)
