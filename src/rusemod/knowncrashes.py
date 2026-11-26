@@ -47,7 +47,9 @@ LAST_FILE = "known-crashes-last.json"                   # in <home>/bugwatch: {"
 TEMP_GLOB = "known-crashes.*.tmp.json"                  # a refresh's file before it replaces LIST_FILE (ends in .json, so
 #                                                         turn_off deletes one left behind too)
 PREFIX = b"RUSE2-CRASHES-1:"                            # what is signed: PREFIX + the list's text (UTF-8)
-KEY: bytes | None = None                                # the list key's public half (32 bytes); None: HTTPS alone
+# The list key's public half (32 bytes; None: HTTPS alone). The owner's, made 2026-11-26 ~16:10 (publish.py --new-key on
+# his PC, its printed line read from his cmd screenshot); publish.py --dry says whether it fits the key on his PC.
+KEY: bytes | None = bytes.fromhex("dd33bf9992e83411ba6bb94d61f460acd324b57d9f2d43dbe2d338e465fcce41")
 # The RFC 8032 test vectors' public keys (section 7.1, TEST 1 and TEST 2): a key anyone can sign with, so never one a
 # release build may carry (key_ready). The same two as rusemod.releasesig.TEST_PUBLICS (a test keeps the two equal).
 TEST_PUBLICS = frozenset({
