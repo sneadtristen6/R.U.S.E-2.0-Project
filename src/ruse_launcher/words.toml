@@ -2359,6 +2359,33 @@ jpn = "{path} はゲーム（{drive}）とは別のドライブにあります�
 sc = "{path} 与游戏（{drive}）不在同一驱动器上：每个模组版副本都是游戏的完整副本，构建更慢，和游戏一样大。推荐位置是 {recommended}。"
 fa = "{path} روی درایوی غیر از درایو بازی ({drive}) است: هر نسخهٔ مادشده یک کپی کامل از بازی است، ساختنش کندتر است و به اندازهٔ خود بازی جا می‌گیرد. جای پیشنهادی {recommended} است."
 
+# the troubleshooter's line for Bug Watch's list of known crashes (rusemod.knowncrashes.findings: with Bug Watch on)
+[doc_crashlist_on]
+us = "Bug Watch's list of known crashes is on this PC (number {n}, last checked {checked})."
+fr = "La liste des plantages connus de Bug Watch est sur ce PC (numéro {n}, vérifiée le {checked})."
+ger = "Die Liste bekannter Abstürze von Bug Watch ist auf diesem PC (Nummer {n}, zuletzt geprüft {checked})."
+ita = "La lista dei crash conosciuti di Bug Watch è su questo PC (numero {n}, ultimo controllo {checked})."
+spa = "La lista de fallos conocidos de Bug Watch está en este PC (número {n}, comprobada por última vez {checked})."
+pol = "Lista znanych awarii Bug Watch jest na tym komputerze (numer {n}, ostatnio sprawdzona {checked})."
+ru = "Список известных вылетов Bug Watch есть на этом ПК (номер {n}, последняя проверка {checked})."
+cz = "Seznam známých pádů Bug Watch je v tomto počítači (číslo {n}, naposledy ověřen {checked})."
+jpn = "Bug Watch の既知のクラッシュの一覧はこの PC にあります（番号 {n}、最終確認 {checked}）。"
+sc = "Bug Watch 的已知崩溃列表已在这台电脑上（编号 {n}，上次核对 {checked}）。"
+fa = "فهرست خرابی‌های شناخته‌شدهٔ Bug Watch روی این رایانه است (شمارهٔ {n}، آخرین بررسی {checked})."
+
+[doc_crashlist_missing]
+us = "Bug Watch's list of known crashes isn't on this PC yet: it comes from our server when you start a game with the internet on."
+fr = "La liste des plantages connus de Bug Watch n'est pas encore sur ce PC : elle vient de notre serveur quand vous lancez une partie avec Internet."
+ger = "Die Liste bekannter Abstürze von Bug Watch ist noch nicht auf diesem PC: Sie kommt von unserem Server, wenn Sie ein Spiel mit Internetverbindung starten."
+ita = "La lista dei crash conosciuti di Bug Watch non è ancora su questo PC: arriva dal nostro server quando avvii una partita con Internet attivo."
+spa = "La lista de fallos conocidos de Bug Watch aún no está en este PC: llega de nuestro servidor cuando inicias una partida con Internet."
+pol = "Listy znanych awarii Bug Watch nie ma jeszcze na tym komputerze: przychodzi z naszego serwera, gdy uruchamiasz grę z włączonym internetem."
+ru = "Списка известных вылетов Bug Watch ещё нет на этом ПК: он приходит с нашего сервера, когда вы запускаете игру с подключённым интернетом."
+cz = "Seznam známých pádů Bug Watch v tomto počítači ještě není: přijde z našeho serveru, když spustíte hru s připojením k internetu."
+jpn = "Bug Watch の既知のクラッシュの一覧はまだこの PC にありません。インターネットにつないだ状態でゲームを始めると、私たちのサーバーから届きます。"
+sc = "这台电脑上还没有 Bug Watch 的已知崩溃列表：当你在联网状态下开始游戏时，它会从我们的服务器下载。"
+fa = "فهرست خرابی‌های شناخته‌شدهٔ Bug Watch هنوز روی این رایانه نیست: وقتی بازی را با اینترنت روشن شروع کنید، از سرور ما می‌آید."
+
 [doc_troubleshoot_link]
 us = "Troubleshoot"
 fr = "Dépannage"
@@ -5582,9 +5609,11 @@ jpn = "PC で {path} を開きます。"
 sc = "在你的电脑上打开 {path}。"
 fa = "{path} را روی رایانهٔ شما باز می‌کند."
 
-# --- item 25: a game crash tells the player the unit and why (rusemod.crashplaces, rusemod.bugwatch.crash_notice;
-# app.js watchCrash). crash_why_<key> for each of crashplaces.REASONS; {why} is one of them; a reason says no more
-# than its place shows (a place nothing ties to a unit: "a model", not "a unit's model") ---
+# --- item 25: a game crash tells the player the unit and why (rusemod.knowncrashes, rusemod.bugwatch.crash_notice;
+# app.js watchCrash). crash_why_<key> for each of knowncrashes.REASONS; {why} is one of them; a reason says no more
+# than its place shows (a place nothing ties to a unit: "a model", not "a unit's model"). crash_no_list: a crash of the
+# game itself with no list of known crashes on the PC; crash_code: the code a player without Bug Watch can tell us
+# (the owner, 2026-11-14; rusemod.crashcode, rusemod.bugwatch.CodeWatch) ---
 [crash_unit]
 us = "The game crashed while making the unit “{unit}”. {why}"
 fr = "Le jeu a planté en créant l'unité « {unit} ». {why}"
@@ -5623,6 +5652,32 @@ cz = "Hra spadla. {why}"
 jpn = "ゲームがクラッシュしました。{why}"
 sc = "游戏崩溃了。{why}"
 fa = "بازی از کار افتاد. {why}"
+
+[crash_no_list]
+us = "The game crashed. The Launcher couldn't check it against our list of known crashes: that list isn't on this PC yet."
+fr = "Le jeu a planté. Le Launcher n'a pas pu comparer ce plantage à notre liste des plantages connus : cette liste n'est pas encore sur ce PC."
+ger = "Das Spiel ist abgestürzt. Der Launcher konnte den Absturz nicht mit unserer Liste bekannter Abstürze abgleichen: Diese Liste ist noch nicht auf diesem PC."
+ita = "Il gioco è andato in crash. Il Launcher non ha potuto confrontare il crash con la nostra lista dei crash conosciuti: quella lista non è ancora su questo PC."
+spa = "El juego se cerró inesperadamente. El Launcher no pudo comparar el fallo con nuestra lista de fallos conocidos: esa lista aún no está en este PC."
+pol = "Gra uległa awarii. Launcher nie mógł porównać tej awarii z naszą listą znanych awarii: tej listy nie ma jeszcze na tym komputerze."
+ru = "Игра вылетела. Launcher не смог сверить этот вылет с нашим списком известных вылетов: этого списка ещё нет на этом ПК."
+cz = "Hra spadla. Launcher nemohl porovnat tento pád s naším seznamem známých pádů: ten seznam v tomto počítači ještě není."
+jpn = "ゲームがクラッシュしました。Launcher はこのクラッシュを既知のクラッシュの一覧と照合できませんでした。その一覧はまだこの PC にありません。"
+sc = "游戏崩溃了。Launcher 无法将这次崩溃与我们的已知崩溃列表进行核对：这台电脑上还没有该列表。"
+fa = "بازی از کار افتاد. Launcher نتوانست این خرابی را با فهرست خرابی‌های شناخته‌شدهٔ ما مقایسه کند: این فهرست هنوز روی این رایانه نیست."
+
+[crash_code]
+us = "The game crashed. Its crash code is {code}. Tell us this code on Discord or GitHub so we can look into why."
+fr = "Le jeu a planté. Son code de plantage est {code}. Donnez-nous ce code sur Discord ou GitHub pour que nous puissions chercher pourquoi."
+ger = "Das Spiel ist abgestürzt. Sein Absturzcode ist {code}. Nennen Sie uns diesen Code auf Discord oder GitHub, damit wir der Ursache nachgehen können."
+ita = "Il gioco è andato in crash. Il suo codice di crash è {code}. Comunicaci questo codice su Discord o GitHub, così potremo cercare il motivo."
+spa = "El juego se cerró inesperadamente. Su código de fallo es {code}. Dinos este código en Discord o GitHub para que podamos investigar por qué."
+pol = "Gra uległa awarii. Jej kod awarii to {code}. Podaj nam ten kod na Discordzie lub GitHubie, żebyśmy mogli sprawdzić, dlaczego tak się stało."
+ru = "Игра вылетела. Её код вылета: {code}. Сообщите нам этот код в Discord или на GitHub, чтобы мы могли разобраться в причине."
+cz = "Hra spadla. Její kód pádu je {code}. Pošlete nám tento kód na Discordu nebo GitHubu, abychom mohli prověřit příčinu."
+jpn = "ゲームがクラッシュしました。クラッシュコードは {code} です。原因を調べられるように、このコードを Discord か GitHub で教えてください。"
+sc = "游戏崩溃了。崩溃代码是 {code}。请在 Discord 或 GitHub 上告诉我们这个代码，以便我们调查原因。"
+fa = "بازی از کار افتاد. کد خرابی آن {code} است. این کد را در Discord یا GitHub به ما بگویید تا بتوانیم علتش را بررسی کنیم."
 
 [crash_why_made]
 us = "The game couldn't build the unit's model: the model had no skeleton in that battle, or not the bones its parts need."

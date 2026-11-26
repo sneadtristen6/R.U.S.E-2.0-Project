@@ -402,6 +402,10 @@ class Starter:
             # Bug Watch: the minutes this game runs with these mods, and any crash report it leaves
             bugwatch.GameWatch(watch, process, *bugwatch.mods_of(mod_folders), exe=exe, folders=mod_folders,
                                game=game).start()
+        elif process is not None and bugwatch.crash_code_watched(watch):
+            # without Bug Watch: a crash code to tell us, made on this PC from where the game stopped (the owner,
+            # 2026-11-14); nothing counted or sent
+            bugwatch.CodeWatch(process).start()
         if fairplay.ON and guard and process is not None:  # RUSE Guard: the match watch (multiplayer only)
             from .guard import MatchWatch, check_manifest
             # the match is filed under the player's chosen username (Nick#4821), never their Steam ID

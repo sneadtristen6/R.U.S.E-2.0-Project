@@ -1543,13 +1543,15 @@ async function play() {
 }
 
 // --- the game's crash, told (the owner's item 25: "... if their unit was crashing the game, they should be told
-// that." and "For 25, they should also be told why that unit made the game crash. ..."; his words whole are in
-// rusemod.crashplaces). Bug Watch watches the game a Play started (rusemod.bugwatch.GameWatch); at a crash we know
-// (rusemod.crashplaces) api.bugwatch_crash hands over its notice once: the plain reason and, when the crash report kept
-// it, the unit the game was making, by its name as its card says. Asked a few seconds after a Play and when the page
-// opens (a page opened again, as a browser tab reloaded, still tells the game it started), then again every few
-// seconds while the game is watched, and again after a call that failed; nothing when Bug Watch is off (no game is
-// watched then). A notice the page never took is dropped when the next game starts (GameWatch) ---
+// that." and "For 25, they should also be told why that unit made the game crash. ..."). Bug Watch watches the game a
+// Play started (rusemod.bugwatch.GameWatch); at a crash on our list of known crashes (rusemod.knowncrashes: from our
+// server, kept on the PC) api.bugwatch_crash hands over its notice once: the plain reason and, when the crash report
+// kept it, the unit the game was making, by its name as its card says; with no list on the PC, that it couldn't
+// check (notice.list false). Without Bug Watch, a crash gets a crash code to tell us (the owner, 2026-11-14: "some
+// sort of code that they can tell me"; rusemod.crashcode, notice.code). Asked a few seconds after a Play and when the
+// page opens (a page opened again, as a browser tab reloaded, still tells the game it started), then again every few
+// seconds while the game is watched, and again after a call that failed. A notice the page never took is dropped when
+// the next game starts (GameWatch, CodeWatch) ---
 let crashWatch = null;
 const CRASH_TRIES = 5;   // calls in a row that may fail before the page stops asking
 
@@ -1572,9 +1574,12 @@ function watchCrash(first = 3000) {
   crashWatch = setTimeout(tick, first);
 }
 
-// One sentence: "The game crashed while making the unit “Horse Squad”." and why, in the player's language
+// One sentence: "The game crashed while making the unit “Horse Squad”." and why, in the player's language; a crash
+// code to tell us; or that the crash couldn't be checked
 function crashText(notice) {
   const w = state.words, why = w["crash_why_" + notice.why] || "";
+  if (notice.code) return fill(w.crash_code, { code: notice.code });
+  if (notice.list === false) return w.crash_no_list;
   if (!notice.unit) return fill(w.crash_no_unit, { why });
   return fill(notice.added ? w.crash_mod_unit : w.crash_unit, { unit: notice.unit, why });
 }

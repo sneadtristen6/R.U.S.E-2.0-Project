@@ -18,7 +18,8 @@ from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from rusemod import bugwatch, home as homes, webui  # noqa: E402
+from rusemod import bugwatch, home as homes, knowncrashes, net, webui  # noqa: E402
+from test_knowncrashes import ListServer, MadeUp, keep_off_the_network  # noqa: E402
 
 
 class Answer:
@@ -61,6 +62,9 @@ class BugWatchTest(unittest.TestCase):
         self._on = bugwatch.ON
         bugwatch.ON = True
         os.environ.pop("RUSE_NO_BUGWATCH", None)
+        # no test reaches the network (the list of known crashes goes through net.urlopen: a test that fetches it
+        # gives its own fake), and the made-up list is signed with the published test key (test_knowncrashes)
+        self.no_network = keep_off_the_network(self)
 
     def tearDown(self):
         bugwatch.ON = self._on
@@ -426,9 +430,12 @@ class Crashes(BugWatchTest):
         # never from the file's start
         p.write_bytes(self.dump_with_stack([b + 0x1405], [b + 0x1300, b + 0x1206, b + 0x1105], memory_list=True))
         self.assertEqual(bugwatch.read_dump(p, self.exe())["chain"], ["RUSE.exe+0x1206", "RUSE.exe+0x1105"])
-        # the older layout (no registers, no thread list) still reads as before
+        # the older layout (no registers, no thread list) still reads as before; "build", the program's size,
+        # checksum and time stamp from the module list, is for the crash code only (never sent: game_crash)
         p.write_bytes(self.dump(code=0xC0000005))
-        self.assertEqual(sorted(bugwatch.read_dump(p, self.exe())), ["code", "module", "offset"])
+        found = bugwatch.read_dump(p, self.exe())
+        self.assertEqual(sorted(found), ["build", "code", "module", "offset"])
+        self.assertEqual(found["build"], [0x200000, 0, 0])
 
     def test_the_chain_and_access_go_with_the_crash(self):
         p = self.home / "report.dmp"
@@ -626,24 +633,24 @@ class VersionFour(BugWatchTest):
 
 
 class KnownCrashes(BugWatchTest):
-    """Item 25 (the owner, 2026-11-13, his words whole in rusemod.crashplaces: "... if their unit was crashing the
-    game, they should be told that." and "For 25, they should also be told why that unit made the game crash. ..."):
-    a crash at a place rusemod.crashplaces knows gets its
-    plain reason, and under version 4 of the agreement the unit the game was making, read from the crash report as
-    crashplaces.unit_number reads it; the unit goes out only as version 4 says ("one of the game's own units by its
-    number; a unit a mod added only as "a mod's unit""), the reason and the unit's name never. Made-up reports and
-    program files only, laid out by the table's own names (crashplaces): no number or detail of the game's program is
-    written here."""
+    """Item 25 (the owner, 2026-11-13: "... if their unit was crashing the game, they should be told that." and "For
+    25, they should also be told why that unit made the game crash. ..."): a crash at a place our list of known crashes
+    knows gets its plain reason, and under version 4 of the agreement the unit the game was making, read from the crash
+    report as knowncrashes.unit_number reads it; the unit goes out only as version 4 says ("one of the game's own
+    units by its number; a unit a mod added only as "a mod's unit""), the reason and the unit's name never. The list is
+    private since 2026-11-24 (rusemod.knowncrashes): these tests run on the made-up list (test_knowncrashes.MadeUp:
+    the real list's reasons and ties, every number made up), kept on the PC as a fetch leaves it. Made-up reports and
+    program files only: no number or detail of the game's program is written here."""
 
     BASE = Crashes.BASE
     UNIT, OTHER = 0x10000400, 0x20000400   # where the made-up reports keep units' descriptions (made up)
 
     def setUp(self):
         super().setUp()
-        from rusemod import crashplaces
-        self.places = crashplaces
-        self.made = next(at for at, (key, _needs) in crashplaces.PLACES.items() if key == "made")
-        self.create = crashplaces.CREATING[0] + 0x40    # in the table's CREATING range (a call right before it)
+        self.places = MadeUp
+        self.known = MadeUp.known()
+        self.made = next(at for at, (key, _chain, _stack) in MadeUp.PLACES.items() if key == "made")
+        self.create = MadeUp.CREATING[0] + 0x40    # in the list's unit-creation range (a call right before it)
         bugwatch.turn_on(self.home, "Nick")
         bugwatch._notice = None
 
@@ -674,85 +681,108 @@ class KnownCrashes(BugWatchTest):
         return path
 
     def description(self, number, at=None, kind=None):
-        """A made-up unit description as crashplaces.unit_number reads one (one of its UNIT_CLASSES first, the
-        number at UNIT_NUMBER), as a piece of memory a made-up report keeps (from 256 bytes before it)."""
+        """A made-up unit description as knowncrashes.unit_number reads one (one of the list's kinds first, the
+        number where the list says), as a piece of memory a made-up report keeps (from 256 bytes before it)."""
         blob = bytearray(0x400)
-        kind = min(self.places.UNIT_CLASSES) if kind is None else kind
+        kind = min(MadeUp.KINDS) if kind is None else kind
         struct.pack_into("<Q", blob, 0x100, self.BASE + kind)
-        struct.pack_into("<I", blob, 0x100 + self.places.UNIT_NUMBER, number)
+        struct.pack_into("<I", blob, 0x100 + MadeUp.NUMBER_AT, number)
         return ((at or self.UNIT) - 0x100, bytes(blob))
 
     def report(self, words=(), kept=(), place=None, build=None, below=()) -> Path:
         p = self.home / "report.dmp"
         p.write_bytes(Crashes.dump_with_stack(self, list(below), list(words), place=self.made if place is None else place,
-                                              build=build or self.places.BUILD, kept=list(kept)))
+                                              build=build or MadeUp.BUILD, kept=list(kept)))
         return p
 
     def test_a_crash_we_know_says_why_and_which_unit(self):
         program = self.program([self.create])
         p = self.report([0x1234, self.BASE + self.create, 0, self.UNIT, self.UNIT], [self.description(4059)])
-        found = bugwatch.read_dump(p, program, unit=True)
+        found = bugwatch.read_dump(p, program, unit=True, known=self.known)
         self.assertEqual((found["reason"], found["unit"]), ("made", 4059))
-        asked = bugwatch.read_dump(p, program)                    # the unit only when asked (version 4: GameWatch)
+        asked = bugwatch.read_dump(p, program, known=self.known)  # the unit only when asked (version 4: GameWatch)
         self.assertEqual((asked["reason"], "unit" in asked), ("made", False))
-        alone = bugwatch.read_dump(p, unit=True)                  # no copy's program: no chain or stack to tie the
-        self.assertEqual((alone.get("reason"), "unit" in alone), (None, False))   # place to a unit: nothing said
-        build = self.places.BUILD
-        big = (build[0] + 0x1000,) + build[1:]                    # the table's other build (BUILDS)
+        alone = bugwatch.read_dump(p, unit=True, known=self.known)   # no copy's program: no chain or stack to tie
+        self.assertEqual((alone.get("reason"), "unit" in alone), (None, False))   # the place to a unit: nothing said
+        build = MadeUp.BUILD
+        big = (build[0] + 0x1000,) + build[1:]                    # the list's other build
         found = bugwatch.read_dump(self.report([0, self.BASE + self.create, self.UNIT], [self.description(4059)],
-                                               build=big), program, unit=True)
+                                               build=big), program, unit=True, known=self.known)
         self.assertEqual((found["reason"], found["unit"]), ("made", 4059))
-        self.assertEqual(self.places.BUILDS, {build, big})        # those two only
+        self.assertEqual(self.known.builds, {build, big})         # those two only
+
+    def test_with_no_list_no_reason_and_no_unit_and_the_rest_as_it_was(self):
+        """No list on the PC (offline, the first start): read_dump says no reason and reads no unit; what a crash
+        report sends (its code, module, place, access and chain) is the same as with the list. A list whose check
+        raises costs the same, never the report."""
+        program = self.program([self.create])
+        p = self.report([0x1234, self.BASE + self.create, 0, self.UNIT], [self.description(4059)])
+        with_list = bugwatch.read_dump(p, program, unit=True, known=self.known)
+        without = bugwatch.read_dump(p, program, unit=True)
+        self.assertEqual(("reason" in without, "unit" in without), (False, False))
+        sent = ("code", "module", "offset", "access", "chain", "build")
+        self.assertEqual({k: without.get(k) for k in sent}, {k: with_list.get(k) for k in sent})
+        with mock.patch.object(knowncrashes, "reason", side_effect=RuntimeError("a list that fails")):
+            failing = bugwatch.read_dump(p, program, unit=True, known=self.known)
+        self.assertEqual(("reason" in failing, "unit" in failing), (False, False))
+        self.assertEqual({k: failing.get(k) for k in sent}, {k: with_list.get(k) for k in sent})
+        self.assertTrue(failing["list_error"])                    # (said, never silent: GameWatch counts it)
+        self.assertNotIn("list_error", with_list)
 
     def test_no_reason_or_unit_where_it_cant_be_sure(self):
         program = self.program([self.create])
         making, one = [0, self.BASE + self.create, self.UNIT], [self.description(4059)]
-        other_build = self.places.BUILD[:2] + (self.places.BUILD[2] + 1,)
-        longer = (self.places.BUILD[0] + 0x2000,) + self.places.BUILD[1:]
+        other_build = MadeUp.BUILD[:2] + (MadeUp.BUILD[2] + 1,)
+        longer = (MadeUp.BUILD[0] + 0x2000,) + MadeUp.BUILD[1:]
         for place, build in ((0x4321, None), (self.made, other_build), (self.made, longer)):
             # a place we don't know, or another build of the program (its places may be other code): nothing
-            found = bugwatch.read_dump(self.report(making, one, place=place, build=build), program, unit=True)
+            found = bugwatch.read_dump(self.report(making, one, place=place, build=build), program, unit=True,
+                                       known=self.known)
             self.assertEqual((found.get("reason"), found.get("unit")), (None, None))
             self.assertEqual(found["code"], "0xc0000005")         # the rest is read as before
         two = bugwatch.read_dump(self.report(making + [self.OTHER], one + [self.description(4404, self.OTHER)]),
-                                 program, unit=True)              # two different units: none said
+                                 program, unit=True, known=self.known)   # two different units: none said
         self.assertEqual((two["reason"], two.get("unit")), ("made", None))
-        for words in ([self.UNIT, self.BASE + self.create, 0],   # only below the CREATING return (nearer)
-                      [0, self.UNIT]):                           # no CREATING return at all
-            self.assertIsNone(bugwatch.read_dump(self.report(words, one), program, unit=True).get("unit"))
-        not_a_unit = [self.description(4059, kind=0x1234)]       # not one of UNIT_CLASSES there
-        self.assertIsNone(bugwatch.read_dump(self.report(making, not_a_unit), program, unit=True).get("unit"))
+        for words in ([self.UNIT, self.BASE + self.create, 0],   # only below the creating step's return (nearer)
+                      [0, self.UNIT]):                           # no return into it at all
+            self.assertIsNone(bugwatch.read_dump(self.report(words, one), program, unit=True,
+                                                 known=self.known).get("unit"))
+        not_a_unit = [self.description(4059, kind=0x1234)]       # not one of the list's kinds there
+        self.assertIsNone(bugwatch.read_dump(self.report(making, not_a_unit), program, unit=True,
+                                             known=self.known).get("unit"))
         nested = [0, self.BASE + self.create, self.UNIT, self.BASE + self.create, self.OTHER]  # beyond the next
-        found = bugwatch.read_dump(self.report(nested, one + [self.description(4404, self.OTHER)]), program, unit=True)
-        self.assertEqual(found["unit"], 4059)                     # CREATING return: not read
+        found = bugwatch.read_dump(self.report(nested, one + [self.description(4404, self.OTHER)]), program, unit=True,
+                                   known=self.known)
+        self.assertEqual(found["unit"], 4059)                     # return into the creating step: not read
         with mock.patch.object(bugwatch, "_kept_memory", side_effect=struct.error("cut short")):
-            found = bugwatch.read_dump(self.report(making, one), program, unit=True)
+            found = bugwatch.read_dump(self.report(making, one), program, unit=True, known=self.known)
         self.assertEqual((found["reason"], found.get("unit")), ("made", None))   # the report itself is still read
 
-    ELSEWHERE = 0x40   # a made-up place in none of the table's ranges (the made-up program has a call right before it)
+    ELSEWHERE = 0x40   # a made-up place in none of the list's ranges (the made-up program has a call right before it)
 
     def said(self, place, returns, program) -> str | None:
         """The reason read_dump gives a made-up crash at `place` whose stack returns to `returns` (offsets)."""
-        found = bugwatch.read_dump(self.report([self.BASE + r for r in returns], place=place), program)
+        found = bugwatch.read_dump(self.report([self.BASE + r for r in returns], place=place), program,
+                                   known=self.known)
         return found.get("reason")
 
     def test_a_place_is_told_only_with_what_ties_it_to_its_reason(self):
-        """Review defect 1 (2026-11-13): the part place is told only with the table's TWO_AXIS in its chain, the made
-        place only with its CREATING in the stack (crashplaces.PLACES, IN_STACK); the same crash reached from
-        elsewhere gets no reason."""
-        part = next(at for at, (key, _needs) in self.places.PLACES.items() if key == "part")
-        turret = self.places.TWO_AXIS[1][0] + 0x40
+        """Review defect 1 (2026-11-13): the part place is told only with the two-axis turret's steps in its chain,
+        the made place only with the unit-creation step in the stack (the list's chain and stack groups); the same
+        crash reached from elsewhere gets no reason."""
+        part = next(at for at, (key, _chain, _stack) in MadeUp.PLACES.items() if key == "part")
+        turret = MadeUp.TWO_AXIS[1][0] + 0x40
         program = self.program([turret, self.create, self.ELSEWHERE])
         self.assertIsNone(self.said(part, [self.ELSEWHERE], program))       # reached from elsewhere: nothing
-        self.assertEqual(self.said(part, [turret], program), "part")        # TWO_AXIS in the chain
-        self.assertIsNone(self.said(self.made, [self.ELSEWHERE], program))  # no CREATING in the stack
+        self.assertEqual(self.said(part, [turret], program), "part")        # the turret's step in the chain
+        self.assertIsNone(self.said(self.made, [self.ELSEWHERE], program))  # no unit-creation step in the stack
         self.assertEqual(self.said(self.made, [self.ELSEWHERE, self.create], program), "made")
 
     def test_every_place_needs_all_that_ties_it_and_nothing_else(self):
-        """The same for every place of the table (PLACES' chain groups and IN_STACK's): all it needs, told; any one
+        """The same for every place of the list (its chain groups and its stack groups): all it needs, told; any one
         of it missing, or a crash there reached from elsewhere, not told; a place that needs nothing, always told."""
-        for place, (key, needs) in self.places.PLACES.items():
-            groups = list(needs) + list(self.places.IN_STACK.get(place, ()))
+        for place, (key, chain, stack) in MadeUp.PLACES.items():
+            groups = list(chain) + list(stack)
             ties = [group[0][0] + 0x40 for group in groups]        # one place in each group
             program = self.program(ties + [self.ELSEWHERE])
             self.assertEqual(self.said(place, ties, program), key, hex(place))
@@ -760,21 +790,22 @@ class KnownCrashes(BugWatchTest):
                 self.assertIsNone(self.said(place, ties[:i] + ties[i + 1:], program), hex(place))
             if groups:
                 self.assertIsNone(self.said(place, [self.ELSEWHERE], program), hex(place))
-            self.assertEqual(bugwatch.read_dump(self.report([self.BASE + t for t in ties], place=place)).get("reason"),
+            self.assertEqual(bugwatch.read_dump(self.report([self.BASE + t for t in ties], place=place),
+                                                known=self.known).get("reason"),
                              None if groups else key, hex(place))  # no copy's program: no chain to tie it with
 
     def test_what_ties_a_place_is_found_further_up_than_the_chain_a_report_sends(self):
-        """The table's CREATING can be further up the stack than the 16 places a report sends (two of the held
+        """The unit-creation step can be further up the stack than the 16 places a report sends (two of the held
         reports): read_dump looks for it in the whole stack it reads, and the chain sent is still the nearest 16."""
         nearer = [0x40 * (i + 1) for i in range(bugwatch.CHAIN_MOST)]   # 16 made-up places before it
         program = self.program(nearer + [self.create])
         found = bugwatch.read_dump(self.report([self.BASE + n for n in nearer + [self.create]], place=self.made),
-                                   program)
+                                   program, known=self.known)
         self.assertEqual(found["reason"], "made")
         self.assertEqual([c.rsplit("+", 1)[1] for c in found["chain"]], [f"0x{n:x}" for n in nearer])
 
     def test_a_reason_for_a_place_nothing_ties_to_a_unit_doesnt_say_a_unit(self):
-        """The setup and mesh places: the table ties them to no unit (no chain or stack they need), so their reasons
+        """The setup and mesh places: the list ties them to no unit (no chain or stack they need), so their reasons
         say "a model", in every language, never a unit's (each language's word for unit). The made place, tied to a
         unit being created, says the unit's model (the control)."""
         import tomllib
@@ -782,10 +813,9 @@ class KnownCrashes(BugWatchTest):
                 "ru": "юнит", "cz": "jednotk", "jpn": "ユニット", "sc": "单位", "fa": "یگان"}
         words = tomllib.loads((Path(__file__).resolve().parents[1] / "src" / "ruse_launcher" / "words.toml")
                               .read_text(encoding="utf-8"))
-        in_stack = getattr(self.places, "IN_STACK", {})
         for key in ("setup", "mesh"):
-            places = [p for p, (k, needs) in self.places.PLACES.items() if k == key]
-            self.assertTrue(places and not any(self.places.PLACES[p][1] or in_stack.get(p) for p in places),
+            places = [p for p, (k, _chain, _stack) in MadeUp.PLACES.items() if k == key]
+            self.assertTrue(places and not any(MadeUp.PLACES[p][1] or MadeUp.PLACES[p][2] for p in places),
                             key)                                  # (nothing ties them)
             for lang, text in words[f"crash_why_{key}"].items():
                 self.assertNotIn(unit[lang], text.lower(), f"{key} {lang}")
@@ -796,10 +826,11 @@ class KnownCrashes(BugWatchTest):
         import re
         import tomllib
         from rusemod import schema
-        self.assertEqual({key for key, _needs in self.places.PLACES.values()}, set(self.places.REASONS))
+        self.assertEqual({key for key, _chain, _stack in MadeUp.PLACES.values()}, set(knowncrashes.REASONS))
         root = Path(__file__).resolve().parents[1] / "src" / "ruse_launcher"
         words = tomllib.loads((root / "words.toml").read_text(encoding="utf-8"))
-        for key in [f"crash_why_{r}" for r in self.places.REASONS] + ["crash_unit", "crash_mod_unit", "crash_no_unit"]:
+        for key in [f"crash_why_{r}" for r in knowncrashes.REASONS] + ["crash_unit", "crash_mod_unit", "crash_no_unit",
+                                                                       "crash_no_list", "crash_code"]:
             self.assertEqual(sorted(words[key]), sorted(schema.APP_LANGS), key)
             blanks = {tuple(sorted(re.findall(r"\{(\w+)\}", text))) for text in words[key].values()}
             self.assertEqual(len(blanks), 1, key)                 # the same {blanks} in every language
@@ -808,9 +839,10 @@ class KnownCrashes(BugWatchTest):
         self.assertIn('if (j.state === "done") watchCrash();', app)
         self.assertIn("bugwatch_crash:", (root / "ui" / "fake-api.js").read_text(encoding="utf-8"))
 
-    def run_game(self, report: bytes, named, program):
+    def run_game(self, report: bytes, named, program, kept=True):
         """A game the app started that closed leaving `report`: what went out, what the window is told, and the
-        stand-in that named the unit (`named`: unit_named's answer)."""
+        stand-in that named the unit (`named`: unit_named's answer). `kept`: the made-up list is on the PC (as a fetch
+        left it), when no list file is there yet."""
         local = self.home / "local"
         rpt = local / "Temp" / "CrashRpt_x"
         rpt.mkdir(parents=True, exist_ok=True)
@@ -827,15 +859,21 @@ class KnownCrashes(BugWatchTest):
             (rpt / "report.dmp").write_bytes(report)
             os.utime(rpt / "report.dmp", (1500, 1500))
 
+        if kept and not (self.home / bugwatch.FOLDER / knowncrashes.LIST_FILE).exists():
+            MadeUp.keep(self.home)                                # (as a fetch under version 5 left it)
         g = bugwatch.GameWatch(w, Game(), [], 1, sleep=sleep, clock=lambda: next(times), local=str(local),
                                exe=program, game=self.home / "game")
         with mock.patch.object(w, "send_waiting"), mock.patch.object(bugwatch, "unit_named",
                                                                      return_value=named) as naming:
             g.run()
+            if g.refreshing is not None:
+                g.refreshing.join(10)
+        self.game_watch = g
         files = list(w.outbox.glob("crash-*.json"))
         (sent,) = [json.loads(f.read_text()) for f in files]
         for f in files:
             f.unlink()
+        self.days = w.days
         return sent, bugwatch.crash_notice(), naming
 
     def test_the_game_watch_tells_the_player_and_sends_the_unit_as_version_4_says(self):
@@ -844,12 +882,13 @@ class KnownCrashes(BugWatchTest):
         horse = {"name": "Horse Squad", "added": True}
         self.accept(3)                                            # version 3: why only; no unit read, named or sent
         sent, told, naming = self.run_game(report, horse, program)
-        self.assertEqual(told, {"watching": False, "notice": {"why": "made", "unit": None, "added": False}})
+        self.assertEqual(told, {"watching": False, "notice": {"why": "made", "unit": None, "added": False,
+                                                              "list": True}})
         naming.assert_not_called()
         self.assertNotIn("unit", sent)
         self.accept(4)                                            # a mod's unit: named for the player, sent as added
         sent, told, naming = self.run_game(report, horse, program)
-        self.assertEqual(told["notice"], {"why": "made", "unit": "Horse Squad", "added": True})
+        self.assertEqual(told["notice"], {"why": "made", "unit": "Horse Squad", "added": True, "list": True})
         self.assertEqual((sent["unit"], sent["agreement"]), ({"added": True}, 4))
         self.assertEqual(naming.call_args[0][:2], (4059, program.parent))    # named from the crashed copy's data
         bodies = [sent]
@@ -907,6 +946,8 @@ class KnownCrashes(BugWatchTest):
 
         times = iter([1000.0, 1600.0])
         w = w or self.watch()
+        if not (self.home / bugwatch.FOLDER / knowncrashes.LIST_FILE).exists():
+            MadeUp.keep(self.home)                                # (as a fetch under version 5 left it)
         g = bugwatch.GameWatch(w, Closed(), [], 1, sleep=lambda _s: None, clock=lambda: next(times), local=str(local),
                                exe=program, game=self.home / "game")
         with mock.patch.object(w, "send_waiting"), mock.patch.object(bugwatch, "unit_named", return_value=named):
@@ -945,7 +986,8 @@ class KnownCrashes(BugWatchTest):
                 running.set()
                 g2.join(10)
         self.assertEqual(bugwatch.crash_notice(), {"watching": False,
-                                                   "notice": {"why": "made", "unit": "Tiger", "added": False}})
+                                                   "notice": {"why": "made", "unit": "Tiger", "added": False,
+                                                              "list": True}})
 
     def test_the_player_is_told_when_bug_watch_cant_write_its_records(self):
         """Review defect 4 (2026-11-13): Bug Watch's outbox can't be written (a full disk, a folder another program
@@ -957,7 +999,8 @@ class KnownCrashes(BugWatchTest):
         horse = {"name": "Horse Squad", "added": True}
         with mock.patch.object(bugwatch.Watch, "_write_out", side_effect=OSError("disk full")):
             w = self.finished_game(report, program, horse)        # (no error out of the watch)
-        self.assertEqual(bugwatch.crash_notice()["notice"], {"why": "made", "unit": "Horse Squad", "added": True})
+        self.assertEqual(bugwatch.crash_notice()["notice"], {"why": "made", "unit": "Horse Squad", "added": True,
+                                                             "list": True})
         self.assertEqual(w.days[bugwatch._today()]["played"]["total"], 10)   # the minutes played: kept
         with mock.patch.object(bugwatch.Watch, "played", side_effect=OSError("held")):
             w = self.finished_game(report, program, horse)

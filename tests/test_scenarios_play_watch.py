@@ -6,8 +6,11 @@ the crash notice after a game a Play started stops at a crash we know, said by t
 
 Bug Watch never reaches its server here: its Watch is made with a fake of the server (test_bugwatch's Server), its error
 hooks and its save at the app's end aren't installed, and the crash reports it reads are the made-up ones a test writes
-in this test's LOCALAPPDATA (the base). The made-up crash report and the made-up program file are the crash piece's
-tests' own (test_bugwatch KnownCrashes: laid out by rusemod.crashplaces' table, no detail of the game's program).
+in this test's LOCALAPPDATA (the base). Our list of known crashes (rusemod.knowncrashes, fetched under version 5 of the
+agreement) comes from a fake of its address too, and anything else that reaches for the network fails the test
+(test_knowncrashes.keep_off_the_network). The made-up crash report, the made-up program file and the made-up list are
+the crash piece's tests' own (test_bugwatch KnownCrashes, test_knowncrashes MadeUp: no detail of the game's program).
+Without Bug Watch, a crash of a game the Launcher started gets a crash code (rusemod.crashcode).
 
 FOR: the Test in game and Play scenarios (release 0.9.8.20, overnight 2026-11-14). USED-BY: the scenarios' run and
 report."""
@@ -35,6 +38,8 @@ class Watched(PlayScenario):
         super().setUp()
         from rusemod import bugwatch
         from test_bugwatch import Server
+        from test_knowncrashes import keep_off_the_network
+        keep_off_the_network(self)
         self.server = Server()
         real = bugwatch.Watch
         for target, stand in (("Watch", lambda home, app, version, **kw: real(home, app, version, opener=self.server,
@@ -173,21 +178,29 @@ class CrashingGame(Watched):
             cls.unknown = kc.report([0, kc.BASE + kc.create, kc.UNIT], [kc.description(4059)], place=0x4321).read_bytes()
         finally:
             kc.tearDown()
+            kc.doCleanups()   # (its setUp's patches end here, not at the end of the whole run)
         exe = next(p for p in cls.game.iterdir() if p.suffix.lower() == ".exe")
         exe.write_bytes(cls.program)
 
-    def play_and_crash(self, report: bytes, named, accepted: int = 4, lang: str = "fr") -> dict:
-        """Bug Watch on (agreement `accepted`), a set played, the game it started closes leaving `report` (Bug Watch
-        reads the copy's data for the unit's name: `named` stands in for it): what the page is handed."""
-        from rusemod import bugwatch
+    def play_and_crash(self, report: bytes, named, accepted: int = 5, lang: str = "fr", ticked: bool = True) -> dict:
+        """Bug Watch on (`ticked`; agreement `accepted`), a set played, the game it started closes leaving `report`
+        (Bug Watch reads the copy's data for the unit's name: `named` stands in for it; our list of known crashes
+        comes from the fake list address, self.lists): what the page is handed."""
+        import threading
+        from rusemod import bugwatch, net
+        from test_knowncrashes import ListServer, MadeUp
 
         class Closed:
             def poll(self):
                 return 0
         la = self.launcher(start_game=lambda exe: self.started.append(exe) or Closed())
+        bugwatch.start(self.home, "launcher", "0.4.8.22")   # (as the Launcher's window does when it opens)
         la.set_pref("lang", lang)
         la.guard_accept_terms()
-        la.bugwatch_on("Nick")
+        if ticked:
+            la.bugwatch_on("Nick")
+        else:
+            la.set_username("Nick")
         values = self.settings()
         values["guard"]["terms"] = accepted
         from rusemod.home import save_settings
@@ -200,7 +213,9 @@ class CrashingGame(Watched):
         dump.write_bytes(report)
         later = time.time() + 3600
         os.utime(dump, (later, later))
-        with mock.patch.object(bugwatch, "unit_named", return_value=named) as naming:
+        self.lists = getattr(self, "lists", None) or ListServer(MadeUp.blob())
+        with mock.patch.object(bugwatch, "unit_named", return_value=named) as naming, \
+                mock.patch.object(net, "urlopen", self.lists):
             j = self.wait(la.play("mine")["job"], la)
             self.assertEqual(j["state"], "done", j)
             end = time.time() + 30       # (asked as the page asks: a notice is handed over once, watching or not)
@@ -208,24 +223,40 @@ class CrashingGame(Watched):
             while seen["watching"] and seen["notice"] is None and time.time() < end:
                 time.sleep(0.05)
                 seen = la.bugwatch_crash()
+            # (the player is told first, before Bug Watch's own records: the watch, a fetch still on its way and the
+            # sends it starts end here, at their fakes, before the test's folders go)
+            for name in ("bug-watch-game", "crash-code-watch", "bug-watch-crash-list", "send_waiting"):
+                for t in threading.enumerate():
+                    if name in t.name and t is not threading.current_thread():
+                        t.join(10)
         self.naming = naming
         return seen
 
 
 class TheCrashNotice(CrashingGame):
     def test_a_crash_we_know_tells_the_unit_and_why(self):
-        """Usual: Bug Watch on under version 4; the game stops at a crash we know while making one of the game's own
-        units: the page is handed the reason and the unit (named in the player's language), once."""
+        """Usual: Bug Watch on under version 5; our list comes from the Bug Watch server while the game runs (one GET
+        of its address); the game stops at a crash we know while making one of the game's own units: the page is
+        handed the reason and the unit (named in the player's language), once."""
         seen = self.play_and_crash(self.report, {"name": "Panzer IV (fr)", "added": False})
-        self.assertEqual(seen["notice"], {"why": "made", "unit": "Panzer IV (fr)", "added": False})
+        self.assertEqual(seen["notice"], {"why": "made", "unit": "Panzer IV (fr)", "added": False, "list": True})
         self.assertEqual(self.naming.call_args[0][3], "fr")
-        from rusemod import bugwatch
+        from rusemod import bugwatch, knowncrashes
         self.assertIsNone(bugwatch.crash_notice()["notice"])
+        self.assertEqual([r.full_url for r in self.lists.asked], [bugwatch.SERVER + knowncrashes.ROUTE])
 
-    def test_under_version_3_only_why(self):
-        """Usual: the same crash for a player who accepted version 3 only: the reason, no unit."""
-        seen = self.play_and_crash(self.report, {"name": "Panzer IV (fr)", "added": False}, accepted=3)
-        self.assertEqual(seen["notice"], {"why": "made", "unit": None, "added": False})
+    def couldnt_check(self, accepted: int) -> None:
+        """Unusual: the same crash for a player who accepted an older version only (the list is fetched only under
+        version 5, whose words say so): nothing is fetched, and the page is told the crash couldn't be checked."""
+        seen = self.play_and_crash(self.report, {"name": "Panzer IV (fr)", "added": False}, accepted=accepted)
+        self.assertEqual(seen["notice"], {"why": None, "unit": None, "added": False, "list": False})
+        self.assertEqual(self.lists.asked, [])
+
+    def test_under_version_4_nothing_is_fetched_and_the_launcher_says_it_couldnt_check(self):
+        self.couldnt_check(4)
+
+    def test_under_version_3_nothing_is_fetched_and_the_launcher_says_it_couldnt_check(self):
+        self.couldnt_check(3)
 
     def test_a_crash_we_dont_know_tells_nothing(self):
         seen = self.play_and_crash(self.unknown, {"name": "Panzer IV (fr)", "added": False})
@@ -233,14 +264,14 @@ class TheCrashNotice(CrashingGame):
 
     def test_the_page_says_it_in_every_language(self):
         """The Launcher page's own crashText (app.js, run in Node with each language's words): the game's unit, a mod's
-        unit, no unit; every reason the table has: each sentence in its language, the unit's name in it, no blank
+        unit, no unit; every reason the list may have: each sentence in its language, the unit's name in it, no blank
         left, never the English sentence in another language."""
-        from rusemod import crashplaces
+        from rusemod import knowncrashes
         exe = node()
         if exe is None:
             self.skipTest("no Node")
         js = LAUNCHER_UI.read_text(encoding="utf-8")
-        notices = [{"why": why, "unit": unit, "added": added} for why in sorted(crashplaces.REASONS)
+        notices = [{"why": why, "unit": unit, "added": added} for why in sorted(knowncrashes.REASONS)
                    for unit, added in (("Panzer IV", False), ("Horse Squad", True), (None, False))]
         words = {lang: self.launcher_words(lang) for lang in LANGS}
         script = (page_function(js, "fill") + page_function(js, "crashText") + "const state = { words: null };\n"
@@ -265,14 +296,37 @@ class TheCrashNotice(CrashingGame):
                     self.assertIn(words[lang][f"crash_why_{n['why']}"], said[lang][k], lang)
 
 
+class TheCrashCodeWithoutBugWatch(CrashingGame):
+    def test_a_player_without_bug_watch_gets_a_code_and_nothing_is_fetched_or_sent(self):
+        """Usual: accepted with Bug Watch unticked (version 5); the game a Play started stops: the page is handed a
+        crash code made from where it stopped (the owner, 2026-11-14), once; our server is never asked (no list, no
+        report), and nothing of Bug Watch's is kept on the PC."""
+        from rusemod import bugwatch, crashcode
+        seen = self.play_and_crash(self.report, None, ticked=False)
+        code = seen["notice"]["code"]
+        dump = self.local / "Temp" / "CrashRpt_x" / "report.dmp"
+        self.assertEqual(code, crashcode.make(bugwatch.read_dump(dump)))
+        self.assertEqual(crashcode.read(code)["module"], "game")
+        self.assertEqual((self.lists.asked, self.server.sent), ([], []))
+        self.assertFalse((self.home / bugwatch.FOLDER).exists())
+        self.assertIsNone(bugwatch.crash_notice()["notice"])
+
+    def test_before_version_5_no_code(self):
+        seen = self.play_and_crash(self.report, None, accepted=4, ticked=False)
+        self.assertIsNone(seen["notice"])
+
+
 class TheCrashNoticeAfterTestInGame(CrashingGame):
     def test_the_studio_keeps_it_and_its_page_never_asks(self):
         """Today's state, for the owner's open question left by the crash piece's join ("whether the Studio's Test in
-        game says the same"): Bug Watch on under version 4, Test in game starts the game, it stops at a crash we know:
-        the Studio's back end has the notice (its bugwatch_crash hands it over) but its page never asks for it (no
-        bugwatch_crash in the Studio's app.js), so a Studio player is told nothing; the notice goes when the next game
-        starts."""
-        from rusemod import bugwatch
+        game says the same"): Bug Watch on under version 5 (the Studio fetches our list too), Test in game starts the
+        game, it stops at a crash we know: the Studio's back end has the notice (its bugwatch_crash hands it over) but
+        its page never asks for it (no bugwatch_crash in the Studio's app.js), so a Studio player is told nothing; the
+        notice goes when the next game starts."""
+        import threading
+        from rusemod import bugwatch, net
+        from rusemod.home import save_settings
+        from test_knowncrashes import ListServer, MadeUp
 
         class Closed:
             def poll(self):
@@ -282,20 +336,30 @@ class TheCrashNoticeAfterTestInGame(CrashingGame):
         self.addCleanup(self.page.set_pref, "lang", "us")
         self.page.guard_accept_terms()
         self.page.bugwatch_on("Nick")
+        values = self.settings()
+        values["guard"]["terms"] = 5
+        save_settings(self.home, values)
         self.a_mod()
         dump = self.local / "Temp" / "CrashRpt_s" / "report.dmp"
         dump.parent.mkdir(parents=True, exist_ok=True)
         dump.write_bytes(self.report)
         later = time.time() + 3600
         os.utime(dump, (later, later))
-        with mock.patch.object(bugwatch, "unit_named", return_value={"name": "Panzer IV (fr)", "added": False}):
+        lists = ListServer(MadeUp.blob())
+        with mock.patch.object(bugwatch, "unit_named", return_value={"name": "Panzer IV (fr)", "added": False}), \
+                mock.patch.object(net, "urlopen", lists):
             self.assertEqual(self.wait(self.page.test_in_game()["job"])["state"], "done")
             end = time.time() + 30
             seen = self.page.bugwatch_crash()
             while seen["watching"] and seen["notice"] is None and time.time() < end:
                 time.sleep(0.05)
                 seen = self.page.bugwatch_crash()
-        self.assertEqual(seen["notice"], {"why": "made", "unit": "Panzer IV (fr)", "added": False})
+            for name in ("bug-watch-game", "bug-watch-crash-list", "send_waiting"):   # (as play_and_crash)
+                for t in threading.enumerate():
+                    if name in t.name and t is not threading.current_thread():
+                        t.join(10)
+        self.assertEqual(seen["notice"], {"why": "made", "unit": "Panzer IV (fr)", "added": False, "list": True})
+        self.assertEqual(len(lists.asked), 1)
         studio_ui = Path(__file__).resolve().parents[1] / "src" / "ruse_studio" / "ui" / "app.js"
         self.assertNotIn("bugwatch_crash", studio_ui.read_text(encoding="utf-8"))
 
