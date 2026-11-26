@@ -179,6 +179,24 @@ class ReleaseBuild(unittest.TestCase):
         self.assertEqual(len(re.findall(r"(?m)^\s+persist-credentials: false$", self.TEXT)),
                          len(re.findall(r"(?m)^\s+- uses: actions/checkout@", self.TEXT)))   # no token left in git
 
+    def test_the_draft_job_takes_no_text_from_the_build_job(self):
+        """The build job runs packages from outside; the draft job (which can write and mint attestations) reads the tag
+        itself, through env values, and never pastes `needs.` or the ref name into script text."""
+        jobs = jobs_of(self.TEXT)
+        draft, build = jobs["draft"], jobs["build"]
+        self.assertNotIn("${{ needs.", self.TEXT)
+        self.assertNotIn("\n    outputs:", build)
+        for block in re.findall(r"(?ms)^        run: \|\n(.*?)(?=^      - |\Z)", draft):
+            self.assertNotIn("${{", block)       # no expression pasted into a script: only $env values
+        self.assertIn(r"^(launcher|studio)-v(\d+\.\d+\.\d+(?:\.\d+)?)$", draft)   # the tag is checked, then split
+        for tool in ("gh release create", "python installers/notes_json.py"):
+            line = next(l for l in draft.splitlines() if tool in l and not l.lstrip().startswith("#"))
+            self.assertIn("$env:", line)
+        # the tag step runs before the build tools are installed
+        self.assertLess(build.index("id: tag"), build.index("Install the build tools"))
+        # what is still taken on trust is named, not hidden
+        self.assertIn("what Nuitka downloads itself", build)
+
     def test_nothing_comes_from_a_cache(self):
         self.assertNotIn("actions/cache", self.TEXT)
         self.assertNotRegex(self.TEXT, r"(?m)^\s+cache:")
@@ -205,7 +223,7 @@ class ReleaseBuild(unittest.TestCase):
         self.assertLess(build.index("--check-keys"), build.index("installers/build_app.py"))
         attest = self.TEXT[self.TEXT.index("actions/attest-build-provenance@"):]
         attest = attest[:attest.index("- name:")]
-        self.assertIn("dist/*-Setup-${{ needs.build.outputs.version }}.exe", attest)
+        self.assertIn("dist/*-Setup-${{ env.VERSION }}.exe", attest)
         self.assertIn("dist/RUSE-*-notes.json", attest)
         self.assertLess(self.TEXT.index("actions/attest-build-provenance@"), self.TEXT.index("gh release create"))
 
