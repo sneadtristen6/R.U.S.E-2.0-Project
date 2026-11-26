@@ -288,8 +288,8 @@ finestre desktop costruite come pagine web; una volta: `py -3 -m pip install pyw
 in un normale browser con dati inventati: `src/ruse_launcher/ui/index.html?fake`, `src/ruse_studio/ui/index.html?fake`.
 
 - **RUSE Launcher** ([`src/ruse_launcher/`](src/ruse_launcher/)), per i giocatori: trova il gioco, elenca i tuoi set di
-  mod e ha un grande pulsante Gioca che costruisce la copia moddata del set e avvia il gioco (Originale parte tramite
-  Steam). `py -3 -m ruse_launcher`. **I giocatori non toccano mai un file.** Una libreria di mod («Aggiungi un file di
+  mod e ha un grande pulsante Gioca che costruisce la copia moddata del set e avvia il gioco (anche Originale, senza
+  mod). `py -3 -m ruse_launcher`. **I giocatori non toccano mai un file.** Una libreria di mod («Aggiungi un file di
   mod…» per un `.rusemod` dello Studio, un `.rmod` o uno `.zip`, oppure trascina un file o una cartella di mod sulla
   finestra; ogni mod viene prima controllata), set di mod creati sullo schermo (nuovo, modifica e riordina, rinomina,
   duplica, elimina), Condividi e «Importa un ordine di caricamento…» per un set di mod (il testo di RUSE-Mod-Manager

@@ -109,11 +109,8 @@ class Launcher(Base):
         self.assertEqual((game, folders, instance, name, kw["title"]),
                          (self.game, [], self.instances / SHARED, "Vanilla", True))
 
-    def test_play_vanilla_with_the_games_own_title_goes_through_steam(self):
-        api = self.api()
-        api.set_game_title(False)
-        j = wait_for(api, api.play("vanilla")["job"])
-        self.assertEqual((j["state"], self.urls, self.started), ("done", [STEAM_PLAY], []))
+    # Vanilla with the game's own title no longer goes through Steam (the owner, 2026-11-25, the legal fixes' 36 B): it
+    # builds a plain copy with RUSE Guard in it, started like a set's: tests/test_guard_changes.py VanillaIsOurCopy
 
     def test_play_a_mod_set_builds_the_copy_and_starts_it(self):
         mod = write_mod(self.tmp.name, "econ-half", {"eco.rndf": "patch $/B ( ProductionPrice *= 0.5 )"})
@@ -904,7 +901,7 @@ class CleanBackup(Base):
     def test_the_studio_at_work_on_the_game_is_waited_for(self):
         from rusemod import backup
         api, folder = self.api(), Path(self.tmp.name) / "backups"
-        api.set_game_title(False)  # (Vanilla then goes through Steam: no copy to build on this made-up game)
+        api.set_game_title(False)  # (no gold title to fit on this made-up game)
         self.assertEqual(wait_for(api, api.backup_make()["job"])["state"], "done")
         with backup._busy(folder, "restore"):  # the Studio restoring the game's files: a Play waits
             j = wait_for(api, api.play("vanilla")["job"])
@@ -919,7 +916,10 @@ class CleanBackup(Base):
         with backup._busy(folder, "make"):  # the Studio making a backup: one at a time
             j = wait_for(api, api.backup_make(True)["job"])
         self.assertIn("the other app (the Launcher or the Studio) is making a backup", j["message"])
-        self.assertEqual(wait_for(api, api.play("vanilla")["job"])["state"], "done")  # nothing held any more
+        # nothing held any more: a Play builds and starts (a mod set's: Vanilla is a copy with no mods since 2026-11-25,
+        # and on this made-up game a copy with no mods has nothing to change, so its build writes none)
+        self.mod_set("half", [write_mod(self.tmp.name, "econ-half", {"eco.rndf": "patch $/B ( ProductionPrice *= 0.5 )"})])
+        self.assertEqual(wait_for(api, api.play("half")["job"])["state"], "done")
         self.assertEqual([p.name for p in folder.iterdir()], ["24687178"])  # and nothing left behind
 
 

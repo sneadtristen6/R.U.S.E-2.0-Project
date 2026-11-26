@@ -6,11 +6,13 @@ downloads -- by asking Steam itself. The player signs in through Steam in their 
 (ruse-owned) asks Steam whether that account owns R.U.S.E. (app 21970) and hands back a short-lived pass signed with
 the project's key. The pass carries no Steam ID, only a salted hash of it, so nothing kept here names the player.
 
-The Launcher holds no secret and runs no local web server: it asks the server for a code, opens the login link in the
-browser, and polls until the sign-in is done. That works the same on Windows, under Proton on the Steam Deck and on
-Linux. A pass the player already has is checked here, offline, against the project's public key (PUBLIC_KEY) with
-owned-copies' own Ed25519 (rusemod.owned.verify) -- the same signature the server makes -- so no network is needed to
-trust a kept pass.
+The Launcher holds no secret and runs no local web server: it asks the server for a code, opens Steam's own sign-in
+page in the browser, and polls until the sign-in is done. That works the same on Windows, under Proton on the Steam
+Deck and on Linux. The page's address is built here (steam_login_url), from the server's address the app already has
+and the code: the app never opens an address the server hands it (the owner, 2026-11-25, the legal fixes' question
+13 A), so a changed server can't make it open a program, a file or another site. A pass the player already has is
+checked here, offline, against the project's public key (PUBLIC_KEY) with owned-copies' own Ed25519
+(rusemod.owned.verify) -- the same signature the server makes -- so no network is needed to trust a kept pass.
 
 Switched on for the release (the owner, 2026-10-31), with RUSE Guard; the server needs its OWNED_LIVE switch set on
 Cloudflare too. Off (ON False), owned_pass_ok() is True for everyone, so nothing is gated and the sign-in screen
@@ -50,6 +52,12 @@ SERVER_SETTING = "owned_server"   # settings.json: a server address other than S
 PASS_KIND = "owned"
 PASS_V = 1
 _B64URL = re.compile(r"^[A-Za-z0-9_-]*$")
+# Steam's own sign-in page (OpenID 2.0) and the fields the sign-in server's /v1/steam/login sends the browser there
+# with (ruse-owned worker.js, login()): the app builds the same address itself (steam_login_url)
+STEAM_OPENID = "https://steamcommunity.com/openid/login"
+_OPENID_NS = "http://specs.openid.net/auth/2.0"
+_IDENTIFIER_SELECT = "http://specs.openid.net/auth/2.0/identifier_select"
+_CODE = re.compile(r"^[A-Za-z0-9_-]{43}$")   # a sign-in code: 32 random bytes, base64url (worker.js CODE_SHAPE)
 _WORDS = Path(__file__).with_name("ownedsignintext.toml")
 
 
@@ -136,18 +144,49 @@ def _body(raw: bytes) -> dict:
 
 
 def start(server: str = SERVER, timeout: float = TIMEOUT) -> dict:
-    """Ask the server to begin a sign-in: {"code", "login_url", "poll_every", "expires_in"}. Raises OwnedPassError
-    with a plain message when the server is off, busy, or unreachable."""
+    """Ask the server to begin a sign-in: {"code", "poll_every", "expires_in"}. The login link the server also sends
+    (for the apps before 2026-11-25) is never passed on: the app builds Steam's address itself (steam_login_url). A
+    code that isn't the server's shape is refused. Raises OwnedPassError with a plain message when the server is off,
+    busy, or unreachable."""
     if not str(server).startswith(("http://", "https://")):
         raise OwnedPassError("The sign-in server address isn't set up.")
     try:
         status, body = _call(server.rstrip("/") + "/v1/steam/start", data=b"", timeout=timeout)
     except (urllib.error.URLError, OSError, ValueError):
         raise OwnedPassError("We couldn't reach the sign-in server. Check your connection and try again.") from None
-    if status == 200 and body.get("code") and body.get("login_url"):
-        return {"code": str(body["code"]), "login_url": str(body["login_url"]),
-                "poll_every": _pos(body.get("poll_every"), 3), "expires_in": _pos(body.get("expires_in"), 600)}
+    if status == 200 and isinstance(body.get("code"), str) and _CODE.match(body["code"]):
+        return {"code": body["code"], "poll_every": _pos(body.get("poll_every"), 3),
+                "expires_in": _pos(body.get("expires_in"), 600)}
+    if status == 200:   # an answer with no code we can use: nothing to open
+        raise OwnedPassError("The sign-in server didn't answer. Try again in a few minutes.")
     raise OwnedPassError(str(body.get("reason") or "The sign-in server didn't answer. Try again in a few minutes."))
+
+
+def steam_login_url(server: str, code: str) -> str:
+    """The address the browser opens for "Sign in through Steam": Steam's own sign-in page, with the sign-in server's
+    return address on it (where Steam sends the player back, and the server checks Steam's answer), built here from
+    the server's address the app has (SERVER, or settings' owned_server) and the code start() checked. The same
+    fields the server's /v1/steam/login sends the browser to Steam with (worker.js login(); its /v1/steam/return
+    checks openid.return_to against exactly this). ValueError for a server address that isn't http(s) or a code that
+    isn't a sign-in code."""
+    parts = urllib.parse.urlsplit(str(server).strip())
+    host, port = parts.hostname, parts.port   # (port: ValueError when it isn't a number)
+    if parts.scheme not in ("http", "https") or not host or parts.username is not None or parts.password is not None:
+        raise ValueError("not a sign-in server's address")
+    if not isinstance(code, str) or not _CODE.match(code):
+        raise ValueError("not a sign-in code")
+    # the server's origin as the server itself names it (a web address's origin: the host in lowercase, no default port)
+    origin = f"{parts.scheme}://{f'[{host}]' if ':' in host else host}"
+    if port is not None and port != {"http": 80, "https": 443}[parts.scheme]:
+        origin += f":{port}"
+    return STEAM_OPENID + "?" + urllib.parse.urlencode({
+        "openid.ns": _OPENID_NS,
+        "openid.mode": "checkid_setup",
+        "openid.return_to": f"{origin}/v1/steam/return?code={code}",
+        "openid.realm": f"{origin}/",
+        "openid.identity": _IDENTIFIER_SELECT,
+        "openid.claimed_id": _IDENTIFIER_SELECT,
+    })
 
 
 def poll(server: str, code: str, timeout: float = TIMEOUT) -> dict:
@@ -223,8 +262,8 @@ def words(lang: str = "us") -> dict:
 
 class OwnedPassCalls:
     """The window API's calls for owned copies, layer 2, for both apps (a mixin beside rusemod.owned.OwnedCalls). It
-    uses self._home (settings), self.prefs() (the language) and self._community_open (to open the login link). While
-    ON is False it is held: the status says so and nothing is gated."""
+    uses self._home (settings), self.prefs() (the language) and self._community_open (to open Steam's sign-in page).
+    While ON is False it is held: the status says so and nothing is gated."""
 
     def _owned_server(self) -> str:
         return settings(self._home).get(SERVER_SETTING) or SERVER
@@ -243,13 +282,19 @@ class OwnedPassCalls:
         return (not ON) or pass_status(self._home)["owned"]
 
     def owned_sign_in_start(self) -> dict:
-        """Begin "Sign in through Steam": open Steam's login in the player's browser and return the code to poll with
-        (owned_sign_in_poll). {"on": False} when layer 2 is off."""
+        """Begin "Sign in through Steam": open Steam's own sign-in page in the player's browser, at the address built
+        here (steam_login_url: never one the server gave), and return the code to poll with (owned_sign_in_poll) and
+        that address. {"on": False} when layer 2 is off."""
         if not ON:
             return {"on": False}
-        info = start(self._owned_server())
-        self._community_open(info["login_url"])
-        return {"on": True, **info}
+        server = self._owned_server()
+        info = start(server)
+        try:
+            address = steam_login_url(server, info["code"])
+        except ValueError:   # (start refused both already: kept, so nothing is ever opened from a bad one)
+            raise OwnedPassError("The sign-in server address isn't set up.") from None
+        self._community_open(address)
+        return {"on": True, **info, "login_url": address}
 
     def owned_sign_in_poll(self, code: str) -> dict:
         """Ask the server whether the sign-in is done. On "owned", check the pass here and keep it, then return the

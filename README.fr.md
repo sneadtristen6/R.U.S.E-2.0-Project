@@ -300,7 +300,7 @@ toutes deux des fenêtres de bureau construites comme des pages web ; une fois :
 
 - **RUSE Launcher** ([`src/ruse_launcher/`](src/ruse_launcher/)), pour les joueurs : il trouve le jeu, liste vos
   ensembles de mods et a un grand bouton Jouer qui construit la copie moddée de l'ensemble et lance le jeu (Jeu
-  d'origine démarre par Steam). `py -3 -m ruse_launcher`. **Les joueurs ne touchent jamais à un fichier.** Une
+  d'origine aussi, sans mods). `py -3 -m ruse_launcher`. **Les joueurs ne touchent jamais à un fichier.** Une
   bibliothèque de mods (« Ajouter un fichier de mod… » pour un `.rusemod` du Studio, un `.rmod` ou un `.zip`, ou
   déposez un fichier ou un dossier de mod sur la fenêtre ; chaque mod est d'abord vérifié), des ensembles de mods faits
   à l'écran (nouveau, modifier et réordonner, renommer, dupliquer, supprimer), Partager et « Importer un ordre de

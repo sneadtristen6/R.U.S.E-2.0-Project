@@ -1,6 +1,7 @@
-"""Starting R.U.S.E. (PLAN.md L4), for both apps: the launcher's Play and the Studio's Test in game. Vanilla starts
-through Steam; modded play builds the mods into a modded copy of the game (rusemod.instance) and starts the game from
-there, after Steam. The Steam install is never touched.
+"""Starting R.U.S.E. (PLAN.md L4), for both apps: the launcher's Play and the Studio's Test in game. Play builds the
+mods into a modded copy of the game (rusemod.instance) and starts the game from there, after Steam; the Launcher's
+Vanilla is that copy with no mods (the owner, 2026-11-25: never through Steam's start link, STEAM_PLAY). The Steam
+install is never touched.
 
 A Play whose mods, game and app are the same as the modded copy's last build, with the copy as that build left it,
 starts the copy with no build (built_from, rusemod.instance.needs_build); a build reuses what it can of the old copy.
@@ -22,7 +23,8 @@ from .home import save_settings, settings
 from .instance import Note
 from .steam import build_of
 
-STEAM_PLAY = "steam://rungameid/21970"
+STEAM_PLAY = "steam://rungameid/21970"   # Steam's start link for the game: the apps never open it (the owner,
+#                                          2026-11-25: Vanilla too is our copy with RUSE Guard); named for the tests
 STEAM_OPEN = "steam://open/main"
 
 INSTANCES = "RUSE-Instances"          # the recommended folder for modded copies, on the game's drive
@@ -292,10 +294,6 @@ class Starter:
         self.owned = None
         # a required update (rusemod.update.UpdateCalls.use_required_updates): the message while it isn't in, else None
         self.required = None
-
-    def vanilla(self, say) -> None:
-        say("Starting R.U.S.E. through Steam…")
-        self.open_url(STEAM_PLAY)
 
     def modded(self, game: Path, mod_folders, instance: Path, name: str, say, watch: bool = True,
                guard: dict | None = None, words: dict | None = None, cut_off_errors: bool = False,

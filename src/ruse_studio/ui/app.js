@@ -6523,8 +6523,12 @@ window.openSettings = (id) => {
 // then the app closes and the installer opens it again ---
 const APP_NAME = "RUSE Studio";
 
-async function checkUpdate() {
+// The running version beside the app's name, from the start (the update check itself waits for the agreement)
+async function showVersion() {
   try { $("app-version").textContent = `v${(await api().app_version()).version}`; } catch { /* an older back end */ }
+}
+
+async function checkUpdate() {
   try { state.update = await api().update_check(state.lang); } catch { state.update = null; }
   renderUpdate();
   const u = state.update;  // a required update installs by itself, at once (required.js shows its box meanwhile)
@@ -6716,7 +6720,7 @@ async function start() {
   await setLanguage(state.lang);
   // the first screen is drawn: the start-up log (rusemod.startlog) notes it, for the troubleshooter's report
   Promise.resolve().then(() => api().start_mark("ready")).catch(() => {});  // an older back end: no log
-  checkUpdate();
+  showVersion();
   await openLangPick(true);  // until a language is picked there: "Choose your language", first
   // then the shared agreement + username (shared/agreement.js), once RUSE Guard is live, before the start screen
   let guardLive = false;
@@ -6724,6 +6728,7 @@ async function start() {
   await window.Agreement.open({ api: api(), words: state.words, fairOn: guardLive });
   filesMoved().catch(() => {});  // an older back end: nothing moved
   firstBackup(status.ready).catch(problem);
+  checkUpdate();  // only once the agreement is accepted (the owner, 2026-11-25, 18 B; the back end holds it too)
   // the start screen (startflow.js, loaded after this file: the page's scripts all read first)
   if (document.readyState === "loading") await new Promise((ok) => document.addEventListener("DOMContentLoaded", ok, { once: true }));
   if (window.StartFlow) await window.StartFlow.atStart(status.ready);

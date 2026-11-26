@@ -287,8 +287,8 @@ Webseiten; einmal: `py -3 -m pip install pywebview`. Ihre Bildschirme öffnen si
 Daten: `src/ruse_launcher/ui/index.html?fake`, `src/ruse_studio/ui/index.html?fake`.
 
 - **RUSE Launcher** ([`src/ruse_launcher/`](src/ruse_launcher/)), für Spieler: er findet das Spiel, listet deine Mod-Sets auf
-  und hat einen großen Spielen-Knopf, der die gemoddete Kopie des Sets baut und das Spiel startet („Original“ startet über
-  Steam). `py -3 -m ruse_launcher`. **Spieler fassen nie eine Datei an.** Eine Mod-Bibliothek („Mod-Datei hinzufügen…“ für
+  und hat einen großen Spielen-Knopf, der die gemoddete Kopie des Sets baut und das Spiel startet („Original“ auch, ohne
+  Mods). `py -3 -m ruse_launcher`. **Spieler fassen nie eine Datei an.** Eine Mod-Bibliothek („Mod-Datei hinzufügen…“ für
   eine `.rusemod` aus dem Studio, eine `.rmod` oder eine `.zip`, oder eine Mod-Datei oder einen Ordner auf das Fenster ziehen;
   jeder Mod wird zuerst geprüft), Mod-Sets, auf dem Bildschirm erstellt (neu, bearbeiten und umsortieren, umbenennen,
   duplizieren, löschen), „Teilen“ und „Ladereihenfolge importieren…“ für ein Mod-Set (der eigene Text von RUSE-Mod-Manager, so

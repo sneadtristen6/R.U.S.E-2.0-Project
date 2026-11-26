@@ -1819,11 +1819,12 @@ async function start() {
   watchCrash(0);  // a game this app started may be watched still, or have just stopped at a crash we know
   // the first screen is drawn: the start-up log (rusemod.startlog) notes it, for the troubleshooter's report
   Promise.resolve().then(() => api().start_mark("ready")).catch(() => {});  // an older back end: no log
-  checkUpdate();
+  showVersion();
   await openLangPick(true);  // until a language is picked there: "Choose your language", first
   // then the shared agreement + username (shared/agreement.js), once RUSE Guard is live, before "Choose your mods"
   await window.Agreement.open({ api: api(), words: state.words, fairOn: state.fairOn });
   await firstBackup();
+  checkUpdate();  // only once the agreement is accepted (the owner, 2026-11-25, 18 B; the back end holds it too)
   openWelcome();  // the first run: "Choose your mods"
 }
 
@@ -1843,8 +1844,12 @@ async function firstBackup() {
 // then the app closes and the installer opens it again ---
 const APP_NAME = "RUSE Launcher";
 
-async function checkUpdate() {
+// The running version beside the app's name, from the start (the update check itself waits for the agreement)
+async function showVersion() {
   try { $("app-version").textContent = `v${(await api().app_version()).version}`; } catch { /* an older back end */ }
+}
+
+async function checkUpdate() {
   try { state.update = await api().update_check(state.lang); } catch { state.update = null; }
   renderUpdate();
   const u = state.update;  // a required update installs by itself, at once (required.js shows its box meanwhile)

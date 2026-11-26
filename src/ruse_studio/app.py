@@ -122,6 +122,13 @@ def main(argv=None) -> int:
     if installed_app():  # Windows' app list shows this version (issue #15)
         fix_app_list_version("studio", __version__)
         log.mark("app_list")
+    # the owner's clean-ups on this PC (2026-11-25, the legal fixes' 11 A): an update's installer goes once it's in
+    # (this start is the first after it), and RUSE Guard's refused records 30 days after they were refused
+    from rusemod.guard import clear_refused
+    from rusemod.update import clear_installed
+    if installed_app():
+        clear_installed(api._home, "studio", __version__)
+    clear_refused(api._home)
     api.use_documents()  # mods and maps in Documents\RUSE 2.0 (rusemod.yourfiles), moved there the first time
     log.mark("your_files")
     try:  # the mod and map it opens with: what a unit's Delete left for a program that had it open (rusemod.holding)
@@ -131,6 +138,7 @@ def main(argv=None) -> int:
     api.use_owned_check()  # owned copies only (rusemod.owned): on in the app, off in tests of made-up games
     api.use_guard_server()  # RUSE Guard's evidence goes to the project's server from the app window; tests keep theirs
     api.use_required_updates()  # a required update goes in before Test in game (rusemod.update): the same
+    api.use_agreement_first()  # no update check before the agreement is accepted (rusemod.update, 18 B): the same
     try:  # the game's own lettering for the pages, from the player's game (rusemod.gamefont)
         copy_fonts(api._game(), api.cache_dir)
     except Exception:  # any trouble reading the game: the pages keep their usual font

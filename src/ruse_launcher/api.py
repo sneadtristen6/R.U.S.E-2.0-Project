@@ -1018,11 +1018,12 @@ class LauncherApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedC
 
     def _play(self, chosen: dict, say) -> None:
         title = title_on(self._home)  # R.U.S.E. 2.0's title, unless Settings says the game's
-        if chosen["id"] == VANILLA and not title:
-            self._starter.vanilla(say)  # the game's own title: Steam starts the game as it installed it
-            return
-        # Vanilla with the title: the modded copy with no mods (the owner, 2026-11-02: "when loading a vanilla game in
-        # launcher it doesnt load gold ruse make it so it does"); the game's own folder is never written
+        # Vanilla is the modded copy with no mods, built and started here like every set's, with RUSE Guard in it and
+        # Play's checks and watches; never Steam's start link (the owner, 2026-11-25, the legal fixes' 36 B: "if
+        # they're using our apps, they should be using [RUSE] Guard. If they want to play vanilla [R.U.S.E.], they
+        # can just go in on Steam"). With the gold title on, it has it (the owner, 2026-11-02: "when loading a vanilla
+        # game in launcher it doesnt load gold ruse make it so it does"); off, the game's own. The game's own folder is
+        # never written
         game, _found = self._game()
         if game is None:
             # not a game rule: the game or one of its files isn't found

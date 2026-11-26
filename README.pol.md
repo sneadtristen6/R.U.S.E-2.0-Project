@@ -287,8 +287,8 @@ zbudowanymi jak strony internetowe; jednorazowo: `py -3 -m pip install pywebview
 w zwykłej przeglądarce z wymyślonymi danymi: `src/ruse_launcher/ui/index.html?fake`, `src/ruse_studio/ui/index.html?fake`.
 
 - **RUSE Launcher** ([`src/ruse_launcher/`](src/ruse_launcher/)), dla graczy: znajduje grę,
-  wymienia twoje zestawy modów i ma duży przycisk Graj, który buduje zmodowaną kopię zestawu i uruchamia grę (Oryginał
-  uruchamia się przez Steam). `py -3 -m ruse_launcher`. **Gracze nigdy nie dotykają żadnego pliku.** Biblioteka
+  wymienia twoje zestawy modów i ma duży przycisk Graj, który buduje zmodowaną kopię zestawu i uruchamia grę (także
+  Oryginał, bez modów). `py -3 -m ruse_launcher`. **Gracze nigdy nie dotykają żadnego pliku.** Biblioteka
   modów („Dodaj plik moda…” dla `.rusemod` ze Studio, `.rmod` albo `.zip`, albo upuść plik lub folder moda na okno;
   każdy mod jest najpierw sprawdzany), zestawy modów tworzone na ekranie (nowy, edycja i zmiana kolejności, zmiana
   nazwy, duplikowanie, usuwanie), Udostępnij i „Importuj kolejność ładowania…” dla zestawu modów (własny tekst
