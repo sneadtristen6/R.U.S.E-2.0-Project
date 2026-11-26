@@ -566,8 +566,11 @@ class VersionFour(BugWatchTest):
         self.assertEqual((v4["agreement"], v4["map"], v4["own"], v4["ignored"]), (4, "own", {"folder": 1, "maps": 1}, 2))
         self.assertNotIn("IwoGround", json.dumps(v4))
         self.assertTrue(is_clean(v4))
+        before = set(w.outbox.glob("crash-*.json"))
         w.game_crash(found, ["cool-mod@1.2"], 0, send=False, holds=holds)   # no own mod on: nothing about them
-        newest = max(w.outbox.glob("crash-*.json"), key=lambda f: f.name)
+        # the file this call wrote: a name holds the millisecond and a random part, so two in one millisecond (seen on
+        # GitHub's Linux job, 0.9.8.21) don't sort by when they were written
+        (newest,) = set(w.outbox.glob("crash-*.json")) - before
         self.assertNotIn("own", json.loads(newest.read_text()))
 
     def test_the_day_under_version_3_and_under_version_4(self):
