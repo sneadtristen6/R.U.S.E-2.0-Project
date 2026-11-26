@@ -1041,3 +1041,17 @@ cz = "R.U.S.E. jsme nenašli. Je nainstalovaný přes Steam?"
 jpn = "R.U.S.E. が見つかりませんでした。Steam でインストールされていますか？"
 sc = "找不到 R.U.S.E.。它是通过 Steam 安装的吗？"
 fa = "R.U.S.E. پیدا نشد. آیا از راه Steam نصب شده است؟"
+
+[eac6bc17899]
+us = "{0} is open in another program, so the older copy of this mod in the library couldn't be replaced and the new one wasn't added. Close that program, then add it again."
+fr = "{0} est ouvert dans un autre programme : l'ancienne copie de ce mod dans la bibliothèque n'a pas pu être remplacée et la nouvelle n'a pas été ajoutée. Fermez ce programme, puis ajoutez-la de nouveau."
+ger = "{0} ist in einem anderen Programm geöffnet, deshalb konnte die ältere Kopie dieses Mods in der Bibliothek nicht ersetzt werden und die neue wurde nicht hinzugefügt. Schließe dieses Programm und füge den Mod dann erneut hinzu."
+ita = "{0} è aperto in un altro programma, quindi la copia precedente di questa mod nella libreria non è stata sostituita e la nuova non è stata aggiunta. Chiudi quel programma, poi aggiungila di nuovo."
+spa = "{0} está abierto en otro programa, así que la copia anterior de este mod en la biblioteca no se pudo reemplazar y la nueva no se añadió. Cierra ese programa y vuelve a añadirla."
+pol = "{0} jest otwarty w innym programie, więc starsza kopia tego moda w bibliotece nie mogła zostać zastąpiona, a nowa nie została dodana. Zamknij ten program i dodaj moda jeszcze raz."
+ru = "{0} открыт в другой программе, поэтому прежнюю копию этого мода в библиотеке не удалось заменить, а новая не добавлена. Закройте эту программу и добавьте мод снова."
+cz = "{0} je otevřený v jiném programu, a proto se starší kopii tohoto modu v knihovně nepodařilo nahradit a nová se nepřidala. Zavřete ten program a přidejte mod znovu."
+jpn = "{0} が別のプログラムで開かれているため、ライブラリー内のこのMODの古いコピーを置き換えられず、新しいものは追加されませんでした。そのプログラムを閉じてから、もう一度追加してください。"
+sc = "{0} 正在被其他程序打开，所以库中此模组的旧副本无法替换，新版本也没有添加。请关闭那个程序，然后再添加一次。"
+fa = "{0} در برنامهٔ دیگری باز است، برای همین نسخهٔ قبلی این مد در کتابخانه جایگزین نشد و نسخهٔ جدید اضافه نشد. آن برنامه را ببندید و دوباره اضافه کنید."
+

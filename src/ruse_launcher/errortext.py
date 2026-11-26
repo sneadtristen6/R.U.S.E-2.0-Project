@@ -26,7 +26,7 @@ SRC = Path(__file__).parents[1]
 # the files whose refusals reach the Launcher's page, and the calls making them ({call: which argument holds its text})
 SOURCES = {
     "ruse_launcher/api.py": {"LauncherError": 0, "ModIndexError": 0, "_say": 0},   # (_say: a sentence for the screen)
-    "rusemod/library.py": {"LibraryError": 0},
+    "rusemod/library.py": {"LibraryError": 0, "LibraryHeldError": 1},
     "rusemod/package.py": {"PackageError": 0},
     "rusemod/mod_index.py": {"ModIndexError": 0},
     "rusemod/lock.py": {"CodeError": 0},

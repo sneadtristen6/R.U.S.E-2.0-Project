@@ -4942,3 +4942,17 @@ cz = "  její zástupce {0}: sdílí obrázek s jinými texturami v balících: 
 jpn = "  その代替 {0}: {1} 個のパックでほかのテクスチャーと画像を共有しているため、そこではゲームのままにします（遠くではそのテクスチャーはゲームの見た目のまま）"
 sc = "  它的替身 {0}：在 {1} 个包中与其他纹理共用图片，所以那里保持游戏原样（远处这个纹理保留游戏的外观）"
 fa = "  جایگزین آن {0}: تصویرش را با بافت‌های دیگر در {1} بسته شریک است، پس آنجا همان‌طور که بازی دارد می‌ماند (از دور، آن بافت ظاهر بازی را نگه می‌دارد)"
+
+[e1737505b04]
+us = "Not added to the Launcher's library: {0} is open in another program, so the older copy there couldn't be replaced. Close that program, then export again."
+fr = "Non ajouté à la bibliothèque du Launcher : {0} est ouvert dans un autre programme, l'ancienne copie n'a donc pas pu y être remplacée. Fermez ce programme, puis exportez de nouveau."
+ger = "Nicht zur Bibliothek des Launchers hinzugefügt: {0} ist in einem anderen Programm geöffnet, deshalb konnte die ältere Kopie dort nicht ersetzt werden. Schließe dieses Programm und exportiere dann erneut."
+ita = "Non aggiunto alla libreria del Launcher: {0} è aperto in un altro programma, quindi la copia precedente lì non è stata sostituita. Chiudi quel programma, poi esporta di nuovo."
+spa = "No añadido a la biblioteca del Launcher: {0} está abierto en otro programa, así que la copia anterior allí no se pudo reemplazar. Cierra ese programa y vuelve a exportar."
+pol = "Nie dodano do biblioteki Launchera: {0} jest otwarty w innym programie, więc starsza kopia tam nie mogła zostać zastąpiona. Zamknij ten program i wyeksportuj jeszcze raz."
+ru = "Не добавлено в библиотеку Launcher: {0} открыт в другой программе, поэтому прежнюю копию там не удалось заменить. Закройте эту программу и экспортируйте снова."
+cz = "Nepřidáno do knihovny Launcheru: {0} je otevřený v jiném programu, a proto se tam starší kopii nepodařilo nahradit. Zavřete ten program a exportujte znovu."
+jpn = "Launcher のライブラリーに追加していません：{0} が別のプログラムで開かれているため、そこにある古いコピーを置き換えられませんでした。そのプログラムを閉じてから、もう一度書き出してください。"
+sc = "未加入 Launcher 的库：{0} 正在被其他程序打开，所以那里的旧副本无法替换。请关闭那个程序，然后再导出一次。"
+fa = "به کتابخانهٔ لانچر اضافه نشد: {0} در برنامهٔ دیگری باز است، برای همین نسخهٔ قبلی آنجا جایگزین نشد. آن برنامه را ببندید و دوباره خروجی بگیرید."
+
