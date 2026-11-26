@@ -174,5 +174,7 @@ jobs:
           $notesFile = Join-Path $env:RUNNER_TEMP "release-notes.md"
           # a draft is never "latest" and players' apps never see it; the Studio is a preview (a pre-release); the
           # owner's signing tool makes the Launcher's the latest when it publishes it
-          $pre = if ($env:APP -eq "studio") { @("--prerelease") } else { @() }
+          # @( ) around the whole if: an if hands back a one-item list as the bare string, and @pre then passed
+          # "--prerelease" one letter at a time (studio-v0.9.8.23's draft, 2026-11-26: "no matches found for `-`")
+          $pre = @(if ($env:APP -eq "studio") { "--prerelease" })
           gh release create $env:TAG $setup.FullName $book.FullName --draft --title (($setup.BaseName -replace '-Setup-', ' ') -replace '-', ' ') --notes-file $notesFile @pre

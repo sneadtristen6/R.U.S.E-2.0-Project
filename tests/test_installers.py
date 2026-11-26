@@ -89,6 +89,16 @@ class Icons(unittest.TestCase):
 
 
 class WorkflowGuards(unittest.TestCase):
+    def test_a_list_built_by_an_if_is_wrapped_so_splatting_it_passes_whole_words(self):
+        """studio-v0.9.8.23's draft step (2026-11-26): `$pre = if (...) { @("--prerelease") } else { @() }` gave the bare
+        string, and `@pre` passed it to gh one letter at a time ("no matches found for `-`"; seen in PowerShell 7.5.0:
+        [-] [-] [p] [r] ...). A list made in an if must be @( ) around the whole if."""
+        for path in sorted((ROOT / ".github" / "workflows").glob("*.yml")):
+            text = path.read_text(encoding="utf-8")
+            self.assertNotRegex(text, r"=\s*if\s*\([^\n]*\{\s*@\(", path.name)
+        self.assertIn('$pre = @(if ($env:APP -eq "studio") { "--prerelease" })',
+                      (ROOT / ".github" / "workflows" / "release.yml").read_text(encoding="utf-8"))
+
     def test_jobs_run_on_the_public_repo_by_its_number(self):
         # the shared private repo mirrors .github/ too, so every job checks which repo it's on: by the public repo's
         # number, which a rename keeps. A check by name ('sneadtristen6/Ruse-Mod-Platform') skipped every test, build
