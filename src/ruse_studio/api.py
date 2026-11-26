@@ -2399,6 +2399,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         battles = [e["name"] for e in self.duplicate_options(spec.copy_of)["entries"] if e["kind"] == "battles"]
         source_entry = spec.entry if spec.entry is not None else (battles[0] if len(battles) == 1 else None)
         if source_entry is not None and not newmap.name_fits(source_entry, name, folder_name, self._map_list_names()):
+            # not a game rule: the build's own check of the map list, asked early (as duplicate_map's)
             raise StudioError(f"The game already has a map called {name!r}. Give the new map another name.")
         players = self._read_players(folder_name)
         header = (f"A new map: a copy of {spec.copy_of} called {name!r} in the menus (MOD_FORMAT §8).\n"
@@ -6702,6 +6703,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         if nation is not None and not p["list"] and (nation, values[0]) not in menus:
             # not a game rule: the build menus the game has (the owner, 2026-11-26, "3 A": the building that builds a
             # unit is picked from the nation's own, not typed; the All values tab still takes a typed number)
+            # not a game rule: ours, a factory of the nation's own build menus (what the game does else: not known)
             raise StudioError(f"No build menu for nation {nation} and factory {values[0]}: pick one of the menus "
                               f"the game has")
         with self._saving:
