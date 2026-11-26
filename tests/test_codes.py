@@ -635,6 +635,118 @@ def part(code: str, start: str, end: str) -> str:
     return code[at:code.index(end, at)]
 
 
+class ModInstalls(WithBugWatch):
+    """FL-123 (the owner 2026-11-26: "places a mod install can fail. fix"; Bug Watch's newest pull: install_mods failed
+    2 of 5 with one key for every reason): each place an install from the mod list can fail says which by its code,
+    with its numbers, and a download that didn't come whole is tried once more."""
+    BODY = b"a mod file's bytes " * 100
+
+    def entry(self, **over):
+        import hashlib
+        return {"id": "cool-mod", "name": "Cool mod", "version": "1.0.0", "download": "https://example.invalid/c",
+                "size": len(self.BODY), "sha256": hashlib.sha256(self.BODY).hexdigest(), **over}
+
+    @staticmethod
+    def answers(*answers):
+        """A stand-in for net.urlopen giving each answer in turn: bytes (the body as it comes), an error raised on
+        opening, or ("broke", bytes): those bytes, then the answer breaks off as http.client says it (IncompleteRead)."""
+        import http.client
+        calls = []
+
+        class Response:
+            def __init__(self, body, broke):
+                self.chunks, self.broke = [body[i:i + 65536] for i in range(0, len(body), 65536)], broke
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *exc):
+                return False
+
+            def read(self, n):
+                if self.chunks:
+                    return self.chunks.pop(0)
+                if self.broke:
+                    raise http.client.IncompleteRead(b"", 10)
+                return b""
+
+        def opener(req, timeout):
+            calls.append(req.full_url)
+            a = answers[len(calls) - 1]
+            if isinstance(a, BaseException):
+                raise a
+            return Response(a[1], True) if isinstance(a, tuple) else Response(a, False)
+        return opener, calls
+
+    def test_a_download_that_didn_t_come_whole_is_tried_once_more_and_each_end_has_its_code(self):
+        from rusemod import mod_index
+        into = self.root / "downloads"
+        opener, calls = self.answers(("broke", self.BODY[:500]), self.BODY)
+        with mock.patch.object(mod_index.net, "urlopen", opener):
+            got = mod_index.download(self.entry(), into)
+        self.assertEqual((got.read_bytes(), len(calls)), (self.BODY, 2))
+        refused = OSError(None, "refused", None, 10061)                      # (as Windows gives it: its winerror)
+
+        def http(status):
+            return urllib.error.HTTPError("https://example.invalid/c", status, "no", {}, io.BytesIO(b""))
+        cases = [  # (its answers, its code, its numbers, how many tries)
+            ((("broke", self.BODY[:500]), self.BODY[:900]), "LIST-07", {}, 2),   # broke off, then cut short
+            ((self.BODY[:-1] + b"X",), "LIST-08", {}, 1),                        # whole, another checksum: at once
+            ((self.BODY + b"more",), "LIST-08", {}, 1),                          # bigger: at once
+            ((http(404),), "LIST-06", {"http": 404}, 1),                         # the web server refused: at once
+            ((http(503), http(503)), "LIST-06", {"http": 503}, 2),               # a server error: once more
+            ((urllib.error.URLError(refused), urllib.error.URLError(refused)), "LIST-06", {"win": 10061}, 2),
+        ]
+        for answers, code, numbers, tries in cases:
+            with self.subTest(code=code, tries=tries):
+                opener, calls = self.answers(*answers)
+                with mock.patch.object(mod_index.net, "urlopen", opener), \
+                        self.assertRaises(mod_index.ModIndexError) as raised:
+                    mod_index.download(self.entry(), into)
+                self.assertEqual((code_of(raised.exception), raised.exception.bw_detail, len(calls)),
+                                 (code, numbers, tries))
+        self.assertEqual([p.name for p in into.iterdir()], ["cool-mod-1.0.0.rusemod"])  # (no .part left behind)
+
+    def test_the_launcher_s_places_each_say_which_and_each_mod_s_reason_is_counted(self):
+        from rusemod.library import LibraryError
+        from rusemod.mod_index import ModIndexError
+        from ruse_launcher.api import LauncherApi
+        downloaded = self.root / "cool-mod-1.0.0.rusemod"
+        library = mock.Mock()
+        stub = SimpleNamespace(_home=self.root, _library=library)
+
+        def one(add_error):
+            downloaded.write_bytes(b"x")
+            library.add = mock.Mock(side_effect=add_error)
+            with mock.patch("rusemod.mod_index.download", return_value=downloaded), \
+                    self.assertRaises((ModIndexError, OSError)) as raised:
+                LauncherApi._install_one(stub, self.entry(), lambda s: None)
+            self.assertFalse(downloaded.exists())                            # (the download goes either way)
+            return raised.exception
+        refused, disk = one(LibraryError("This mod wasn't added: an edit")), one(OSError(None, "full", None, 112))
+        self.assertEqual((type(refused), code_of(refused), str(refused)),
+                         (ModIndexError, "LIST-09", "This mod wasn't added: an edit"))  # (what the player reads)
+        self.assertIsInstance(disk, OSError)
+        self.assertEqual((code_of(disk), bugwatch.detail_of(disk)), ("LIST-10", {"win": 112}))
+
+        entries = [self.entry(id=i, name=n) for i, n in (("a-mod", "A mod"), ("b-mod", "B mod"), ("c-mod", "C mod"))]
+
+        def install(entry, say):
+            if entry["id"] == "a-mod":
+                raise coded(ModIndexError("A mod couldn't be downloaded (no internet)."), "LIST-06", win=10061)
+            if entry["id"] == "c-mod":
+                raise coded(OSError(None, "full", None, 112), "LIST-10")
+        stub = SimpleNamespace(_entries=lambda ids: entries, _install_job=lambda work, done: work(lambda s: None),
+                               _install_one=install, _not_all_installed=LauncherApi._not_all_installed)
+        with self.assertRaises(ModIndexError) as raised:
+            LauncherApi.install_mods(stub, ["a-mod", "b-mod", "c-mod"])
+        self.assertEqual((code_of(raised.exception), raised.exception.bw_detail), ("LIST-11", {"n": 2}))
+        self.assertTrue(str(raised.exception).startswith("1 of 3 mods were installed. Not installed: A mod (A mod "
+                                                         "couldn't be downloaded (no internet)); C mod ("))
+        self.assertEqual(self.failures(), [{"code": "L-LIST-06", "detail": {"win": 10061}},
+                                           {"code": "L-LIST-10", "detail": {"win": 112}}])
+
+
 class Studio(WithBugWatch):
     APP = "studio"
 
