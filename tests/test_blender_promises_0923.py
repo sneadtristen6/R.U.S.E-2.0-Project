@@ -365,5 +365,58 @@ class Item35GroupWords(InElevenLanguages):
         #                                         code says the same words, for every refusal)
 
 
+class Item7UntickedBonesKeepTheAnimations(InElevenLanguages):
+    """Pick 29 (2026-11-14): with Its bones unticked the bones go back as the mod has them, and so do the animations.
+    On the made-up skeleton and clips of test_animglb (as test_anim_back's Trip, whose module needs numpy for its other
+    classes): the spine plays 20 degrees more in the run, as Blender plays an animation on a bone it moved."""
+    ITEM = "7"
+
+    def setUp(self):
+        from rusemod import baf, modelin
+        from test_animglb import CLIPS, own_model_file
+        self.baf, self.CLIPS = baf, CLIPS
+        self.originals = {name: baf.build(clip) for name, clip, _x in CLIPS}
+        self.start = modelin.own_animations_glb(own_model_file(), self.originals, blender=True)
+
+    def taken_in(self, raw: bytes) -> tuple:
+        """(the clips the import keeps of a file brought back, {name: the bones that came back changed}):
+        animmodel_calls._went_out_kept's way."""
+        from rusemod import modelin, rig, unitmodel
+        doc, binary = modelin.glb_document(raw)
+        r = rig.rig_of(doc, binary, "test.glb")
+        record, _notes = unitmodel.own_skeleton(r)
+        made, _notes = unitmodel.own_clips(r, record)
+        return rig.kept_clips(made, rig.clips_out(doc), r)
+
+    def test_the_animations_come_back_as_they_went_out_though_a_bone_was_played_differently(self):
+        from rusemod import gltf, rig
+        from ruse_studio import modelblender
+        from test_animglb import Blenderish
+        from test_gltf_bones import RECORD
+        name = self.CLIPS[0][0]
+        sending = Blenderish(self.start).send(change=(name, "bip01 spine", self.baf.axis_angle("x", 20.0)))
+        raw = rig.with_record(gltf.joints_like(sending, self.start), RECORD)    # (its bones put back, as bones_like does)
+        # the control: bones ticked, the change is Blender's
+        kept, changed = self.taken_in(rig.with_went_out(raw, self.originals, None))
+        self.assertEqual(changed[name], ["bip01 spine"])
+        self.assertNotEqual(kept[name], self.originals[name])
+        # unticked: every animation is the clip that went out, byte for byte, and none is named as changed
+        given = modelblender.played_as_sent(raw, self.originals, dict(self.originals), {})
+        kept, changed = self.taken_in(rig.with_went_out(raw, self.originals, given))
+        self.assertEqual(kept, self.originals)
+        self.assertEqual(changed, {n: [] for n in self.originals})
+        # one the Studio changed since is left to _settled: it keeps what it was given
+        mine = {name: (self.originals[name], self.originals[name])}
+        self.assertEqual(modelblender.played_as_sent(raw, self.originals, dict(self.originals), mine)[name],
+                         self.originals[name])
+        # a file that can't be read: what it was given, never an exception
+        self.assertEqual(modelblender.played_as_sent(b"not a model", self.originals, dict(self.originals), {}),
+                         self.originals)
+
+    def test_the_page_says_the_animations_were_kept_too(self):
+        self.words_in_eleven_languages(["one_kept_animations"], english_left_in=True)
+        self.assertIn('kept.animations === "kept"', function_text(js("app.js"), "oneKeptSaid"))
+
+
 if __name__ == "__main__":
     unittest.main()

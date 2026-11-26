@@ -138,6 +138,26 @@ def back_state(work: Path) -> dict:
             "took": {k: v for k, v in took.items() if isinstance(k, str) and isinstance(v, str)}}
 
 
+def played_as_sent(raw: bytes, went: dict, given: dict, settled: dict) -> dict:
+    """`given` (what rusemod.rig.with_went_out stores as what Blender was given of each animation that went out) for a
+    Bring back with Its bones unticked: each animation that went out, and that the Studio didn't change since
+    (`settled`: _settled's), is set as given what Blender sent back of it (`raw`, its bones already put back as the mod
+    has them), so rusemod.rig.kept_clip finds it unchanged and keeps the clip that went out, byte for byte: with the
+    bones unticked nothing of what Blender did to the animations on a bone it moved is kept (the owner's pick 29). Each
+    clip of `raw` is made as the import makes it (rusemod.unitmodel.own_clips). `given` itself when `raw` can't be read
+    so (the import then says what is wrong with it)."""
+    from rusemod import rig, unitmodel
+    from rusemod.modelin import ModelError, glb_document
+    try:
+        doc, binary = glb_document(raw)
+        r = rig.rig_of(doc, binary, "sent.glb")
+        record, _notes = unitmodel.own_skeleton(r)
+        made, _notes = unitmodel.own_clips(r, record)
+    except (ModelError, ValueError, KeyError, IndexError, TypeError, struct.error):
+        return dict(given)
+    return {n: (made[n] if n in made and n not in settled else g) for n, g in given.items()}
+
+
 def studio_changed(mine: dict, went: dict, took: dict) -> set:
     """Of the animations that went out to Blender (`went`: {name: the clip as the mod had it}), those the Studio changed
     since Blender last gave the mod a clip of them (`mine`: the mod's clips now): the mod's clip is neither the one the
@@ -716,8 +736,15 @@ class ModelBlenderCalls:
                     settled, studio = self._settled(raw, went_out, given, state["took"], work, mine)
                 # (the mod's clip of one settled so goes into the file as the clip kept when it comes back as it came
                 # back now, set against what it came back as: the import, and every Resize or Move after, keep it so)
+                given_now = {n: settled[n][1] if n in settled else g for n, g in given.items()}
+                if keep_bones:
+                    # (Its bones unticked: the bones stay as the mod has them, so the animations stay as they went out
+                    # too, never as Blender played them on a bone it moved: 3 of the Generic Horse's bones in all 25 of
+                    # its animations, its spine 5 cm off in the game; the owner's pick 29 of 2026-11-14)
+                    given_now = played_as_sent(raw, went_out, given_now, settled)
+                    kept_words["animations"] = "kept"
                 raw = rig.with_went_out(raw, {n: settled[n][0] if n in settled else c for n, c in went_out.items()},
-                                        {n: settled[n][1] if n in settled else g for n, g in given.items()})
+                                        given_now)
             except (ValueError, struct.error):   # (a file that isn't a .glb: Import model says what it is, in words)
                 pass
         went = self._alphas_back(work, send, raw)

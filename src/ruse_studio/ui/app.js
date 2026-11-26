@@ -2949,6 +2949,7 @@ function oneKeptSaid(r) {
   const out = [];
   if (bones.includes("differ")) out.push(w.one_kept_bones_differ);
   else if (bones.includes("kept") || bones.includes("same")) out.push(w.one_kept_bones);
+  if (kept.animations === "kept") out.push(w.one_kept_animations);   // (Its bones unticked: its animations too)
   if (paint.length) out.push(w.one_kept_paint);
   const differs = differsSaid(r);
   if (differs) out.push(differs);
