@@ -2,7 +2,7 @@
 ; AppName, AppId, AppVersion, ExeName, AppDescription, SourceDir (the built program folder), IconFile, OutputDir,
 ; OutputName. It installs for the current Windows user only, so it never asks for admin rights, and it never touches
 ; the game. Uninstalling keeps the platform folder (mods, settings, the game index) in %LOCALAPPDATA% unless the
-; player says Yes to the question at uninstall (it starts on No).
+; player says Yes to the question at uninstall (it starts on No; not asked while the other app is still installed).
 
 #ifndef AppName
   #error Build this through installers/build_app.py, which passes the app's details.
@@ -224,6 +224,19 @@ begin
   RemoveDir(Folder);   // only when nothing is left in it
 end;
 
+// Is the other app (RUSE Launcher or RUSE Studio, built from this same script with its own id) still installed? Inno
+// Setup records an install as the uninstall entry "{AppId}_is1": for this user (HKCU) or, when it was installed for
+// all users, in the 64-bit view of HKLM (the installer runs in 64-bit mode).
+function OtherAppStillInstalled: Boolean;
+var
+  Key: String;
+begin
+  Key := 'Software\Microsoft\Windows\CurrentVersion\Uninstall\{' + '{#OtherAppId}' + '}_is1';
+  Result := RegKeyExists(HKCU, Key) or RegKeyExists(HKLM64, Key);
+end;
+
+// While the other app is still installed, the shared folder is its settings too: nothing is asked and nothing of it is
+// deleted (the lead's reading of the owner's round 3 answer, 2026-11-25); the question comes with the last of the two.
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
 var
   Folder: String;
@@ -231,7 +244,7 @@ begin
   if CurUninstallStep = usPostUninstall then
   begin
     Folder := ExpandConstant('{localappdata}\RUSE Mod Platform');
-    if (not UninstallSilent) and DirExists(Folder) then
+    if (not UninstallSilent) and DirExists(Folder) and (not OtherAppStillInstalled) then
       if MsgBox(CustomMessage('DeleteDataQuestion'), mbConfirmation, MB_YESNO or MB_DEFBUTTON2) = IDYES then
         DeleteSettingsAndData(Folder);
   end;

@@ -134,7 +134,10 @@ def iscc() -> str:
 
 def installer_command(app: str, program: Path, icon: Path, dist: Path) -> list[str]:
     a, v = APPS[app], version(app)
-    return [iscc(), f"/DAppName={a['name']}", f"/DAppId={a['id']}", f"/DAppVersion={v}", f"/DExeName={exe_name(app)}",
+    # the other app's id: the uninstaller looks for its install record, to leave the shared folder alone while it stays
+    other = next(o["id"] for k, o in APPS.items() if k != app)
+    return [iscc(), f"/DAppName={a['name']}", f"/DAppId={a['id']}", f"/DOtherAppId={other}", f"/DAppVersion={v}",
+            f"/DExeName={exe_name(app)}",
             f"/DAppDescription={a['description']}", f"/DSourceDir={program}", f"/DIconFile={icon}",
             f"/DOutputDir={dist}", f"/DOutputName={a['name'].replace(' ', '-')}-Setup-{v}",
             str(ROOT / "installers" / "installer.iss")]

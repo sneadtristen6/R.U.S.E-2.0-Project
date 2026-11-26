@@ -189,6 +189,17 @@ class Installer(unittest.TestCase):
         self.assertIn("{localappdata}\\RUSE Mod Platform", code)   # only the default platform folder
         self.assertNotIn("PLATFORM_HOME", code)                   # a folder set by hand is never deleted
 
+    def test_the_question_waits_for_the_last_app(self):
+        # removing one app while the other is installed never asks and never deletes the shared folder
+        code = self.ISS[self.ISS.index("procedure CurUninstallStepChanged"):]
+        self.assertRegex(code, r"DirExists\(Folder\) and \(not OtherAppStillInstalled\)")
+        func = self.ISS[self.ISS.index("function OtherAppStillInstalled"):self.ISS.index("procedure CurUninstallStepChanged")]
+        self.assertIn("{#OtherAppId}", func)
+        self.assertIn("}_is1", func)                              # Inno Setup's own uninstall entry name
+        self.assertIn("RegKeyExists(HKCU, Key)", func)           # an install for this user only
+        self.assertIn("RegKeyExists(HKLM64, Key)", func)         # an install for all users (64-bit mode)
+        self.assertNotIn("{#AppId}", func)                        # the other app, never this one
+
     def test_old_player_folders_are_kept(self):
         # before 2026-10-30 the player's mods, maps, exports and backups lived in the platform folder; a Yes must not
         # delete them for a player whose Studio has not moved them to Documents yet

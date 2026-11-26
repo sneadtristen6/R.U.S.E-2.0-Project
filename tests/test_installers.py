@@ -260,6 +260,10 @@ class BuildCommands(unittest.TestCase):
         self.assertEqual(defines["OutputName"], f"RUSE-Launcher-Setup-{ruse_launcher.__version__}")
         self.assertRegex(defines["AppId"], r"^[0-9A-F]{8}(-[0-9A-F]{4}){3}-[0-9A-F]{12}$")
         self.assertNotEqual(build_app.APPS["launcher"]["id"], build_app.APPS["studio"]["id"])
+        self.assertEqual(defines["OtherAppId"], build_app.APPS["studio"]["id"])   # the Launcher looks for the Studio
+        with mock.patch.object(build_app, "iscc", lambda: "ISCC.exe"):
+            cmd = build_app.installer_command("studio", Path("prog"), Path("studio.ico"), Path("dist"))
+        self.assertIn(f"/DOtherAppId={build_app.APPS['launcher']['id']}", cmd)    # and the Studio the Launcher
         script = (ROOT / "installers" / "installer.iss").read_text(encoding="utf-8")
         for name in defines:
             self.assertIn(f"{{#{name}}}", script)  # every value passed is used
