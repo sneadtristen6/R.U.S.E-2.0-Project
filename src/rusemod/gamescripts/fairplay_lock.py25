@@ -186,10 +186,15 @@ def _fairplay_lock():
             screen = headup.end_game_screens.EndGameScreenMulti  # a multiplayer match's screen inherits its show
         except Exception:
             return
-        if getattr(screen, '_fairplay_lock_armed', False):
+        # every line here runs inside a game callback (Later.run -> decide -> here): an error leaving it would stop
+        # the game with a script error, the crash this lock exists to avoid, so each step that touches the game's
+        # class is guarded (RUSE main's audit item 16, 2026-11-26)
+        try:
+            if getattr(screen, '_fairplay_lock_armed', False):
+                return
+            old_show = screen._show_end_game_screen
+        except Exception:
             return
-        screen._fairplay_lock_armed = True
-        old_show = screen._show_end_game_screen
 
         def _show_end_game_screen(self, stats):
             old_show(self, stats)
@@ -203,7 +208,11 @@ def _fairplay_lock():
             except Exception:
                 pass
 
-        screen._show_end_game_screen = _show_end_game_screen
+        try:
+            screen._show_end_game_screen = _show_end_game_screen
+            screen._fairplay_lock_armed = True
+        except Exception:
+            pass
 
     def decide(world):
         if same_build(world):
