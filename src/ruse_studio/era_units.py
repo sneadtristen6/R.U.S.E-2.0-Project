@@ -1083,7 +1083,8 @@ class EraUnitCalls:
         # and credit line (_era_forget); a list file another program holds leaves it whole, in words; a file of the unit
         # itself another program holds waits, out of the build, and is said ("waiting": the owner's item 6, 2026-11-13)
         done = self.delete_unit(address, "anyway")   # the units researched from it are dealt with above
-        return {"removed": address, **research, "waiting": done.get("waiting", [])}
+        return {"removed": address, **research, "waiting": done.get("waiting", []),
+                **{k: done[k] for k in ("blender_aside", "blender_held") if k in done}}
 
     def _era_left_behind(self, key: str) -> dict | None:
         """Take it out of my mod tried again on an era unit (or the Horse Squad) the mod no longer has but its

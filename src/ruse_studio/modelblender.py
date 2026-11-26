@@ -250,7 +250,69 @@ def keep_said(before, report: dict) -> None:
     report["notes"] = notes + [n for n in blender_notes(report) if n not in notes]
 
 
+ASIDE = "-set-aside-"   # <work folder>-set-aside-<time>: Blender work a new unit of the same name must not pick up
+
+
+def set_aside_work(mod, name: str, kinds: bool = False, keep: tuple = ()) -> tuple[list, list]:
+    """The Blender work a unit had, <mod>/blender/<name>/ (and with `kinds` its soldiers' <name>@...), set aside under
+    another name, <folder>-set-aside-<time>, so a unit made again under the same name, or a model imported over the
+    one that went to Blender, never picks it up (the owner's picks 21 and 22 of 2026-11-14: "New unit starts clean",
+    "set aside under another name, not picked up silently"). `keep`: what stays in the folder (the page of RUSE Decoy's
+    animations, for an import: the model isn't its). Returns ([the folders made, by name], [the folders that couldn't
+    be moved because another program holds a file of them, by name]); nothing of it is lost, and what couldn't be moved
+    is said, never left silently."""
+    import time
+    base = Path(mod) / WORK
+    if not base.is_dir():
+        return [], []
+    stamp = time.strftime("%Y%m%d-%H%M%S")
+    aside, held = [], []
+    for folder in sorted(base.iterdir()):
+        if not folder.is_dir() or not (folder.name == name or (kinds and folder.name.startswith(f"{name}@"))) \
+                or ASIDE in folder.name:
+            continue
+        target, k = base / f"{folder.name}{ASIDE}{stamp}", 2
+        while target.exists():
+            target, k = base / f"{folder.name}{ASIDE}{stamp}-{k}", k + 1
+        moved = []
+        try:
+            if not keep:
+                folder.rename(target)
+            else:
+                children = [c for c in sorted(folder.iterdir()) if c.name not in keep]
+                if not children:
+                    continue
+                target.mkdir()
+                for child in children:
+                    child.rename(target / child.name)
+                    moved.append(child)
+            aside.append(target.name)
+        except OSError:
+            for child in reversed(moved):   # (all or nothing: what was moved goes back)
+                try:
+                    (target / child.name).rename(child)
+                except OSError:
+                    pass
+            if keep:
+                try:
+                    target.rmdir()
+                except OSError:
+                    pass
+            held.append(folder.name)
+    return aside, held
+
+
 class ModelBlenderCalls:
+    def _blender_work_gone(self, mod, name: str, kinds: bool = False, keep: tuple = ()) -> tuple[list, list]:
+        """set_aside_work, and the Blenders this Studio started on those folders forgotten (a closed one is only a
+        handle; a folder another program holds stays where it was, in the second list)."""
+        aside, held = set_aside_work(mod, name, kinds, keep)
+        for work in list(getattr(self, "_blenders", {})):
+            folder = Path(work)
+            if folder.parent == Path(mod) / WORK and not folder.exists():
+                self._blenders.pop(work, None)
+        return aside, held
+
     def _blender_kind(self, address: str, kind: str | None) -> str | None:
         """Which of a squad's soldiers Change it in Blender is for: None for its riflemen (no kind given, or the
         first: the Model row's buttons), the kind for another (its heavy-weapon soldier: his own buttons under Its

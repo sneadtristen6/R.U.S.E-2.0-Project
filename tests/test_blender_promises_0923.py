@@ -418,5 +418,65 @@ class Item7UntickedBonesKeepTheAnimations(InElevenLanguages):
         self.assertIn('kept.animations === "kept"', function_text(js("app.js"), "oneKeptSaid"))
 
 
+class Item1BlenderWorkSetAside(InElevenLanguages):
+    """Picks 21 and 22 (2026-11-14): the Blender work of a deleted unit, or of a model another file replaced, is set aside
+    under another name, never picked up by a unit made again (the whole path is test_scenarios_models_blender's SQ-5 and
+    M-5); here the move itself and what the page says."""
+    ITEM = "1"
+
+    def setUp(self):
+        import tempfile
+        self.dir = tempfile.TemporaryDirectory()
+        self.addCleanup(self.dir.cleanup)
+        self.mod = Path(self.dir.name)
+        self.work = self.mod / "blender"
+        for sub in ("Descriptor_Unit_X", "Descriptor_Unit_X@2", "Descriptor_Unit_XY", "Descriptor_Unit_X/animations"):
+            (self.work / sub).mkdir(parents=True)
+            (self.work / sub / "send.glb").write_bytes(b"glTF" + sub.encode())
+
+    def test_a_deleted_unit_s_work_and_its_soldiers_go_aside_and_nothing_else(self):
+        from ruse_studio.modelblender import set_aside_work
+        aside, held = set_aside_work(self.mod, "Descriptor_Unit_X", kinds=True)
+        self.assertEqual(held, [])
+        self.assertEqual(len(aside), 2)
+        self.assertTrue(all("-set-aside-" in a for a in aside))
+        names = sorted(p.name for p in self.work.iterdir())
+        self.assertEqual(sorted(n for n in names if "-set-aside-" not in n), ["Descriptor_Unit_XY"])   # (another unit's stays)
+        self.assertFalse((self.work / "Descriptor_Unit_X").exists())
+        moved = next(self.work / a for a in aside if a.startswith("Descriptor_Unit_X-set-aside-"))
+        self.assertEqual((moved / "send.glb").read_bytes(), b"glTFDescriptor_Unit_X")      # (nothing lost)
+        self.assertTrue((moved / "animations" / "send.glb").is_file())
+        # a second time sets nothing more aside (what is aside isn't the unit's work)
+        self.assertEqual(set_aside_work(self.mod, "Descriptor_Unit_X", kinds=True), ([], []))
+
+    def test_an_import_keeps_the_animations_page_where_it_is(self):
+        from ruse_studio.modelblender import set_aside_work
+        aside, held = set_aside_work(self.mod, "Descriptor_Unit_X", keep=("animations",))
+        self.assertEqual((len(aside), held), (1, []))
+        self.assertTrue((self.work / "Descriptor_Unit_X" / "animations" / "send.glb").is_file())
+        self.assertFalse((self.work / "Descriptor_Unit_X" / "send.glb").exists())
+        self.assertTrue((self.work / aside[0] / "send.glb").is_file())
+        self.assertTrue((self.work / "Descriptor_Unit_X@2" / "send.glb").is_file())    # (another soldier's: not asked)
+
+    def test_a_folder_another_program_holds_stays_and_is_said(self):
+        from unittest import mock
+        from ruse_studio.modelblender import set_aside_work
+        with mock.patch.object(Path, "rename", side_effect=PermissionError("held")):
+            aside, held = set_aside_work(self.mod, "Descriptor_Unit_X", kinds=True)
+        self.assertEqual(aside, [])
+        self.assertEqual(sorted(held), ["Descriptor_Unit_X", "Descriptor_Unit_X@2"])
+        self.assertTrue((self.work / "Descriptor_Unit_X" / "send.glb").is_file())
+
+    def test_the_page_says_where_it_went_in_every_language(self):
+        app = js("app.js")
+        self.assertIn("w.model_kept_not_blender_aside", function_text(app, "notKeptSaid"))
+        self.assertIn("w.blender_aside_deleted", function_text(app, "researchTold"))
+        keys = ["model_kept_not_blender_aside", "blender_aside_deleted", "blender_aside_held"]
+        self.words_in_eleven_languages(keys, english_left_in=True)
+        for key in keys:
+            for lang in LANGS:
+                self.assertIn("{folders}", WORDS[key][lang], (key, lang))
+
+
 if __name__ == "__main__":
     unittest.main()

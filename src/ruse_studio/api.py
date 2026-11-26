@@ -8500,6 +8500,11 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         2026-11-11: "when you copy a fucking unit, it should copy the unit"). The bazooka man's model is
         files/models/<unit>@bazooka.glb, on the same bones as the riflemen's: their animations are the unit's."""
         copy_out = []
+        try:    # (the file the model was made from before this import: a different one sets the Blender work aside)
+            was = self._model_came_from(self._kind_file(address, kind) if kind is not None
+                                        else self._own_model_file(address))
+        except (StudioError, OSError):
+            was = None
 
         def fits(hold):
             report = self._fit_model(address, file, size, aircraft, facing, own_turret, own_propellers, move, kind,
@@ -8520,7 +8525,43 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                     copy_out.append(True)
             return report
         report = self._fitted_together(fits)
+        self._blender_work_replaced(address, kind, report, was)
         return {"model": report, "copy_out": bool(copy_out), "kind": kind, **self.look(address)}
+
+    @staticmethod
+    def _model_came_from(target: Path | None):
+        """The file a model of the mod was made from, as its record (files/models/<unit>.json) names it; None for none."""
+        if target is None:
+            return None
+        record = read_record(target.with_suffix(".json"))
+        return record.get("from") if isinstance(record, dict) else None
+
+    def _blender_work_replaced(self, address: str, kind: str | None, report, before=None) -> None:
+        """A model imported from a file of the modder's own (not one Bring back brought in from <mod>/blender): what
+        went to Blender for the model it replaces is of that model, so Open in Blender would open it again and Bring my
+        changes back put it in the new model's place, without a word. It is set aside under another name (pick 22 of
+        2026-11-14), RUSE Decoy's animations page kept, and said in the report's "not_kept" ("blender_aside"; a folder
+        another program holds stays: "blender_held")."""
+        mod = self._mod_dir()
+        target = self._kind_file(address, kind) if kind is not None else self._own_model_file(address)
+        if not isinstance(report, dict) or mod is None or target is None:
+            return
+        came = self._model_came_from(target)
+        if not isinstance(came, str) or came == before:   # (the same file again: the model is the one it was)
+            return
+        try:
+            Path(came).resolve().relative_to((Path(mod) / "blender").resolve())
+            return      # (Bring back's own import: the sending was just taken in)
+        except ValueError:
+            pass
+        from .decoyblender import WORK as DECOY_WORK
+        aside, held = self._blender_work_gone(mod, target.stem, keep=(DECOY_WORK,))
+        if aside or held:
+            lost = report.setdefault(NOT_KEPT, {"animations": [], "picks": []})
+            if aside:
+                lost["blender_aside"] = aside
+            if held:
+                lost["blender_held"] = held
 
     @staticmethod
     def _kind_skeleton(target: Path, report: dict) -> dict:
@@ -10240,6 +10281,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                 return {"deleted": None, "leftovers": left, "relinked": [], "left": []}
             raise StudioError(f"{address} isn't a unit made in this mod, so it can't be deleted here")
         folder = edits.folder
+        own = self._own_model_file(address)   # (its Blender work, <mod>/blender/<its name>/, is set aside once it's gone)
         # a list file another program holds for a moment (a sync program, an antivirus) is tried again as long as a file
         # of the unit itself is: the whole take-out, put back in between (the owner: "it should through")
         end = time.monotonic() + edits_module.HOLD_WAIT
@@ -10273,7 +10315,10 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                 raise worded from exc
             break
         take.done()
-        return {"deleted": address, "source": source, "saved": str(edits.file), **research, "waiting": waiting}
+        # the Blender work it had stays out of a unit made again under its name (picks 21 and 22): set aside, said
+        aside, held = self._blender_work_gone(folder, own.stem, kinds=True) if own is not None else ([], [])
+        told = {**({"blender_aside": aside} if aside else {}), **({"blender_held": held} if held else {})}
+        return {"deleted": address, "source": source, "saved": str(edits.file), **research, "waiting": waiting, **told}
 
     def _take_error(self, exc: BaseException, folder: Path) -> BaseException:
         """A take-out's failure (delete_unit) in words: a file that couldn't be read or written names the file and

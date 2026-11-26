@@ -3157,6 +3157,10 @@ function notKeptSaid(lost) {
   if (lost.record) said.push(w.model_kept_not_record);   // (its record couldn't be read: what else it held)
   // (the file's own animations, left out of a model drawn on the unit's own bones: StudioApi.model_import)
   if (lost.left_out && lost.left_out.length) said.push(fill(w.model_kept_not_left_out, { names: lost.left_out.join(", ") }));
+  // (the Blender work of the model another file took the place of: set aside under another name, or held by another
+  // program and left where it was: StudioApi.model_import, ruse_studio.modelblender.set_aside_work)
+  if (lost.blender_aside && lost.blender_aside.length) said.push(fill(w.model_kept_not_blender_aside, { folders: lost.blender_aside.join(", ") }));
+  if (lost.blender_held && lost.blender_held.length) said.push(fill(w.blender_aside_held, { folders: lost.blender_held.join(", ") }));
   // (an era unit's model a newer download of its era replaced since it was made: fitted from the new one, said;
   // StudioApi._era_said)
   if (lost.file) said.push(fill(w.model_kept_not_file, { file: lost.file }));
@@ -4025,7 +4029,11 @@ function researchTold(res, done) {
   if (left.length) lines.push(fill(w.research_left, { names: left.map((c) => c.name).join(", ") }));
   const waiting = waitingTold(res);
   if (waiting) lines.push(waiting);
-  say(lines.join(" "), left.length ? "warn" : "ok");
+  // (the Blender work it had, set aside under another name so a unit made again under its name starts clean, or held
+  // by another program and left in the mod's blender folder: StudioApi.delete_unit "blender_aside", "blender_held")
+  if ((res.blender_aside || []).length) lines.push(fill(w.blender_aside_deleted, { folders: res.blender_aside.join(", ") }));
+  if ((res.blender_held || []).length) lines.push(fill(w.blender_aside_held, { folders: res.blender_held.join(", ") }));
+  say(lines.join(" "), left.length || (res.blender_held || []).length ? "warn" : "ok");
   if (left.length || (res.relinked || []).length) checkMod();
 }
 

@@ -191,7 +191,6 @@ class OneButton(ModelScenario):
         self.assertEqual(self.paint(), RED)
 
     # --- the model changed or gone while Blender has it ---
-    @unittest.expectedFailure
     def test_m5_another_file_imported_after_a_trip_is_what_blender_opens(self):
         """M-5 (SQ-10's kind, through Import model): a trip brought back, then Import model of another file (camo.glb,
         its material "Camo"); the one Blender button then opens Blender's last sending, the model from before (its
@@ -230,7 +229,6 @@ class OneButton(ModelScenario):
         self.assertEqual((self.model_files(), self.paint()), ([f"{STEM}.glb", f"{STEM}.json"], RED))
         self.assert_builds()
 
-    @unittest.expectedFailure
     def test_sq5_on_the_model_door_a_deleted_unit_s_blender_is_not_the_new_one_s(self):
         """SQ-5's kind on a tank (scenarios/squads found it on a squad): the tank deleted while its Blender has a
         sending, then New unit under the same name: the new tank's one Blender button reads Bring my changes back
@@ -239,9 +237,14 @@ class OneButton(ModelScenario):
         Blender folder stays in the mod. What should happen: the new tank starts with nothing to bring back."""
         self.opens()
         self.sends(RED)
-        self.page.delete_unit(self.unit)
+        res = self.page.delete_unit(self.unit)
+        # (its Blender work is set aside, so Bring back on the deleted tank finds nothing opened: pick 21's fix says so
+        # in the button's own words, where the folder left behind gave the model door's refusal before)
         self.assertEqual(self.refusal("blender_back", self.unit),
-                         "Only a new unit made in this mod can get a model of its own: copy the unit first.")
+                         "Open this unit in Blender first, change it there, then Bring my changes back.")
+        self.assertEqual(len(res["blender_aside"]), 1)
+        self.assertTrue((self.mod / "blender" / res["blender_aside"][0] / f"{STEM}.glb").is_file())   # (nothing lost)
+        self.assertFalse((self.mod / "blender" / STEM).exists())
         self.assertEqual(self.page.new_unit(PANZER, NAME, 50, group="new")["address"], self.unit)
         parts = self.page.blender_parts(self.unit)
         self.assertEqual((parts["open"], parts["door"]), (False, None))
