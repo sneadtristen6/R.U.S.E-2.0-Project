@@ -199,6 +199,12 @@ class Installer(unittest.TestCase):
         self.assertIn("RegKeyExists(HKCU, Key)", func)           # an install for this user only
         self.assertIn("RegKeyExists(HKLM64, Key)", func)         # an install for all users (64-bit mode)
         self.assertNotIn("{#AppId}", func)                        # the other app, never this one
+        # the exact condition: either view finds it, joined by "or" (an "and" would miss a one-view install)
+        self.assertIn("Result := RegKeyExists(HKCU, Key) or RegKeyExists(HKLM64, Key);", func)
+
+    def test_the_script_refuses_a_build_without_the_other_apps_id(self):
+        # ISCC run without /DOtherAppId gets the friendly message, as it does without /DAppName
+        self.assertRegex(self.ISS, r"#ifndef OtherAppId\s+#error [^\n]*build_app\.py[^\n]*\s+#endif")
 
     def test_old_player_folders_are_kept(self):
         # before 2026-10-30 the player's mods, maps, exports and backups lived in the platform folder; a Yes must not

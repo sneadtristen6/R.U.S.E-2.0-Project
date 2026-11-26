@@ -7,6 +7,9 @@
 #ifndef AppName
   #error Build this through installers/build_app.py, which passes the app's details.
 #endif
+#ifndef OtherAppId
+  #error Build this through installers/build_app.py, which passes the other app's id (OtherAppId) too.
+#endif
 
 [Setup]
 AppId={{{#AppId}}
