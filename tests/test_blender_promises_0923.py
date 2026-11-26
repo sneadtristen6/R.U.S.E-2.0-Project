@@ -228,6 +228,15 @@ class Item20RidesIn(InElevenLanguages):
         self.names_in_every_language("lm_rides_itself_how", ["decoy_unit_title", "actions_title"])
 
 
+class Item21OnlyThisUnitTooltip(InElevenLanguages):
+    ITEM = "21"
+
+    def test_52k_only_this_unit_s_tooltip_no_longer_says_not_tried(self):
+        self.words_in_eleven_languages(["tip_decoy_anim_for_unit"])
+        for lang in LANGS:
+            self.assertNotIn(OLD_END[lang], WORDS["tip_decoy_anim_for_unit"][lang], lang)
+
+
         #                                         code says the same words, for every refusal)
 
 
