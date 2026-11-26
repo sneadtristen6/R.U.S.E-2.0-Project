@@ -564,7 +564,9 @@ class Clashing(Base):
         self.assertEqual(next(s for s in lists["sets"] if s["id"] == "flags")["mods"], ["plain", "navy", "paint"])
         soft = [c for c in api.set_check("flags")["soft"] if c["kind"] == "gamefile"]
         self.assertEqual([(c["a"], c["b"], c["move"], c["below"]) for c in soft], [("Navy", "Paint", "navy", "paint")])
-        self.assertEqual(api.check_mods(["paint", "plain"])["soft"], [])  # while a set is edited: one of them, none
+        # while a set is edited: one of them, no game file clash (all three mods carry the same HALF changes, so the
+        # set screen now also says two mods change the same values, U-13)
+        self.assertEqual([c for c in api.check_mods(["paint", "plain"])["soft"] if c["kind"] == "gamefile"], [])
         with self.assertRaisesRegex(LauncherError, "isn't in this mod set any more"):
             api.move_below("flags", "gone", "navy")
 

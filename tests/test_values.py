@@ -136,6 +136,18 @@ class Typed(unittest.TestCase):
             with self.subTest(old=old, text=text), self.assertRaises(values.TypedError):
                 self.typed(old, text)
 
+    def test_a_number_that_doesnt_fit_is_said_plainly(self):
+        """The All values tab says the most or least the game takes, as the Units tab does; the control: the most itself
+        is taken."""
+        for old, text, said in ((num("int8", 1), 300, "Prop: too big: the game takes at most 127"),
+                                (num("int32", 1), 2**40, "Prop: too big: the game takes at most 2,147,483,647"),
+                                (num("uint32", 1), -1, "Prop: too small: the game takes at least 0"),
+                                (num("bool", 1), 2, "Prop: too big: the game takes at most 1")):
+            with self.subTest(text=text), self.assertRaises(values.TypedError) as caught:
+                self.typed(old, text)
+            self.assertEqual(str(caught.exception), said)
+        self.assertEqual(self.typed(num("int32", 1), 2147483647), (2147483647, False))
+
     def test_texts_and_keys(self):
         self.assertEqual(self.typed(Text("string", "A"), "B's"), ('"B\'s"', False))  # the other quotes
         self.assertEqual(self.typed(Text("path", "a.png"), "b.png"), ("path('b.png')", False))

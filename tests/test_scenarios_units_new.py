@@ -14,7 +14,7 @@ import unittest
 from pathlib import Path
 
 from rusemod import menugroups
-from test_scenarios_units_base import (A1, ARMOR_US, E, G1, G2, GAME_LANGS, H1, L1, M1, M2, P1, P2, PYTHON_WORDS, S1,
+from test_scenarios_units_base import (A1, ARMOR_US, E, G1, G2, GAME_LANGS, H1, L1, LANGS, M1, M2, P1, P2, PYTHON_WORDS, S1,
                                        T1, U, Player, Refused)
 
 KINDS = (("tank", M1, "ground"), ("squad", S1, "infantry"), ("plane", P1, "air"), ("artillery", A1, "ground"),
@@ -116,8 +116,14 @@ class NewUnitOfEveryKind(Player):
                 self.assertEqual(self.english_left(said), [])
         self.assertEqual(self.files(folder), before)
         self.assertEqual(self.new(H1, "虎")["address"], U + "New_1")
-        self.assertEqual(self.new(H1, "虎")["address"], U + "New_2")
+        self.assertEqual(self.new(H1, "тигр")["address"], U + "New_2")   # another name, with no Latin letter: made
         self.assertEqual(self.build(folder)[0], [])
+        before = self.files(folder)
+        for name in ("虎", " 虎 ", "тигр", "Тигр", "ТИГР"):   # the same name again, in every alphabet: refused
+            with self.subTest(name=name):
+                said = self.refusal("new_unit", H1, name, 40, -1, -1, False, None)
+                self.assertEqual(self.english_left(said), [])
+        self.assertEqual(self.files(folder), before)
         self.assertEqual(first, U + "Tiger_II")
 
     def test_a_name_differing_only_in_capitals_is_refused_as_taken(self):
@@ -171,12 +177,18 @@ class NewUnitOfEveryKind(Player):
         """The New unit form takes a whole number from 0 (its box: min 0, step 1; the browser stops a negative or a
         decimal one before it's sent); the Studio itself takes any number that fits the game's value, rounded."""
         folder = self.mod("Prices")
-        for price, built in ((0, 0), (40.5, 41), (40.4, 40), (-10, -10), (2147483647, 2147483647)):
+        for price, built in ((0, 0), (40.5, 41), (40.4, 40), (2147483647, 2147483647)):
             with self.subTest(price=price):
                 res = self.new(T1, f"Price {price}", price)
                 errors, ndf, _ = self.build(folder)
                 self.assertEqual(errors, [])
                 self.assertEqual(self.value(ndf, res["address"], "ProductionPrice").int_list(), [built] * 5)
+        for price in (-10, -1, -0.6):   # a price below 0 is refused in every language, as a research price is
+            with self.subTest(price=price):
+                said = self.refusal("new_unit", T1, f"Below {price}", price, -1, -1, False, None)
+                self.assertEqual(self.english_left(said), [])
+                self.assertTrue(said["us"].endswith("is below 0"), said["us"])
+        self.assertEqual(self.refusal("edit", M1, "ProductionPrice", [-1] * 5)["us"].endswith("is below 0"), True)
         for price in (2147483648, 1e10, 1e20):   # (the box takes these: Number("1e10"))
             with self.subTest(price=price):
                 said = self.refusal("new_unit", T1, f"Too much {price}", price, -1, -1, False, None)
@@ -186,15 +198,27 @@ class NewUnitOfEveryKind(Player):
                 said = self.refusal("new_unit", T1, "Not a number", price, -1, -1, False, None)
                 self.assertEqual(said["us"], "Price: one number, used for every battle date.")
 
-    # U-5: a price too big for the game is refused with the value's code name and the int32 range:
-    # "ProductionPrice: 10000000000 doesn't fit (it must be -2147483648 to 2147483647)"
-    @unittest.expectedFailure
+    # U-5: a price too big for the game was refused with the value's code name and the int32 range:
+    # "ProductionPrice: 10000000000 doesn't fit (it must be -2147483648 to 2147483647)". Now "Price: too big: the game
+    # takes at most 2,147,483,647". (This harness's "us" is the Studio showing the game's own names, so only the other
+    # languages say the value by its label.)
     def test_a_price_too_big_is_refused_in_plain_words(self):
         self.mod("Too big")
         for lang, text in self.refusal("new_unit", T1, "Too much", 1e10, -1, -1, False, None).items():
             with self.subTest(lang=lang):
-                self.assertNotIn("ProductionPrice", text)
                 self.assertNotIn("-2147483648", text)
+                self.assertIn("2,147,483,647", text)
+                self.assertNotIn("doesn't fit", text)
+                if lang not in ("us", "base"):
+                    self.assertNotIn("ProductionPrice", text)
+        self.assertEqual(self.refusal("new_unit", T1, "Too much", 1e10, -1, -1, False, None)["us"],
+                         "ProductionPrice: too big: the game takes at most 2,147,483,647")
+
+    def test_the_most_the_game_takes_is_still_taken(self):
+        """The control: 2147483647 is made (test_prices); a price at the other end is said as too small elsewhere
+        (the Units tab's edit of a whole number below its range)."""
+        self.mod("At the most")
+        self.assertTrue(self.new(T1, "At the most", 2147483647)["address"])
 
 
 class NoCardType(Player):
@@ -409,12 +433,32 @@ class CopiesOfUpgrades(Player):
 
     # U-7: the page says nothing when a copy stops being an upgrade (new_unit's research_parent_dropped is never read
     # by newUnitForm): the player made a copy of G2, an upgrade of G1, and gets a unit bought from the start
-    @unittest.expectedFailure
     def test_the_page_says_when_a_copy_stops_being_an_upgrade(self):
         page = (Path(__file__).parents[1] / "src" / "ruse_studio" / "ui" / "app.js").read_text(encoding="utf-8")
         start = page.index("function newUnitForm(")
         form = page[start:page.index("\nfunction ", start + 10)]
         self.assertIn("research_parent_dropped", form)
+        self.assertIn("copy_not_upgrade", form)
+
+    def test_the_word_for_a_copy_that_stops_being_an_upgrade_is_in_every_language(self):
+        import tomllib
+        said = tomllib.loads((Path(__file__).parents[1] / "src" / "ruse_studio" / "words.toml")
+                             .read_text(encoding="utf-8"))["copy_not_upgrade"]
+        self.assertEqual(sorted(said), sorted(LANGS))
+        for lang, text in said.items():
+            with self.subTest(lang=lang):
+                self.assertIn("{name}", text)
+                self.assertIn("{parent}", text)
+        self.assertEqual(len(set(said.values())), len(said))   # none the English left in
+
+    def test_the_parent_a_copy_stopped_being_researched_from_is_named(self):
+        self.mod("Parent named")
+        moved = self.call("new_unit", M2, "M2 at the AT base", 40, 0, 11, False, None)
+        self.assertEqual(moved["research_parent_dropped"], M1)
+        self.assertTrue(moved["research_parent_name"])
+        kept = self.call("new_unit", M2, "M2 where it was", 40, -1, -1, False, None)   # control: in its own menu
+        self.assertIsNone(kept["research_parent_dropped"])
+        self.assertIsNone(kept["research_parent_name"])
 
 
 class CopyOfACopy(Player):

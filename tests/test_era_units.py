@@ -485,7 +485,7 @@ class EraResearch(unittest.TestCase):
         self.assertIsNone(self.api.set_upgrade(t90["address"], None)["parent"])
         # a research price the game can't keep is refused before the unit is made: nothing half made (0.9.8.2 review)
         before = json.loads((folder / "era_units.json").read_text(encoding="utf-8"))
-        with self.assertRaisesRegex(StudioError, "UpgradePrice: 3000000000 doesn't fit"):
+        with self.assertRaisesRegex(StudioError, "UpgradePrice: too big: the game takes at most 2,147,483,647"):
             self.api.era_unit_add("Cold War|USA|Patton", 0, 10, research_price=3_000_000_000)
         self.assertEqual(json.loads((folder / "era_units.json").read_text(encoding="utf-8")), before)
 

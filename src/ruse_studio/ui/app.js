@@ -255,7 +255,7 @@ function renderMods() {
     const current = kind === "mod" ? state.mod : state.map, list = kind === "mod" ? state.mods : state.maps || [];
     const options = [];
     if (!current) options.push(el("option", { value: "", textContent: kind === "mod" ? w.no_mod : w.no_map, disabled: true, selected: true }));
-    for (const m of list) options.push(el("option", { value: m.path, textContent: m.name, title: m.path,
+    for (const m of list) options.push(el("option", { value: m.path, textContent: m.name, title: m.folder ? m.folder + " - " + m.path : m.path,
       selected: m.path === current }));
     options.push(el("option", { value: NEW, textContent: kind === "mod" ? w.new_mod : w.new_map }),
       el("option", { value: OPEN, textContent: w.open_folder, title: w.tip_open_folder }),
@@ -2106,6 +2106,8 @@ function newUnitForm(u, opened) {
       await showUnit(res.address);
       say(w.unit_made.replace("{name}", res.name), "ok");
       if (res.animations_kept) say(w.actions_kept, "ok");  // (its source's own animations came along: RUSE Decoy changes them)
+      // (a copy of an upgrade that isn't researched from its unit any more, in its menu: said, not left to be found)
+      if (res.research_parent_dropped) say(fillText(w.copy_not_upgrade, { name: res.name, parent: res.research_parent_name || "" }), "ok");
     } catch (err) { problem(err); create.disabled = false; }
   });
   const box = el("div", { className: "copy" }, open, form);

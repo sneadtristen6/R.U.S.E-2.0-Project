@@ -6,18 +6,44 @@
 # builder's refusals): the blank is said in the player's language by those entries only.
 # Starter translations: corrections welcome.
 
-[e267eef9128]
-us = "{0}: {1} doesn't fit (it must be {2} to {3})"
-fr = "{0} : {1} ne convient pas (doit être entre {2} et {3})"
-ger = "{0}: {1} passt nicht (muss {2} bis {3} sein)"
-ita = "{0}: {1} non va bene (deve essere da {2} a {3})"
-spa = "{0}: {1} no cabe (debe ser de {2} a {3})"
-pol = "{0}: {1} nie pasuje (musi być od {2} do {3})"
-ru = "{0}: {1} не подходит (должно быть от {2} до {3})"
-cz = "{0}: {1} nesedí (musí být {2} až {3})"
-jpn = "{0}：{1} は範囲外です（{2}〜{3} にしてください）"
-sc = "{0}：{1} 不合适（必须在 {2} 到 {3} 之间）"
-fa = "{0}: {1} مناسب نیست (باید از {2} تا {3} باشد)"
+[e5c97751604]
+us = "{0}: too big: the game takes at most {1}"
+fr = "{0} : trop grand : le jeu accepte au plus {1}"
+ger = "{0}: zu groß: das Spiel nimmt höchstens {1}"
+ita = "{0}: troppo grande: il gioco accetta al massimo {1}"
+spa = "{0}: demasiado grande: el juego admite como máximo {1}"
+pol = "{0}: za duże: gra przyjmuje najwyżej {1}"
+ru = "{0}: слишком много: игра принимает не больше {1}"
+cz = "{0}: příliš velké: hra přijme nejvýše {1}"
+jpn = "{0}：大きすぎます。ゲームが受け付けるのは最大 {1} までです"
+sc = "{0}：太大了：游戏最多接受 {1}"
+fa = "{0}: خیلی بزرگ است: بازی حداکثر {1} را می‌پذیرد"
+
+[e38d992f007]
+us = "{0}: too small: the game takes at least {1}"
+fr = "{0} : trop petit : le jeu accepte au moins {1}"
+ger = "{0}: zu klein: das Spiel nimmt mindestens {1}"
+ita = "{0}: troppo piccolo: il gioco accetta almeno {1}"
+spa = "{0}: demasiado pequeño: el juego admite como mínimo {1}"
+pol = "{0}: za małe: gra przyjmuje co najmniej {1}"
+ru = "{0}: слишком мало: игра принимает не меньше {1}"
+cz = "{0}: příliš malé: hra přijme nejméně {1}"
+jpn = "{0}：小さすぎます。ゲームが受け付けるのは最小 {1} までです"
+sc = "{0}：太小了：游戏最少接受 {1}"
+fa = "{0}: خیلی کوچک است: بازی حداقل {1} را می‌پذیرد"
+
+[e567f1548bf]
+us = "{0}: far too big for the game"
+fr = "{0} : bien trop grand pour le jeu"
+ger = "{0}: viel zu groß für das Spiel"
+ita = "{0}: molto troppo grande per il gioco"
+spa = "{0}: demasiado grande para el juego"
+pol = "{0}: o wiele za duże dla gry"
+ru = "{0}: намного больше, чем принимает игра"
+cz = "{0}: mnohem větší, než hra přijme"
+jpn = "{0}：ゲームには大きすぎる値です"
+sc = "{0}：远远超出游戏能接受的大小"
+fa = "{0}: برای بازی بسیار بزرگ است"
 
 [eeb13536329]
 us = "The Studio would have saved {0}, which it can't read back ({1}), so nothing was saved. Please report this."

@@ -246,6 +246,12 @@ def search_finds(words: list[str], tags: list[str], said: list[str], tags_of: se
     return all(w in text for w in words) and all(any(o.startswith(t) for o in tags_of) for t in tags)
 
 
+def _name_key(name: str) -> str:
+    """A unit's name as two of them are compared: its letters in one form (NFKC) with capitals and spaces at the ends
+    set aside, so Тигр and тигр, or a full-width name and its plain one, are the same name."""
+    return unicodedata.normalize("NFKC", name).strip().casefold()
+
+
 def _tail(address: str) -> str:
     return address.rsplit("/", 1)[-1]
 
@@ -343,8 +349,12 @@ def _whole(value, kind: str, prop: str):
     """Round like the build does for whole-number properties (half away from zero), and check it fits."""
     r = int(Decimal(str(value)).quantize(Decimal(1), rounding=ROUND_HALF_UP))
     lo, hi = (0, 1) if kind == "bool" else INT_RANGES[kind]
-    if not lo <= r <= hi:
-        raise StudioError(f"{prop}: {r} doesn't fit (it must be {lo} to {hi})", prop=prop)
+    if r > hi:
+        most = f"{hi:,}"   # (2,147,483,647: with its commas in every language)
+        raise StudioError(f"{prop}: too big: the game takes at most {most}", prop=prop)
+    if r < lo:
+        least = f"{lo:,}"
+        raise StudioError(f"{prop}: too small: the game takes at least {least}", prop=prop)
     return r
 
 
@@ -360,9 +370,6 @@ def _ascii_digits(text: str) -> str:
     return "".join(str(unicodedata.decimal(c)) if c.isdecimal() and not "0" <= c <= "9" else c for c in text)
 
 
-FLOAT32_MOST = 3.4028234663852886e38  # the most a 4-byte decimal number (the game's float32) holds
-
-
 def _fits(value, kind: str, prop: str):
     """A number typed for a property of kind `kind`, as the build will store it: a whole number rounded and checked
     (_whole); a 4-byte decimal one checked against the most it holds (past it, the build stopped with Python's
@@ -373,8 +380,7 @@ def _fits(value, kind: str, prop: str):
         try:
             struct.pack("<f", value)
         except OverflowError:
-            raise StudioError(f"{prop}: {value} doesn't fit (it must be {-FLOAT32_MOST} to {FLOAT32_MOST})",
-                              prop=prop) from None   # (the page says the value by its label: as _whole does)
+            raise StudioError(f"{prop}: far too big for the game", prop=prop) from None   # (the page says the value by its label: as _whole does)
     return value
 
 
@@ -6068,8 +6074,20 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         current = self._mod_dir(kind)
         if current is not None:
             found.setdefault(str(current), current.name)
-        return {"mods": [{"path": p, "name": n} for p, n in found.items()], "kind": kind,
-                "current": str(current) if current else None}
+        # (the name the mod was given, as the Launcher shows it, not the folder's letters: a Russian or Japanese name
+        # had made my-mod, my-mod-2; two mods of one name tell their folders apart)
+        shown = {}
+        for p, folder_name in found.items():
+            try:
+                shown[p] = package.info_of(p).get("name") or folder_name
+            except (package.PackageError, KeyError, OSError):
+                shown[p] = folder_name
+        counts = {}
+        for n in shown.values():
+            counts[n] = counts.get(n, 0) + 1
+        rows = [{"path": p, "name": f"{shown[p]} ({Path(p).name})" if counts[shown[p]] > 1 else shown[p],
+                 "folder": Path(p).name} for p in found]
+        return {"mods": rows, "kind": kind, "current": str(current) if current else None}
 
     def new_mod(self, name: str, kind: str = "mod") -> dict:
         """Make a new, empty mod (or map: `kind` "map") in the Studio's mods (or maps) folder and start editing it."""
@@ -6561,6 +6579,9 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             raise StudioError(f"{prop}: expected {len(p['numbers'])} numbers" if p["list"] else f"{prop}: one number")
         kind = types.get(prop + "[]" if p["list"] else prop, "")
         values = [_fits(v, kind, prop) for v in values]
+        if prop == "ProductionPrice" and any(v < 0 for v in values):
+            # not a game rule: a price below nothing means nothing (a research price is refused the same way)
+            raise StudioError(f"{prop}: {next(v for v in values if v < 0)} is below 0", prop=prop)
         with self._saving:
             edits = ModEdits(edits.folder)  # read again: another change may have been saved meanwhile
             before = edits.get(o["address"], prop, "shared") if how == "own" else None  # what "all of them" got
@@ -10054,7 +10075,10 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             all_units = self._all_units(ix)
             menus = {(u["nation"], u["factory"]) for u in all_units if u["factory"] is not None}
             menus |= self._own_menus(ix, edits)  # the mod's buildings with units of their own (board.py)
-            parent = ix.links(UPGRADE).get(source)      # the unit the source is researched from, if any
+            parent = ix.links(UPGRADE).get(source)      # the unit the source is researched from, if any (the copy gets the game's link)
+            gone = self._hidden_by_mod(edits) | set(edits.deleted)   # (U-15: a parent the mod hid or took out)
+            parent_name = (self._names(ix, {parent}, self.prefs().get("lang") or schema.BASE, edits.new_units)[parent]
+                           if parent else None)  # (said on a drop, in the player's language)
             parent_menu = next(((u["nation"], u["factory"]) for u in all_units if u["address"] == parent), None)
             namespace, tail = source.rsplit("/", 1)
             m = _PREFIX.match(tail)
@@ -10073,6 +10097,13 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                 except KeyError:
                     return False
 
+            if not unique:
+                # the same name again is refused in every alphabet: a name with no Latin letter (虎, Тигр) makes a
+                # numbered address, so the address never shows it twice (the board's copies are named alike on purpose)
+                same = _name_key(name)
+                twin = next((u.name for u in edits.new_units.values() if u.named and _name_key(u.name) == same), None)
+                if twin is not None:
+                    raise StudioError(f"There's already a unit called {twin}. Pick another name.")
             stem = safe_name(name)
             if stem:
                 target = f"{namespace}/{prefix}{stem}"
@@ -10106,6 +10137,10 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         if prices and _can_edit("ProductionPrice", prices):
             kind = types.get("ProductionPrice[]" if prices["list"] else "ProductionPrice", "")
             p = _whole(price, kind, "ProductionPrice") if kind in INT_RANGES else price
+            if p < 0:
+                # not a game rule: a price below nothing means nothing (a research price is refused the same way)
+                prop = "ProductionPrice"
+                raise StudioError(f"{prop}: {p} is below 0", prop=prop)
             values["ProductionPrice"] = [p] * len(prices["numbers"]) if prices["list"] else p
         if nation >= 0 or factory >= 0:
             if (nation, factory) not in menus:
@@ -10119,8 +10154,10 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         # moved to a menu its research parent isn't in, it becomes a unit of its own: a unit researched from another
         # nation's unit never lets a match finish loading (2026-10-09 test: a T-80 started from the Soviet IS-2, researched from the KV-1, put in the USA's menu:
         # the loading screen never ended; rule unit-research-parent). The Upgrade box can link it again in its menu.
-        dropped = parent if parent is not None and "Nationalite" in values and parent_menu != (nation, factory) \
-            else None
+        # (the same when the parent is hidden by the mod or taken out of it: the build stops on a shown unit researched
+        # from a hidden one; U-15)
+        moved = "Nationalite" in values and parent_menu != (nation, factory)
+        dropped = parent if parent is not None and (moved or parent in gone) else None
         own = [(UPGRADE, REMOVED)] + ([(UPGRADE_FLAG, REMOVED)] if any(path == UPGRADE_FLAG for path, _n, _t in
                                                                        o["values"]) else []) if dropped else []
         with self._saving:
@@ -10139,6 +10176,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             # a copy plays what the unit it copies plays, its own animations too (the owner, 2026-11-10)
             kept = self._animations_along(edits.folder, source, target)
         return {"address": target, "name": name, "saved": str(edits.file), "research_parent_dropped": dropped,
+                "research_parent_name": parent_name if dropped else None,
                 "animations_kept": kept}
 
     def _new_unit_groups(self, edits, target: str, source: str, name: str, values: dict, own: list, group,

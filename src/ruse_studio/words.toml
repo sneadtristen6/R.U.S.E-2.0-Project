@@ -2047,6 +2047,19 @@ jpn = "{name} をMODに追加しました。ゲームでテストすると生産
 sc = "{name} 已加入模组。在游戏中测试即可在生产菜单中看到它。"
 fa = "{name} در ماد است. در بازی آزمایش کنید تا آن را در منوی ساختش ببینید."
 
+[copy_not_upgrade]
+us = "{name} is bought from the start, not researched: {parent} isn't in its build menu."
+fr = "{name} s'achète dès le départ, sans recherche : {parent} n'est pas dans son menu de production."
+ger = "{name} ist von Anfang an kaufbar, nicht erforscht: {parent} ist nicht in seinem Baumenü."
+ita = "{name} si compra fin dall'inizio, senza ricerca: {parent} non è nel suo menu di produzione."
+spa = "{name} se compra desde el principio, sin investigación: {parent} no está en su menú de producción."
+pol = "{name} można kupić od początku, bez badań: {parent} nie ma w jego menu produkcji."
+ru = "{name} покупается с самого начала, без исследования: {parent} нет в его меню производства."
+cz = "{name} se kupuje od začátku, bez výzkumu: {parent} není v jeho nabídce výroby."
+jpn = "{name} は最初から購入できます（研究は不要）。{parent} がその生産メニューにないためです。"
+sc = "{name} 从一开始就能购买，无需研究：{parent} 不在它的生产菜单里。"
+fa = "{name} از ابتدا قابل خرید است و تحقیق ندارد: {parent} در منوی ساختش نیست."
+
 [unit_deleted]
 us = "{name} was deleted from the mod."
 fr = "{name} a été supprimé du mod."

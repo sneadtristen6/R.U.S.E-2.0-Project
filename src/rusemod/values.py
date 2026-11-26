@@ -264,8 +264,12 @@ def _fitted(d: Decimal, kind: str, what: str):
     if kind in WHOLE or kind == "bool":
         r = int(d.quantize(Decimal(1), rounding=ROUND_HALF_UP))
         lo, hi = (0, 1) if kind == "bool" else INT_RANGES[kind]
-        if not lo <= r <= hi:
-            raise TypedError(f"{what}: {r} doesn't fit (it must be {lo} to {hi})")
+        if r > hi:
+            most = f"{hi:,}"   # (2,147,483,647: with its commas in every language)
+            raise TypedError(f"{what}: too big: the game takes at most {most}")
+        if r < lo:
+            least = f"{lo:,}"
+            raise TypedError(f"{what}: too small: the game takes at least {least}")
         return r
     x = float(d)
     if kind == "float32":
