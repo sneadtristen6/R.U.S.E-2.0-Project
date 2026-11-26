@@ -4068,12 +4068,13 @@ def close_up_copy(text_arc, map_name: str, shipped: bytes, marked: bytes) -> tup
     return (e.path, marked) if bytes(text_arc.read(e)) == shipped else None
 
 
-def build_cache() -> Path:
+def build_cache(home: Path | None = None) -> Path:
     """BUILD_CACHE: the folder in the platform's own folder (rusemod.home) where builds keep what they measure once
     (a map's road look: groundpaint.map_road_profile; the unit data as loaded: model.load). Safe to delete: it's
-    measured again."""
+    measured again. `home`: the app's own home (the Studio's, the Launcher's: the owner's pick 40, 2026-11-14, "the build
+    cache follows the Studio's home"); none: the platform's default home."""
     from .home import default_home
-    return default_home() / "cache" / "build"
+    return (Path(home) if home else default_home()) / "cache" / "build"
 
 
 def find_pack(game: Path, name: str) -> Path | None:

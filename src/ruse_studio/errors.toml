@@ -7556,3 +7556,16 @@ cz = "Tento mod má {0} MB souborů, více, než Launcher přijímá ({1} MB); n
 jpn = "この Mod はファイルが {0} MB あり、Launcher が受け付ける量（{1} MB）を超えています。何もパックしていません。"
 sc = "此模组的文件共 {0} MB，超过 Launcher 可接受的大小（{1} MB）；未打包任何内容。"
 fa = "حجم فایل‌های این ماد {0} مگابایت است، بیش از مقداری که لانچر می‌پذیرد ({1} مگابایت)؛ چیزی بسته‌بندی نشد."
+
+[e533ccf7cfd]
+us = "The game already has a map called {0}. Give the new map another name."
+fr = "Le jeu a déjà une carte nommée {0}. Donnez un autre nom à la nouvelle carte."
+ger = "Das Spiel hat schon eine Karte namens {0}. Gib der neuen Karte einen anderen Namen."
+ita = "Il gioco ha già una mappa chiamata {0}. Dai un altro nome alla nuova mappa."
+spa = "El juego ya tiene un mapa llamado {0}. Dale otro nombre al mapa nuevo."
+pol = "Gra ma już mapę o nazwie {0}. Nadaj nowej mapie inną nazwę."
+ru = "В игре уже есть карта с названием {0}. Дайте новой карте другое название."
+cz = "Hra už má mapu s názvem {0}. Dejte nové mapě jiný název."
+jpn = "ゲームにはすでに {0} という名前のマップがあります。新しいマップには別の名前を付けてください。"
+sc = "游戏里已经有名为 {0} 的地图。请给新地图起另一个名称。"
+fa = "بازی از قبل نقشه‌ای به نام {0} دارد. برای نقشهٔ جدید نام دیگری بگذارید."

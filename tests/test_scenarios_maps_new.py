@@ -228,13 +228,23 @@ class Names(MapGame):
     # FINDING F2: Duplicate map takes the copied map's own name ("Blitz") without a word, then no Test in game of the
     # map changes builds: "maps/Blitz: the map list already has an entry called like the new map; give it another
     # name" (every map of the project stopped with it). The Studio has no way to rename a new map.
-    @unittest.expectedFailure
+    # (the owner's pick 41, 2026-11-14: "Refuse a game map's name at once". Built: refused, in words, nothing made.)
     def test_f2_a_copy_called_like_the_map_it_copies(self):
         self.api.duplicate_map(BLITZ, "Blitz at Dusk")  # the player's other work in the same map changes
         said = page_said(self.api, "duplicate_map", BLITZ, "Blitz")
-        if said:  # refused at once, in words, is fine too: nothing made
-            self.assertEqual(self.listed(), [BLITZ, "BlitzAtDusk"])
+        self.assertIn("already has a map called", said)
+        self.assertNotIn("Errno", said)
+        self.assertEqual(self.listed(), [BLITZ, "BlitzAtDusk"])   # nothing made
         self.assertBuilds()
+
+    def test_f2_the_game_s_other_map_names_are_refused_too_and_no_folder_is_made(self):
+        """A name the game's map list has, as the copy would be listed ("(2) Blitz": the made-up game's list holds
+        "(2) Blitz" and "01. Leipzig"), is refused before anything is made, even as the first map (no map project
+        yet: none is made), as the build would refuse it."""
+        before = sorted(p.name for p in self.home.rglob("*") if p.is_dir())
+        said = page_said(self.api, "duplicate_map", BLITZ, "Blitz")
+        self.assertIn("already has a map called", said)
+        self.assertEqual(sorted(p.name for p in self.home.rglob("*") if p.is_dir()), before)
 
     def test_windows_reserved_names(self):
         """Names Windows keeps for its devices, typed as a whole map name (on this PC's Windows 11 only NUL still

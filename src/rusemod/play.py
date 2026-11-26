@@ -327,7 +327,7 @@ class Starter:
 
     def modded(self, game: Path, mod_folders, instance: Path, name: str, say, watch: bool = True,
                guard: dict | None = None, words: dict | None = None, cut_off_errors: bool = False,
-               title: bool = False) -> None:
+               title: bool = False, cache_home: Path | None = None) -> None:
         """Build these mod folders into the modded copy `instance` and start the game from it. The folders' order
         counts: a later mod comes after an earlier one, so it wins when both change the same value, unless the mods
         themselves say otherwise (MOD_FORMAT §10.6). A problem raises BuildError (or RndfError, OSError) with a
@@ -345,14 +345,16 @@ class Starter:
         lines a cheat copy's lock says in the game (rusemod.fairplay.lock_lines).
         `cut_off_errors`: ground the mods cut off from the rest of a map stops the build (the Studio's Test in game)
         instead of being a warning (build_and_write). `title`: the copy gets R.U.S.E. 2.0's gold title (the
-        player's opt-in: rusemod.signature.title_on), or the game's own (the default).
+        player's opt-in: rusemod.signature.title_on), or the game's own (the default). `cache_home`: the app's own
+        home, where the build cache is kept (rusemod.build.build_cache); none: the platform's default home.
 
         An error leaving here says, for Bug Watch, how far the Play got (`stage`: refused "before" any build, the
         "build" raised, the build "listed" mistakes in the mods, or the game didn't "start") and which mods were on
         (`mod_set`): rusemod.bugwatch.failed_at. Never the words, folders or own mods' names."""
         state = {"stage": "before"}
         try:
-            self._modded(game, mod_folders, instance, name, say, watch, guard, words, cut_off_errors, title, state)
+            self._modded(game, mod_folders, instance, name, say, watch, guard, words, cut_off_errors, title, state,
+                         cache_home)
         except Exception as exc:
             from . import bugwatch
             from .codes import code_of
@@ -362,7 +364,7 @@ class Starter:
             raise
 
     def _modded(self, game, mod_folders, instance, name, say, watch, guard, words, cut_off_errors, title,
-                state: dict) -> None:
+                state: dict, cache_home=None) -> None:
         """modded's steps; `state["stage"]` follows them."""
         from .backup import _claim, _release
         from . import fairplay
@@ -408,7 +410,7 @@ class Starter:
                 mods = read_mods(mod_folders, say)
                 keep_order(mods)
                 say(f"Building the modded copy of R.U.S.E. for {name} in {instance}…")
-                result = build_and_write(game, mods, instance=instance, say=say, cache=build_cache(),
+                result = build_and_write(game, mods, instance=instance, say=say, cache=build_cache(cache_home),
                                          cut_off_errors=cut_off_errors, signature=title,
                                          built_from=made_from, fairplay=fair)
                 if built_from(game, mod_folders, title=title, lock_lines=lines)["key"] != made_from["key"] \

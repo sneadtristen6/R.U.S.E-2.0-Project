@@ -638,7 +638,7 @@ def make(new: str, spec: NewMap, read_glad, read_data, read_zz) -> Clone:
                                + r"[\\/]ClusterMap\.ndfbin)$", re.I))(new)
     j = _copy(m, mi, {}, lambda s: swap(s) or s)
     o = m.objects[j]
-    names = {_text(m, _props(m, x).get("Name")) for x in m.objects if m.classes[x.cls] == "TMapLoadInfo"}
+    names = list_names(m)
     out.entry_name = _list_name(list_name, spec.names["us"], new, names)
     for prop, text in (("Name", out.entry_name), ("Path", new), ("RootDatapackName", new)):
         if prop in load:
@@ -724,6 +724,21 @@ def _list_name(source_name: str, display: str, new: str, taken: set) -> str:
         if name not in taken:
             return name
     raise NewMapError(f"maps/{new}: the map list already has an entry called like the new map; give it another name")
+
+
+def list_names(m: Ndf) -> set[str]:
+    """Every name the map list (the game's MAPINFO, as `m`) already has: what make() checks a new map's name against."""
+    return {_text(m, _props(m, x).get("Name")) for x in m.objects if m.classes[x.cls] == "TMapLoadInfo"}
+
+
+def name_fits(source_name: str, display: str, new: str, taken: set) -> bool:
+    """Whether a copy of the entry `source_name` called `display` (its folder `new`) can be listed in the map list that
+    has the names `taken`: the same test make() makes when it builds (_list_name), asked before anything is made."""
+    try:
+        _list_name(source_name, display, new, taken)
+    except NewMapError:
+        return False
+    return True
 
 
 def _free_key(read_zz) -> str:
