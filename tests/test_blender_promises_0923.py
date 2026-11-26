@@ -304,6 +304,15 @@ class Item27UntickedLine(InElevenLanguages):
         self.assertIn("oneBlenderTicks(", js("squad.js"))
 
 
+class Item28BringBackLast(InElevenLanguages):
+    ITEM = "28"
+
+    def test_52r_the_small_button_under_a_squad_card(self):
+        self.words_in_eleven_languages(["squad_blender_back_last"], english_left_in=True)
+        self.assertIn('className: "ghost squad-again", textContent: w.squad_blender_back_last', js("squad.js"))
+        self.assertEqual(WORDS["squad_blender_back_last"]["us"], "Bring back what I sent last")
+
+
         #                                         code says the same words, for every refusal)
 
 

@@ -214,7 +214,7 @@
         // Blender closed with a sending not brought back yet (squad_info's blender.waiting; without that field, its
         // folder being there): what was last sent from it can still come back (a bring-back takes a closed
         // Blender's last sending; one brought back already changes nothing)
-        const again = el("button", { type: "button", className: "ghost squad-again", textContent: w.squad_blender_back,
+        const again = el("button", { type: "button", className: "ghost squad-again", textContent: w.squad_blender_back_last,
           title: w.tip_squad_blender_back_closed, disabled: S.busy || !can.blender });
         again.addEventListener("click", bringBack);
         out.push(el("div", { className: "squad-go" }, again));

@@ -37,7 +37,7 @@ TEXTS = {"words": STUDIO, "errors": load("src/ruse_studio/errors.toml"), "buildt
 # button's English (Bring back alone: not as part of a longer button's name)
 BUTTONS = ["look_open", "squad_blender_back", "model_blender", "model_blender_back", "unit_look", "decoy_blender_aside",
            "decoy_blender", "blender_model_send", "one_parts", "uniform_custom", "look_back", "look_choose_blender",
-           "look_get_blender", "uniform_default_again", "menu_blender"]
+           "look_get_blender", "uniform_default_again", "menu_blender", "squad_blender_back_last"]
 # the same English on another button: the menu pictures' Bring back (maps.js) in the menu pictures' own lines, RUSE
 # Decoy's Bring my changes back
 SAME_ENGLISH = {"look_back": ("menu_", "menu_bring_back"), "squad_blender_back": ("decoy_", "decoy_blender_back")}
