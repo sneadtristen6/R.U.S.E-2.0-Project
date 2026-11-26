@@ -40,6 +40,9 @@ TAKING_OUT = holding.FOLDER  # <mod>/.taking-out/: what a take-out set aside unt
 # through"): a file of the unit Windows won't let go of (another program has it open) is tried again for this many
 # seconds, then left for the Studio to take out later (TakeOut.settle, rusemod.holding)
 HOLD_WAIT = 3.0
+# a list file (units.toml, copies.toml, the mod's lists) another program holds is waited for this long, then Delete stops
+# and names the file (the owner's pick 38, 2026-11-14: "Wait 10 seconds, then stop and name the file.")
+LIST_HOLD_WAIT = 10.0
 HOLD_STEP = 0.1
 
 

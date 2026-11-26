@@ -1032,4 +1032,4 @@ class LauncherApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedC
         extra = {"guard": {"home": self._home, "consent": self.guard_status()}} if fairplay.ON else {}  # RUSE Guard
         self._starter.modded(game, chosen["folders"], instance, chosen["name"], say,
                              words=words(self.prefs().get("lang") or "us"),  # the lines for the player, in theirs
-                             title=title, **extra)
+                             title=title, cache_home=self._home, **extra)

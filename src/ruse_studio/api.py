@@ -2161,6 +2161,28 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                 "why": None if entries else "No menu offers this map (BATTLES, OPERATIONS or the CAMPAIGN), so it has "
                                             "no entry to copy."}
 
+    def _map_list_names(self) -> set:
+        """The names the game's own map list has (rusemod.newmap.list_names), read from the game's files; kept per game
+        file. No game: none (the build says so)."""
+        from rusemod import newmap
+        from rusemod import players as pl
+        from rusemod.ndf import Ndf
+        game = self._game()
+        glad_path = find_pack(game, "ZZ_GladPatchableWin.dat") if game is not None else None
+        if glad_path is None:
+            return set()
+        key = ("map-list-names", str(glad_path), glad_path.stat().st_mtime)
+        with self._grounds_lock:
+            cached = self._sceneries.get(key)
+        if cached is not None:
+            return cached
+        with Edat.open(str(glad_path)) as glad:
+            e = glad.entry(pl.MAPINFO)
+            names = newmap.list_names(Ndf(bytes(glad.read(e)))) if e is not None else set()
+        with self._grounds_lock:
+            self._sceneries[key] = names
+        return names
+
     def _menu_entries(self, source: str) -> list[dict]:
         """The game's menu entries of map `source` a copy can start from (rusemod.newmap.menu_entries), in the map
         list's order: [{"name": its map-list name, "kind": battles, operation or campaign, "titles": what the menus
@@ -2258,10 +2280,27 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                 pictures = presets.preset_pictures(preset)
             except (presets.PresetError, OSError, ValueError, KeyError, struct.error) as exc:
                 raise StudioError(f"{opts['source']} can't start blank: {exc}") from None
-        if self._map_dir() is None:
+        # the owner's pick 41 (2026-11-14): "Refuse a game map's name at once": a name the game's map list has (and no
+        # folder name can stand in for), said now, before any folder is made, not when Test in game builds the map
+        # and every map of the project stops with it
+        source_entry = entry if entry is not None else (battles[0] if battles else None)
+        if source_entry is not None:
+            here = self._map_dir()
+            if here is None or (here == self._mod_dir("mod") and not (here / "maps").is_dir()):
+                here = None   # (a map project of its own is made below: nothing in it yet)
+            used = {m["pack"].lower() for m in self.maps()["maps"]}
+            used |= {f.name.lower() for f in (here / "maps").iterdir()} if here is not None and (here / "maps").is_dir() \
+                else set()
+            if not newmap.name_fits(source_entry, name, _pack_name(name, used), self._map_list_names()):
+                raise StudioError(f"The game already has a map called {name!r}. Give the new map another name.")
+        folder = self._map_dir()
+        # the owner's pick 42 (2026-11-14): "A new map gets its own map mod." With only a units mod picked (the map
+        # project falls back to it) and no maps in it, the new map gets a map project of its own; a units mod that
+        # already holds maps (made before mods and maps were apart) keeps them together
+        if folder is None or (folder == self._mod_dir("mod") and not (folder / "maps").is_dir()):
             self.new_mod(name, "map")
         folder = self._map_dir()
-        taken = {m["pack"].lower() for m in self.maps()["maps"]}
+        taken ={m["pack"].lower() for m in self.maps()["maps"]}
         taken |= {f.name.lower() for f in (folder / "maps").iterdir()} if (folder / "maps").is_dir() else set()
         new = _pack_name(name, taken)
         players = self._read_players(pack)  # the map's player count in this project comes along too
@@ -5390,7 +5429,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             self._check_jobs[pack] = job.id
 
         def work(say):
-            job.result = {"pack": pack, "findings": mapcheck.check_map(game, folder, pack, say)}
+            job.result = {"pack": pack, "findings": mapcheck.check_map(game, folder, pack, say, home=self._home)}
         return job.start(self._reading_game(game, work), "The map is checked.",
                          plain=(BuildError, RndfError, OSError))
 
@@ -10237,7 +10276,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         folder = edits.folder
         # a list file another program holds for a moment (a sync program, an antivirus) is tried again as long as a file
         # of the unit itself is: the whole take-out, put back in between (the owner: "it should through")
-        end = time.monotonic() + edits_module.HOLD_WAIT
+        end = time.monotonic() + edits_module.LIST_HOLD_WAIT
         while True:
             take = TakeOut(folder)
             try:
@@ -10324,7 +10363,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         from .edits import HOLD_STEP
         # a list file another program holds for a moment is tried again, as delete_unit does (all or nothing: the
         # take-out puts everything back before each try)
-        end = time.monotonic() + edits_module.HOLD_WAIT
+        end = time.monotonic() + edits_module.LIST_HOLD_WAIT
         with self._saving:
             while True:
                 try:
@@ -10379,7 +10418,8 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                 raise BuildError("We couldn't find R.U.S.E.")
             self._clear_waiting(*folders)   # (a deleted unit's file another program had open: rusemod.holding)
             self._starter.modded(game, folders, instance, name, say, words=said, cut_off_errors=True,
-                                 title=title_on(self._home))  # R.U.S.E. 2.0's title, unless Settings says the game's
+                                 title=title_on(self._home), cache_home=self._home)  # R.U.S.E. 2.0's title, unless
+            #                         Settings says the game's; its build cache in the Studio's home
             say(f"Built in {instance}. To see your changes in the game:")
             if not look:   # (said as a whole line, so rusemod.buildtext lists it: in the player's language)
                 say("  Your unit changes show in every game mode.")
@@ -10687,7 +10727,8 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                     mod = load_mod(folder)
                 except OSError as exc:   # (a file another program holds: said in words, naming it; FE-13)
                     raise file_error(package.named_file(exc, package.files_of(folder)), target) from exc
-                result = build_and_write(game, [mod], say=lambda line: say("  " + line), cache=build_cache())
+                result = build_and_write(game, [mod], say=lambda line: say("  " + line),
+                                          cache=build_cache(self._home))
                 if result.errors:
                     raise BuildError("Fix the mod first: the build above has errors, so nothing was exported.")
                 build_id = build_of(game)

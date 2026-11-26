@@ -69,7 +69,23 @@ def tail(address: str) -> str:
 
 def quick(seconds: float = 0.3):
     """A held file tried again this long only (create=True: this file still runs on e9a092c3's code)."""
-    return mock.patch.object(edits_module, "HOLD_WAIT", seconds, create=True)
+    return _both(seconds)
+
+
+def _both(seconds: float):
+    """HOLD_WAIT (the unit's own files) and LIST_HOLD_WAIT (the list files) both set to `seconds`."""
+    first = mock.patch.object(edits_module, "HOLD_WAIT", seconds, create=True)
+    second = mock.patch.object(edits_module, "LIST_HOLD_WAIT", seconds, create=True)
+
+    class Both:
+        def __enter__(self):
+            first.__enter__()
+            second.__enter__()
+
+        def __exit__(self, *exc):
+            second.__exit__(*exc)
+            return first.__exit__(*exc)
+    return Both()
 
 
 def tree(folder: Path) -> dict:
@@ -617,6 +633,19 @@ class OnTheStudio(WithMod):
         self.assertEqual((got["deleted"], got["waiting"]), (SUPER, []))
         self.assertNotIn(self.tail, anim.read_units(self.folder))
         self.assertFalse(self.card.exists())
+
+    def test_the_list_file_wait_is_ten_seconds(self):
+        """The owner's pick 38 (2026-11-14): "Wait 10 seconds, then stop and name the file." (before: 3 seconds)"""
+        self.assertEqual(edits_module.LIST_HOLD_WAIT, 10.0)
+
+    @unittest.skipUnless(WINDOWS, "a file another program holds: Windows")
+    def test_a_units_toml_held_five_seconds_is_waited_for_and_delete_goes_through(self):
+        """Pick 38: units.toml held 5 seconds (longer than the old 3) no longer stops Delete."""
+        f = open(self.folder / anim.UNITS, "rb")
+        threading.Timer(5.0, f.close).start()
+        got = self.api.delete_unit(SUPER)
+        self.assertEqual(got["deleted"], SUPER)
+        self.assertNotIn(self.tail, anim.read_units(self.folder))
 
     @unittest.skipUnless(WINDOWS, "a file another program holds: Windows")
     def test_a_leftovers_take_out_tries_a_units_toml_held_for_a_moment_again(self):

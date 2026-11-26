@@ -69,13 +69,21 @@ class Sets(MapGame):
     # for any units mod, one with no maps too); Export of the map then exports the units mod under its name and
     # replaces its copy in the Launcher's library ("In the Launcher's mod library as Tanks 1.0.0 (the older version
     # replaced)"). duplicate_map's own words: "in the current map project (one is made when none is picked)".
-    @unittest.expectedFailure
+    # (the owner's pick 42, 2026-11-14: "A new map gets its own map mod." Built: the expectedFailure is gone.)
     def test_f7_a_map_made_after_a_units_mod_gets_map_changes_of_its_own(self):
         tanks = Path(self.api.new_mod("Tanks")["current"])
         self.api.edit(M4, "SeuilMort", 15)
         self.api.duplicate_map(BLITZ, "Blitz at Dusk")
         self.assertFalse((tanks / "maps").exists())
         self.assertNotEqual(self.map_dir(), tanks)
+
+    def test_a_units_mod_that_already_holds_maps_still_gets_the_new_map_in_it(self):
+        """The control (a mod from before mods and maps were apart): its maps and the new one stay together."""
+        old = Path(self.api.new_mod("Old")["current"])
+        (old / "maps" / "SuperCrossRoads4").mkdir(parents=True)
+        made = self.api.duplicate_map(BLITZ, "Blitz at Dusk")["pack"]
+        self.assertEqual(self.map_dir(), old)
+        self.assertTrue((old / "maps" / made / "map.toml").is_file())
 
     def test_a_units_mod_and_map_changes_given_one_name(self):
         """The same name for the units mod and the map changes: the second gets a folder of its own (their ids would
