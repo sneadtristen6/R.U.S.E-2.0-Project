@@ -922,7 +922,9 @@ class AmmoAndFlags(WithMod):
             self.api.new_ammo(made["address"], "Hotter")  # a copy of a copy
         with self.assertRaises(StudioError):
             self.api.new_ammo(PANZER_IV, "Tank")  # not an ammunition
-        gone = self.api.delete_unit(made["address"])
+        asked = self.api.delete_unit(made["address"])   # a weapon still fires it: warned first (the owner, 2026-11-26)
+        self.assertEqual((asked["deleted"], [w["address"] for w in asked["ask_ammo"]]), (None, [PANZER_MOUNT]))
+        gone = self.api.delete_unit(made["address"], "anyway")
         self.assertEqual(gone["source"], AMMO_75)
         self.assertEqual(self.api.ammo()["total"], 2)
 

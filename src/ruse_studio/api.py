@@ -6607,6 +6607,12 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             if not ok:
                 raise StudioError(f"{address} can't be edited here ({why})")
             where, how = self._where(ix, o, mode, via, address, edits)
+            nation, menus = None, set()
+            if prop == "Factory":  # the build menus the unit's nation has (the Units tab offers them as a list)
+                units = {u["address"]: u for u in self._all_units(ix)}
+                menus = {(u["nation"], u["factory"]) for u in units.values() if u["factory"] is not None}
+                if real in units:
+                    nation = self._menu_of(edits, units, address)[0]
         finally:
             ix.close()
         p = _props(o).get(prop)
@@ -6626,6 +6632,11 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         if prop == "ProductionPrice" and any(v < 0 for v in values):
             # not a game rule: a price below nothing means nothing (a research price is refused the same way)
             raise StudioError(f"{prop}: {next(v for v in values if v < 0)} is below 0", prop=prop)
+        if nation is not None and not p["list"] and (nation, values[0]) not in menus:
+            # not a game rule: the build menus the game has (the owner, 2026-11-26, "3 A": the building that builds a
+            # unit is picked from the nation's own, not typed; the All values tab still takes a typed number)
+            raise StudioError(f"No build menu for nation {nation} and factory {values[0]}: pick one of the menus "
+                              f"the game has")
         with self._saving:
             edits = ModEdits(edits.folder)  # read again: another change may have been saved meanwhile
             before = edits.get(o["address"], prop, "shared") if how == "own" else None  # what "all of them" got
@@ -10341,6 +10352,28 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                              "to": self.set_upgrade(c["address"], to)["parent"]})
         return {"relinked": relinked, "left": []}
 
+    def _ammo_fired(self, edits: ModEdits, address: str) -> list[dict]:
+        """The weapons of this mod that fire the copied ammunition at `address`, as [{address: the weapon, unit: its
+        unit, name: the unit's name}] (a copy that isn't an ammunition, or that nothing fires: [])."""
+        copy = edits.new_units.get(address)
+        if copy is None:
+            return []
+        ix = self._open()
+        try:
+            try:
+                if ix.show(copy.source)["class"] != AMMO:
+                    return []
+            except KeyError:
+                return []
+            # (an edit is kept as the named object and the path inside it: "<unit>", "MountedWeapon.Ammunition")
+            weapons = [(t, f"{t}:{path[:-len('.Ammunition')]}" if path.endswith(".Ammunition") else t)
+                       for t, path in edits.links_to(address) if path == "Ammunition" or path.endswith(".Ammunition")]
+            names = self._names(ix, sorted({t for t, _w in weapons}), self.prefs().get("lang") or schema.BASE,
+                                edits.new_units)
+        finally:
+            ix.close()
+        return [{"address": w, "unit": t, "name": names[t]} for t, w in weapons]
+
     def _unit_name(self, address: str) -> str:
         """What the Studio calls a unit in its messages: a new unit's own name, else the end of its address."""
         unit = self._new_units().get(address)
@@ -10350,7 +10383,9 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         """Remove a new unit from the current mod: its copy, every change made to it and its parts, and its name. The
         units researched from it are dealt with first, as the modder chose (_research_gone; `researched` "anyway" after
         the warning). Returns {"deleted": its address, "source", "saved", "relinked", "left"}, or {"deleted": None,
-        "ask": the units researched from it} when the modder is to be warned first (nothing changed). Its line in the
+        "ask": the units researched from it} when the modder is to be warned first (nothing changed). A copied ammunition
+        that weapons fire is warned about first the same way ({"deleted": None, "ask_ammo": those weapons}, `researched`
+        "anyway" the go-ahead): on the go-ahead each of them fires the game ammunition it was copied from again. Its line in the
         mod's menu_groups.toml goes, and the units its group stood under move to the first remaining unit of that
         group (groups.py).
 
@@ -10385,9 +10420,17 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             try:
                 for f in (edits.file, edits.names_file, folder / menugroups.FILE, folder / INDEX, folder / CREDITS):
                     take.keep(f)   # (as they are before anything changes: research links, groups, era lines too)
+                fired = self._ammo_fired(edits, address)
+                if fired and researched != "anyway":
+                    # the owner, 2026-11-26 ("2 A"): warned first, nothing changed
+                    return {"deleted": None, "ask_ammo": fired}
                 research = self._research_gone(address, researched)
                 if "ask" in research:
                     return {"deleted": None, "ask": research["ask"]}
+                for w in fired:
+                    # ... and on Delete anyway each weapon fires the game ammo the copy was copied from again, so the
+                    # mod still builds (set_ammo: it takes the change out, and the muzzle flash follows the ammo)
+                    self.set_ammo(w["unit"], w["address"], edits.new_units[address].source)
                 with self._saving:
                     edits = ModEdits(folder)
                     source = edits.new_units[address].source if address in edits.new_units else None

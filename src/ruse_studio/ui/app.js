@@ -1028,6 +1028,31 @@ function modeNames() {
   return (knownNumbers && knownNumbers.modes && knownNumbers.modes.length === 5) ? knownNumbers.modes : MODES_EN;
 }
 
+// The Factory row: the building that builds the unit, picked from the unit's nation's own buildings (api.menus, named by
+// their buildings as the New unit form does) in place of a typed number (the owner, 2026-11-26, "3 A"). It stands in
+// the row's number box: its value is the factory number, read as one. A value that isn't in the list shows as an extra
+// option.
+let knownMenus = null;
+function factoryBox(u, r, value) {
+  const box = el("select", { disabled: !state.mod, title: state.words.tip_value });
+  box.setAttribute("aria-label", r.label);
+  const nationRow = u.groups.flatMap((g) => g.rows).find((x) => x.prop === "Nationalite");
+  const nation = nationRow ? Number([].concat(nationRow.numbers)[0]) : u.nation;
+  const showList = (menus) => {
+    const mine = menus.nations.find((n) => n.nation === nation);
+    const options = (mine ? mine.factories : []).map((f) => [String(f.factory), factoryLabel(f)]);
+    const now = String(box.value || value);
+    if (!options.some(([v]) => v === now)) options.unshift([now, now]);
+    box.replaceChildren(...options.map(([v, text]) => el("option", { value: v, textContent: text })));
+    box.value = now;
+  };
+  box.replaceChildren(el("option", { value: String(value), textContent: String(value) }));
+  box.value = String(value);
+  if (knownMenus && knownMenus.lang === state.lang) showList(knownMenus.menus);
+  else api().menus(state.lang).then((menus) => { knownMenus = { lang: state.lang, menus }; showList(menus); }).catch(() => {});
+  return box;
+}
+
 function row(u, r, mode) {
   const w = state.words;
   // a value with no name of its own in labels.toml is called by the number guide's ("Statistics id", not TrackingId)
@@ -1046,7 +1071,8 @@ function row(u, r, mode) {
   // a price or shown-in-menu list holds one value per game mode (1945, 1942, 1939, Total War, Nuclear: the game's own
   // order): each box gets its mode's name, as the game's lobby says it
   const modes = MODE_LISTS.has(r.prop) && r.list && shown.length === 5 ? modeNames() : null;
-  const boxes = shown.map((n, i) => numberBox(r, n, r.list ? `${r.label} [${modes ? modes[i] : i}]` : r.label));
+  const boxes = shown.map((n, i) => r.prop === "Factory" && !r.list ? factoryBox(u, r, n)
+    : numberBox(r, n, r.list ? `${r.label} [${modes ? modes[i] : i}]` : r.label));
   const cells = modes ? boxes.map((b, i) => el("label", { className: "mode-box" },
     el("small", { textContent: modes[i] }), b)) : boxes;
   const ranged = RANGE_PROPS.has(r.prop) && !r.list && r.type !== "bool";
@@ -2141,6 +2167,10 @@ function copyNotice(u) {
     yes.disabled = true;
     try {
       const res = await api().delete_unit(u.address, researched);
+      if (res.ask_ammo) {  // weapons still fire this ammo copy: warned first (the owner, 2026-11-26)
+        ammoAsk(sure, u.name, res.ask_ammo, () => remove("anyway"), () => showUnit(u.address));
+        return;
+      }
       if (res.ask) {  // units are researched from it, and the modder chose to be warned first (Settings > Research)
         researchAsk(sure, u.name, res.ask, () => remove("anyway"), () => showUnit(u.address));
         return;
@@ -3999,6 +4029,22 @@ function timeUnitPicker(box, changed) {
     if (changed) changed(shown);
   });
   return pick;
+}
+
+// The warning before deleting a copied ammo that weapons still fire (StudioApi.delete_unit gave {ask_ammo}): in `box`,
+// which weapons fire it and that Delete anyway puts each back on the game ammo it was copied from, Delete anyway
+// (`goAhead`) and Cancel (`cancel`)
+function ammoAsk(box, name, weapons, goAhead, cancel) {
+  const w = state.words;
+  const anyway = el("button", { type: "button", className: "ghost danger", textContent: w.delete_anyway,
+    title: w.tip_delete_unit });
+  const keep = el("button", { type: "button", className: "ghost", textContent: w.cancel, title: w.tip_cancel });
+  anyway.addEventListener("click", () => { anyway.disabled = true; goAhead(); });
+  keep.addEventListener("click", cancel);
+  box.classList.remove("hidden");
+  box.replaceChildren(el("p", { className: "notice warn", textContent: fill(w.ammo_gone_ask,
+    { name, names: [...new Set(weapons.map((x) => x.name))].join(", ") }) }), el("div", { className: "actions" }, anyway, keep));
+  anyway.focus();
 }
 
 // The warning before taking out a unit others are researched from (StudioApi.delete_unit / era_unit_remove gave
