@@ -199,7 +199,8 @@ class HisReadme(unittest.TestCase):
                 ("%SystemDrive%\\Users\\jane", "", "%SystemDrive%\\Users\\jane"),
                 ("D:\\Users\\Mary Ann Smith-Jones and more", " and more", "D:\\Users\\Mary Ann Smith-Jones"),
                 ("C:\\Users\\Jane!", "!", "C:\\Users\\Jane"),
-                ("C:\\Users\\jsmith.CONTOSO is mine", " is mine", "C:\\Users\\jsmith.CONTOSO"),
+                ("C:\\Users\\jsmith.CONTOSO is mine", " mine", "C:\\Users\\jsmith.CONTOSO is"),   # (pick 35: a name in
+                #                                       small letters that isn't known goes on with words, to 20 letters)
                 ("C:\\Users\\Иван Петров\nnext line", "\nnext line", "C:\\Users\\Иван Петров")):
             self.assertEqual(package.paths_cut(text), (want, [(gone, "")]), text)
         self.assertEqual(package.paths_cut("/home/jane and /Users/jane"), (" and ", [("/home/jane", ""),
@@ -212,10 +213,21 @@ class HisReadme(unittest.TestCase):
         fix's report): this test says only what is sure, the first word gone."""
         text = "Made on C:\\Users\\kim lee by me"
         self.assertEqual(package.paths_cut(text, ("kim lee",)), ("Made on  by me", [("C:\\Users\\kim lee", "")]))
+        # The owner's pick 35 (2026-11-14): privacy first, the whole name out: a name not known goes on with each word
+        # after it as far as Windows lets a name go (20 letters).
         new, cuts = package.paths_cut(text)
         self.assertNotIn("kim", new)
-        self.assertEqual((new[:len("Made on ")], cuts[0][0][:len("C:\\Users\\kim")], cuts[0][1]),
-                         ("Made on ", "C:\\Users\\kim", ""))
+        self.assertNotIn("lee", new)
+        self.assertEqual(new, "Made on ")
+        self.assertEqual(cuts, [("C:\\Users\\kim lee by me", "")])
+        # ...and a Users folder below the top of a drive is a user's folder too
+        self.assertEqual(package.paths_cut("Saved in E:\\Backup\\Users\\Jane\\x.glb"), ("Saved in x.glb", [
+            ("E:\\Backup\\Users\\Jane\\x.glb", "x.glb")]))
+        # controls: a unix home keeps the words after it, a home folder not at a drive's top is no user's
+        self.assertEqual(package.paths_cut("/home/jane and /Users/jane"), (" and ", [("/home/jane", ""),
+                                                                                   ("/Users/jane", "")]))
+        self.assertEqual(package.paths_cut("Put it in E:\\home\\Projects then build."),
+                         ("Put it in Projects then build.", [("E:\\home\\Projects", "Projects")]))
         self.assertEqual(package.paths_cut("C:\\Users\\kim lee\\x.glb and C:\\Users\\kim lee too"),
                          ("x.glb and  too", [("C:\\Users\\kim lee\\x.glb", "x.glb"), ("C:\\Users\\kim lee", "")]))
         self.assertEqual(package.user_of("C:\\Users\\kim lee\\AppData\\Local\\RUSE Mod Platform"), "kim lee")
@@ -238,7 +250,7 @@ class HisReadme(unittest.TestCase):
                 ("From \\\\localhost\\d$\\Users\\jane", "From ", ["\\\\localhost\\d$\\Users\\jane"]),
                 ("Share: \\\\?\\UNC\\server\\Users\\jane", "Share: ", ["\\\\?\\UNC\\server\\Users\\jane"]),
                 ("Share: \\\\?\\UNC\\server\\C$\\Users\\jane", "Share: ", ["\\\\?\\UNC\\server\\C$\\Users\\jane"]),
-                ("Device: \\\\.\\C:\\Users\\jane here", "Device:  here", ["\\\\.\\C:\\Users\\jane"]),
+                ("Device: \\\\.\\C:\\Users\\jane here", "Device: ", ["\\\\.\\C:\\Users\\jane here"]),
                 ("Device: \\\\.\\UNC\\server\\Users\\jane", "Device: ", ["\\\\.\\UNC\\server\\Users\\jane"]),
                 ("V: \\\\?\\Volume{b75e2c83-0000-0000-0000-602f00000000}\\Users\\jane", "V: ",
                  ["\\\\?\\Volume{b75e2c83-0000-0000-0000-602f00000000}\\Users\\jane"]),

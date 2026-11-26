@@ -122,8 +122,8 @@ class Usual(Studio):
         self.assertEqual(sorted(p.name for p in (self.home / "exports").iterdir()),
                          ["tank-test-1.0.0.rusemod", "tank-test-1.1.0.rusemod"])
         self.assertEqual(self.said(view, "In the Launcher's mod library"),
-                         ["In the Launcher's mod library as Tank Test 1.1.0 (the older version replaced): tick it in a "
-                          "mod set and press Play."])
+                         ["In the Launcher's mod library as Tank Test 1.1.0, replacing the older version 1.0.0: tick it "
+                          "in a mod set and press Play."])
 
     def test_the_same_version_exported_again_writes_its_file_again(self):
         folder = self.make("Tank Test")
@@ -284,11 +284,11 @@ class Unusual(Studio):
                     self.assertEqual(info["description"], description)
         self.assertEqual(self.export("1.1.0")["state"], "done")          # (and the next export, with them kept)
 
-    @unittest.expectedFailure
     def test_FE7_his_own_files_at_the_top_go_along_or_are_named(self):
-        """FE-7: README.txt, CREDITS.md, LICENSE.md and NOTICE.txt at the mod's top, and a docs/ folder, are left out
-        of the exported file, and Export says nothing (only mod.toml, README.md, LICENSE, CHANGELOG.md and the other
-        TOP_FILES go): a CC-BY credit he wrote into CREDITS.md doesn't reach the players."""
+        """FE-7: README.txt, CREDITS.md, LICENSE.md and NOTICE.txt at the mod's top, and a docs/ folder, were left out
+        of the exported file, and Export said nothing (only mod.toml, README.md, LICENSE, CHANGELOG.md and the other
+        TOP_FILES go): a CC-BY credit he wrote into CREDITS.md didn't reach the players. Now they go along (the owner's
+        pick 33, accepted 2026-11-14: "Pack README, credits and licence")."""
         folder = self.make("Credits")
         mine = ["README.txt", "CREDITS.md", "LICENSE.md", "NOTICE.txt", "docs/guide.md"]
         for rel in mine:
@@ -300,29 +300,75 @@ class Unusual(Studio):
         for rel in mine:
             with self.subTest(file=rel):
                 self.assertTrue(rel in out or rel in told, f"{rel} neither in the file nor named")
+                self.assertIn(rel, out, f"{rel} should go along, as the pick says")
+                self.assertEqual(out[rel], (folder / rel).read_bytes())
+        self.assertEqual(package.check(view["result"]["path"], read=True)["id"], "credits")   # (it still reads as a mod)
 
-    @unittest.expectedFailure
     def test_FE8_the_library_line_says_what_it_replaced(self):
-        """FE-8: Export says "(the older version replaced)" whatever was there: the same version again, a newer one
-        (3.0.0, after which he exports 2.0.0), and another mod made again under the same name."""
+        """FE-8: Export said "(the older version replaced)" whatever was there: the same version again, a newer one
+        (3.0.0, after which he exports 2.0.0), and another mod made again under the same name. Now each says what it
+        replaced (the owner's pick 51, "the rest after the release", accepted 2026-11-14)."""
         self.make("Tank Test")
         self.export("1.0.0")
         lines = [self.said(self.export(v), "In the Launcher's mod library")[0] for v in ("1.0.0", "3.0.0", "2.0.0")]
         self.assertNotIn("(the older version replaced)", lines[0])       # (the same version)
         self.assertNotIn("(the older version replaced)", lines[2])       # (3.0.0 was there: not older)
+        self.assertIn("replacing the same version again", lines[0])
+        self.assertIn("replacing the older version 1.0.0", lines[1])
+        self.assertIn("replacing the newer version 3.0.0", lines[2])
 
-    @unittest.expectedFailure
     def test_FE12_a_mod_past_the_size_a_launcher_takes(self):
-        """FE-12: Export packs a mod past package.SIZE_LIMIT (500 MB unpacked), then its own check of the file stops
-        the job: "big-1.0.0.rusemod would unpack to ... MB, far more than a mod of data files; it isn't unpacked",
-        words about unpacking after the packing is done, and the file no Launcher takes is left in Exports. (The
-        limit made small here, as a real 500 MB mod is too big for a test.)"""
+        """FE-12: Export packed a mod past package.SIZE_LIMIT (500 MB unpacked), then its own check of the file
+        stopped the job with words about unpacking after the packing was done, and the file no Launcher takes was left
+        in Exports. Now refused before anything is packed (the owner's pick 51c, accepted 2026-11-14). (The limit made
+        small here, as a real 500 MB mod is too big for a test.)"""
         self.make("Big")
         with mock.patch.object(package, "SIZE_LIMIT", 100):
             view = self.export("1.0.0")
         self.assertEqual(view["state"], "failed")
         self.assertEqual(sorted(p.name for p in (self.home / "exports").iterdir()), [])
         self.assertNotIn("unpack", view["message"])
+        self.assertIn("nothing was packed", view["message"])
+        self.assertIn("more than the Launcher takes", view["message"])
+
+    def test_a_mod_under_the_size_limit_still_exports_and_pack_refuses_one_past_it_too(self):
+        """Control of FE-12: an ordinary mod exports; package.pack itself refuses a mod past the limit, writing no
+        file."""
+        folder = self.make("Small")
+        self.assertEqual(self.export("1.0.0")["state"], "done")
+        out = self.root / "packed"
+        with mock.patch.object(package, "SIZE_LIMIT", 100):
+            with self.assertRaises(package.PackageError) as caught:
+                package.pack(folder, out)
+        self.assertIn("nothing was packed", str(caught.exception))
+        self.assertFalse(out.exists() and any(out.iterdir()))
+
+    def test_FE8_a_mod_of_another_name_under_the_same_id_is_named(self):
+        """Control of FE-8: another mod with the same id (another name, another author) is said as another mod, with
+        its name and author, never as an older version."""
+        self.make("Tank Test")
+        self.export("1.0.0")
+        installed = self.home / "library" / "tank-test"          # (the same id installed, but another one's mod)
+        package.update_manifest(installed, mod={"name": "Someone Else's Tanks", "authors": ["Kim Lee"]})
+        view = self.export("1.0.0")
+        line = self.said(view, "In the Launcher's mod library")[0]
+        self.assertIn("replacing another mod with the same id, Someone Else's Tanks 1.0.0 (Kim Lee)", line)
+
+    def test_FE7_a_file_that_is_none_of_his_words_is_named_and_a_script_in_docs_is_refused(self):
+        """Control of FE-7: notes.psd at the top is not packed, but Export names it; a docs/ folder with a script in it
+        is still refused (mods can't hold scripts or programs)."""
+        folder = self.make("Notes")
+        (folder / "notes.psd").write_bytes(b"8BPS")
+        (folder / "docs").mkdir()
+        (folder / "docs" / "guide.md").write_text("# Guide\n", encoding="utf-8")
+        view = self.export("1.0.0")
+        out = members(view["result"]["path"])
+        self.assertNotIn("notes.psd", out)
+        self.assertIn("docs/guide.md", out)
+        self.assertTrue(any("notes.psd" in ln for ln in view["lines"]), view["lines"])
+        (folder / "docs" / "run.exe").write_bytes(b"MZ")
+        again = self.export("1.0.1")
+        self.assertEqual(again["state"], "failed")
 
     @unittest.skipUnless(sys.platform == "win32", "Windows' file locks")
     def test_FE13_a_file_another_program_holds(self):

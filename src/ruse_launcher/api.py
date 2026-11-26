@@ -39,6 +39,7 @@ from pathlib import Path
 
 from rusemod import buildtext, doctor, fairplay, mod_index, startlog, yourfiles
 from rusemod import play as game_start, schema
+from rusemod.instance import read_record as read_instance_record
 from rusemod.lock import CodeError
 from rusemod.backup import BackupCalls, BackupError
 from rusemod.bugwatch import BugWatchCalls
@@ -404,15 +405,35 @@ class LauncherApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedC
         self._save_fair("trusted", kept)
         return self._lists(mod=mod_id)
 
-    def fair_play(self, full: bool = False) -> dict:
+    def fair_play(self, full: bool = False, set_id: str = "") -> dict:
         """The modded copy as the Play screen shows it: its join code (None, with `why`, when it has none), the
         fingerprint, the mods, why it's offline, the mods that run scripts, and what changed since the build (`full`
-        reads every file the build wrote: a few seconds)."""
+        reads every file the build wrote: a few seconds). `set_id`: the mod set the page is showing; "other" is then
+        true when the one modded copy was last built from something else (the Studio's Test in game, or another set),
+        so its code isn't that set's (the owner's pick 36, accepted 2026-11-14: "Say the code is from a test, and
+        offer Play")."""
         game, _found = self._game()
         if game is None:
             return {"built": False, "code": None, "why": "no game", "fingerprint": None, "mods": [], "offline": [],
-                    "scripts": [], "watch": False, "problems": []}
-        return fairplay.copy_view(shared_copy(game, self._instances), game, full)
+                    "scripts": [], "watch": False, "problems": [], "other": False}
+        instance = shared_copy(game, self._instances)
+        view = fairplay.copy_view(instance, game, full)
+        view["other"] = bool(view["built"] and set_id and self._built_for_other(instance, game, set_id))
+        return view
+
+    def _built_for_other(self, instance, game, set_id: str) -> bool:
+        """Whether the modded copy at `instance` was built from something other than what Play would build for the set
+        `set_id` now: its record's key against play.built_from's (the key alone: no file of the copy is read). A set
+        that can't be found, or has a mod that isn't there, says nothing here: Play says it."""
+        chosen = next((s for s in self._read_sets() if s["id"] == set_id), None)
+        if chosen is None or chosen.get("error") or any(f is None for f in chosen.get("folders", [])):
+            return False
+        record = read_instance_record(str(instance))
+        if record is None:
+            return False
+        key = (record.get("built_from") or {}).get("key")
+        now = game_start.built_from(game, chosen["folders"], title=title_on(self._home))["key"]
+        return key != now
 
     def compare_code(self, text: str) -> dict:
         """A friend's join code next to this copy's: {"same": bool, "differences": [sentences]}."""
@@ -437,7 +458,19 @@ class LauncherApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedC
             info, replaced = self._library.add(path)
         except LibraryError as exc:
             raise LauncherError(str(exc)) from None
-        return self._lists(mod=info, replaced=replaced, problems=self._mod_problems(info))
+        return self._lists(mod=info, replaced=replaced, problems=self._newer_word(info) + self._mod_problems(info))
+
+    @staticmethod
+    def _newer_word(info: dict) -> list:
+        """A mod a newer Studio saved is added all the same, with a word to update (the owner's pick 34, accepted
+        2026-11-14: "Add the mod with a warning to update, rather than refusing it"): the page says it in the player's
+        language from "newer" (its format, and the one this Launcher knows)."""
+        newer = info.get("newer_format")
+        if not newer:
+            return []
+        return [{"file": None, "set_aside": False, "newer": {"format": newer["format"], "known": newer["current"]},
+                 "problem": f"Saved by a newer RUSE Studio (format {newer['format']}; this Launcher knows "
+                            f"{newer['current']}): update the Launcher to play it as it was made."}]
 
     def _mod_problems(self, info: dict) -> list:
         """The mod check (rusemod.modcheck) on a mod just added: what Play would stop at, or map files the build
@@ -641,6 +674,10 @@ class LauncherApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedC
         if fairplay.ON and folder is not None and entry.get("tags"):
             fairplay.save_tags(folder, entry["tags"])  # a cheat stays one in the library: its copies are offline
         say(f"{info['name']} {info['version']} is in the library" + (" (it replaced the older copy)." if replaced else "."))
+        newer = info.get("newer_format")
+        if newer:    # (the owner's pick 34: added, with a word to update the Launcher)
+            say(f"{info['name']} was saved by a newer RUSE Studio (format {newer['format']}; this Launcher knows "
+                f"{newer['current']}): update the Launcher to play it as it was made.")
 
     def _install_job(self, work, done: str) -> dict:
         """One install at a time: two would add to the library at once."""

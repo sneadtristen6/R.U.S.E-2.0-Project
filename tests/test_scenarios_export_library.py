@@ -15,7 +15,7 @@ import zipfile
 from pathlib import Path
 
 from test_launcher import Base as LauncherBase, wait_for
-from rusemod import fairplay, package
+from rusemod import fairplay, modformat, package
 from ruse_launcher.api import LauncherError
 from ruse_studio.api import StudioApi
 
@@ -156,10 +156,10 @@ class Unusual(Library):
                 with self.assertRaises(LauncherError):
                     self.api(home=damaged.parent / "friend").add_mod(str(damaged))
 
-    @unittest.expectedFailure
     def test_FE10_a_cut_file(self):
-        """FE-10: a .rusemod cut short (a download stopped half way) is called "... isn't a mod: add a mod file
-        (.rusemod, .rmod or .zip)": it is a .rusemod, only an unfinished one."""
+        """FE-10: a .rusemod cut short (a download stopped half way) was called "... isn't a mod: add a mod file
+        (.rusemod, .rmod or .zip)": it is a .rusemod, only an unfinished one. Now said so (the owner's pick 51b,
+        accepted 2026-11-14: "A download cut short says so")."""
         self.made("Tank Test")
         out = self.exported("1.0.0")
         cut = Path(self.tmp.name) / "tank-test-1.0.0.rusemod"
@@ -167,23 +167,35 @@ class Unusual(Library):
         with self.assertRaises(LauncherError) as caught:
             self.api(home=Path(self.tmp.name) / "friend").add_mod(str(cut))
         self.assertNotIn("isn't a mod", str(caught.exception))
+        self.assertIn("cut short", str(caught.exception))
+        self.assertIn("tank-test-1.0.0.rusemod", str(caught.exception))
 
-    @unittest.expectedFailure
+    def test_a_file_that_is_no_zip_still_isn_t_a_mod_and_a_damaged_member_has_its_own_words(self):
+        """Control of FE-10: a text file named .rusemod (it does not begin like a zip) still says "isn't a mod"."""
+        notes = Path(self.tmp.name) / "notes.rusemod"
+        notes.write_text("just my notes, not a mod\n", encoding="utf-8")
+        with self.assertRaises(LauncherError) as caught:
+            self.api(home=Path(self.tmp.name) / "friend").add_mod(str(notes))
+        self.assertIn("isn't a mod", str(caught.exception))
+        self.assertNotIn("cut short", str(caught.exception))
+
     def test_FE11_a_mod_a_newer_studio_saved_in_a_newer_format(self):
-        """FE-11: a mod in a newer mod format ([made_with] format above rusemod.modformat.FORMAT) is added and played
+        """FE-11: a mod in a newer mod format ([made_with] format above rusemod.modformat.FORMAT) was added and played
         with no word: the Studio refuses to open such a mod ("saved by a newer RUSE Studio"), but the Launcher builds
-        it with code that doesn't know its format, the very thing modformat warns of."""
+        it with code that doesn't know its format, the very thing modformat warns of. Now added with a word to update
+        (the owner's pick 34, accepted 2026-11-14: "Add the mod with a warning to update, rather than refusing it")."""
         self.made("Tank Test")
         out = self.exported("1.0.0")
         newer = Path(self.tmp.name) / "newer"
         package.unpack(out, newer)
         package.update_manifest(newer, made_with={"format": 9})
-        try:
-            got = self.api(home=Path(self.tmp.name) / "friend").add_mod(str(newer))
-        except LauncherError as exc:
-            self.assertIn("newer", str(exc))
-            return
+        friend = self.api(home=Path(self.tmp.name) / "friend")
+        got = friend.add_mod(str(newer))
+        self.assertEqual(got["mod"]["id"], "tank-test")                    # (added, not refused)
         self.assertTrue(any("newer" in str(p) for p in got["problems"]), got["problems"])
+        self.assertEqual([p["newer"] for p in got["problems"] if p.get("newer")],
+                         [{"format": 9, "known": modformat.FORMAT}])
+        self.assertIn("tank-test", self.shown(friend))
 
     @unittest.skipUnless(sys.platform == "win32", "Windows keeps a folder with an open file in it in its place")
     def test_FE14_a_new_version_while_a_file_of_the_old_one_is_open(self):
@@ -202,23 +214,34 @@ class Unusual(Library):
         self.assertIn("mod.toml", str(caught.exception))
 
 
-    @unittest.expectedFailure
     def test_FE17_a_zip_of_two_mods(self):
-        """FE-17: a .zip holding two mod folders (a player zipping his whole Mods folder to share it) adds the first
-        and says nothing of the second: package.check takes the shortest of the folders holding a mod.toml. Wanted:
-        refused in words naming what it holds, or each added."""
+        """FE-17: a .zip holding two mod folders (a player zipping his whole Mods folder to share it) added the first
+        and said nothing of the second: package.check took the shortest of the folders holding a mod.toml. Now refused
+        in words naming what it holds (the owner's pick 51e, accepted 2026-11-14)."""
         two = Path(self.tmp.name) / "two-mods.zip"
         with zipfile.ZipFile(two, "w") as z:
             for mod_id in ("aaa-first", "bbb-second"):
                 z.writestr(f"{mod_id}/mod.toml", f'[mod]\nid = "{mod_id}"\nversion = "1.0.0"\n')
                 z.writestr(f"{mod_id}/src/x.rndf", PATCH)
         friend = self.api(home=Path(self.tmp.name) / "friend")
-        try:
+        with self.assertRaises(LauncherError) as caught:
             friend.add_mod(str(two))
-        except LauncherError as exc:
-            self.assertIn("bbb-second", str(exc))
-            return
-        self.assertEqual(sorted(self.shown(friend)), ["aaa-first", "bbb-second"])
+        self.assertIn("aaa-first", str(caught.exception))
+        self.assertIn("bbb-second", str(caught.exception))
+        self.assertEqual(self.shown(friend), {})                          # (nothing added)
+
+    def test_a_zip_of_one_mod_with_other_things_in_it_is_still_one_mod(self):
+        """Control of FE-17: a zip of one folder holding a map's own mod.toml two folders down, and the __MACOSX
+        folder a Mac's zip adds, adds as the one mod."""
+        one = Path(self.tmp.name) / "one-mod.zip"
+        with zipfile.ZipFile(one, "w") as z:
+            z.writestr("only-one/mod.toml", '[mod]\nid = "only-one"\nversion = "1.0.0"\n')
+            z.writestr("only-one/src/x.rndf", PATCH)
+            z.writestr("only-one/maps/x/mod.toml", "# not a mod's own\n")
+            z.writestr("__MACOSX/only-one/._mod.toml", "junk")
+        friend = self.api(home=Path(self.tmp.name) / "friend")
+        friend.add_mod(str(one))
+        self.assertEqual(sorted(self.shown(friend)), ["only-one"])
 
 
 if __name__ == "__main__":

@@ -63,7 +63,9 @@ TOP_FILES = ("mod.toml", "menus.toml", "depots.toml", "flag-types.toml", MENU_GR
              "CHANGELOG.md", ERA_CREDITS, ERA_RECORD)  # loose files a package keeps (flag-types.toml: the Studio's
 # flag types, so a copy of the mod can still change them; menu_groups.toml: the group of a build list each unit stands
 # in, which the build reads)
-FOLDERS = ("src", "text", "files", "maps", "scripts")             # folders a package keeps (§2; scripts/: §9)
+FOLDERS = ("src", "text", "files", "maps", "scripts", "docs")     # folders a package keeps (§2; scripts/: §9; docs/: the
+#                                                                   modder's own guide and credits, the owner's pick 33)
+CREDIT_STEM = re.compile(r"(?:readme|credits?|licen[cs]e|notice|copying|authors)(?:$|[ ._-])", re.IGNORECASE)
 SKIP = {"__pycache__", ".git", "cache", "build", "dist"}
 _ID = re.compile(r"^[a-z0-9][a-z0-9-]*$")
 _VERSION = re.compile(r"^\d+(\.\d+){0,2}([-+][0-9A-Za-z.-]+)?$")
@@ -228,6 +230,7 @@ def files_of(folder, left_out: list | None = None) -> list[Path]:
     folder = Path(folder)
     skip = skip_of(folder)
     out = [folder / f for f in TOP_FILES if (folder / f).is_file() and (f != ERA_RECORD or _names_a_unit(folder / f))]
+    out += _credit_files(folder, {f.name.casefold() for f in out})
     try:
         named = tomllib.loads((folder / MANIFEST).read_text(encoding="utf-8")).get("rmod", {}).get("file")
     except (OSError, tomllib.TOMLDecodeError, UnicodeDecodeError, AttributeError):
@@ -248,6 +251,51 @@ def files_of(folder, left_out: list | None = None) -> list[Path]:
                         continue
                     out.append(Path(root) / n)
     return out
+
+
+def is_credit_file(name) -> bool:
+    """Whether a file at a mod's top is one of the modder's own words that go with it, whatever it is called (the owner's
+    pick 33, accepted 2026-11-14: "Pack README, credits and licence; credits matter, and some licences require
+    them"): README, CREDITS, LICENSE or LICENCE, NOTICE, COPYING or AUTHORS, each alone or followed by a space, a dot,
+    a - or a _ and more (README.txt, CREDITS.md, LICENSE-art.txt), a text (TEXT_FILES) or with no ending."""
+    suffix = PurePosixPath(str(name)).suffix.lower()
+    return bool(CREDIT_STEM.match(str(name))) and (suffix in TEXT_FILES or suffix == "")
+
+
+def _credit_files(folder: Path, have: set) -> list[Path]:
+    """The modder's own README, credits, licence and notice files at the mod's top that TOP_FILES doesn't name (`have`:
+    those already in, by name in small letters), and a docs/ folder's files."""
+    out = []
+    if folder.is_dir():
+        for f in sorted(folder.iterdir(), key=lambda p: p.name):
+            if f.is_file() and not f.name.startswith(".") and f.name.casefold() not in have and is_credit_file(f.name):
+                out.append(f)
+    return out
+
+
+def left_at_top(folder) -> list[str]:
+    """The files at a mod's top that a package doesn't take (not mod.toml and the other TOP_FILES, not a README, credits
+    or licence of his: is_credit_file, not a hidden file, nor one the Studio left half written), by name: Export says
+    which, so none goes missing without a word."""
+    folder = Path(folder)
+    taken = {f.name for f in files_of(folder)}
+    return [f.name for f in sorted(folder.iterdir(), key=lambda p: p.name)
+            if f.is_file() and not f.name.startswith(".") and f.name not in taken and not is_work_file(f.name)] \
+        if folder.is_dir() else []
+
+
+def too_big(folder) -> tuple[int, int] | None:
+    """(the megabytes of files the mod at `folder` would pack, the most a Launcher takes: SIZE_LIMIT) when it is past
+    that, so it is refused before anything is packed (check refuses such a file after it is written); else None."""
+    size = 0
+    for f in files_of(folder):
+        try:
+            size += f.stat().st_size
+        except OSError:
+            pass                                          # (one that can't be read is said by the packing itself)
+    if size <= SIZE_LIMIT:
+        return None
+    return -(-size // 1_000_000), -(-SIZE_LIMIT // 1_000_000)
 
 
 def _names_a_unit(record: Path) -> bool:
@@ -567,7 +615,9 @@ _WORDS_NOT_A_NAME = re.compile(r"[,;!?.]\s|[^\s.]\.[A-Za-z][A-Za-z0-9]{0,7}\s")
 # text, and so do a ! or ' after it and a bracket it closes: the sentence's own. Export lists each path it took out.
 USERS_FOLDERS = frozenset({"users", "home", "documents and settings"})   # (user_of's, as casefold() gives them)
 WINDOWS_USERS = frozenset({"users", "documents and settings"})          # (at the top of a Windows drive, casefold)
-UNIX_USERS = frozenset({"home", "Users"})          # (at the top of a Linux or Mac disk: as Linux and a Mac write them)
+WINDOWS_USERS_DEEP = frozenset({"Users", "Documents and Settings"})    # (below a drive's top: as Windows writes them, so
+#                                                     D:\Mods\users, a folder of a mod's own, is not taken for one)
+UNIX_USERS = frozenset({"home", "Users"})        # (at the top of a Linux or Mac disk: as Linux and a Mac write them)
 USERS_UNDER = frozenset({"var", "usr", "export"})   # (a Linux or Unix disk's /var/home, /usr/home, /export/home)
 UNIX_ON_WINDOWS = frozenset({"cygwin", "cygwin64", "msys32", "msys64"})   # (Cygwin's, MSYS2's own folders, casefold,
 #                                                     at the top of a drive where they install: their users' home)
@@ -581,6 +631,7 @@ _DRIVE_END = re.compile(r"(?:^|[\\/])[A-Za-z]:[\\/]+$")   # (a root that ends at
 # (a path's start that _ROOT reads only up to its drive's colon: \\.\C:\, file://localhost/C:/, file:///C|/)
 _DRIVE_AFTER = re.compile(r"(?:\\\\\.\\|file:/{2,3}(?:localhost/+)?)[A-Za-z][:|][\\/]+", re.IGNORECASE)
 _DRIVE_VARS = frozenset({"systemdrive", "homedrive"})   # (%SystemDrive%, %HomeDrive%: a drive's top)
+_DRIVE_START = re.compile(r"(?:\\\\[?.]\\)?[A-Za-z]:")     # (a path written from a Windows drive: C:\, C:/, \\?\C:\)
 _LETTER = re.compile(r"[a-z]")                       # (a drive's letter, as casefold() gives it)
 _SHARE_OF_A_DRIVE = re.compile(r"[a-z]\$")           # (a drive's own share, C$)
 _WINE_DRIVE = re.compile(r"drive_[a-z]")             # (Wine's C: drive, a folder of its own: drive_c)
@@ -642,10 +693,12 @@ def _quoted_name(text: str, j: int, before: str) -> str | None:
     return None
 
 
-def _user_name_end(text: str, j: int, before: str, known: list) -> int | None:
+def _user_name_end(text: str, j: int, before: str, known: list, windows: bool = False) -> int | None:
     """Where the name of a user's own folder that starts at text[j], a path's last name, ends (see above): `before`,
-    the character just before the path; `known`, the users' names known exactly, longest first. None when no user's
-    name starts there."""
+    the character just before the path; `known`, the users' names known exactly, longest first; `windows`, the path
+    is a Windows one, where a name in small letters that is not known goes on with each word after it, as far as
+    Windows lets a name go (the owner's pick 35: privacy first, the whole name out). None when no user's name starts
+    there."""
     first = _USER_WORD.match(text, j)
     if first is None:
         return None
@@ -673,8 +726,18 @@ def _user_name_end(text: str, j: int, before: str, known: list) -> int | None:
     for name in known:
         k = j + len(name)
         if text[j:k].casefold() == name.casefold() and not _name_goes_on(text, k):
-            end = max(end, k)
-            break
+            return max(end, k)
+    if windows and word and not word[0].isupper():
+        k = end                                         # (kim lee: not known, so the words after it as far as 20
+        while text.startswith(" ", k):                  # letters go with it)
+            more = _USER_WORD.match(text, k + 1)
+            part = _name_part(more.group(0)) if more is not None else ""
+            stop = k + 1 + len(part)
+            if not part or stop - j > USER_NAME_MOST or text[stop:stop + 1] in (":", "/", "\\"):
+                break                                   # (a word that runs into a path's start is not the name's)
+            end = k = stop
+            if part != more.group(0):
+                break
     return end if end > j else None
 
 
@@ -765,6 +828,9 @@ def _users_places(kind: str, root: str, folders: list) -> set:
             win.append(server + 2)                                  # \\server\C$\: a drive's own share
         elif share.rstrip("$") in SHARE_USERS:
             places.add(server + 1)                                  # \\server\Users\, \\server\users$\, \\nas\homes\
+    if 0 in win and win[0] == 0:                                    # a Windows path: Users at any depth is one's, as
+        places.update(k for k, n in enumerate(names) if k > 0 and n in WINDOWS_USERS_DEEP)   # Windows writes it
+        #                                                           (E:\Backup\Users\Jane; D:\Mods\users stays a folder)
     win += [k + 1 for k, n in enumerate(low) if _WINE_DRIVE.fullmatch(n)]   # .../drive_c/: Wine's C: drive
     for t in win:
         if t < len(low) and low[t] in WINDOWS_USERS:
@@ -802,7 +868,9 @@ def _user_folder_end(text: str, m, known: list) -> int | None:
         if len(folders) - 1 not in places or not _user_at(text, j):
             return None
         start = m.start()
-        return _user_name_end(text, j, text[start - 1] if start else "", known)
+        path = text[start:j]
+        windows = _DRIVE_START.match(path) is not None and folders[-1][0].casefold() in WINDOWS_USERS   # C:\Users\kim lee
+        return _user_name_end(text, j, text[start - 1] if start else "", known, windows)
     if len(folders) >= 2 and len(folders) - 2 in places and _names_a_user(folders[-1][0]):
         return folders[-1][2]
     return None
@@ -1104,6 +1172,10 @@ def pack(folder, out, *, build_id: str | None = None, data_revision: str | None 
         game["data_revision"] = str(data_revision)
     if fingerprint:
         game["fingerprint"] = str(fingerprint)
+    big = too_big(folder)
+    if big:
+        raise PackageError(f"This mod is {big[0]} MB of files, more than the Launcher takes ({big[1]} MB); nothing "
+                           f"was packed.")
     info = update_manifest(folder, game=game, made_with=made_with) if game or made_with else info_of(folder)
     _check_info(info)
     try:
@@ -1147,7 +1219,7 @@ def pack(folder, out, *, build_id: str | None = None, data_revision: str | None 
                 if got is None:
                     z.write(f, name)
                     if home_in is not None and (f.suffix.lower() in TEXT_FILES or f.suffix.lower() == ".glb"
-                                                or f.name == "LICENSE") and home_named(f.read_bytes(), home):
+                                                or is_credit_file(f.name)) and home_named(f.read_bytes(), home):
                         home_in.append(name)
                     continue
                 data, kind = got
@@ -1197,6 +1269,29 @@ def _check_info(info: dict) -> None:
 
 
 # --- check and unpack ---
+def cut_short(path) -> bool:
+    """Whether `path` begins like a zip (a mod file is one) yet can't be read as one: a download or a copy stopped half
+    way (a zip's list of its files is written last, so a cut one has none)."""
+    try:
+        with open(path, "rb") as f:
+            return f.read(4) == b"PK\x03\x04" and not zipfile.is_zipfile(path)
+    except OSError:
+        return False
+
+
+def _mods_named(z, roots: list) -> str:
+    """The mods a zip holds at `roots` (each folder holding a mod.toml), by the name in their mod.toml, or by their
+    folder's name when it can't be read, joined for a sentence."""
+    out = []
+    for r in roots:
+        try:
+            name = tomllib.loads(z.read(r + MANIFEST).decode("utf-8")).get("mod", {}).get("name")
+        except (tomllib.TOMLDecodeError, UnicodeDecodeError, KeyError, AttributeError, *DAMAGED):
+            name = None
+        out.append(name if isinstance(name, str) and name.strip() else (r.strip("/") or "(top)"))
+    return ", ".join(out)
+
+
 def check(path, read: bool = True) -> dict:
     """Look inside a package: its manifest's info plus `files` (the paths inside) and `root` (the folder in the zip,
     "" when mod.toml is at the top). Refuses anything that isn't one mod folder, holds a script or program, would
@@ -1206,6 +1301,9 @@ def check(path, read: bool = True) -> dict:
     if not path.is_file():
         raise PackageError(f"{path} doesn't exist any more.")
     if not zipfile.is_zipfile(path):
+        if cut_short(path):
+            raise PackageError(f"{path.name} is cut short: only part of it was downloaded or copied. Get the file "
+                               f"again.")
         raise PackageError(f"{path.name} isn't a mod file: a mod file is a {EXTENSION} (or a .zip of a mod folder).")
     with zipfile.ZipFile(path) as z:
         entries = [e for e in z.infolist() if not e.is_dir()]
@@ -1215,6 +1313,10 @@ def check(path, read: bool = True) -> dict:
         if not roots:
             raise PackageError(f"{path.name} isn't a mod file: there's no {MANIFEST} in it (at the top, or inside one "
                                f"folder).")
+        apart = [r for r in roots if not any(o != r and r.startswith(o) for o in roots)]   # (not inside another's)
+        if len(apart) > 1:
+            raise PackageError(f"{path.name} holds more than one mod ({_mods_named(z, apart)}): add each mod's own "
+                               f"file.")
         root = roots[0]
         files, members = [], {}
         for e, n in zip(entries, names):

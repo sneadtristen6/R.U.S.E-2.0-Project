@@ -10726,6 +10726,10 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             manifest["description"] = description.strip()
 
         def work(say):
+            big = package.too_big(folder)   # (before anything is built or packed: a file no Launcher takes)
+            if big:
+                raise StudioError(f"This mod is {big[0]} MB of files, more than the Launcher takes ({big[1]} MB); "
+                                  f"nothing was packed.")
             self._clear_waiting(folder)   # (a deleted unit's file another program had open: rusemod.holding)
             with self._saving:
                 package.update_manifest(folder, mod=manifest)
@@ -10771,6 +10775,10 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                 say(f"Left out of the exported file: {', '.join(left_out)}. These are files the Studio left half "
                     f"written when it was stopped while writing them (their names end in .part, .partial or .tmp); "
                     f"no build reads them.")
+            top = package.left_at_top(folder)
+            if top:     # (the owner's pick 33: his own README, credits and licence go along; any other file named)
+                say(f"These files at the top of your mod are not in the exported file; it takes mod.toml, your README, "
+                    f"credits, licence and notice files, a docs folder and the mod's own folders: {', '.join(top)}.")
             self._last_export = Path(path)
             if answers:
                 say(f"The file carries the worked-out answers for {len(answers)} map(s), locked: a player's build takes "
@@ -10816,8 +10824,32 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             from rusemod.library import Library, LibraryError, LibraryHeldError
             try:
                 info, replaced = Library(self._home / "library").add(path)
-                say(f"In the Launcher's mod library as {info['name']} {info.get('version', '')}"
-                    f"{' (the older version replaced)' if replaced else ''}: tick it in a mod set and press Play.")
+                name, now = info["name"], info.get("version", "")
+                was = info.get("replaced_mod") if replaced else None
+                if was is None:
+                    say(f"In the Launcher's mod library as {name} {now}: tick it in a mod set and press Play.")
+                else:   # (what it replaced, said: the same version again, an older or a newer one, or another mod)
+                    before = was.get("version", "")
+                    if package.name_key(was.get("name")) != package.name_key(name):
+                        who = f"{was.get('name') or info.get('id')} {before}".strip()
+                        if was.get("author"):
+                            who += f" ({was['author']})"
+                        say(f"In the Launcher's mod library as {name} {now}, replacing another mod with the same id, "
+                            f"{who}: tick it in a mod set and press Play.")
+                    elif before == now:
+                        say(f"In the Launcher's mod library as {name} {now}, replacing the same version again: tick it "
+                            f"in a mod set and press Play.")
+                    else:
+                        try:
+                            older = mod_index.parse_version(before) < mod_index.parse_version(now)
+                        except ValueError:
+                            older = True
+                        if older:
+                            say(f"In the Launcher's mod library as {name} {now}, replacing the older version "
+                                f"{before}: tick it in a mod set and press Play.")
+                        else:
+                            say(f"In the Launcher's mod library as {name} {now}, replacing the newer version "
+                                f"{before}: tick it in a mod set and press Play.")
                 job.result["library"] = info.get("id")
             except LibraryHeldError as exc:   # (the file is saved: Export is done, and says what to close)
                 say(f"Not added to the Launcher's library: {exc.held} is open in another program, so the older copy "
