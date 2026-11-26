@@ -284,7 +284,6 @@ class RemoveASoldier(Adding):
         self.assertIn("look_kept", page_part("countBy"))
         self.assertIn("look_kept", page_part("removeParts"))
 
-    @unittest.expectedFailure    # finding SQ-4: two looks kept aside for one soldier number in one second: one lost
     def test_two_removes_of_soldier_2_in_one_second(self):
         """Unusual: soldiers 2 and 3 each a look of his own; Remove on soldier 2's line, then on soldier 2's line again
         (the one who was 3) within the same second of the PC's clock: both looks are to be kept aside, but the folder is
@@ -303,6 +302,25 @@ class RemoveASoldier(Adding):
         kept = {p.read_bytes() for p in self.work.rglob(f"{STEM}@2.glb")}
         print("\nSQ-4 kept aside:", sorted(str(p.relative_to(self.work)) for p in self.work.rglob(f"{STEM}@2.*")))
         self.assertEqual(kept, looks)
+
+    def test_two_sendings_set_aside_in_one_second_are_both_kept(self):
+        """The same class as SQ-4: _set_aside names its folder by the second (sent-not-brought-<time>); two sendings set
+        aside in one second each keep their own folder."""
+        import json
+        import tempfile
+        import time
+        from ruse_studio import squadblender
+        real, moment = time.strftime, time.localtime()
+        with tempfile.TemporaryDirectory() as tmp, \
+                mock.patch.object(squadblender.time, "strftime", lambda fmt, t=None: real(fmt, moment)):
+            work = Path(tmp)
+            asides = []
+            for n in (1, 2):
+                (work / "sent").mkdir()
+                (work / "sent" / "sent.json").write_text(json.dumps({"n": n}), encoding="utf-8")
+                asides.append(squadblender.SquadBlenderCalls._set_aside(work, {}))
+            self.assertNotEqual(asides[0], asides[1])
+            self.assertEqual([json.loads((a / "sent.json").read_text(encoding="utf-8"))["n"] for a in asides], [1, 2])
 
     def test_remove_the_bazooka_man(self):
         """Usual: the bazooka man (soldier 5) a look of his own, then Remove on his line: the squad 4, his look kept

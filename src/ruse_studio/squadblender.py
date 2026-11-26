@@ -90,6 +90,17 @@ def _sha(path: Path) -> str | None:
     return hashlib.sha256(path.read_bytes()).hexdigest() if path.is_file() else None
 
 
+def _free_folder(path: Path) -> Path:
+    """`path`, or `path`-2, -3 and so on when a folder or file of that name is there already: two things kept aside in
+    one second of the PC's clock (named by the second) each get their own folder, neither takes the other's place."""
+    path, n = Path(path), 1
+    candidate = path
+    while candidate.exists():
+        n += 1
+        candidate = path.with_name(f"{path.name}-{n}")
+    return candidate
+
+
 def _read(path: Path) -> dict:
     try:
         data = json.loads(Path(path).read_text(encoding="utf-8"))
@@ -625,7 +636,7 @@ class SquadBlenderCalls:
         nothing lost); the folder, or None when there was none."""
         sent = work / "sent"
         if (sent / "sent.json").is_file() and _sha(sent / "sent.json") != state.get("brought"):
-            aside = work / time.strftime("sent-not-brought-%Y%m%d-%H%M%S")
+            aside = _free_folder(work / time.strftime("sent-not-brought-%Y%m%d-%H%M%S"))
             sent.rename(aside)
             return aside
         return None
@@ -1050,7 +1061,7 @@ class SquadBlenderCalls:
         state = _read(work / "state.json")
         set_aside = self._set_aside(work, state)
         main = self._own_model_file(address)
-        aside = work / time.strftime(f"removed-%Y%m%d-%H%M%S-soldier{i}")
+        aside = _free_folder(work / time.strftime(f"removed-%Y%m%d-%H%M%S-soldier{i}"))
         # a Custom uniform his look took the place of waits in his record (model_import): it stays in the mod
         uniform = _read(main.with_name(f"{main.stem}@{i}.json")).get("copy_kept")
         for f in (main.with_name(f"{main.stem}@{i}.glb"), main.with_name(f"{main.stem}@{i}.json"),
