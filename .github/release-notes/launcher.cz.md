@@ -1,6 +1,10 @@
 **RUSE Launcher 0.4, pro hráče.** Najde R.U.S.E. přes Steam a **Hrát** sestaví upravenou kopii hry s vašimi módy a
 spustí ji. Vaše instalace Steamu se nikdy nemění.
 
+**0.4.8.24:** Oprava: aplikace otevřená svým instalátorem nebo aktualizací nemusela přečíst složku hry, ke které vede odkaz na složku (chyba 448).
+
+- **„nešlo přečíst ani zapsat (chyba 448)“:** instalátor už nepředává ochranu Redirection Guard systému Windows aplikaci, kterou otevře; blokovala složku hry, ke které vede odkaz na složku (knihovnu Steamu přesunutou odkazem na jiný disk). Pokud to stále vidíte, **Řešení potíží** to řekne a **Otevřít aplikaci znovu** aplikaci otevře normální cestou.
+
 **0.4.8.23:** Povinná aktualizace, hlavně pro pohodlí: spousta práce v zákulisí, aby byly aplikace bezpečnější a snáz se používaly, hlavně ve hře více hráčů. Nové podmínky používání a oznámení o ochraně soukromí, vlastní název hry ve výchozím nastavení, podepsané aktualizace, kód pádu po každém pádu, silnější RUSE Guard a mnoho oprav.
 
 - **Povinná aktualizace:** starší verze už nejde používat. Po otevření ji aplikace nainstaluje sama a **Hrát** počká, až bude nainstalovaná.

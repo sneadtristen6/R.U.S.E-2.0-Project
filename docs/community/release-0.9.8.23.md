@@ -1,6 +1,7 @@
 ---
 title: "Studio 0.9.8.23 and Launcher 0.4.8.23: bug fixes, crash codes and a stronger anti-cheat"
 category: Announcements
+skip: never posted; Studio 0.9.8.23 wasn't released on its own, and 0.9.8.24's announcement covers all of it
 order: 28
 ---
 **RUSE Studio 0.9.8.23** and **RUSE Launcher 0.4.8.23** are out:

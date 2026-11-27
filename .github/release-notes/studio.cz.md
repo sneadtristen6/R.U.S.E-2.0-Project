@@ -1,6 +1,11 @@
 **RUSE Studio, ukázková verze pro moddery.** Procházejte jednotky hry v kterémkoli z jejích deseti jazyků, měňte je ve
 vlastním módu a vyzkoušejte ho ve hře. Vaše instalace Steamu se nikdy nemění.
 
+**0.9.8.24:** Povinná aktualizace se vším z verze 0.9.8.23 (ta samostatně nevyšla) a jednou opravou: aplikace otevřená svým instalátorem nebo aktualizací nemusela přečíst složku hry, ke které vede odkaz na složku (chyba 448).
+<!-- required update -->
+
+- **„nešlo přečíst ani zapsat (chyba 448)“:** instalátor už nepředává ochranu Redirection Guard systému Windows aplikaci, kterou otevře; blokovala složku hry, ke které vede odkaz na složku (knihovnu Steamu přesunutou odkazem na jiný disk). Pokud to stále vidíte, **Řešení potíží** to řekne a **Otevřít aplikaci znovu** aplikaci otevře normální cestou.
+
 **0.9.8.23:** Povinná aktualizace, hlavně pro pohodlí: spousta práce v zákulisí, aby byly aplikace bezpečnější a snáz se používaly, hlavně ve hře více hráčů. Nové podmínky použití a zásady ochrany soukromí, ve výchozím nastavení vlastní titul hry, podepsané aktualizace, kód pádu pro každý pád a mnoho oprav.
 
 - **Povinná aktualizace:** starší verze už nelze používat. Při spuštění aplikace tuto verzi nainstaluje sama a **Vyzkoušet ve hře** počká, až bude nainstalovaná.

@@ -139,6 +139,10 @@ se pierde.
    del Studio después de Probar en el juego dice qué botón y qué mapa).
 3. ¿Está el mod en el conjunto, y hay un mod más abajo en el orden que cambia lo mismo?
 
+## «no se pudo leer ni escribir (error 448)» justo después de instalar o actualizar
+
+El Redirection Guard de Windows bloqueó la carpeta del juego: la aplicación la abrió su instalador o una actualización, y a la carpeta se llega por un enlace de carpeta (una biblioteca de Steam movida a otro disco con un enlace). Desde el Launcher 0.4.8.24 y el Studio 0.9.8.24, el instalador ya no lo pasa. Si aún lo ves, **Solucionar problemas** lo dice: haz clic en **Volver a abrir la aplicación**, o cierra la aplicación y ábrela desde el menú Inicio.
+
 ## Un archivo está en uso (Eliminar, Exportar)
 
 **Eliminar** espera hasta 10 segundos a un archivo que otro programa tiene abierto (Blender, un editor) y luego lo nombra: cierra ese programa y pulsa **Eliminar** otra vez. **Exportar** termina aunque un archivo de la copia anterior del mod en la biblioteca del Launcher esté abierto en otro programa: dice que el mod no se añadió a la biblioteca y nombra el archivo que hay que cerrar.

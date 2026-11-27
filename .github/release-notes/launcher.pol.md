@@ -1,6 +1,10 @@
 **RUSE Launcher 0.4, dla graczy.** Znajduje R.U.S.E. przez Steam, a **Graj** buduje zmodowaną kopię gry z twoimi
 modami i ją uruchamia. Twoja instalacja Steam nigdy nie jest zmieniana.
 
+**0.4.8.24:** Poprawka: aplikacja otwarta przez swój instalator lub przez aktualizację mogła nie odczytać folderu gry, do którego prowadzi dowiązanie folderu (błąd 448).
+
+- **„nie dało się odczytać ani zapisać (błąd 448)”:** instalator nie przekazuje już mechanizmu Redirection Guard systemu Windows aplikacji, którą otwiera; blokował on folder gry, do którego prowadzi dowiązanie folderu (biblioteka Steam przeniesiona na inny dysk za pomocą dowiązania). Jeśli nadal to widzisz, **Rozwiązywanie problemów** o tym mówi, a **Otwórz aplikację ponownie** otwiera aplikację w zwykły sposób.
+
 **0.4.8.23:** Aktualizacja obowiązkowa, głównie dla wygody: dużo pracy za kulisami, żeby aplikacje były bezpieczniejsze i prostsze w użyciu, zwłaszcza w grze wieloosobowej. Nowe warunki korzystania i informacja o prywatności, własny tytuł gry domyślnie, podpisane aktualizacje, kod awarii przy każdej awarii, mocniejszy RUSE Guard i wiele poprawek.
 
 - **Aktualizacja obowiązkowa:** starszych wersji nie da się już używać. Po otwarciu aplikacja sama instaluje tę, a **Graj** czeka, aż będzie zainstalowana.

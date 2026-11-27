@@ -1,6 +1,11 @@
 **RUSE Studio, wersja zapoznawcza dla modderów.** Przeglądaj jednostki gry w dowolnym z jej dziesięciu języków,
 zmieniaj je we własnym modzie i testuj go w grze. Twoja instalacja Steam nigdy nie jest zmieniana.
 
+**0.9.8.24:** Aktualizacja obowiązkowa ze wszystkim z wersji 0.9.8.23 (która nie wyszła osobno) i jedną poprawką: aplikacja otwarta przez swój instalator lub przez aktualizację mogła nie odczytać folderu gry, do którego prowadzi dowiązanie folderu (błąd 448).
+<!-- required update -->
+
+- **„nie dało się odczytać ani zapisać (błąd 448)”:** instalator nie przekazuje już mechanizmu Redirection Guard systemu Windows aplikacji, którą otwiera; blokował on folder gry, do którego prowadzi dowiązanie folderu (biblioteka Steam przeniesiona na inny dysk za pomocą dowiązania). Jeśli nadal to widzisz, **Rozwiązywanie problemów** o tym mówi, a **Otwórz aplikację ponownie** otwiera aplikację w zwykły sposób.
+
 **0.9.8.23:** Aktualizacja obowiązkowa, głównie dla wygody: dużo pracy za kulisami, żeby aplikacje były bezpieczniejsze i prostsze w użyciu, zwłaszcza w grze wieloosobowej. Nowe warunki użytkowania i informacja o prywatności, domyślnie własny tytuł gry, podpisane aktualizacje, kod awarii przy każdej awarii i wiele poprawek.
 
 - **Aktualizacja obowiązkowa:** starszych wersji nie można już używać. Po otwarciu aplikacja sama instaluje tę wersję, a **Testuj w grze** czeka, aż będzie zainstalowana.

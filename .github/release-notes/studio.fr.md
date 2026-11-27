@@ -1,6 +1,11 @@
 **RUSE Studio, un aperçu pour les moddeurs.** Parcourez les unités du jeu dans n'importe laquelle de ses dix langues,
 modifiez-les dans un mod à vous et testez-le en jeu. Votre installation Steam n'est jamais modifiée.
 
+**0.9.8.24:** Une mise à jour obligatoire avec tout ce qu'apportait la 0.9.8.23 (qui n'est pas sortie seule) et une correction : une application ouverte par son installateur ou par une mise à jour pouvait ne pas lire un dossier du jeu atteint par un lien de dossier (erreur 448).
+<!-- required update -->
+
+- **« n'a pas pu être lu ni écrit (erreur 448) » :** l'installateur ne transmet plus la protection Redirection Guard de Windows à l'application qu'il ouvre, qui bloquait un dossier du jeu atteint par un lien de dossier (une bibliothèque Steam déplacée sur un autre disque avec un lien). Si vous la voyez encore, **Dépannage** le dit, et **Rouvrir l'application** ouvre l'application normalement.
+
 **0.9.8.23:** Une mise à jour obligatoire, surtout du confort d'utilisation : beaucoup de travail en coulisses pour rendre les applications plus sûres et plus simples à utiliser, surtout en multijoueur. Nouvelles conditions d'utilisation et avis de confidentialité, le titre propre du jeu par défaut, des mises à jour signées, un code de plantage pour chaque plantage, et de nombreuses corrections.
 
 - **Une mise à jour obligatoire :** les anciennes versions ne peuvent plus être utilisées. À l'ouverture, l'application installe celle-ci toute seule, et **Tester en jeu** attend qu'elle soit installée.

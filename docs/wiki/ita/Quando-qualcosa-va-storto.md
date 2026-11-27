@@ -133,6 +133,10 @@ quelle cose.
    messaggio dello Studio dopo Prova in gioco dice quale pulsante e quale mappa).
 3. La mod è nel set, e c'è una mod più in basso nell'ordine che cambia la stessa cosa?
 
+## «non è stato possibile leggerla o scriverla (errore 448)» subito dopo un'installazione o un aggiornamento
+
+Il Redirection Guard di Windows ha bloccato la cartella del gioco: l'app è stata aperta dal suo installer o da un aggiornamento, e la cartella si raggiunge tramite un collegamento a cartella (una libreria di Steam spostata su un altro disco con un collegamento). Dal Launcher 0.4.8.24 e dallo Studio 0.9.8.24 l'installer non lo passa più. Se lo vedi ancora, **Risoluzione problemi** lo dice: clicca **Riapri l'app**, o chiudi l'app e avviala dal menu Start.
+
 ## Un file è in uso (Elimina, Esporta)
 
 **Elimina** aspetta fino a 10 secondi un file che un altro programma tiene (Blender, un editor), poi lo nomina: chiudi quel programma e premi di nuovo **Elimina**. **Esporta** arriva in fondo anche quando un file della vecchia copia della mod nella libreria del Launcher è aperto in un altro programma: dice che la mod non è stata aggiunta alla libreria e nomina il file da chiudere.

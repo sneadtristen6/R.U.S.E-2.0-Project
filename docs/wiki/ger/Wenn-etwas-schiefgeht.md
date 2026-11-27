@@ -141,6 +141,10 @@ es, und das geht verloren.
    Studios nach Im Spiel testen sagt, welche Schaltfläche und welche Karte).
 3. Ist der Mod im Set, und ändert ein Mod weiter unten in der Reihenfolge dasselbe?
 
+## „konnte nicht gelesen oder geschrieben werden (Fehler 448)“ direkt nach dem Installieren oder einem Update
+
+Der Redirection Guard von Windows hat den Spielordner blockiert: Die App wurde von ihrem Installer oder einem Update geöffnet, und der Ordner wird über eine Ordnerverknüpfung erreicht (eine Steam-Bibliothek, mit einer Verknüpfung auf ein anderes Laufwerk verschoben). Seit Launcher 0.4.8.24 und Studio 0.9.8.24 gibt der Installer ihn nicht mehr weiter. Siehst du es noch, sagt die **Fehlersuche** es: Klicke auf **App neu öffnen** oder schließe die App und starte sie über das Startmenü.
+
 ## Eine Datei ist in Benutzung (Löschen, Exportieren)
 
 **Löschen** wartet bis zu 10 Sekunden auf eine Datei, die ein anderes Programm festhält (Blender, ein Editor), und nennt sie dann: Schließe dieses Programm und klicke erneut auf **Löschen**. **Exportieren** wird fertig, auch wenn eine Datei der älteren Kopie des Mods in der Bibliothek des Launchers in einem anderen Programm offen ist: Es sagt, dass der Mod nicht zur Bibliothek hinzugefügt wurde, und nennt die Datei, die du schließen musst.

@@ -129,6 +129,10 @@ zapisywana, Testuj w grze wciąż budujące...). **Nie** zostawia Studio otwarte
    mówi, który przycisk i którą mapę).
 3. Czy mod jest w zestawie i czy mod niżej w kolejności nie zmienia tego samego?
 
+## „nie dało się odczytać ani zapisać (błąd 448)” zaraz po instalacji lub aktualizacji
+
+Redirection Guard systemu Windows zablokował folder gry: aplikację otworzył jej instalator lub aktualizacja, a do folderu prowadzi dowiązanie folderu (biblioteka Steam przeniesiona na inny dysk za pomocą dowiązania). Od Launchera 0.4.8.24 i Studia 0.9.8.24 instalator już go nie przekazuje. Jeśli nadal to widzisz, **Rozwiązywanie problemów** o tym mówi: kliknij **Otwórz aplikację ponownie** albo zamknij aplikację i uruchom ją z menu Start.
+
 ## Plik jest w użyciu (Usuń, Eksport)
 
 **Usuń** czeka do 10 sekund na plik, który trzyma inny program (Blender, edytor), a potem go nazywa: zamknij ten program i kliknij **Usuń** jeszcze raz. **Eksport** kończy się, nawet gdy plik starszej kopii modu w bibliotece Launchera jest otwarty w innym programie: mówi, że mod nie został dodany do biblioteki, i nazywa plik do zamknięcia.

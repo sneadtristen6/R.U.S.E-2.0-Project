@@ -1,6 +1,10 @@
 **RUSE Launcher 0.4, per i giocatori.** Trova R.U.S.E. tramite Steam, e **Gioca** costruisce una copia del gioco con i
 tuoi mod e la avvia. La tua installazione di Steam non viene mai modificata.
 
+**0.4.8.24:** Una correzione: un'app aperta dal suo installer o da un aggiornamento poteva non riuscire a leggere una cartella del gioco raggiunta tramite un collegamento a cartella (errore 448).
+
+- **«non è stato possibile leggerla o scriverla (errore 448)»:** l'installer non passa più il Redirection Guard di Windows all'app che apre, che bloccava una cartella del gioco raggiunta tramite un collegamento a cartella (una libreria di Steam spostata su un altro disco con un collegamento). Se lo vedi ancora, **Risoluzione problemi** lo dice, e **Riapri l'app** apre l'app nel modo normale.
+
 **0.4.8.23:** Un aggiornamento obbligatorio, soprattutto di qualità della vita: tanto lavoro dietro le quinte per rendere le app più sicure e più facili da usare, soprattutto in multigiocatore. Nuovi termini di utilizzo e informativa sulla privacy, il titolo originale del gioco per impostazione predefinita, aggiornamenti firmati, un codice di crash per ogni crash, un RUSE Guard più forte e molte correzioni.
 
 - **Un aggiornamento obbligatorio:** le versioni più vecchie non si possono più usare. All'apertura l'app installa questa da sola, e **Gioca** aspetta che sia dentro.

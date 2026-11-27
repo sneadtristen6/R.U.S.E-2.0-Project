@@ -1,6 +1,10 @@
 **RUSE Launcher 0.4, for players.** It finds R.U.S.E. through Steam, and **Play** builds a modded copy of the game
 with your mods and starts it. Your Steam install is never changed.
 
+**0.4.8.24:** A fix: an app opened by its installer or by an update could fail to read a game folder reached through a folder link (error 448).
+
+- **"Couldn't be read or written (error 448)":** the installer no longer passes Windows' Redirection Guard on to the app it opens, which blocked a game folder reached through a folder link (a Steam library moved to another drive with a link). If you still see it, **Troubleshoot** says so, and **Open the app again** opens the app the normal way.
+
 **0.4.8.23:** A required update, mostly quality of life: a lot of work behind the scenes to make the apps safer and easier to use, especially in multiplayer. New terms of use and privacy notice, the game's own title by default, signed updates, a crash code for every crash, a stronger RUSE Guard and many fixes.
 <!-- required update -->
 

@@ -125,6 +125,10 @@ saved, Test in game still building...). **No** keeps the Studio open; **Yes** cl
    Test in game says which button and map).
 3. Is the mod in the set, and is a mod lower in the order changing the same thing?
 
+## "Couldn't be read or written (error 448)" right after installing or updating
+
+Windows' Redirection Guard blocked the game's folder: the app was opened by its installer or by an update, and the folder is reached through a folder link (a Steam library moved to another drive with a link). Since Launcher 0.4.8.24 and Studio 0.9.8.24 the installer no longer passes it on. If you still see it, **Troubleshoot** says so: click **Open the app again**, or close the app and start it from the Start menu.
+
 ## A file is in use (Delete, Export)
 
 **Delete** waits up to 10 seconds for a file another program holds (Blender, an editor), then names it: close that program and **Delete** again. **Export** finishes even when a file of the mod's older copy in the Launcher's library is open in another program: it says the mod wasn't added to the library and names the file to close.

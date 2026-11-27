@@ -140,6 +140,10 @@ ferme et perd cela.
    choisissez-la (le message du Studio après Tester en jeu dit quel bouton et quelle carte).
 3. Le mod est-il dans l'ensemble, et un mod plus bas dans l'ordre change-t-il la même chose ?
 
+## « n'a pas pu être lu ni écrit (erreur 448) » juste après une installation ou une mise à jour
+
+Le Redirection Guard de Windows a bloqué le dossier du jeu : l'application a été ouverte par son installateur ou par une mise à jour, et le dossier est atteint par un lien de dossier (une bibliothèque Steam déplacée sur un autre disque avec un lien). Depuis le Launcher 0.4.8.24 et le Studio 0.9.8.24, l'installateur ne le transmet plus. Si vous le voyez encore, **Dépannage** le dit : cliquez sur **Rouvrir l'application**, ou fermez l'application et lancez-la depuis le menu Démarrer.
+
 ## Un fichier est utilisé (Supprimer, Exporter)
 
 **Supprimer** attend jusqu'à 10 secondes un fichier qu'un autre programme tient (Blender, un éditeur), puis le nomme : fermez ce programme et cliquez à nouveau sur **Supprimer**. **Exporter** va jusqu'au bout même quand un fichier de l'ancienne copie du mod dans la bibliothèque du Launcher est ouvert dans un autre programme : il dit que le mod n'a pas été ajouté à la bibliothèque et nomme le fichier à fermer.

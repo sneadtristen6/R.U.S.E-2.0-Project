@@ -1,6 +1,11 @@
 **RUSE Studio, a preview for modders.** Browse the game's units in any of its ten languages, change them in a mod of
 your own, and test it in the game. Your Steam install is never changed.
 
+**0.9.8.24:** A required update with everything in 0.9.8.23 (it wasn't released on its own) and one fix: an app opened by its installer or by an update could fail to read a game folder reached through a folder link (error 448).
+<!-- required update -->
+
+- **"Couldn't be read or written (error 448)":** the installer no longer passes Windows' Redirection Guard on to the app it opens, which blocked a game folder reached through a folder link (a Steam library moved to another drive with a link). If you still see it, **Troubleshoot** says so, and **Open the app again** opens the app the normal way.
+
 **0.9.8.23:** A required update, mostly quality of life: a lot of work behind the scenes to make the apps safer and easier to use, especially in multiplayer. New terms of use and privacy notice, the game's own title by default, signed updates, a crash code for every crash, and many fixes.
 <!-- required update -->
 

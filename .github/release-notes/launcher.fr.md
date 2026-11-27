@@ -1,6 +1,10 @@
 **RUSE Launcher 0.4, pour les joueurs.** Il trouve R.U.S.E. via Steam, et **Jouer** construit une copie moddée du jeu
 avec vos mods et la lance. Votre installation Steam n'est jamais modifiée.
 
+**0.4.8.24:** Une correction : une application ouverte par son installateur ou par une mise à jour pouvait ne pas lire un dossier du jeu atteint par un lien de dossier (erreur 448).
+
+- **« n'a pas pu être lu ni écrit (erreur 448) » :** l'installateur ne transmet plus la protection Redirection Guard de Windows à l'application qu'il ouvre, qui bloquait un dossier du jeu atteint par un lien de dossier (une bibliothèque Steam déplacée sur un autre disque avec un lien). Si vous la voyez encore, **Dépannage** le dit, et **Rouvrir l'application** ouvre l'application normalement.
+
 **0.4.8.23:** Une mise à jour obligatoire, surtout du confort d'utilisation : beaucoup de travail en coulisses pour rendre les applications plus sûres et plus simples à utiliser, surtout en multijoueur. Nouvelles conditions d'utilisation et notice de confidentialité, le titre propre du jeu par défaut, des mises à jour signées, un code de plantage pour chaque plantage, un RUSE Guard renforcé et de nombreuses corrections.
 
 - **Une mise à jour obligatoire :** les anciennes versions ne peuvent plus être utilisées. À l'ouverture, l'application installe celle-ci toute seule, et **Jouer** attend qu'elle soit installée.

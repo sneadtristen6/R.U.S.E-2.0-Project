@@ -1,6 +1,11 @@
 **RUSE Studio, eine Vorschau für Modder.** Durchsuche die Einheiten des Spiels in jeder seiner zehn Sprachen, ändere
 sie in einem eigenen Mod und teste ihn im Spiel. Deine Steam-Installation wird nie verändert.
 
+**0.9.8.24:** Ein Pflicht-Update mit allem aus 0.9.8.23 (das nicht allein erschienen ist) und einer Korrektur: Eine App, die ihr Installer oder ein Update geöffnet hatte, konnte einen Spielordner, der über eine Ordnerverknüpfung erreicht wird, nicht lesen (Fehler 448).
+<!-- required update -->
+
+- **„konnte nicht gelesen oder geschrieben werden (Fehler 448)“:** Der Installer gibt den Redirection Guard von Windows nicht mehr an die App weiter, die er öffnet; er blockierte einen Spielordner, der über eine Ordnerverknüpfung erreicht wird (eine Steam-Bibliothek, mit einer Verknüpfung auf ein anderes Laufwerk verschoben). Siehst du es noch, sagt die **Fehlersuche** es, und **App neu öffnen** öffnet die App auf dem normalen Weg.
+
 **0.9.8.23:** Ein Pflicht-Update, vor allem für mehr Komfort: viel Arbeit hinter den Kulissen, damit die Apps sicherer und einfacher zu benutzen sind, besonders im Mehrspielermodus. Neue Nutzungsbedingungen und Datenschutzerklärung, standardmäßig der eigene Titel des Spiels, signierte Updates, ein Absturzcode für jeden Absturz und viele Korrekturen.
 
 - **Ein Pflicht-Update:** ältere Versionen können nicht mehr benutzt werden. Beim Öffnen installiert die App diese Version von selbst, und **Im Spiel testen** wartet, bis sie installiert ist.

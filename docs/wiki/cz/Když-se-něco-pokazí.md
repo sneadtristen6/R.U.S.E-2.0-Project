@@ -126,6 +126,10 @@ Vyzkoušet ve hře, které se ještě sestavuje...). **Ne** nechá Studio otevř
    Vyzkoušet ve hře říká, které tlačítko a mapu).
 3. Je mod v sadě a nemění stejnou věc mod, který je v pořadí níž?
 
+## „nešlo přečíst ani zapsat (chyba 448)“ hned po instalaci nebo aktualizaci
+
+Ochrana Redirection Guard systému Windows zablokovala složku hry: aplikaci otevřel její instalátor nebo aktualizace a ke složce vede odkaz na složku (knihovna Steamu přesunutá odkazem na jiný disk). Od Launcheru 0.4.8.24 a Studia 0.9.8.24 ji instalátor už nepředává. Pokud to stále vidíte, **Řešení potíží** to řekne: klikněte na **Otevřít aplikaci znovu**, nebo aplikaci zavřete a spusťte ji z nabídky Start.
+
 ## Soubor se používá (Smazat, Export)
 
 **Smazat** čeká až 10 sekund na soubor, který drží jiný program (Blender, editor), a pak ho pojmenuje: zavřete ten program a klikněte znovu na **Smazat**. **Export** doběhne do konce, i když je soubor starší kopie módu v knihovně Launcheru otevřený v jiném programu: řekne, že mód nebyl přidán do knihovny, a pojmenuje soubor, který máte zavřít.
