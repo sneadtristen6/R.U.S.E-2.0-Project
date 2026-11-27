@@ -2548,7 +2548,7 @@ class Labels(unittest.TestCase):
         says = set(re.findall(r'"(doc_\w+)"', source))
         fixes = set(re.findall(r'_finding\("\w+", "\w+", "doc_\w+", "(\w+)"', source))
         self.assertGreater(len(says), 15)
-        self.assertEqual(fixes, {"choose_game", "close_game", "clear_leftovers"})  # a new one: the window shows it
+        self.assertEqual(fixes, {"choose_game", "close_game", "clear_leftovers", "reopen_app"})  # a new one: the window shows it (reopen: FL-125, app.js 4614)
         self.assertLessEqual(set(StudioApi.FIXES), fixes)
         self.assertEqual(sorted((says | {"doc_fix_" + f for f in fixes}) - set(_words())), [])
 
