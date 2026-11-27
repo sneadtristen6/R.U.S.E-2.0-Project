@@ -296,8 +296,10 @@ class LauncherApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedC
         """Every check of the troubleshooter: {"findings": [...], "report": the same as plain text, for a bug report,
         with the launcher's last start-up times (rusemod.startlog)}. A finding's "say" is a word of words.toml, filled
         with its "data"; its "fix" goes to troubleshoot_fix, apart from "choose_game", which is the screen's own Choose
-        folder…"""
-        game, instances, how = self._doctor_places()
+        folder…. With Windows' Redirection Guard on (FL-125) the game's folders aren't even looked for: that finding is
+        all there is until the Launcher is opened again."""
+        from rusemod import winfiles
+        game, instances, how = (None, None, "") if winfiles.redirection_guarded() else self._doctor_places()
         findings = doctor.checks(game, instances, steam_running=self._starter.steam_running, how=how)
         from rusemod import bugwatch, knowncrashes
         findings += knowncrashes.findings(self._home)  # Bug Watch's list of known crashes: on this PC or not yet
@@ -307,8 +309,14 @@ class LauncherApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedC
         return {"findings": findings, "report": report}
 
     def troubleshoot_fix(self, action: str) -> dict:
-        """Run a finding's fix: "close_game" (a R.U.S.E. left running from a modded copy) or "clear_leftovers" (copies
-        a build left behind). Returns {"done": how many, "left": what couldn't be done}."""
+        """Run a finding's fix: "close_game" (a R.U.S.E. left running from a modded copy), "clear_leftovers" (copies
+        a build left behind) or "reopen_app" (the Launcher opened again without the Redirection Guard its installer
+        passed on: rusemod.doctor.reopen_app, FL-125). Returns {"done": how many, "left": what couldn't be done}."""
+        if action == "reopen_app":   # (first: it needs no game, and the game's folder may be what can't be read)
+            try:
+                return doctor.reopen_app()
+            except ValueError as exc:
+                raise LauncherError(str(exc)) from None
         if action not in ("close_game", "clear_leftovers"):
             raise LauncherError(f"There's no fix called {action!r}.")
         if self._starting():  # the copy being built looks like a leftover, the game it starts like one left running

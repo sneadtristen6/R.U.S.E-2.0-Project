@@ -10845,9 +10845,14 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
     def troubleshoot(self) -> dict:
         """Every finding (rusemod.doctor.checks, with the Studio's own Steam check), and the same as plain text for a
         bug report, the player's own folders left out (rusemod.community), with the Studio's last start-up times
-        (rusemod.startlog): {"findings": [...], "report": text}."""
-        game = self._game()
-        copies, how = self._copies(game)
+        (rusemod.startlog): {"findings": [...], "report": text}. With Windows' Redirection Guard on (FL-125) the game's
+        folders aren't even looked for: that finding is all there is until the Studio is opened again."""
+        from rusemod import winfiles
+        if winfiles.redirection_guarded():
+            game, copies, how = None, None, ""
+        else:
+            game = self._game()
+            copies, how = self._copies(game)
         findings = doctor.checks(game, copies, steam_running=self._starter.steam_running, how=how)
         from rusemod import bugwatch, knowncrashes
         findings += knowncrashes.findings(self._home)  # Bug Watch's list of known crashes: on this PC or not yet
@@ -10857,8 +10862,14 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         return {"findings": findings, "report": private_paths_out(report)}
 
     def troubleshoot_fix(self, action: str) -> dict:
-        """Run one finding's fix: "close_game" or "clear_leftovers" (rusemod.doctor.fix). Returns {"done": how many,
-        "left": what couldn't be done}."""
+        """Run one finding's fix: "close_game" or "clear_leftovers" (rusemod.doctor.fix), or "reopen_app" (the Studio
+        opened again without the Redirection Guard its installer passed on: rusemod.doctor.reopen_app, FL-125).
+        Returns {"done": how many, "left": what couldn't be done}."""
+        if action == "reopen_app":   # (first: it needs no game, and the game's folder may be what can't be read)
+            try:
+                return doctor.reopen_app()
+            except ValueError as exc:
+                raise StudioError(str(exc)) from None
         if action not in self.FIXES:
             raise StudioError(f"There's no fix called {action!r}.")
         game = self._game()

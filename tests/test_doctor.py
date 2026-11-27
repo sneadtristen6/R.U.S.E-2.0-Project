@@ -139,5 +139,81 @@ class Troubleshooter(unittest.TestCase):
         self.assertIn("%USERPROFILE%", text)
 
 
+class RedirectionGuard(unittest.TestCase):
+    """FL-125 (the owner's screenshot of 2026-11-26: the Launcher opened by its installer, "D:\\Steam\\steamapps\\common
+    \\R.U.S.E couldn't be read or written (error 448)"): Windows' Redirection Guard, passed on by Inno Setup, refuses
+    every folder link a non-admin made. The troubleshooter says so first, as its one finding, with a fix that opens the
+    app again through Explorer, without it."""
+
+    def test_the_one_finding_and_its_fix_and_nothing_read(self):
+        reads = mock.Mock(side_effect=OSError(None, "untrusted mount point", None, 448))
+        got = doctor.checks(Path("D:/Steam/steamapps/common/R.U.S.E"), Path("D:/RUSE-Instances"),
+                            steam_running=reads, processes=reads, guarded=lambda: True)
+        self.assertEqual(got, [{"key": "redirection", "level": "fail", "say": "doc_redirection_guard", "data": {},
+                                "fix": "reopen_app"}])
+        reads.assert_not_called()
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        game = Path(tmp.name)
+        (game / "RUSE.exe").write_bytes(b"exe")
+        found = by_key(doctor.checks(game, None, steam_running=lambda: True, processes=lambda: [],
+                                     guarded=lambda: False))
+        self.assertNotIn("redirection", found)                    # (without it: as before)
+        self.assertEqual(found["game"]["level"], "ok")
+
+    def test_the_fix_opens_the_installed_app_through_explorer_then_closes_this_one(self):
+        import sys
+        started, closed = [], []
+        got = doctor.reopen_app(start=started.append, quit_soon=lambda: closed.append(1), installed=lambda: True)
+        self.assertEqual((got, started, closed), ({"done": 1, "left": []}, [sys.executable], [1]))
+        with self.assertRaises(ValueError):                       # (from the repo: no program of its own)
+            doctor.reopen_app(start=started.append, quit_soon=closed.append, installed=lambda: False)
+        self.assertEqual(len(started), 1)
+        popen = mock.Mock()
+        from rusemod import winfiles
+        winfiles.reopen_through_explorer("C:/Apps/RUSE Launcher.exe", popen=popen)
+        cmd = popen.call_args[0][0]
+        self.assertEqual((os.path.basename(cmd[0]).lower(), cmd[1]), ("explorer.exe", "C:/Apps/RUSE Launcher.exe"))
+
+    @unittest.skipUnless(os.name == "nt", "Windows' Redirection Guard")
+    def test_the_real_guard_is_seen_in_a_program_that_has_it(self):
+        """A Python that turns Redirection Guard on for itself (as Inno Setup does: SetProcessMitigationPolicy,
+        ProcessRedirectionTrustPolicy, enforced) is seen to have it by winfiles.redirection_guarded; this one isn't."""
+        import subprocess
+        import sys
+        from rusemod import winfiles
+        self.assertFalse(winfiles.redirection_guarded())
+        src = Path(doctor.__file__).resolve().parents[1]
+        code = ("import ctypes, sys; sys.path.insert(0, sys.argv[1]); from ctypes import wintypes; "
+                "k = ctypes.WinDLL('kernel32'); flags = wintypes.DWORD(1); "
+                "k.SetProcessMitigationPolicy.argtypes = [ctypes.c_int, ctypes.c_void_p, ctypes.c_size_t]; "
+                "ok = k.SetProcessMitigationPolicy(16, ctypes.byref(flags), 4); "
+                "from rusemod import winfiles; print(bool(ok), winfiles.redirection_guarded())")
+        out = subprocess.run([sys.executable, "-c", code, str(src)], capture_output=True, text=True, timeout=60)
+        self.assertEqual(out.stdout.split(), ["True", "True"], out.stderr)
+
+    def test_both_apps_say_it_without_looking_for_the_game_and_run_its_fix(self):
+        from rusemod import winfiles
+        from ruse_launcher.api import LauncherApi
+        from ruse_studio.api import StudioApi
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        root = Path(tmp.name)
+        launcher = LauncherApi(home=root / "home", game_dir=root / "game", find=lambda: None)
+        studio = StudioApi(game_dir=root / "game", home=root / "studio")
+        blocked = OSError(None, "untrusted mount point", None, 448)
+        with mock.patch.object(winfiles, "redirection_guarded", return_value=True), \
+                mock.patch.object(launcher, "_doctor_places", side_effect=blocked), \
+                mock.patch.object(studio, "_game", side_effect=blocked):
+            for app in (launcher, studio):
+                with self.subTest(app=type(app).__name__):
+                    self.assertEqual([f["key"] for f in app.troubleshoot()["findings"] if f["level"] == "fail"],
+                                     ["redirection"])
+        with mock.patch.object(doctor, "reopen_app", return_value={"done": 1, "left": []}) as reopen:
+            self.assertEqual(launcher.troubleshoot_fix("reopen_app"), {"done": 1, "left": []})
+            self.assertEqual(studio.troubleshoot_fix("reopen_app"), {"done": 1, "left": []})
+        self.assertEqual(reopen.call_count, 2)
+
+
 if __name__ == "__main__":
     unittest.main()

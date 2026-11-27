@@ -8454,6 +8454,36 @@ jpn = "フォルダを選ぶ…"
 sc = "选择文件夹…"
 fa = "انتخاب پوشه…"
 
+# (FL-125) the "redirection" finding's fix: the app opened again through Explorer, without the Redirection Guard its
+# installer passed on (rusemod.doctor.reopen_app)
+[doc_fix_reopen_app]
+us = "Open the app again"
+fr = "Rouvrir l'application"
+ger = "App neu öffnen"
+ita = "Riapri l'app"
+spa = "Volver a abrir la aplicación"
+pol = "Otwórz aplikację ponownie"
+ru = "Открыть приложение заново"
+cz = "Otevřít aplikaci znovu"
+jpn = "アプリを開き直す"
+sc = "重新打开应用"
+fa = "باز کردن دوبارهٔ برنامه"
+
+# (FL-125) Windows' Redirection Guard on in this app (rusemod.winfiles.redirection_guarded): error 448 on every folder
+# link a non-admin made; passed on by the installer (its "Launch" box, an in-app update)
+[doc_redirection_guard]
+us = "Windows is stopping this copy of the app from going through folder links (error 448), so the game's folder can't be read. It happens when the installer or an update opened the app. Open the app again: the button does it, or close the app and start it from its shortcut."
+fr = "Windows empêche cette copie de l'application de passer par des liens de dossier (erreur 448) : le dossier du jeu ne peut donc pas être lu. Cela arrive quand l'installateur ou une mise à jour a ouvert l'application. Rouvrez l'application : le bouton le fait, ou fermez-la et relancez-la depuis son raccourci."
+ger = "Windows hindert diese laufende App daran, Ordnerverknüpfungen zu folgen (Fehler 448), daher kann der Spielordner nicht gelesen werden. Das passiert, wenn das Installationsprogramm oder ein Update die App geöffnet hat. Öffne die App neu: Die Schaltfläche erledigt das, oder schließe die App und starte sie über ihre Verknüpfung."
+ita = "Windows impedisce a questa copia dell'app di attraversare i collegamenti alle cartelle (errore 448), quindi la cartella del gioco non può essere letta. Succede quando l'installer o un aggiornamento ha aperto l'app. Riapri l'app: lo fa il pulsante, oppure chiudi l'app e avviala dal suo collegamento."
+spa = "Windows impide que esta copia de la aplicación pase por enlaces de carpeta (error 448), así que no se puede leer la carpeta del juego. Ocurre cuando el instalador o una actualización abrió la aplicación. Vuelve a abrir la aplicación: el botón lo hace, o ciérrala y ábrela desde su acceso directo."
+pol = "Windows nie pozwala tej kopii aplikacji przechodzić przez dowiązania folderów (błąd 448), więc folderu gry nie da się odczytać. Dzieje się tak, gdy aplikację otworzył instalator lub aktualizacja. Otwórz aplikację ponownie: zrobi to przycisk, albo zamknij aplikację i uruchom ją ze skrótu."
+ru = "Windows не даёт этой копии приложения проходить через ссылки на папки (ошибка 448), поэтому папку игры нельзя прочитать. Так бывает, если приложение открыл установщик или обновление. Откройте приложение заново: это сделает кнопка, или закройте приложение и запустите его с ярлыка."
+cz = "Windows této kopii aplikace nedovolí procházet odkazy na složky (chyba 448), takže složku hry nelze přečíst. Stává se to, když aplikaci otevřel instalátor nebo aktualizace. Otevřete aplikaci znovu: udělá to tlačítko, nebo aplikaci zavřete a spusťte ji ze zástupce."
+jpn = "Windows がこのアプリによるフォルダのリンクの通過を止めているため（エラー 448）、ゲームのフォルダを読み込めません。インストーラーまたは更新がアプリを開いたときに起こります。アプリを開き直してください。ボタンで開き直すか、アプリを閉じてショートカットから起動してください。"
+sc = "Windows 阻止了这个应用穿过文件夹链接（错误 448），因此无法读取游戏文件夹。这会在安装程序或更新打开应用时发生。请重新打开应用：点按钮即可，或关闭应用后从快捷方式启动。"
+fa = "ویندوز اجازه نمی‌دهد این نسخهٔ برنامه از پیوندهای پوشه عبور کند (خطای 448)، بنابراین پوشهٔ بازی خوانده نمی‌شود. این وقتی پیش می‌آید که نصب‌کننده یا یک به‌روزرسانی برنامه را باز کرده باشد. برنامه را دوباره باز کنید: دکمه این کار را می‌کند، یا برنامه را ببندید و از میان‌بُر آن اجرا کنید."
+
 [doc_fixed]
 us = "Done ({done})."
 fr = "Fait ({done})."

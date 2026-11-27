@@ -182,3 +182,40 @@ def volume(path: str) -> dict:
                                       fs, len(fs)):
         return {}
     return {"fs": fs.value, "posix_delete": bool(flags.value & _POSIX_UNLINK_RENAME)}
+
+
+_REDIRECTION_TRUST = 16  # ProcessRedirectionTrustPolicy (PROCESS_MITIGATION_POLICY): its first bit, enforced
+
+
+def redirection_guarded() -> bool:
+    """Whether Windows' Redirection Guard is on for this program (FL-125, the owner's screenshot of 2026-11-26: "D:\\Steam
+    \\steamapps\\common\\R.U.S.E couldn't be read or written (error 448)"). It refuses every junction or folder link a
+    non-admin made, Windows' error 448 "untrusted mount point", so a game folder reached through one (D:\\Steam linked to
+    another drive, a Steam library moved with a link) can't be read at all. The apps never turn it on: a program Inno
+    Setup starts inherits it from Setup (its RedirectionGuard, on by default since Inno Setup 6.7: the "Launch" box at
+    the end of an install, and the app opened again after an in-app update), and a program that has it passes it on to
+    what it starts. Measured 2026-11-26 (scratch/tmp/fl-ss-448): the Launcher opened by its installer had it on, and
+    listing the game folder through D:\\Steam failed; the same program opened through Explorer had it off. False off
+    Windows, or when it can't be read."""
+    if not WINDOWS:
+        return False
+    try:
+        call = _k32.GetProcessMitigationPolicy
+        call.argtypes = [wintypes.HANDLE, ctypes.c_int, wintypes.LPVOID, ctypes.c_size_t]
+        call.restype = wintypes.BOOL
+        _k32.GetCurrentProcess.restype = wintypes.HANDLE
+        flags = wintypes.DWORD()
+        if not call(_k32.GetCurrentProcess(), _REDIRECTION_TRUST, ctypes.byref(flags), ctypes.sizeof(flags)):
+            return False   # (a Windows without the policy: nothing to say)
+        return bool(flags.value & 1)
+    except (AttributeError, OSError):
+        return False
+
+
+def reopen_through_explorer(program: str, popen=None) -> None:
+    """Start `program` the way its shortcut starts it: `explorer.exe <program>` hands it to the running Windows
+    Explorer, so the new program is Explorer's, not this one's, and takes nothing this one carries (Redirection
+    Guard: redirection_guarded). Measured 2026-11-26: a program started this way from one with the guard on had it off."""
+    import subprocess
+    explorer = os.path.join(os.environ.get("WINDIR") or r"C:\Windows", "explorer.exe")
+    (popen or subprocess.Popen)([explorer, str(program)], close_fds=True)

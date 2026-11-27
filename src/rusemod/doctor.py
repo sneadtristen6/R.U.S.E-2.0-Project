@@ -152,14 +152,19 @@ def _app_files(app_dir: Path | None) -> list[dict]:
 
 
 def checks(game: Path | None, instances: Path | None, steam_running=None, processes=None, how: str = "",
-           app_dir: Path | None = None) -> list[dict]:
+           app_dir: Path | None = None, guarded=None) -> list[dict]:
     """Every finding, in the order a player would fix them; without `instances` (no game found yet, so no place for
     modded copies) the copies' own checks are left out. `how` says why copies go to `instances` (rusemod.play
     .instances_choice: "chosen" in Settings, "env", "recommended"), so the "drive" finding and the report say where
     copies go and why; copies on another drive than the game get their own finding (each is a full copy of the
-    game). `steam_running` and `processes` stand in for the real world in tests."""
+    game). When this app has Windows' Redirection Guard on (winfiles.redirection_guarded: the installer that opened it
+    passed it on, FL-125), that is the one finding, with its fix: folders reached through a link can't be read until
+    the app is opened again, so nothing else can be checked (before, the troubleshooter itself stopped on error 448).
+    `steam_running`, `processes` and `guarded` stand in for the real world in tests."""
     from .play import other_drive, recommended_instances_dir
     from .play import steam_running as real_steam
+    if (guarded or winfiles.redirection_guarded)():
+        return [_finding("redirection", "fail", "doc_redirection_guard", "reopen_app")]
     out = []
     found = game is not None and any(p.name.lower() == "ruse.exe" for p in game.iterdir()) if game and game.is_dir() \
         else False
@@ -276,6 +281,28 @@ def fix(action: str, game: Path | None, instances: Path) -> dict:
         if after:
             left.append(f"{after} in {trash}: still held, removed on a later build")
         return {"done": done, "left": left}
+
+
+def reopen_app(start=None, quit_soon=None, installed=None) -> dict:
+    """The "redirection" finding's fix (FL-125): this app opened again as its shortcut opens it, through Windows'
+    Explorer (winfiles.reopen_through_explorer), so without the Redirection Guard the installer passed on, and this one
+    closed a second later (as an in-app update closes it: Bug Watch's records saved first). Only the installed app can
+    (from the repo there is no program of its own to open). Returns {"done": 1, "left": []}."""
+    import sys
+    from . import update
+    if not (installed or update.installed_app)():
+        # not a game rule: a run from the repo has no program of its own to open
+        raise ValueError("only the installed app can open itself again: close it and start it again")
+    (start or winfiles.reopen_through_explorer)(sys.executable)
+    try:
+        from . import bugwatch
+        watch = bugwatch.current()
+        if watch is not None:
+            watch.save()
+    except Exception:  # noqa: BLE001 - the records are never worth staying open for
+        pass
+    (quit_soon or update._quit_soon)()
+    return {"done": 1, "left": []}
 
 
 def report(findings: list[dict], app: str, version: str, starts=()) -> str:
