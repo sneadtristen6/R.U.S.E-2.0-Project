@@ -27,6 +27,11 @@ DefaultGroupName={#AppName}
 DisableProgramGroupPage=yes
 PrivilegesRequired=lowest
 PrivilegesRequiredOverridesAllowed=dialog commandline
+; Off (FL-125, the owner's "A A", 2026-11-26): Inno Setup 6.7 turns Windows' Redirection Guard on in Setup by default,
+; and the app Setup opens (the Launch box at the end, the app opened again after an in-app update) inherits it: a game
+; folder reached through a junction a non-admin made (D:\Steam linked to another drive) then couldn't be read, "error
+; 448" (Launcher 0.4.8.23, his screenshot). Inno Setup's help: child processes started by Setup inherit RedirectionGuard.
+RedirectionGuard=no
 OutputDir={#OutputDir}
 OutputBaseFilename={#OutputName}
 SetupIconFile={#IconFile}

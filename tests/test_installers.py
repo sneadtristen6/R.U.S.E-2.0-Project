@@ -399,6 +399,17 @@ class BuildCommands(unittest.TestCase):
             status, signer = build_app.webview2_signature(Path("x.exe"))
         self.assertEqual((status.startswith("PowerShell said: Get-AuthenticodeSignature"), signer), (True, ""))
 
+    def test_setup_passes_no_redirection_guard_to_the_app_it_opens(self):
+        """FL-125 (the owner's "A A", 2026-11-26): Inno Setup 6.7 turns Windows' Redirection Guard on in Setup by
+        default and the app Setup opens inherits it, so Launcher 0.4.8.23, opened by its installer, couldn't read a game
+        folder reached through a junction (error 448). Off in [Setup]; the release build's Inno Setup (6.7.1, pinned in
+        release.yml) knows the directive (this PC's 6.7 compiled the script with it, 2026-11-26)."""
+        script = (ROOT / "installers" / "installer.iss").read_text(encoding="utf-8")
+        setup = script.split("[Setup]", 1)[1].split("\n[", 1)[0]
+        self.assertRegex(setup, r"(?m)^RedirectionGuard=no\s*$")
+        self.assertIn("innosetup --version 6.7.1", (ROOT / ".github" / "workflows" / "release.yml").read_text(
+            encoding="utf-8"))
+
     def test_the_installer_offers_webview2_ticked_and_never_forces_it(self):
         script = (ROOT / "installers" / "installer.iss").read_text(encoding="utf-8")
         task = next(line for line in script.splitlines() if line.startswith('Name: "webview2"'))
