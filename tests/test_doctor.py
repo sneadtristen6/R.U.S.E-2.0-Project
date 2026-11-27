@@ -166,9 +166,8 @@ class RedirectionGuard(unittest.TestCase):
         started, closed = [], []
         got = doctor.reopen_app(start=started.append, quit_soon=lambda: closed.append(1), installed=lambda: True)
         self.assertEqual((got, started, closed), ({"done": 1, "left": []}, [sys.executable], [1]))
-        with self.assertRaises(ValueError):                       # (from the repo: no program of its own)
-            doctor.reopen_app(start=started.append, quit_soon=closed.append, installed=lambda: False)
-        self.assertEqual(len(started), 1)
+        repo = doctor.reopen_app(start=started.append, quit_soon=closed.append, installed=lambda: False)
+        self.assertEqual((repo["done"], len(repo["left"]), len(started), len(closed)), (0, 1, 1, 1))  # (from the repo)
         popen = mock.Mock()
         from rusemod import winfiles
         winfiles.reopen_through_explorer("C:/Apps/RUSE Launcher.exe", popen=popen)
