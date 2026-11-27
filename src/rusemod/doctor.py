@@ -286,13 +286,12 @@ def fix(action: str, game: Path | None, instances: Path) -> dict:
 def reopen_app(start=None, quit_soon=None, installed=None) -> dict:
     """The "redirection" finding's fix (FL-125): this app opened again as its shortcut opens it, through Windows'
     Explorer (winfiles.reopen_through_explorer), so without the Redirection Guard the installer passed on, and this one
-    closed a second later (as an in-app update closes it: Bug Watch's records saved first). Only the installed app can
-    (from the repo there is no program of its own to open). Returns {"done": 1, "left": []}."""
+    closed a second later (as an in-app update closes it: Bug Watch's records saved first). Returns {"done": 1,
+    "left": []}; from the repo, where there is no program of its own to open, {"done": 0, "left": [why]}."""
     import sys
     from . import update
     if not (installed or update.installed_app)():
-        # not a game rule: a run from the repo has no program of its own to open
-        raise ValueError("only the installed app can open itself again: close it and start it again")
+        return {"done": 0, "left": ["only the installed app can open itself again: close it and start it again"]}
     (start or winfiles.reopen_through_explorer)(sys.executable)
     try:
         from . import bugwatch

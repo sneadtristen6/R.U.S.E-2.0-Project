@@ -10866,10 +10866,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         opened again without the Redirection Guard its installer passed on: rusemod.doctor.reopen_app, FL-125).
         Returns {"done": how many, "left": what couldn't be done}."""
         if action == "reopen_app":   # (first: it needs no game, and the game's folder may be what can't be read)
-            try:
-                return doctor.reopen_app()
-            except ValueError as exc:
-                raise StudioError(str(exc)) from None
+            return doctor.reopen_app()
         if action not in self.FIXES:
             raise StudioError(f"There's no fix called {action!r}.")
         game = self._game()

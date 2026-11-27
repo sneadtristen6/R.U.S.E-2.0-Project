@@ -977,7 +977,7 @@ class Words(unittest.TestCase):
         said = set(re.findall(r'"(doc_[a-z_]+)"', source))
         fixes = set(re.findall(r'_finding\("\w+", "\w+", "doc_\w+", "(\w+)"', source))
         self.assertGreater(len(said), 15)
-        self.assertEqual(fixes, {"choose_game", "close_game", "clear_leftovers"})
+        self.assertEqual(fixes, {"choose_game", "close_game", "clear_leftovers", "reopen_app"})   # (reopen: FL-125)
         self.assertEqual(sorted((said | {f"doc_fix_{fix}" for fix in fixes}) - set(_words())), [])
 
     # The first-start agreement + username (plan §3a) is English-only here and translated at the feat/languages merge;

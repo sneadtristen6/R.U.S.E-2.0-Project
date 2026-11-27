@@ -313,10 +313,7 @@ class LauncherApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedC
         a build left behind) or "reopen_app" (the Launcher opened again without the Redirection Guard its installer
         passed on: rusemod.doctor.reopen_app, FL-125). Returns {"done": how many, "left": what couldn't be done}."""
         if action == "reopen_app":   # (first: it needs no game, and the game's folder may be what can't be read)
-            try:
-                return doctor.reopen_app()
-            except ValueError as exc:
-                raise LauncherError(str(exc)) from None
+            return doctor.reopen_app()
         if action not in ("close_game", "clear_leftovers"):
             raise LauncherError(f"There's no fix called {action!r}.")
         if self._starting():  # the copy being built looks like a leftover, the game it starts like one left running
